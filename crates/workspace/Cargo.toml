@@ -1,0 +1,10 @@
+[package]
+name = "workspace"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gpui.workspace = true
+ui.workspace = true
+anyhow.workspace = true
+util.workspace = true
