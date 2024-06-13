@@ -118,7 +118,7 @@ impl Clickable for Button {
 
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let style = self.style;
+        let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
 
         self.base
@@ -277,21 +277,36 @@ impl RenderOnce for ButtonPreview {
             .child(
                 Button::new("button-4", "Danger Button")
                     .style(ButtonStyle::Danger)
-                    .on_click(Self::on_click)
-                    .render(cx),
-            )
-            .child(
-                Button::new("button-5", "Disabled Button")
-                    .style(ButtonStyle::Primary)
-                    .on_click(Self::on_click)
-                    .disabled(true)
-                    .render(cx),
+                    .on_click(Self::on_click),
             )
             .child(
                 div()
                     .flex()
                     .items_center()
-                    .justify_center()
+                    .gap_3()
+                    .child(
+                        Button::new("button-disabled1", "Disabled Button")
+                            .style(ButtonStyle::Primary)
+                            .on_click(Self::on_click)
+                            .disabled(true),
+                    )
+                    .child(
+                        Button::new("button-disabled1", "Disabled Button")
+                            .style(ButtonStyle::Secondary)
+                            .on_click(Self::on_click)
+                            .disabled(true),
+                    )
+                    .child(
+                        Button::new("button-disabled1", "Disabled Button")
+                            .style(ButtonStyle::Danger)
+                            .on_click(Self::on_click)
+                            .disabled(true),
+                    ),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_center()
                     .gap_3()
                     .child(
                         Button::new("button-6", "Primary Button")

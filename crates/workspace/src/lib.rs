@@ -37,7 +37,7 @@ impl Workspace {
         app_state: Arc<AppState>,
         cx: &mut AppContext,
     ) -> Task<anyhow::Result<WindowHandle<Workspace>>> {
-        let window_bounds = Bounds::centered(None, size(px(800.0), px(600.0)), cx);
+        let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {
