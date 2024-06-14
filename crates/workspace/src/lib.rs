@@ -4,7 +4,6 @@ use std::sync::Arc;
 use ui::{
     button::{Button, ButtonStyle},
     disableable::Clickable as _,
-    preview::PreviewBox,
     Color,
 };
 use util::ResultExt as _;
@@ -98,8 +97,6 @@ impl Workspace {
 
 impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let preview_box = PreviewBox::new();
-
         div()
             .relative()
             .flex()
@@ -108,6 +105,12 @@ impl Render for Workspace {
             .size_full()
             .p_4()
             .bg(Color::Background.color(cx))
-            .child(div().flex().py_3().gap_2().child(preview_box))
+            .child(
+                div()
+                    .flex()
+                    .py_3()
+                    .gap_2()
+                    .child(cx.new_view(|_| ui::story::Stories::new())),
+            )
     }
 }

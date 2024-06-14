@@ -1,6 +1,6 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, rems, rgb, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
-    InteractiveElement, IntoElement, ParentElement, RenderOnce, SharedString,
+    div, prelude::FluentBuilder as _, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
@@ -8,7 +8,6 @@ use crate::{
     colors::Color,
     disableable::{Clickable, Disableable, Selectable},
     label::Label,
-    preview::Preview,
     HlsaExt as _,
 };
 
@@ -123,8 +122,8 @@ impl RenderOnce for Button {
 
         self.base
             .id(self.id)
+            .group("")
             .flex()
-            .flex_row()
             .items_center()
             .justify_center()
             .child(
@@ -156,6 +155,17 @@ impl RenderOnce for Button {
                         this.bg(active_style.bg).border_color(active_style.border)
                     })
             })
+            .when_some(
+                self.on_click.filter(|_| !self.disabled),
+                |this, on_click| {
+                    this.on_mouse_down(MouseButton::Left, |_, cx| cx.prevent_default())
+                        .on_click(move |event, cx| {
+                            dbg!("---------- button click");
+                            cx.stop_propagation();
+                            (on_click)(event, cx)
+                        })
+                },
+            )
             .when(self.disabled, |this| {
                 let disabled_style = style.disabled(cx);
                 this.cursor_not_allowed()
@@ -229,106 +239,5 @@ impl ButtonStyle {
         let fg = self.text_color().color(cx).grayscale();
 
         ButtonStyles { bg, border, fg }
-    }
-}
-
-#[derive(IntoElement)]
-pub struct ButtonPreview {}
-
-impl ButtonPreview {
-    fn on_click(ev: &ClickEvent, cx: &mut WindowContext) {
-        println!("Button clicked! {:?}", ev);
-    }
-}
-
-impl Preview for ButtonPreview {
-    fn new() -> Self {
-        Self {}
-    }
-
-    fn name(&self) -> &'static str {
-        "Button"
-    }
-
-    fn description(&self) -> &'static str {
-        "Displays a button or a component that looks like a button."
-    }
-}
-
-impl RenderOnce for ButtonPreview {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .justify_start()
-            .gap_3()
-            .child(
-                Button::new("button-1", "Primary Button")
-                    .style(ButtonStyle::Primary)
-                    .on_click(Self::on_click)
-                    .render(cx),
-            )
-            .child(
-                Button::new("button-2", "Secondary Button")
-                    .style(ButtonStyle::Secondary)
-                    .on_click(Self::on_click)
-                    .render(cx),
-            )
-            .child(
-                Button::new("button-4", "Danger Button")
-                    .style(ButtonStyle::Danger)
-                    .on_click(Self::on_click),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(
-                        Button::new("button-disabled1", "Disabled Button")
-                            .style(ButtonStyle::Primary)
-                            .on_click(Self::on_click)
-                            .disabled(true),
-                    )
-                    .child(
-                        Button::new("button-disabled1", "Disabled Button")
-                            .style(ButtonStyle::Secondary)
-                            .on_click(Self::on_click)
-                            .disabled(true),
-                    )
-                    .child(
-                        Button::new("button-disabled1", "Disabled Button")
-                            .style(ButtonStyle::Danger)
-                            .on_click(Self::on_click)
-                            .disabled(true),
-                    ),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(
-                        Button::new("button-6", "Primary Button")
-                            .style(ButtonStyle::Primary)
-                            .size(ButtonSize::Small)
-                            .on_click(Self::on_click)
-                            .render(cx),
-                    )
-                    .child(
-                        Button::new("button-7", "Secondary Button")
-                            .style(ButtonStyle::Secondary)
-                            .size(ButtonSize::Small)
-                            .on_click(Self::on_click)
-                            .render(cx),
-                    )
-                    .child(
-                        Button::new("button-8", "Danger Button")
-                            .style(ButtonStyle::Danger)
-                            .size(ButtonSize::Small)
-                            .on_click(Self::on_click)
-                            .render(cx),
-                    ),
-            )
     }
 }

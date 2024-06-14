@@ -48,6 +48,7 @@ impl HlsaExt for Hsla {
 //     --border: 240 3.7% 15.9%;
 //     --input: 240 3.7% 15.9%;
 //     --ring: 240 4.9% 83.9%;
+//     --selection: 240 21.6% 50.6%;
 // }
 
 pub enum Color {
@@ -70,6 +71,7 @@ pub enum Color {
     Border,
     Input,
     Ring,
+    Selection,
 }
 
 impl Color {
@@ -94,6 +96,7 @@ impl Color {
             Color::Border => hls(240., 3.7, 15.9),
             Color::Input => hls(240., 3.7, 15.9),
             Color::Ring => hls(240., 4.9, 83.9),
+            Color::Selection => hls(213., 21.6, 50.6),
         }
     }
 }
