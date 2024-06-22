@@ -5,7 +5,7 @@ use gpui::{
 
 use crate::{
     button::{Button, ButtonSize, ButtonStyle},
-    disableable::{Clickable as _, Disableable as _},
+    disableable::{Clickable, Disableable as _},
 };
 
 use super::story_case;

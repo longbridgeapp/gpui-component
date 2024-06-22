@@ -64,16 +64,26 @@ impl From<FlavorColors> for Theme {
     }
 }
 
+pub enum ThemeMode {
+    Light,
+    Dark,
+}
+
 impl Theme {
     fn new() -> Self {
-        Self::from(catppuccin::PALETTE.mocha.colors)
+        Self::from(catppuccin::PALETTE.latte.colors)
     }
 
     pub fn init(cx: &mut AppContext) {
         cx.set_global(Theme::new())
     }
 
-    pub fn change(flavour: Flavor, cx: &mut AppContext) {
+    pub fn change(mode: ThemeMode, cx: &mut AppContext) {
+        let flavour = match mode {
+            ThemeMode::Light => catppuccin::PALETTE.latte,
+            ThemeMode::Dark => catppuccin::PALETTE.mocha,
+        };
+
         cx.set_global(Self::from(flavour.colors));
         cx.refresh();
     }

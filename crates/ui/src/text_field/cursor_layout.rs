@@ -1,7 +1,8 @@
-use gpui::{outline, px, AppContext, Bounds, Hsla, Pixels, ShapedLine, Size, ViewContext};
+use gpui::{outline, px, Bounds, Hsla, Pixels, ShapedLine, Size, ViewContext};
 
 pub struct CursorLayout {
     origin: gpui::Point<Pixels>,
+    #[allow(unused)]
     block_width: Pixels,
     line_height: Pixels,
     color: Hsla,

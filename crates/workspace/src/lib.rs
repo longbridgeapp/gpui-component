@@ -2,7 +2,11 @@ use gpui::{prelude::FluentBuilder, *};
 
 use std::sync::Arc;
 use ui::{
-    button::{Button, ButtonStyle}, disableable::Clickable as _, theme::Theme, Color
+    button::{Button, ButtonStyle},
+    disableable::Clickable as _,
+    text_field::TextField,
+    theme::Theme,
+    Color,
 };
 use util::ResultExt as _;
 
@@ -17,17 +21,15 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(
-        app_state: Arc<AppState>,
-        parent: Option<WeakView<Self>>,
+        _app_state: Arc<AppState>,
+        _parent: Option<WeakView<Self>>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
         let weak_handle = cx.view().downgrade();
 
-        let workspace = Workspace {
+        Workspace {
             weak_self: weak_handle.clone(),
-        };
-
-        workspace
+        }
     }
 
     pub fn new_local(
@@ -42,15 +44,19 @@ impl Workspace {
                 ..Default::default()
             };
 
-            let window = cx.open_window(options, {
-                let app_state = app_state.clone();
-                move |cx| cx.new_view(|cx| Workspace::new(app_state.clone(), None, cx))
+            let window = cx.open_window(options, |cx| {
+                cx.new_view(|cx| Workspace::new(app_state.clone(), None, cx))
             })?;
 
             window
                 .update(&mut cx, |_, cx| {
                     cx.activate_window();
                     cx.set_window_title("GPUI App");
+                    cx.on_release(|_, _, _cx| {
+                        // exit app
+                        std::process::exit(0);
+                    })
+                    .detach();
                 })
                 .log_err();
 
@@ -61,11 +67,8 @@ impl Workspace {
 
 actions!(workspace, [Open]);
 
-pub fn init(app_state: Arc<AppState>, cx: &mut AppContext) {
-    cx.on_action({
-        let app_state = app_state.clone();
-        move |action: &Open, cx: &mut AppContext| {}
-    });
+pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
+    cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
 
     Theme::init(cx);
 }
@@ -85,18 +88,11 @@ pub fn open_new(
     })
 }
 
-impl Workspace {
-    pub fn render_ok_button(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        Button::new("ok-button", "OK")
-            .style(ButtonStyle::Primary)
-            .on_click(|_, cx| {
-                // todo
-            })
-    }
-}
+impl Workspace {}
 
 impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let theme = cx.global::<Theme>();
         div()
             .relative()
             .flex()
@@ -104,13 +100,37 @@ impl Render for Workspace {
             .flex_col()
             .size_full()
             .p_4()
-            .bg(Color::Background.color(cx))
+            .bg(theme.base)
+            .gap_4()
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_end()
+                    .gap_2()
+                    .child(
+                        Button::new("btn-light", "Light")
+                            .size(ui::button::ButtonSize::Small)
+                            .on_click(|_e, cx| Theme::change(ui::theme::ThemeMode::Light, cx)),
+                    )
+                    .child(
+                        Button::new("btn-dark", "Dark")
+                            .size(ui::button::ButtonSize::Small)
+                            .on_click(|_e, cx| Theme::change(ui::theme::ThemeMode::Dark, cx)),
+                    ),
+            )
             .child(
                 div()
                     .flex()
                     .py_3()
                     .gap_2()
-                    .child(cx.new_view(|_| ui::story::Stories::new())),
+                    .child(ui::story::Stories::view(cx)),
             )
+            .child({
+                let txt = TextField::new(cx, "Enter text here...", false);
+                txt.view
+                    .update(cx, |this, cx| this.set_text("This is default text.", cx));
+                txt
+            })
     }
 }

@@ -1,12 +1,12 @@
 use std::{ops::Range, time::Duration};
 
 use gpui::{
-    div, Context, EventEmitter, FocusHandle, HighlightStyle, InteractiveElement, InteractiveText,
-    IntoElement, KeyDownEvent, Model, ParentElement, Render, RenderOnce, Styled, StyledText,
-    TextStyle, View, ViewContext, VisualContext, WindowContext,
+    div, ClipboardItem, Context, EventEmitter, FocusHandle, HighlightStyle, InteractiveElement,
+    InteractiveText, IntoElement, KeyDownEvent, Model, ParentElement, Render, RenderOnce, Styled,
+    StyledText, TextStyle, View, ViewContext, VisualContext, WindowContext,
 };
 
-use crate::{theme::Theme, disableable::Disableable};
+use crate::{disableable::Disableable, theme::Theme};
 
 use super::{blink_manager::BlinkManager, cursor_layout::CursorLayout};
 
@@ -43,107 +43,144 @@ impl Disableable for TextField {
 
 impl RenderOnce for TextField {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        // cx.focus(&self.focus_handle);
+        cx.focus(&self.focus_handle);
         let theme = cx.global::<Theme>();
 
         let clone = self.view.clone();
 
         div()
-            .border_color(
-                self.focus_handle
-                    .is_focused(cx)
-                    .then(|| theme.blue)
-                    .unwrap_or(theme.crust),
-            )
+            .border_color(if self.focus_handle.is_focused(cx) {
+                theme.blue
+            } else {
+                theme.crust
+            })
             .border_1()
             .track_focus(&self.focus_handle)
-            .on_key_down(move |event, cx| {
-                if self.disable {
-                    return;
-                }
+            .on_key_down(move |ev, cx| {
+                self.view.update(cx, |editor, cx| {
+                    let prev = editor.text.clone();
+                    cx.emit(TextEvent::KeyDown(ev.clone()));
+                    let keystroke = &ev.keystroke.key;
+                    let chars = editor.text.chars().collect::<Vec<char>>();
+                    let m = ev.keystroke.modifiers.secondary();
 
-                self.view.update(cx, |text_view, vc| {
-                    let prev = text_view.text.clone();
-                    vc.emit(TextEvent::KeyDown(event.clone()));
-                    let keystroke = &event.keystroke.key;
-                    let chars = text_view.text.chars().collect::<Vec<char>>();
-
-                    let m = event.keystroke.modifiers.platform;
+                    dbg!("---------------- {:?}", ev);
 
                     if m {
                         match keystroke.as_str() {
+                            "a" => {
+                                editor.selection = 0..chars.len();
+                            }
+                            "c" => {
+                                // if !editor.masked {
+                                let selected_text =
+                                    chars[editor.selection.clone()].iter().collect();
+                                cx.write_to_clipboard(ClipboardItem::new(selected_text));
+                                // }
+                            }
+                            "v" => {
+                                let clipboard = cx.read_from_clipboard();
+                                if let Some(clipboard) = clipboard {
+                                    let text = clipboard.text();
+                                    editor.text.replace_range(
+                                        editor.char_range_to_text_range(&editor.text),
+                                        text,
+                                    );
+                                    let i = editor.selection.start + text.chars().count();
+                                    editor.selection = i..i;
+                                }
+                            }
+                            "x" => {
+                                let selected_text =
+                                    chars[editor.selection.clone()].iter().collect();
+                                cx.write_to_clipboard(ClipboardItem::new(selected_text));
+                                editor.text.replace_range(
+                                    editor.char_range_to_text_range(&editor.text),
+                                    "",
+                                );
+                                editor.selection.end = editor.selection.start;
+                            }
                             _ => {}
                         }
-                    } else if !event
-                        .keystroke
-                        .ime_key
-                        .clone()
-                        .unwrap_or_default()
-                        .is_empty()
-                    {
-                        let ime_key = &event.keystroke.ime_key.clone().unwrap_or_default();
-                        text_view.text.replace_range(
-                            text_view.char_range_to_text_range(&text_view.text),
-                            ime_key,
-                        );
-                        let i = text_view.selection.start + ime_key.chars().count();
-                        text_view.selection = i..i;
+                    } else if !ev.keystroke.ime_key.clone().unwrap_or_default().is_empty() {
+                        let ime_key = &ev.keystroke.ime_key.clone().unwrap_or_default();
+                        editor
+                            .text
+                            .replace_range(editor.char_range_to_text_range(&editor.text), ime_key);
+                        let i = editor.selection.start + ime_key.chars().count();
+                        editor.selection = i..i;
                     } else {
                         match keystroke.as_str() {
                             "left" => {
-                                if text_view.selection.start > 0 {
-                                    text_view.selection =
-                                        text_view.selection.start - 1..text_view.selection.end;
+                                if editor.selection.start > 0 {
+                                    let i = if editor.selection.start == editor.selection.end {
+                                        editor.selection.start - 1
+                                    } else {
+                                        editor.selection.start
+                                    };
+                                    editor.selection = i..i;
                                 }
                             }
                             "right" => {
-                                if text_view.selection.end < text_view.text.len() {
-                                    text_view.selection =
-                                        text_view.selection.start + 1..text_view.selection.end + 1;
-                                } else {
-                                    text_view.selection =
-                                        text_view.selection.start + 1..text_view.selection.end;
+                                if editor.selection.end < editor.text.len() {
+                                    let i = if editor.selection.start == editor.selection.end {
+                                        editor.selection.end + 1
+                                    } else {
+                                        editor.selection.end
+                                    };
+                                    editor.selection = i..i;
                                 }
                             }
                             "backspace" => {
-                                if text_view.text.is_empty() {
-                                    return;
-                                }
-
-                                if text_view.selection.start == text_view.selection.end {
-                                    let i = (text_view.selection.start - 1).min(chars.len());
-                                    text_view.text = chars[0..i].iter().collect::<String>()
-                                        + &(chars[text_view.selection.end.min(chars.len())..]
+                                if editor.text.is_empty() && !ev.is_held {
+                                    // cx.emit(TextEvent::Back);
+                                } else if editor.selection.start == editor.selection.end
+                                    && editor.selection.start > 0
+                                {
+                                    let i = (editor.selection.start - 1).min(chars.len());
+                                    editor.text = chars[0..i].iter().collect::<String>()
+                                        + &(chars[editor.selection.end.min(chars.len())..]
                                             .iter()
                                             .collect::<String>());
-                                    text_view.selection = i..i;
+                                    editor.selection = i..i;
+                                } else {
+                                    editor.text.replace_range(
+                                        editor.char_range_to_text_range(&editor.text),
+                                        "",
+                                    );
+                                    editor.selection.end = editor.selection.start;
                                 }
-
-                                text_view.text.replace_range(
-                                    text_view.char_range_to_text_range(&text_view.text),
-                                    "",
-                                );
-
-                                text_view.selection.end = text_view.selection.start;
+                            }
+                            "enter" => {
+                                if ev.keystroke.modifiers.shift {
+                                    editor.text.insert(
+                                        editor.char_range_to_text_range(&editor.text).start,
+                                        '\n',
+                                    );
+                                    let i = editor.selection.start + 1;
+                                    editor.selection = i..i;
+                                }
                             }
                             _ => {}
-                        }
+                        };
                     }
-
-                    if prev != text_view.text {
-                        vc.emit(TextEvent::Input {
-                            text: text_view.text.clone(),
+                    if prev != editor.text {
+                        cx.emit(TextEvent::Input {
+                            text: editor.text.clone(),
                         });
                     }
-
-                    vc.notify();
-                })
+                    cx.notify();
+                });
             })
-            .rounded_lg()
+            .rounded_sm()
             .py_1p5()
             .px_3()
             .min_w_20()
-            .bg(self.disable.then(|| theme.crust).unwrap_or(theme.base))
+            .bg(if self.disable {
+                theme.crust
+            } else {
+                theme.base
+            })
             .child(clone)
     }
 }
@@ -175,7 +212,7 @@ impl TextView {
         placeholder: &str,
         disable: bool,
     ) -> View<Self> {
-        let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL));
+        let blink_manager = cx.new_model(|_cx| BlinkManager::new(CURSOR_BLINK_INTERVAL));
 
         let cursor = CursorLayout::new(
             gpui::Point::new(gpui::px(0.0), gpui::px(0.0)),
@@ -203,15 +240,17 @@ impl TextView {
         let view = cx.new_view(|cx| {
             cx.on_blur(
                 focus_handle,
-                |editor: &mut TextView, cx: &mut ViewContext<'_, TextView>| {
-                    editor.blink_manager.update(cx, BlinkManager::disable);
+                |view: &mut TextView, cx: &mut ViewContext<'_, TextView>| {
+                    view.blink_manager.update(cx, BlinkManager::disable);
                     cx.emit(TextEvent::Blur);
                 },
             )
             .detach();
 
             cx.on_focus(focus_handle, |view, cx| {
-                view.select_all(cx);
+                view.blink_manager.update(cx, |bm, cx| {
+                    bm.blink_cursor(0, cx);
+                });
             })
             .detach();
             m
@@ -285,6 +324,15 @@ impl TextView {
             .len();
         start..end
     }
+
+    pub fn set_text(&mut self, text: impl ToString, cx: &mut ViewContext<Self>) {
+        self.text = text.to_string();
+        self.selection = self.text.len()..self.text.len();
+        cx.notify();
+        cx.emit(TextEvent::Input {
+            text: self.text.clone(),
+        });
+    }
 }
 
 impl Render for TextView {
@@ -292,9 +340,11 @@ impl Render for TextView {
         let theme = cx.global::<Theme>();
         let mut text = self.text.clone();
 
-        let mut style = TextStyle::default();
-        style.color = theme.text;
-        style.font_family = theme.font_sans.clone();
+        let mut style = TextStyle {
+            color: theme.text,
+            font_family: theme.font_sans.clone(),
+            ..Default::default()
+        };
 
         let mut selection_style = HighlightStyle::default();
         let mut color = theme.lavender;
@@ -303,10 +353,10 @@ impl Render for TextView {
 
         let highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
 
-        let styled_text: StyledText = if text.len() == 0 {
+        let styled_text: StyledText = if text.is_empty() {
             text = self.placeholder.to_string();
             style.color = theme.subtext0;
-            StyledText::new(text)
+            StyledText::new(text).with_highlights(&style, highlights)
         } else {
             StyledText::new(text).with_highlights(&style, highlights)
         };

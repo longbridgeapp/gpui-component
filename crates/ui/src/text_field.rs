@@ -1,5 +1,5 @@
-pub mod blink_manager;
-pub mod cursor_layout;
-pub mod text_field;
+mod blink_manager;
+mod cursor_layout;
+mod text_field;
 
 pub use text_field::*;

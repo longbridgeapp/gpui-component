@@ -26,7 +26,7 @@ fn main() {
             return;
         }
 
-        workspace::open_new(app_state.clone(), cx, |workspace, cx| {
+        workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
             // do something
         })
         .detach();

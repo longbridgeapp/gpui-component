@@ -1,6 +1,6 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, IntoElement, ParentElement as _, Render,
-    Styled as _, ViewContext, VisualContext, WindowContext,
+    div, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, ViewContext,
+    WindowContext,
 };
 
 use crate::text_field::TextField;
@@ -10,6 +10,7 @@ use super::story_case;
 pub struct InputStory;
 
 impl InputStory {
+    #[allow(unused)]
     fn on_change(ev: &ClickEvent, cx: &mut WindowContext) {
         println!("Input changed: {:?}", ev);
     }
@@ -23,13 +24,8 @@ impl Render for InputStory {
                 .flex_col()
                 .justify_start()
                 .gap_3()
-                .child({
-                    TextField::new(cx, "Enter text here...", false)
-                })
-                .child({
-                        let input = TextField::new(cx, "Enter text here...", false);
-                        input
-                }),
+                .child(TextField::new(cx, "Enter text here...", false))
+                .child(TextField::new(cx, "Enter text here...", false)),
         )
     }
 }

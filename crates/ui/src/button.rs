@@ -8,6 +8,7 @@ use crate::{
     colors::Color,
     disableable::{Clickable, Disableable, Selectable},
     label::Label,
+    theme::Theme,
     HlsaExt as _,
 };
 
@@ -117,26 +118,17 @@ impl Clickable for Button {
 
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let theme = cx.global::<Theme>();
         let style: ButtonStyle = self.style;
-        let normal_style = style.normal(cx);
 
         self.base
             .id(self.id)
-            .group("")
             .flex()
             .items_center()
             .justify_center()
-            .child(
-                Label::new(self.label)
-                    .color(style.text_color())
-                    .map(|this| match self.size {
-                        ButtonSize::Small => this.text_sm(),
-                        ButtonSize::Medium => this.text_base(),
-                    }),
-            )
             .map(|this| match self.size {
-                ButtonSize::Small => this.px_3().py_2().h_7(),
-                ButtonSize::Medium => this.px_4().py_2().h_10(),
+                ButtonSize::Small => this.px_3().py_2().h_5(),
+                ButtonSize::Medium => this.px_4().py_2().h_8(),
             })
             .map(|this| match self.rounded {
                 ButtonRounded::Small => this.rounded_sm(),
@@ -145,22 +137,13 @@ impl RenderOnce for Button {
                 ButtonRounded::None => this.rounded_none(),
             })
             .when(!self.disabled, |this| {
-                this.cursor_pointer()
-                    .hover(|this| {
-                        let hover_style = style.hovered(cx);
-                        this.bg(hover_style.bg).border_color(hover_style.border)
-                    })
-                    .active(|this| {
-                        let active_style = style.active(cx);
-                        this.bg(active_style.bg).border_color(active_style.border)
-                    })
+                this.hover(|this| this.border_color(theme.blue))
             })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_mouse_down(MouseButton::Left, |_, cx| cx.prevent_default())
                         .on_click(move |event, cx| {
-                            dbg!("---------- button click");
                             cx.stop_propagation();
                             (on_click)(event, cx)
                         })
@@ -173,8 +156,22 @@ impl RenderOnce for Button {
                     .border_color(disabled_style.border)
             })
             .border_1()
-            .border_color(normal_style.border)
-            .bg(normal_style.bg)
+            .border_color(theme.crust)
+            .bg(theme.base)
+            .child({
+                let text_color = if self.disabled {
+                    theme.text_disabled
+                } else {
+                    theme.text
+                };
+
+                Label::new(self.label)
+                    .color(text_color)
+                    .map(|this| match self.size {
+                        ButtonSize::Small => this.text_sm(),
+                        ButtonSize::Medium => this.text_base(),
+                    })
+            })
     }
 }
 

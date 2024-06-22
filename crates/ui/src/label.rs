@@ -1,15 +1,15 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AbsoluteLength, DefiniteLength, Div, IntoElement,
-    ParentElement, RenderOnce, SharedString, Style, StyleRefinement, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, AbsoluteLength, DefiniteLength, Div, Half, Hsla, IntoElement,
+    ParentElement, RenderOnce, SharedString, Styled, WindowContext,
 };
 
-use crate::colors::Color;
+use crate::{hls, theme::Theme};
 
 #[derive(IntoElement)]
 pub struct Label {
     base: Div,
     label: SharedString,
-    color: Color,
+    color: Hsla,
     multiple_lines: bool,
     line_height: Option<DefiniteLength>,
     text_size: Option<AbsoluteLength>,
@@ -21,7 +21,7 @@ impl Label {
             base: div(),
             label: label.into(),
             multiple_lines: false,
-            color: Color::Foreground,
+            color: hls(0., 0., 0.),
             line_height: None,
             text_size: None,
         }
@@ -32,7 +32,7 @@ impl Label {
         self
     }
 
-    pub fn color(mut self, color: Color) -> Self {
+    pub fn color(mut self, color: Hsla) -> Self {
         self.color = color;
         self
     }
@@ -46,6 +46,8 @@ impl Styled for Label {
 
 impl RenderOnce for Label {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let theme = cx.global::<Theme>();
+
         let label_text = if !self.multiple_lines {
             SharedString::from(self.label.replace('\n', "␤"))
         } else {
@@ -54,7 +56,7 @@ impl RenderOnce for Label {
 
         self.base
             .child(label_text)
-            .text_color(self.color.color(cx))
+            .text_color(theme.text)
             .map(|this| {
                 if let Some(text_size) = self.text_size {
                     this.text_size(text_size)
