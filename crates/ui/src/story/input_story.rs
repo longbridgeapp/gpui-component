@@ -3,7 +3,7 @@ use gpui::{
     Styled as _, ViewContext, VisualContext, WindowContext,
 };
 
-use crate::input::Input;
+use crate::text_field::TextField;
 
 use super::story_case;
 
@@ -24,19 +24,11 @@ impl Render for InputStory {
                 .justify_start()
                 .gap_3()
                 .child({
-                    cx.new_view(|cx| {
-                        let input = Input::new("input1", cx);
-                        input.set_placeholder("Enter text here...", cx);
-                        input
-                    })
+                    TextField::new(cx, "Enter text here...", false)
                 })
                 .child({
-                    cx.new_view(|cx| {
-                        let input = Input::new("input1", cx);
-                        input.set_placeholder("Enter text here...", cx);
-                        input.set_text("Hello, world!", cx);
+                        let input = TextField::new(cx, "Enter text here...", false);
                         input
-                    })
                 }),
         )
     }

@@ -599,6 +599,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2698f953def977c68f935bb0dfa959375ad4638570e969e2f1e9f433cbf1af6"
 
 [[package]]
+name = "catppuccin"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa1798ea21d5f88f057b9a4d075bbf3e9cc4bba98da0d6197a2019f61f633bf4"
+dependencies = [
+ "itertools 0.13.0",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1762,7 +1773,7 @@ dependencies = [
  "gpui_macros",
  "http 0.1.0",
  "image",
- "itertools",
+ "itertools 0.11.0",
  "lazy_static",
  "linkme",
  "log",
@@ -2197,6 +2208,15 @@ name = "itertools"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -4227,6 +4247,7 @@ dependencies = [
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "catppuccin",
  "gpui",
  "log",
 ]

@@ -74,7 +74,7 @@ pub struct Stories {
 impl Stories {
     pub fn new() -> Self {
         Self {
-            active: StoryType::Button,
+            active: StoryType::Input,
         }
     }
 

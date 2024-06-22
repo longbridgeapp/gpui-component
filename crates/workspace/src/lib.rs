@@ -2,9 +2,7 @@ use gpui::{prelude::FluentBuilder, *};
 
 use std::sync::Arc;
 use ui::{
-    button::{Button, ButtonStyle},
-    disableable::Clickable as _,
-    Color,
+    button::{Button, ButtonStyle}, disableable::Clickable as _, theme::Theme, Color
 };
 use util::ResultExt as _;
 
@@ -67,7 +65,9 @@ pub fn init(app_state: Arc<AppState>, cx: &mut AppContext) {
     cx.on_action({
         let app_state = app_state.clone();
         move |action: &Open, cx: &mut AppContext| {}
-    })
+    });
+
+    Theme::init(cx);
 }
 
 pub fn open_new(
