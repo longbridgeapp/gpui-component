@@ -334,31 +334,40 @@ impl Render for TextView {
 
         let styled_text = StyledText::new(text).with_highlights(&style, highlights);
 
-        InteractiveText::new("text", styled_text).on_click(self.word_ranges(), move |ev, cx| {
-            view.update(cx, |text_view, cx| {
-                let (index, mut count) = text_view.word_click;
-                if index == ev {
-                    count += 1;
-                } else {
-                    count = 1;
-                }
-                match count {
-                    2 => {
-                        let word_ranges = text_view.word_ranges();
-                        text_view.selection = word_ranges.get(ev).unwrap().clone();
+        InteractiveText::new("text", styled_text).on_click(
+            self.word_ranges(),
+            move |range_ix, cx| {
+                view.update(cx, |text_view, cx| {
+                    let (index, mut count) = text_view.word_click;
+
+                    if index == range_ix {
+                        count += 1;
+                    } else {
+                        count = 1;
                     }
-                    3 => {
-                        // Should select the line
+
+                    match count {
+                        1 => {
+                            // Position cursor at the beginning of the word
+                        }
+                        2 => {
+                            if text_view.masked {
+                                text_view.selection = 0..text_view.text.len();
+                            } else {
+                                let word_ranges = text_view.word_ranges();
+                                text_view.selection = word_ranges.get(range_ix).unwrap().clone();
+                            }
+                        }
+                        3 | 4 => {
+                            count = 0;
+                            text_view.selection = 0..text_view.text.len();
+                        }
+                        _ => {}
                     }
-                    4 => {
-                        count = 0;
-                        text_view.selection = 0..text_view.text.len();
-                    }
-                    _ => {}
-                }
-                text_view.word_click = (ev, count);
-                cx.notify();
-            });
-        })
+                    text_view.word_click = (range_ix, count);
+                    cx.notify();
+                });
+            },
+        )
     }
 }

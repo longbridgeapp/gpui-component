@@ -221,10 +221,7 @@ impl RenderOnce for TextField {
                     });
                 })
             })
-            .when(!disabled, |this| {
-                this.when(focused, |this| this.border_color(theme.ring))
-            })
-            .border_color(theme.input)
+            .border_color(if focused { theme.ring } else { theme.input })
             .border_1()
             .rounded_sm()
             .py_1()
