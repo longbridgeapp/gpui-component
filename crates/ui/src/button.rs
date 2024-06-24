@@ -5,11 +5,9 @@ use gpui::{
 };
 
 use crate::{
-    colors::Color,
     disableable::{Clickable, Disableable, Selectable},
     label::Label,
-    theme::Theme,
-    HlsaExt as _,
+    theme::{Colorize as _, Theme},
 };
 
 pub enum ButtonRounded {
@@ -120,6 +118,7 @@ impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let theme = cx.global::<Theme>();
         let style: ButtonStyle = self.style;
+        let normal_style = style.normal(cx);
 
         self.base
             .id(self.id)
@@ -127,7 +126,7 @@ impl RenderOnce for Button {
             .items_center()
             .justify_center()
             .map(|this| match self.size {
-                ButtonSize::Small => this.px_3().py_2().h_5(),
+                ButtonSize::Small => this.px_3().py_2().h_6(),
                 ButtonSize::Medium => this.px_4().py_2().h_8(),
             })
             .map(|this| match self.rounded {
@@ -137,8 +136,14 @@ impl RenderOnce for Button {
                 ButtonRounded::None => this.rounded_none(),
             })
             .when(!self.disabled, |this| {
-                this.hover(|this| this.border_color(theme.blue))
-                    .active(|this| this.bg(theme.blue.lighten(10.0)))
+                this.hover(|this| {
+                    let hover_style = style.hovered(cx);
+                    this.bg(hover_style.bg).border_color(hover_style.border)
+                })
+                .active(|this| {
+                    let active_style = style.active(cx);
+                    this.bg(active_style.bg).border_color(active_style.border)
+                })
             })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
@@ -157,13 +162,13 @@ impl RenderOnce for Button {
                     .border_color(disabled_style.border)
             })
             .border_1()
-            .border_color(theme.crust)
-            .bg(theme.base)
+            .border_color(normal_style.border)
+            .bg(normal_style.bg)
             .child({
                 let text_color = if self.disabled {
-                    theme.text_disabled
+                    normal_style.fg.opacity(0.6)
                 } else {
-                    theme.text
+                    normal_style.fg
                 };
 
                 Label::new(self.label)
@@ -183,58 +188,64 @@ struct ButtonStyles {
 }
 
 impl ButtonStyle {
-    fn bg_color(&self) -> Color {
+    fn bg_color(&self, cx: &WindowContext) -> Hsla {
+        let theme = cx.global::<Theme>();
+
         match self {
-            ButtonStyle::Primary => Color::Primary,
-            ButtonStyle::Secondary => Color::Secondary,
-            ButtonStyle::Danger => Color::Destructive,
+            ButtonStyle::Primary => theme.primary,
+            ButtonStyle::Secondary => theme.secondary,
+            ButtonStyle::Danger => theme.destructive,
         }
     }
 
-    fn text_color(&self) -> Color {
+    fn text_color(&self, cx: &WindowContext) -> Hsla {
+        let theme = cx.global::<Theme>();
         match self {
-            ButtonStyle::Primary => Color::PrimaryForeground,
-            ButtonStyle::Secondary => Color::SecondaryForeground,
-            ButtonStyle::Danger => Color::DestructiveForeground,
+            ButtonStyle::Primary => theme.primary_foreground,
+            ButtonStyle::Secondary => theme.secondary_foreground,
+            ButtonStyle::Danger => theme.destructive_foreground,
         }
     }
 
-    fn border_color(&self) -> Color {
+    fn border_color(&self, cx: &WindowContext) -> Hsla {
+        let theme = cx.global::<Theme>();
+
         match self {
-            ButtonStyle::Primary => Color::Primary,
-            ButtonStyle::Secondary => Color::Secondary,
-            ButtonStyle::Danger => Color::Destructive,
+            ButtonStyle::Primary => theme.primary,
+            ButtonStyle::Secondary => theme.secondary,
+            ButtonStyle::Danger => theme.destructive,
         }
     }
 
     fn normal(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color().color(cx);
-        let border = self.border_color().color(cx);
-        let fg = self.text_color().color(cx);
+        let bg = self.bg_color(cx);
+        let border = self.border_color(cx);
+        let fg = self.text_color(cx);
 
         ButtonStyles { bg, border, fg }
     }
 
     fn hovered(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color().color(cx).lighten(0.05);
-        let border = self.border_color().color(cx).lighten(0.05);
-        let fg = self.text_color().color(cx);
+        // Hover color = color/90
+        let bg = self.bg_color(cx).divide(0.9);
+        let border = self.border_color(cx).divide(0.9);
+        let fg = self.text_color(cx).divide(0.9);
 
         ButtonStyles { bg, border, fg }
     }
 
     fn active(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color().color(cx).darken(0.05);
-        let border = self.border_color().color(cx).darken(0.05);
-        let fg = self.text_color().color(cx);
+        let bg = self.bg_color(cx);
+        let border = self.border_color(cx);
+        let fg = self.text_color(cx);
 
         ButtonStyles { bg, border, fg }
     }
 
     fn disabled(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color().color(cx).grayscale();
-        let border = self.border_color().color(cx).grayscale();
-        let fg = self.text_color().color(cx).grayscale();
+        let bg = self.bg_color(cx).grayscale();
+        let border = self.border_color(cx).grayscale();
+        let fg = self.text_color(cx).grayscale();
 
         ButtonStyles { bg, border, fg }
     }

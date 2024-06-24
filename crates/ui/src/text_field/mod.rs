@@ -2,7 +2,10 @@ mod blink_manager;
 mod cursor_layout;
 mod text_view;
 
-use crate::{disableable::Disableable, theme::Theme};
+use crate::{
+    disableable::Disableable,
+    theme::{Colorize as _, Theme},
+};
 use blink_manager::BlinkManager;
 use gpui::{
     div, ClipboardItem, Context, EventEmitter, FocusHandle, InteractiveElement, IntoElement,
@@ -198,9 +201,9 @@ impl RenderOnce for TextField {
                 });
             })
             .border_color(if self.focus_handle.is_focused(cx) {
-                theme.blue
+                theme.ring
             } else {
-                theme.crust
+                theme.input
             })
             .border_1()
             .rounded_sm()
@@ -208,9 +211,9 @@ impl RenderOnce for TextField {
             .px_3()
             .min_w_20()
             .bg(if self.disable {
-                theme.crust
+                theme.background.opacity(0.5)
             } else {
-                theme.base
+                theme.background
             })
             .child(view)
     }

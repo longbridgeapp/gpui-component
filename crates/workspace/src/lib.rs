@@ -1,14 +1,7 @@
-use gpui::{prelude::FluentBuilder, *};
+use gpui::*;
 
 use std::sync::Arc;
-use ui::{
-    button::Button,
-    disableable::Clickable as _,
-    story::Stories,
-    text_field::{self, TextField},
-    theme::Theme,
-    Color,
-};
+use ui::{button::Button, disableable::Clickable as _, story::Stories, theme::Theme};
 use util::ResultExt as _;
 
 mod app_state;
@@ -101,7 +94,7 @@ impl Render for Workspace {
             .flex_col()
             .size_full()
             .p_4()
-            .bg(theme.base)
+            .bg(theme.background)
             .gap_4()
             .child(
                 div()

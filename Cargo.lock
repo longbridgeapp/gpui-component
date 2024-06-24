@@ -4250,6 +4250,8 @@ dependencies = [
  "catppuccin",
  "gpui",
  "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

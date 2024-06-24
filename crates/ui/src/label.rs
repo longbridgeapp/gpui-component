@@ -3,7 +3,7 @@ use gpui::{
     ParentElement, RenderOnce, SharedString, Styled, WindowContext,
 };
 
-use crate::{hls, theme::Theme};
+use crate::theme::Theme;
 
 #[derive(IntoElement)]
 pub struct Label {
@@ -21,7 +21,7 @@ impl Label {
             base: div(),
             label: label.into(),
             multiple_lines: false,
-            color: hls(0., 0., 0.),
+            color: Hsla::white(),
             line_height: None,
             text_size: None,
         }
@@ -46,8 +46,6 @@ impl Styled for Label {
 
 impl RenderOnce for Label {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.global::<Theme>();
-
         let label_text = if !self.multiple_lines {
             SharedString::from(self.label.replace('\n', "␤"))
         } else {
@@ -56,7 +54,7 @@ impl RenderOnce for Label {
 
         self.base
             .child(label_text)
-            .text_color(theme.text)
+            .text_color(self.color)
             .map(|this| {
                 if let Some(text_size) = self.text_size {
                     this.text_size(text_size)

@@ -3,7 +3,7 @@ use std::ops::Range;
 use super::{
     blink_manager::BlinkManager, cursor_layout::CursorLayout, TextEvent, CURSOR_BLINK_INTERVAL,
 };
-use crate::{hls, theme::Theme};
+use crate::theme::{Colorize as _, Theme};
 use gpui::{
     px, relative, Context, Element, EventEmitter, FocusHandle, HighlightStyle, InteractiveText,
     IntoElement, Model, Render, Style, StyledText, TextStyle, View, ViewContext, VisualContext,
@@ -32,11 +32,13 @@ impl TextView {
     ) -> View<Self> {
         let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
 
+        let theme = cx.global::<Theme>();
+
         let cursor = CursorLayout::new(
             gpui::Point::new(gpui::px(0.0), gpui::px(0.0)),
             px(2.0),
             px(20.0),
-            hls(212., 92., 45.),
+            theme.ring,
             None,
         );
 
@@ -219,8 +221,7 @@ impl Render for TextView {
         dbg!("textView render", &text);
 
         let mut style = TextStyle {
-            color: theme.text,
-            font_family: theme.font_sans.clone(),
+            color: theme.foreground,
             ..Default::default()
         };
 
@@ -229,15 +230,14 @@ impl Render for TextView {
         }
 
         let mut selection_style = HighlightStyle::default();
-        let mut color = theme.lavender;
-        color.fade_out(0.8);
+        let color = theme.foreground.opacity(0.8);
         selection_style.background_color = Some(color);
 
         let mut highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
 
         if text.is_empty() {
             text = self.placeholder.to_string();
-            style.color = theme.subtext0;
+            style.color = theme.muted_foreground;
             highlights = vec![];
         }
 

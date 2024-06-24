@@ -7,3 +7,5 @@ edition = "2021"
 catppuccin = "2.4.0"
 gpui.workspace = true
 log.wokrspace = true
+serde.workspace = true
+serde_json.workspace = true
