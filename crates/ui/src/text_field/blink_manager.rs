@@ -11,7 +11,7 @@ pub struct BlinkManager {
 }
 
 impl BlinkManager {
-    pub fn new(blink_interval: Duration) -> Self {
+    pub fn new(blink_interval: Duration, _cx: &mut ModelContext<Self>) -> Self {
         Self {
             blink_interval,
             blink_epoch: 0,
@@ -35,5 +35,13 @@ impl BlinkManager {
 
     pub fn disable(&mut self, _cx: &mut ModelContext<Self>) {
         self.enabled = false;
+    }
+
+    pub fn enable(&mut self, _cx: &mut ModelContext<Self>) {
+        self.enabled = true;
+    }
+
+    pub fn visible(&self) -> bool {
+        self.visible
     }
 }

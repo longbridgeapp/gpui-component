@@ -1,13 +1,7 @@
 use gpui::{prelude::FluentBuilder, *};
 
 use std::sync::Arc;
-use ui::{
-    button::{Button, ButtonStyle},
-    disableable::Clickable as _,
-    text_field::TextField,
-    theme::Theme,
-    Color,
-};
+use ui::{button::Button, disableable::Clickable as _, text_field::TextField, theme::Theme, Color};
 use util::ResultExt as _;
 
 mod app_state;
@@ -127,10 +121,12 @@ impl Render for Workspace {
                     .child(ui::story::Stories::view(cx)),
             )
             .child({
-                let txt = TextField::new(cx, "Enter text here...", false);
-                txt.view
-                    .update(cx, |this, cx| this.set_text("This is default text.", cx));
-                txt
+                cx.new_view(|cx| {
+                    let txt = TextField::new("Enter text here...", false, cx);
+                    txt.view
+                        .update(cx, |this, cx| this.set_text("This is default text.", cx));
+                    txt
+                })
             })
     }
 }

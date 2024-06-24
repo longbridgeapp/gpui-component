@@ -1,6 +1,6 @@
 use gpui::{
     div, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, ViewContext,
-    WindowContext,
+    VisualContext as _, WindowContext,
 };
 
 use crate::text_field::TextField;
@@ -24,8 +24,8 @@ impl Render for InputStory {
                 .flex_col()
                 .justify_start()
                 .gap_3()
-                .child(TextField::new(cx, "Enter text here...", false))
-                .child(TextField::new(cx, "Enter text here...", false)),
+                .child(cx.new_view(|cx| TextField::new("Enter text here...", false, cx)))
+                .child(cx.new_view(|cx| TextField::new("Enter text here...", false, cx))),
         )
     }
 }

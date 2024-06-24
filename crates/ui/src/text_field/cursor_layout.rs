@@ -1,5 +1,6 @@
-use gpui::{outline, px, Bounds, Hsla, Pixels, ShapedLine, Size, ViewContext};
+use gpui::{outline, px, Bounds, Hsla, Pixels, ShapedLine, Size, ViewContext, WindowContext};
 
+#[derive(Debug, Clone)]
 pub struct CursorLayout {
     origin: gpui::Point<Pixels>,
     #[allow(unused)]
@@ -36,7 +37,7 @@ impl CursorLayout {
         }
     }
 
-    pub fn paint(&mut self, origin: gpui::Point<Pixels>, cx: &mut ViewContext<Self>) {
+    pub fn paint(&mut self, origin: gpui::Point<Pixels>, cx: &mut WindowContext) {
         let bounds = self.bounds(origin);
 
         let cursor = outline(bounds, self.color);

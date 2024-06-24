@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AbsoluteLength, DefiniteLength, Div, Half, Hsla, IntoElement,
+    div, prelude::FluentBuilder as _, AbsoluteLength, DefiniteLength, Div, Hsla, IntoElement,
     ParentElement, RenderOnce, SharedString, Styled, WindowContext,
 };
 
