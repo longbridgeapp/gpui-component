@@ -235,7 +235,7 @@ impl RenderOnce for TextField {
             .bg(if disabled {
                 theme.muted
             } else {
-                theme.transparent
+                theme.background
             })
             .child(view)
     }

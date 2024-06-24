@@ -116,7 +116,6 @@ impl Clickable for Button {
 
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.global::<Theme>();
         let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
 
@@ -164,6 +163,7 @@ impl RenderOnce for Button {
             .border_1()
             .border_color(normal_style.border)
             .bg(normal_style.bg)
+            .shadow_sm()
             .child({
                 let text_color = if self.disabled {
                     normal_style.fg.opacity(0.6)
@@ -215,6 +215,7 @@ impl ButtonStyle {
             ButtonStyle::Secondary => theme.secondary,
             ButtonStyle::Danger => theme.destructive,
         }
+        .darken(0.05)
     }
 
     fn normal(&self, cx: &WindowContext) -> ButtonStyles {
@@ -235,9 +236,9 @@ impl ButtonStyle {
     }
 
     fn active(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color(cx);
-        let border = self.border_color(cx);
-        let fg = self.text_color(cx);
+        let bg = self.bg_color(cx).darken(0.05);
+        let border = self.border_color(cx).darken(0.05);
+        let fg = self.text_color(cx).darken(0.05);
 
         ButtonStyles { bg, border, fg }
     }

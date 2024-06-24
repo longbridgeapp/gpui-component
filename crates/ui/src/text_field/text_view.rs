@@ -313,15 +313,19 @@ impl Render for TextView {
             text = "•".repeat(text.len());
         }
 
-        let mut selection_style = HighlightStyle::default();
-        selection_style.background_color = Some(theme.ring);
-        selection_style.color = Some(theme.ring.invert());
+        let selection_style = HighlightStyle {
+            background_color: Some(theme.ring),
+            color: Some(theme.ring.invert()),
+            ..Default::default()
+        };
 
         let mut highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
 
         if text.is_empty() {
             text = self.placeholder.to_string();
             style.color = theme.muted_foreground;
+        } else {
+            style.color = theme.foreground;
         }
 
         if !self.focused {

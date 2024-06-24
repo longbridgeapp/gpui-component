@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use gpui::{AppContext, Global, Hsla, Rgba};
 use serde_json::json;
 
@@ -14,6 +16,8 @@ pub trait Colorize {
     fn opacity(&self, opacity: f32) -> Hsla;
     fn divide(&self, divisor: f32) -> Hsla;
     fn invert(&self) -> Hsla;
+    fn lighten(&self, amount: f32) -> Hsla;
+    fn darken(&self, amount: f32) -> Hsla;
 }
 
 impl Colorize for Hsla {
@@ -45,6 +49,18 @@ impl Colorize for Hsla {
             l: 1.0 - self.l,
             a: self.a,
         }
+    }
+
+    fn lighten(&self, amount: f32) -> Hsla {
+        let l = (self.l + amount).min(1.0);
+
+        Hsla { l, ..*self }
+    }
+
+    fn darken(&self, amount: f32) -> Hsla {
+        let l = (self.l - amount).max(0.0);
+
+        Hsla { l, ..*self }
     }
 }
 
