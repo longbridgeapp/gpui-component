@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use gpui::ModelContext;
+use gpui::{ModelContext, Timer};
 
 pub struct BlinkManager {
     blink_interval: Duration,
@@ -18,6 +18,30 @@ impl BlinkManager {
             blinking_paused: false,
             visible: true,
             enabled: true,
+        }
+    }
+
+    pub fn pause_blinking(&mut self, cx: &mut ModelContext<Self>) {
+        self.show_cursor(cx);
+
+        let epoch = self.next_blink_epoch();
+        let interval = self.blink_interval;
+        cx.spawn(|this, mut cx| async move {
+            Timer::after(interval).await;
+            this.update(&mut cx, |this, cx| this.resume_cursor_blinking(epoch, cx))
+        })
+        .detach();
+    }
+
+    fn next_blink_epoch(&mut self) -> usize {
+        self.blink_epoch += 1;
+        self.blink_epoch
+    }
+
+    fn resume_cursor_blinking(&mut self, epoch: usize, cx: &mut ModelContext<Self>) {
+        if epoch == self.blink_epoch {
+            self.blinking_paused = false;
+            self.blink_cursor(epoch, cx);
         }
     }
 

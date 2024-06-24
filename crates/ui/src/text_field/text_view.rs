@@ -4,20 +4,27 @@ use super::{
     blink_manager::BlinkManager, cursor_layout::CursorLayout, TextEvent, CURSOR_BLINK_INTERVAL,
 };
 use crate::theme::{Colorize as _, Theme};
+use catppuccin::Hsl;
 use gpui::{
-    px, relative, Context, Element, EventEmitter, FocusHandle, HighlightStyle, InteractiveText,
-    IntoElement, Model, Render, Style, StyledText, TextStyle, View, ViewContext, VisualContext,
-    WindowContext,
+    px, relative, ContentMask, Context, Element, EventEmitter, FocusHandle, HighlightStyle, Hsla,
+    InteractiveText, IntoElement, Model, Point, Render, Style, StyledText, TextStyle,
+    TextStyleRefinement, View, ViewContext, VisualContext, WindowContext,
 };
+
+#[derive(Clone)]
+pub struct TextFieldStyle {
+    pub background: Hsla,
+    pub text: TextStyle,
+}
 
 pub struct TextView {
     pub text: String,
+    pub style: TextFieldStyle,
     pub placeholder: String,
     pub word_click: (usize, u16),
     pub selection: Range<usize>,
     pub disabled: bool,
     pub blink_manager: Model<BlinkManager>,
-    pub cursor: CursorLayout,
     pub masked: bool,
     pub focused: bool,
 }
@@ -30,21 +37,23 @@ impl TextView {
 
         let theme = cx.global::<Theme>();
 
-        let cursor = CursorLayout::new(
-            gpui::Point::new(gpui::px(0.0), gpui::px(0.0)),
-            px(2.0),
-            px(20.0),
-            theme.ring,
-            None,
-        );
+        let line_height = px(20.0);
+        let style = TextFieldStyle {
+            background: theme.transparent,
+            text: TextStyle {
+                color: theme.foreground,
+                line_height: line_height.into(),
+                ..Default::default()
+            },
+        };
 
         let m = Self {
             text: String::new(),
+            style,
             placeholder: "".to_string(),
             word_click: (0, 0),
             selection: 0..0,
-            blink_manager,
-            cursor,
+            blink_manager: blink_manager.clone(),
             disabled: false,
             masked: false,
             focused: false,
@@ -60,6 +69,22 @@ impl TextView {
                 view.focus(cx);
             })
             .detach();
+
+            cx.observe(&blink_manager, |_, _, cx| cx.notify()).detach();
+
+            cx.observe_window_activation(|view, cx| {
+                let active = cx.is_window_active();
+                view.blink_manager.update(cx, |blink_manager, cx| {
+                    if active {
+                        blink_manager.enable(cx);
+                    } else {
+                        blink_manager.show_cursor(cx);
+                        blink_manager.disable(cx);
+                    }
+                })
+            })
+            .detach();
+
             m
         });
 
@@ -134,6 +159,7 @@ impl TextView {
         words
     }
 
+    /// Converts a character range to a text range (in bytes)
     pub fn char_range_to_text_range(&self, text: &str) -> Range<usize> {
         let start = text
             .chars()
@@ -173,9 +199,22 @@ impl TextView {
     }
 
     fn paint_cursors(&self, layout: &TextLayout, cx: &mut WindowContext) {
-        let mut cursor = self.cursor.clone();
-        dbg!("--------- paint_cursors", &cursor);
+        let mut cursor = layout.visible_cursor.clone();
         cursor.paint(layout.content_origin, cx);
+    }
+
+    pub fn show_cursor(&self, cx: &mut WindowContext) -> bool {
+        self.blink_manager.read(cx).visible() && self.focused
+    }
+
+    fn layout_visible_cursors(&self, cx: &mut WindowContext) -> CursorLayout {
+        let theme = cx.global::<Theme>();
+        let selection = &self.selection;
+
+        let x = px(selection.end as f32);
+        let y = px(0.);
+
+        CursorLayout::new(Point::new(x, y), px(0.), px(20.0), theme.ring, None)
     }
 }
 
@@ -189,6 +228,7 @@ impl IntoElement for TextView {
 
 pub struct TextLayout {
     content_origin: gpui::Point<gpui::Pixels>,
+    visible_cursor: CursorLayout,
 }
 
 impl Element for TextView {
@@ -202,37 +242,62 @@ impl Element for TextView {
 
     fn request_layout(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _id: Option<&gpui::GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let mut style = Style::default();
+        let rem_size = cx.rem_size();
+
         style.size.width = relative(1.).into();
-        style.size.height = relative(24.).into();
-        dbg!("--------- request_layout", &style);
+        style.size.height = self.style.text.line_height_in_pixels(rem_size).into();
+
         (cx.request_layout(style, None), ())
     }
 
     fn prepaint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _id: Option<&gpui::GlobalElementId>,
         bounds: gpui::Bounds<gpui::Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
+        _request_layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
-        TextLayout {
-            content_origin: bounds.origin,
-        }
+        let text_style = TextStyleRefinement {
+            font_size: Some(self.style.text.font_size),
+            line_height: Some(self.style.text.line_height),
+            ..Default::default()
+        };
+
+        cx.with_text_style(Some(text_style), |cx| {
+            cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+                let cursor = self.layout_visible_cursors(cx);
+
+                TextLayout {
+                    content_origin: bounds.origin,
+                    visible_cursor: cursor,
+                }
+            })
+        })
     }
 
     fn paint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _id: Option<&gpui::GlobalElementId>,
         bounds: gpui::Bounds<gpui::Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
+        _request_layout: &mut Self::RequestLayoutState,
         layout: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
-        self.paint_cursors(layout, cx);
+        let text_style = TextStyleRefinement {
+            font_size: Some(self.style.text.font_size),
+            line_height: Some(self.style.text.line_height),
+            ..Default::default()
+        };
+
+        cx.with_text_style(Some(text_style), |cx| {
+            cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+                self.paint_cursors(layout, cx);
+            })
+        });
     }
 }
 
@@ -243,32 +308,27 @@ impl Render for TextView {
         let view = cx.view().clone();
         let mut text = self.text.clone();
 
-        let mut style = TextStyle {
-            color: theme.foreground,
-            ..Default::default()
-        };
-
+        let mut style = self.style.text.clone();
         if self.masked {
             text = "•".repeat(text.len());
         }
 
         let mut selection_style = HighlightStyle::default();
-        let color = theme.foreground.opacity(0.8);
-        selection_style.background_color = Some(color);
+        selection_style.background_color = Some(theme.ring);
+        selection_style.color = Some(theme.ring.invert());
 
         let mut highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
 
         if text.is_empty() {
             text = self.placeholder.to_string();
             style.color = theme.muted_foreground;
-            highlights = vec![];
         }
 
         if !self.focused {
             highlights = vec![];
         }
 
-        let styled_text = StyledText::new(text + " ").with_highlights(&style, highlights);
+        let styled_text = StyledText::new(text).with_highlights(&style, highlights);
 
         InteractiveText::new("text", styled_text).on_click(self.word_ranges(), move |ev, cx| {
             view.update(cx, |text_view, cx| {

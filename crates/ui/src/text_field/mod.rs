@@ -2,15 +2,10 @@ mod blink_manager;
 mod cursor_layout;
 mod text_view;
 
-use crate::{
-    disableable::Disableable,
-    theme::{Colorize as _, Theme},
-};
-use blink_manager::BlinkManager;
+use crate::theme::Theme;
 use gpui::{
-    div, prelude::FluentBuilder as _, ClipboardItem, Context, Entity, EventEmitter, FocusHandle,
-    InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton, ParentElement, RenderOnce,
-    Styled, View, ViewContext, WindowContext,
+    div, prelude::FluentBuilder as _, ClipboardItem, EventEmitter, FocusHandle, InteractiveElement,
+    IntoElement, KeyDownEvent, MouseButton, ParentElement, RenderOnce, Styled, View, WindowContext,
 };
 use std::time::Duration;
 use text_view::TextView;
@@ -20,7 +15,6 @@ const CURSOR_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 #[derive(Clone, IntoElement)]
 pub struct TextField {
     focus_handle: FocusHandle,
-    blink_manager: Model<BlinkManager>,
     pub view: View<TextView>,
 }
 
@@ -29,13 +23,7 @@ impl TextField {
         let focus_handle = cx.focus_handle();
         let view = TextView::init(cx, &focus_handle);
 
-        let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
-
-        Self {
-            focus_handle,
-            view,
-            blink_manager,
-        }
+        Self { focus_handle, view }
     }
 
     pub fn focus(&mut self, cx: &mut WindowContext) {
@@ -66,22 +54,6 @@ impl TextField {
             .update(cx, |text_view, cx| text_view.set_masked(masked, cx));
         self
     }
-
-    fn handle_focus(&mut self, cx: &mut ViewContext<Self>) {
-        cx.emit(TextEvent::Focus);
-        self.blink_manager.update(cx, BlinkManager::enable);
-        cx.notify();
-    }
-
-    fn handle_blur(&mut self, cx: &mut ViewContext<Self>) {
-        cx.emit(TextEvent::Blur);
-        self.blink_manager.update(cx, BlinkManager::disable);
-        cx.notify();
-    }
-
-    pub fn show_cursor(&self, cx: &mut WindowContext) -> bool {
-        self.blink_manager.read(cx).visible() && self.focus_handle.is_focused(cx)
-    }
 }
 
 impl RenderOnce for TextField {
@@ -105,10 +77,6 @@ impl RenderOnce for TextField {
             })
             .when(!disabled, |this| {
                 this.on_key_down(move |ev, cx| {
-                    if !focused {
-                        return;
-                    }
-
                     self.view.update(cx, |text_view, cx| {
                         let prev = text_view.text.clone();
                         cx.emit(TextEvent::KeyDown(ev.clone()));

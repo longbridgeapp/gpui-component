@@ -13,6 +13,7 @@ fn hsl(h: f32, s: f32, l: f32) -> Hsla {
 pub trait Colorize {
     fn opacity(&self, opacity: f32) -> Hsla;
     fn divide(&self, divisor: f32) -> Hsla;
+    fn invert(&self) -> Hsla;
 }
 
 impl Colorize for Hsla {
@@ -33,6 +34,16 @@ impl Colorize for Hsla {
         Hsla {
             a: divisor,
             ..*self
+        }
+    }
+
+    /// Return inverted color
+    fn invert(&self) -> Hsla {
+        Hsla {
+            h: (self.h + 1.8) % 3.6,
+            s: 1.0 - self.s,
+            l: 1.0 - self.l,
+            a: self.a,
         }
     }
 }
