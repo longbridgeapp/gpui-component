@@ -1,7 +1,14 @@
 use gpui::{prelude::FluentBuilder, *};
 
 use std::sync::Arc;
-use ui::{button::Button, disableable::Clickable as _, text_field::TextField, theme::Theme, Color};
+use ui::{
+    button::Button,
+    disableable::Clickable as _,
+    story::Stories,
+    text_field::{self, TextField},
+    theme::Theme,
+    Color,
+};
 use util::ResultExt as _;
 
 mod app_state;
@@ -11,6 +18,7 @@ pub use app_state::AppState;
 
 pub struct Workspace {
     weak_self: WeakView<Self>,
+    stories: View<Stories>,
 }
 
 impl Workspace {
@@ -23,6 +31,7 @@ impl Workspace {
 
         Workspace {
             weak_self: weak_handle.clone(),
+            stories: Stories::view(cx),
         }
     }
 
@@ -82,8 +91,6 @@ pub fn open_new(
     })
 }
 
-impl Workspace {}
-
 impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
@@ -113,20 +120,6 @@ impl Render for Workspace {
                             .on_click(|_e, cx| Theme::change(ui::theme::ThemeMode::Dark, cx)),
                     ),
             )
-            .child(
-                div()
-                    .flex()
-                    .py_3()
-                    .gap_2()
-                    .child(ui::story::Stories::view(cx)),
-            )
-            .child({
-                cx.new_view(|cx| {
-                    let txt = TextField::new("Enter text here...", false, cx);
-                    txt.view
-                        .update(cx, |this, cx| this.set_text("This is default text.", cx));
-                    txt
-                })
-            })
+            .child(div().flex().py_3().gap_2().child(self.stories.clone()))
     }
 }

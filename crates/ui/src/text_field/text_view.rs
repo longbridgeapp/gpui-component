@@ -1,15 +1,13 @@
-use std::{ops::Range, time::Duration};
-
-use gpui::{
-    div, px, relative, ClipboardItem, Context, Element, EventEmitter, FocusHandle, HighlightStyle,
-    InteractiveElement, InteractiveText, IntoElement, KeyDownEvent, Model, ParentElement, Pixels,
-    Render, Style, Styled, StyledText, TextStyle, View, ViewContext, VisualContext, WindowContext,
-};
-
-use crate::{disableable::Disableable, hls, theme::Theme};
+use std::ops::Range;
 
 use super::{
     blink_manager::BlinkManager, cursor_layout::CursorLayout, TextEvent, CURSOR_BLINK_INTERVAL,
+};
+use crate::{hls, theme::Theme};
+use gpui::{
+    px, relative, Context, Element, EventEmitter, FocusHandle, HighlightStyle, InteractiveText,
+    IntoElement, Model, Render, Style, StyledText, TextStyle, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 pub struct TextView {
@@ -20,6 +18,7 @@ pub struct TextView {
     pub disable: bool,
     pub blink_manager: Model<BlinkManager>,
     pub cursor: CursorLayout,
+    pub masked: bool,
 }
 
 impl EventEmitter<TextEvent> for TextView {}
@@ -49,6 +48,7 @@ impl TextView {
             blink_manager,
             cursor,
             disable,
+            masked: false,
         };
 
         let view = cx.new_view(|cx| {
@@ -74,7 +74,7 @@ impl TextView {
             &view,
             move |subscriber, emitter: &TextEvent, cx| match emitter {
                 TextEvent::Input { text: _ } => {
-                    subscriber.update(cx, |editor, cx| {
+                    subscriber.update(cx, |editor, _cx| {
                         editor.word_click = (0, 0);
                     });
                 }
@@ -184,7 +184,7 @@ impl Element for TextView {
         let mut style = Style::default();
         style.size.width = relative(1.).into();
         style.size.height = relative(24.).into();
-
+        dbg!("--------- request_layout", &style);
         (cx.request_layout(style, None), ())
     }
 
@@ -216,6 +216,7 @@ impl Render for TextView {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
         let mut text = self.text.clone();
+        dbg!("textView render", &text);
 
         let mut style = TextStyle {
             color: theme.text,
@@ -223,21 +224,24 @@ impl Render for TextView {
             ..Default::default()
         };
 
+        if self.masked {
+            text = "•".repeat(text.len());
+        }
+
         let mut selection_style = HighlightStyle::default();
         let mut color = theme.lavender;
         color.fade_out(0.8);
         selection_style.background_color = Some(color);
 
-        let highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
+        let mut highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
 
-        let styled_text: StyledText = if text.is_empty() {
+        if text.is_empty() {
             text = self.placeholder.to_string();
             style.color = theme.subtext0;
-            StyledText::new(text).with_highlights(&style, highlights)
-        } else {
-            StyledText::new(text).with_highlights(&style, highlights)
-        };
+            highlights = vec![];
+        }
 
+        let styled_text = StyledText::new(text + " ").with_highlights(&style, highlights);
         let view = cx.view().clone();
 
         InteractiveText::new("text", styled_text).on_click(self.word_ranges(), move |ev, cx| {

@@ -5,16 +5,16 @@ mod text_view;
 use crate::{disableable::Disableable, theme::Theme};
 use blink_manager::BlinkManager;
 use gpui::{
-    div, px, relative, ClipboardItem, Context, Element, EventEmitter, FocusHandle, HighlightStyle,
-    InteractiveElement, InteractiveText, IntoElement, KeyDownEvent, Model, ParentElement, Pixels,
-    Render, Style, Styled, StyledText, TextStyle, View, ViewContext, VisualContext, WindowContext,
+    div, ClipboardItem, Context, EventEmitter, FocusHandle, InteractiveElement, IntoElement,
+    KeyDownEvent, Model, ParentElement, Render, RenderOnce, Styled, View, ViewContext,
+    WindowContext,
 };
-use std::{ops::Range, time::Duration};
+use std::time::Duration;
 use text_view::TextView;
 
 const CURSOR_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 
-#[derive(Clone)]
+#[derive(Clone, IntoElement)]
 pub struct TextField {
     focus_handle: FocusHandle,
     disable: bool,
@@ -23,14 +23,14 @@ pub struct TextField {
 }
 
 impl TextField {
-    pub fn new(placeholder: &str, disable: bool, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(placeholder: &str, disable: bool, cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
         let view = TextView::init(cx, &focus_handle, placeholder, disable);
 
         let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
 
-        cx.on_focus(&focus_handle, Self::handle_focus).detach();
-        cx.on_blur(&focus_handle, Self::handle_blur).detach();
+        // cx.on_focus(&focus_handle, Self::handle_focus).detach();
+        // cx.on_blur(&focus_handle, Self::handle_blur).detach();
 
         Self {
             focus_handle,
@@ -67,42 +67,34 @@ impl Disableable for TextField {
         self
     }
 }
-
-impl Render for TextField {
-    fn render<'a>(&mut self, cx: &mut ViewContext<'a, Self>) -> impl IntoElement {
+impl RenderOnce for TextField {
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         cx.focus(&self.focus_handle);
         let theme = cx.global::<Theme>();
 
-        let text_view = self.view.clone();
-        let text_view1 = text_view.clone();
+        let view = self.view.clone();
 
         div()
-            .border_color(if self.focus_handle.is_focused(cx) {
-                theme.blue
-            } else {
-                theme.crust
-            })
-            .border_1()
             .track_focus(&self.focus_handle)
             .on_key_down(move |ev, cx| {
-                text_view1.update(cx, |editor, cx| {
-                    let prev = editor.text.clone();
+                self.view.update(cx, |text_view, cx| {
+                    let prev = text_view.text.clone();
                     cx.emit(TextEvent::KeyDown(ev.clone()));
                     let keystroke = &ev.keystroke.key;
-                    let chars = editor.text.chars().collect::<Vec<char>>();
+                    let chars = text_view.text.chars().collect::<Vec<char>>();
                     let m = ev.keystroke.modifiers.secondary();
 
-                    dbg!("---------------- {:?}", ev);
+                    dbg!(&text_view.text, &text_view.selection);
 
                     if m {
                         match keystroke.as_str() {
                             "a" => {
-                                editor.selection = 0..chars.len();
+                                text_view.selection = 0..chars.len();
                             }
                             "c" => {
-                                // if !editor.masked {
+                                // if !text_view.masked {
                                 let selected_text =
-                                    chars[editor.selection.clone()].iter().collect();
+                                    chars[text_view.selection.clone()].iter().collect();
                                 cx.write_to_clipboard(ClipboardItem::new(selected_text));
                                 // }
                             }
@@ -110,96 +102,107 @@ impl Render for TextField {
                                 let clipboard = cx.read_from_clipboard();
                                 if let Some(clipboard) = clipboard {
                                     let text = clipboard.text();
-                                    editor.text.replace_range(
-                                        editor.char_range_to_text_range(&editor.text),
+                                    text_view.text.replace_range(
+                                        text_view.char_range_to_text_range(&text_view.text),
                                         text,
                                     );
-                                    let i = editor.selection.start + text.chars().count();
-                                    editor.selection = i..i;
+                                    let i = text_view.selection.start + text.chars().count();
+                                    text_view.selection = i..i;
                                 }
                             }
                             "x" => {
                                 let selected_text =
-                                    chars[editor.selection.clone()].iter().collect();
+                                    chars[text_view.selection.clone()].iter().collect();
                                 cx.write_to_clipboard(ClipboardItem::new(selected_text));
-                                editor.text.replace_range(
-                                    editor.char_range_to_text_range(&editor.text),
+                                text_view.text.replace_range(
+                                    text_view.char_range_to_text_range(&text_view.text),
                                     "",
                                 );
-                                editor.selection.end = editor.selection.start;
+                                text_view.selection.end = text_view.selection.start;
                             }
                             _ => {}
                         }
                     } else if !ev.keystroke.ime_key.clone().unwrap_or_default().is_empty() {
                         let ime_key = &ev.keystroke.ime_key.clone().unwrap_or_default();
-                        editor
-                            .text
-                            .replace_range(editor.char_range_to_text_range(&editor.text), ime_key);
-                        let i = editor.selection.start + ime_key.chars().count();
-                        editor.selection = i..i;
+                        text_view.text.replace_range(
+                            text_view.char_range_to_text_range(&text_view.text),
+                            ime_key,
+                        );
+                        let i = text_view.selection.start + ime_key.chars().count();
+                        text_view.selection = i..i;
                     } else {
                         match keystroke.as_str() {
                             "left" => {
-                                if editor.selection.start > 0 {
-                                    let i = if editor.selection.start == editor.selection.end {
-                                        editor.selection.start - 1
+                                if text_view.selection.start > 0 {
+                                    let i = if text_view.selection.start == text_view.selection.end
+                                    {
+                                        text_view.selection.start - 1
                                     } else {
-                                        editor.selection.start
+                                        text_view.selection.start
                                     };
-                                    editor.selection = i..i;
+                                    text_view.selection = i..i;
                                 }
                             }
                             "right" => {
-                                if editor.selection.end < editor.text.len() {
-                                    let i = if editor.selection.start == editor.selection.end {
-                                        editor.selection.end + 1
+                                if text_view.selection.end < text_view.text.len() {
+                                    let i = if text_view.selection.start == text_view.selection.end
+                                    {
+                                        text_view.selection.end + 1
                                     } else {
-                                        editor.selection.end
+                                        text_view.selection.end
                                     };
-                                    editor.selection = i..i;
+                                    text_view.selection = i..i;
                                 }
                             }
                             "backspace" => {
-                                if editor.text.is_empty() && !ev.is_held {
+                                if text_view.text.is_empty() && !ev.is_held {
                                     // cx.emit(TextEvent::Back);
-                                } else if editor.selection.start == editor.selection.end
-                                    && editor.selection.start > 0
+                                } else if text_view.selection.start == text_view.selection.end
+                                    && text_view.selection.start > 0
                                 {
-                                    let i = (editor.selection.start - 1).min(chars.len());
-                                    editor.text = chars[0..i].iter().collect::<String>()
-                                        + &(chars[editor.selection.end.min(chars.len())..]
+                                    let i = (text_view.selection.start - 1).min(chars.len());
+                                    text_view.text = chars[0..i].iter().collect::<String>()
+                                        + &(chars[text_view.selection.end.min(chars.len())..]
                                             .iter()
                                             .collect::<String>());
-                                    editor.selection = i..i;
+                                    text_view.selection = i..i;
                                 } else {
-                                    editor.text.replace_range(
-                                        editor.char_range_to_text_range(&editor.text),
+                                    text_view.text.replace_range(
+                                        text_view.char_range_to_text_range(&text_view.text),
                                         "",
                                     );
-                                    editor.selection.end = editor.selection.start;
+                                    text_view.selection.end = text_view.selection.start;
                                 }
                             }
                             "enter" => {
                                 if ev.keystroke.modifiers.shift {
-                                    editor.text.insert(
-                                        editor.char_range_to_text_range(&editor.text).start,
+                                    text_view.text.insert(
+                                        text_view.char_range_to_text_range(&text_view.text).start,
                                         '\n',
                                     );
-                                    let i = editor.selection.start + 1;
-                                    editor.selection = i..i;
+                                    let i = text_view.selection.start + 1;
+                                    text_view.selection = i..i;
                                 }
                             }
                             _ => {}
                         };
                     }
-                    if prev != editor.text {
+
+                    if prev != text_view.text {
                         cx.emit(TextEvent::Input {
-                            text: editor.text.clone(),
+                            text: text_view.text.clone(),
                         });
+                        dbg!(&text_view.text, &text_view.selection);
                     }
                     cx.notify();
                 });
             })
+            .border_color(if self.focus_handle.is_focused(cx) {
+                theme.blue
+            } else {
+                theme.crust
+            })
+            .border_1()
             .rounded_sm()
             .py_1p5()
             .px_3()
@@ -209,7 +212,7 @@ impl Render for TextField {
             } else {
                 theme.base
             })
-            .child(text_view)
+            .child(view)
     }
 }
 

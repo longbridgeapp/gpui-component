@@ -138,6 +138,7 @@ impl RenderOnce for Button {
             })
             .when(!self.disabled, |this| {
                 this.hover(|this| this.border_color(theme.blue))
+                    .active(|this| this.bg(theme.blue.lighten(10.0)))
             })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),

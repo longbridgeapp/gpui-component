@@ -2,8 +2,8 @@ use core::fmt;
 use std::fmt::{Display, Formatter};
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ElementId, IntoElement, ParentElement,
-    Render, RenderOnce, SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
+    RenderOnce, SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 mod button_story;
@@ -76,22 +76,26 @@ impl Display for StoryType {
 
 pub struct Stories {
     active: StoryType,
+
+    button_story: View<ButtonStory>,
+    input_story: View<InputStory>,
 }
 
 impl Stories {
-    fn new() -> Self {
+    fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             active: StoryType::Button,
+            button_story: cx.new_view(|cx| ButtonStory {}),
+            input_story: cx.new_view(InputStory::new),
         }
     }
 
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|_cx| Self::new())
+        cx.new_view(Self::new)
     }
 
     fn set_active(&mut self, ty: StoryType, cx: &mut ViewContext<Self>) {
         self.active = ty;
-        dbg!("--------------------- set_active: {}", ty);
         cx.notify();
     }
 
@@ -111,20 +115,12 @@ impl Stories {
         cx: &mut ViewContext<Self>,
     ) -> impl IntoElement {
         let name = format!("{}", ty);
-        Button::new(SharedString::from(id.to_string()), name)
-            .on_click(move |_e, cx| {
-                dbg!("--------------------- on_click: {}", ty);
-                // cx.update_view(self, |this| {
-                //     this.set_active(ty, cx);
-                // });
-            })
-            .style(crate::button::ButtonStyle::Secondary)
-    }
-}
 
-impl Default for Stories {
-    fn default() -> Self {
-        Self::new()
+        Button::new(SharedString::from(id.to_string()), name)
+            .on_click(cx.listener(move |this, _, cx| {
+                this.set_active(ty, cx);
+            }))
+            .style(crate::button::ButtonStyle::Secondary)
     }
 }
 
@@ -136,8 +132,8 @@ impl Render for Stories {
             .gap_4()
             .child(self.render_story_buttons(cx))
             .map(|this| match self.active {
-                StoryType::Button => this.child(cx.new_view(|_cx| ButtonStory {})),
-                StoryType::Input => this.child(cx.new_view(|_cx| InputStory {})),
+                StoryType::Button => this.child(self.button_story.clone()),
+                StoryType::Input => this.child(self.input_story.clone()),
             })
     }
 }
