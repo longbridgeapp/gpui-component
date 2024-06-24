@@ -86,7 +86,7 @@ impl Stories {
         Self {
             active: StoryType::Button,
             button_story: cx.new_view(|cx| ButtonStory {}),
-            input_story: cx.new_view(InputStory::new),
+            input_story: cx.new_view(|cx| InputStory::new(cx)),
         }
     }
 

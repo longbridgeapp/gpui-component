@@ -8,9 +8,9 @@ use crate::{
 };
 use blink_manager::BlinkManager;
 use gpui::{
-    div, ClipboardItem, Context, EventEmitter, FocusHandle, InteractiveElement, IntoElement,
-    KeyDownEvent, Model, ParentElement, Render, RenderOnce, Styled, View, ViewContext,
-    WindowContext,
+    div, prelude::FluentBuilder as _, ClipboardItem, Context, Entity, EventEmitter, FocusHandle,
+    InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton, ParentElement, RenderOnce,
+    Styled, View, ViewContext, WindowContext,
 };
 use std::time::Duration;
 use text_view::TextView;
@@ -20,31 +20,51 @@ const CURSOR_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 #[derive(Clone, IntoElement)]
 pub struct TextField {
     focus_handle: FocusHandle,
-    disable: bool,
     blink_manager: Model<BlinkManager>,
     pub view: View<TextView>,
 }
 
 impl TextField {
-    pub fn new(placeholder: &str, disable: bool, cx: &mut WindowContext) -> Self {
+    pub fn new(cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
-        let view = TextView::init(cx, &focus_handle, placeholder, disable);
+        let view = TextView::init(cx, &focus_handle);
 
         let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
-
-        // cx.on_focus(&focus_handle, Self::handle_focus).detach();
-        // cx.on_blur(&focus_handle, Self::handle_blur).detach();
 
         Self {
             focus_handle,
             view,
             blink_manager,
-            disable,
         }
     }
 
-    pub fn focus(&self, cx: &mut WindowContext) {
+    pub fn focus(&mut self, cx: &mut WindowContext) {
         cx.focus(&self.focus_handle);
+    }
+
+    pub fn set_placeholder(self, placeholder: &str, cx: &mut WindowContext) -> Self {
+        self.view.update(cx, |text_view, cx| {
+            text_view.set_placeholder(placeholder, cx)
+        });
+        self
+    }
+
+    pub fn set_disabled(self, disabled: bool, cx: &mut WindowContext) -> Self {
+        self.view
+            .update(cx, |text_view, cx| text_view.set_disabled(disabled, cx));
+        self
+    }
+
+    pub fn set_text(self, text: &str, cx: &mut WindowContext) -> Self {
+        self.view
+            .update(cx, |text_view, cx| text_view.set_text(text, cx));
+        self
+    }
+
+    pub fn set_masked(self, masked: bool, cx: &mut WindowContext) -> Self {
+        self.view
+            .update(cx, |text_view, cx| text_view.set_masked(masked, cx));
+        self
     }
 
     fn handle_focus(&mut self, cx: &mut ViewContext<Self>) {
@@ -64,156 +84,190 @@ impl TextField {
     }
 }
 
-impl Disableable for TextField {
-    fn disabled(mut self, disabled: bool) -> Self {
-        self.disable = disabled;
-        self
-    }
-}
 impl RenderOnce for TextField {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        cx.focus(&self.focus_handle);
+        let focus_handle = self.focus_handle.clone();
         let theme = cx.global::<Theme>();
 
         let view = self.view.clone();
+        let text_view = view.read(cx);
+
+        let focused = self.focus_handle.is_focused(cx);
+        let disabled = text_view.disabled;
 
         div()
-            .track_focus(&self.focus_handle)
-            .on_key_down(move |ev, cx| {
-                self.view.update(cx, |text_view, cx| {
-                    let prev = text_view.text.clone();
-                    cx.emit(TextEvent::KeyDown(ev.clone()));
-                    let keystroke = &ev.keystroke.key;
-                    let chars = text_view.text.chars().collect::<Vec<char>>();
-                    let m = ev.keystroke.modifiers.secondary();
+            .track_focus(&focus_handle)
+            .when(!text_view.disabled, |this| {
+                this.on_mouse_down(MouseButton::Left, move |_, cx| {
+                    cx.prevent_default();
+                    self.focus_handle.focus(cx)
+                })
+            })
+            .when(!disabled, |this| {
+                this.on_key_down(move |ev, cx| {
+                    if !focused {
+                        return;
+                    }
 
-                    dbg!(&text_view.text, &text_view.selection);
+                    self.view.update(cx, |text_view, cx| {
+                        let prev = text_view.text.clone();
+                        cx.emit(TextEvent::KeyDown(ev.clone()));
+                        let keystroke = ev.keystroke.key.as_str();
+                        let chars = text_view.text.chars().collect::<Vec<char>>();
+                        let m = ev.keystroke.modifiers.secondary();
 
-                    if m {
-                        match keystroke.as_str() {
-                            "a" => {
-                                text_view.selection = 0..chars.len();
-                            }
-                            "c" => {
-                                // if !text_view.masked {
-                                let selected_text =
-                                    chars[text_view.selection.clone()].iter().collect();
-                                cx.write_to_clipboard(ClipboardItem::new(selected_text));
-                                // }
-                            }
-                            "v" => {
-                                let clipboard = cx.read_from_clipboard();
-                                if let Some(clipboard) = clipboard {
-                                    let text = clipboard.text();
-                                    text_view.text.replace_range(
-                                        text_view.char_range_to_text_range(&text_view.text),
-                                        text,
-                                    );
-                                    let i = text_view.selection.start + text.chars().count();
-                                    text_view.selection = i..i;
+                        if m {
+                            match keystroke {
+                                "a" => {
+                                    text_view.selection = 0..chars.len();
                                 }
-                            }
-                            "x" => {
-                                let selected_text =
-                                    chars[text_view.selection.clone()].iter().collect();
-                                cx.write_to_clipboard(ClipboardItem::new(selected_text));
-                                text_view.text.replace_range(
-                                    text_view.char_range_to_text_range(&text_view.text),
-                                    "",
-                                );
-                                text_view.selection.end = text_view.selection.start;
-                            }
-                            _ => {}
-                        }
-                    } else if !ev.keystroke.ime_key.clone().unwrap_or_default().is_empty() {
-                        let ime_key = &ev.keystroke.ime_key.clone().unwrap_or_default();
-                        text_view.text.replace_range(
-                            text_view.char_range_to_text_range(&text_view.text),
-                            ime_key,
-                        );
-                        let i = text_view.selection.start + ime_key.chars().count();
-                        text_view.selection = i..i;
-                    } else {
-                        match keystroke.as_str() {
-                            "left" => {
-                                if text_view.selection.start > 0 {
-                                    let i = if text_view.selection.start == text_view.selection.end
-                                    {
-                                        text_view.selection.start - 1
-                                    } else {
-                                        text_view.selection.start
-                                    };
-                                    text_view.selection = i..i;
+                                "c" => {
+                                    // if !text_view.masked {
+                                    let selected_text =
+                                        chars[text_view.selection.clone()].iter().collect();
+                                    cx.write_to_clipboard(ClipboardItem::new(selected_text));
+                                    // }
                                 }
-                            }
-                            "right" => {
-                                if text_view.selection.end < text_view.text.len() {
-                                    let i = if text_view.selection.start == text_view.selection.end
-                                    {
-                                        text_view.selection.end + 1
-                                    } else {
-                                        text_view.selection.end
-                                    };
-                                    text_view.selection = i..i;
+                                "v" => {
+                                    let clipboard = cx.read_from_clipboard();
+                                    if let Some(clipboard) = clipboard {
+                                        let text = clipboard.text();
+                                        text_view.text.replace_range(
+                                            text_view.char_range_to_text_range(&text_view.text),
+                                            text,
+                                        );
+                                        let i = text_view.selection.start + text.chars().count();
+                                        text_view.selection = i..i;
+                                    }
                                 }
-                            }
-                            "backspace" => {
-                                if text_view.text.is_empty() && !ev.is_held {
-                                    // cx.emit(TextEvent::Back);
-                                } else if text_view.selection.start == text_view.selection.end
-                                    && text_view.selection.start > 0
-                                {
-                                    let i = (text_view.selection.start - 1).min(chars.len());
-                                    text_view.text = chars[0..i].iter().collect::<String>()
-                                        + &(chars[text_view.selection.end.min(chars.len())..]
-                                            .iter()
-                                            .collect::<String>());
-                                    text_view.selection = i..i;
-                                } else {
+                                "x" => {
+                                    let selected_text =
+                                        chars[text_view.selection.clone()].iter().collect();
+                                    cx.write_to_clipboard(ClipboardItem::new(selected_text));
                                     text_view.text.replace_range(
                                         text_view.char_range_to_text_range(&text_view.text),
                                         "",
                                     );
                                     text_view.selection.end = text_view.selection.start;
                                 }
+                                _ => {}
                             }
-                            "enter" => {
-                                if ev.keystroke.modifiers.shift {
-                                    text_view.text.insert(
-                                        text_view.char_range_to_text_range(&text_view.text).start,
-                                        '\n',
-                                    );
-                                    let i = text_view.selection.start + 1;
-                                    text_view.selection = i..i;
+                        } else if ev.keystroke.modifiers.control {
+                            // On macOS, ctrl+a, ctrl+e are used for moving cursor to start/end of line
+                            match keystroke {
+                                "a" => {
+                                    // Move cursor to first of line
+                                    text_view.selection = 0..0;
                                 }
+                                "e" => {
+                                    // Move cursor to end of line
+                                    text_view.selection = chars.len()..chars.len();
+                                }
+                                _ => {}
                             }
-                            _ => {}
-                        };
-                    }
+                        } else if !ev.keystroke.ime_key.clone().unwrap_or_default().is_empty() {
+                            let ime_key = &ev.keystroke.ime_key.clone().unwrap_or_default();
+                            text_view.text.replace_range(
+                                text_view.char_range_to_text_range(&text_view.text),
+                                ime_key,
+                            );
+                            let i = text_view.selection.start + ime_key.chars().count();
+                            text_view.selection = i..i;
+                        } else {
+                            match keystroke {
+                                "left" => {
+                                    if text_view.selection.start > 0 {
+                                        let i = if text_view.selection.start
+                                            == text_view.selection.end
+                                        {
+                                            text_view.selection.start - 1
+                                        } else {
+                                            text_view.selection.start
+                                        };
+                                        text_view.selection = i..i;
+                                    }
+                                }
+                                "right" => {
+                                    if text_view.selection.end < text_view.text.len() {
+                                        let i = if text_view.selection.start
+                                            == text_view.selection.end
+                                        {
+                                            text_view.selection.end + 1
+                                        } else {
+                                            text_view.selection.end
+                                        };
+                                        text_view.selection = i..i;
+                                    }
+                                }
+                                "backspace" => {
+                                    if text_view.text.is_empty() && !ev.is_held {
+                                        // cx.emit(TextEvent::Back);
+                                    } else if text_view.selection.start == text_view.selection.end
+                                        && text_view.selection.start > 0
+                                    {
+                                        let i = (text_view.selection.start - 1).min(chars.len());
+                                        text_view.text = chars[0..i].iter().collect::<String>()
+                                            + &(chars[text_view.selection.end.min(chars.len())..]
+                                                .iter()
+                                                .collect::<String>());
+                                        text_view.selection = i..i;
+                                    } else {
+                                        text_view.text.replace_range(
+                                            text_view.char_range_to_text_range(&text_view.text),
+                                            "",
+                                        );
+                                        text_view.selection.end = text_view.selection.start;
+                                    }
+                                }
+                                "enter" => {
+                                    if ev.keystroke.modifiers.shift {
+                                        text_view.text.insert(
+                                            text_view
+                                                .char_range_to_text_range(&text_view.text)
+                                                .start,
+                                            '\n',
+                                        );
+                                        let i = text_view.selection.start + 1;
+                                        text_view.selection = i..i;
+                                    }
+                                }
+                                _ => {
+                                    if let Some(c) = keystroke.chars().next() {
+                                        text_view.text.replace_range(
+                                            text_view.char_range_to_text_range(&text_view.text),
+                                            c.to_string().as_str(),
+                                        );
+                                        let i = text_view.selection.start + 1;
+                                        text_view.selection = i..i;
+                                    }
+                                }
+                            };
+                        }
 
-                    if prev != text_view.text {
-                        cx.emit(TextEvent::Input {
-                            text: text_view.text.clone(),
-                        });
-                        dbg!(&text_view.text, &text_view.selection);
-                    }
-                    cx.notify();
-                });
+                        if prev != text_view.text {
+                            cx.emit(TextEvent::Input {
+                                text: text_view.text.clone(),
+                            });
+                        }
+                        cx.notify();
+                    });
+                })
             })
-            .border_color(if self.focus_handle.is_focused(cx) {
-                theme.ring
-            } else {
-                theme.input
+            .when(!disabled, |this| {
+                this.when(focused, |this| this.border_color(theme.ring))
             })
+            .border_color(theme.input)
             .border_1()
             .rounded_sm()
-            .py_1p5()
+            .py_1()
             .px_3()
+            .h_9()
+            .shadow_sm()
             .min_w_20()
-            .bg(if self.disable {
-                theme.background.opacity(0.5)
+            .bg(if disabled {
+                theme.muted
             } else {
-                theme.background
+                theme.transparent
             })
             .child(view)
     }

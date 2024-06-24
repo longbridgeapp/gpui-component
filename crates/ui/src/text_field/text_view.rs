@@ -15,21 +15,17 @@ pub struct TextView {
     pub placeholder: String,
     pub word_click: (usize, u16),
     pub selection: Range<usize>,
-    pub disable: bool,
+    pub disabled: bool,
     pub blink_manager: Model<BlinkManager>,
     pub cursor: CursorLayout,
     pub masked: bool,
+    pub focused: bool,
 }
 
 impl EventEmitter<TextEvent> for TextView {}
 
 impl TextView {
-    pub fn init(
-        cx: &mut WindowContext,
-        focus_handle: &FocusHandle,
-        placeholder: &str,
-        disable: bool,
-    ) -> View<Self> {
+    pub fn init(cx: &mut WindowContext, focus_handle: &FocusHandle) -> View<Self> {
         let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
 
         let theme = cx.global::<Theme>();
@@ -44,29 +40,24 @@ impl TextView {
 
         let m = Self {
             text: String::new(),
-            placeholder: placeholder.to_string(),
+            placeholder: "".to_string(),
             word_click: (0, 0),
             selection: 0..0,
             blink_manager,
             cursor,
-            disable,
+            disabled: false,
             masked: false,
+            focused: false,
         };
 
         let view = cx.new_view(|cx| {
-            cx.on_blur(
-                focus_handle,
-                |view: &mut TextView, cx: &mut ViewContext<'_, TextView>| {
-                    view.blink_manager.update(cx, BlinkManager::disable);
-                    cx.emit(TextEvent::Blur);
-                },
-            )
+            cx.on_blur(focus_handle, |view: &mut TextView, cx| {
+                view.blur(cx);
+            })
             .detach();
 
             cx.on_focus(focus_handle, |view, cx| {
-                view.blink_manager.update(cx, |bm, cx| {
-                    bm.blink_cursor(0, cx);
-                });
+                view.focus(cx);
             })
             .detach();
             m
@@ -97,6 +88,22 @@ impl TextView {
     pub fn select_all(&mut self, cx: &mut ViewContext<Self>) {
         self.selection = 0..self.text.len();
         cx.notify();
+    }
+
+    pub fn blur(&mut self, cx: &mut ViewContext<Self>) {
+        self.focused = false;
+        self.blink_manager.update(cx, BlinkManager::disable);
+        cx.notify();
+        cx.emit(TextEvent::Blur);
+    }
+
+    pub fn focus(&mut self, cx: &mut ViewContext<Self>) {
+        self.focused = true;
+        self.blink_manager.update(cx, |bm, cx| {
+            bm.blink_cursor(0, cx);
+        });
+        cx.notify();
+        cx.emit(TextEvent::Focus);
     }
 
     pub fn word_ranges(&self) -> Vec<Range<usize>> {
@@ -148,6 +155,21 @@ impl TextView {
         cx.emit(TextEvent::Input {
             text: self.text.clone(),
         });
+    }
+
+    pub fn set_masked(&mut self, masked: bool, cx: &mut ViewContext<Self>) {
+        self.masked = masked;
+        cx.notify();
+    }
+
+    pub fn set_placeholder(&mut self, placeholder: impl ToString, cx: &mut ViewContext<Self>) {
+        self.placeholder = placeholder.to_string();
+        cx.notify();
+    }
+
+    pub fn set_disabled(&mut self, disabled: bool, cx: &mut ViewContext<Self>) {
+        self.disabled = disabled;
+        cx.notify();
     }
 
     fn paint_cursors(&self, layout: &TextLayout, cx: &mut WindowContext) {
@@ -217,8 +239,9 @@ impl Element for TextView {
 impl Render for TextView {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
+
+        let view = cx.view().clone();
         let mut text = self.text.clone();
-        dbg!("textView render", &text);
 
         let mut style = TextStyle {
             color: theme.foreground,
@@ -241,8 +264,11 @@ impl Render for TextView {
             highlights = vec![];
         }
 
+        if !self.focused {
+            highlights = vec![];
+        }
+
         let styled_text = StyledText::new(text + " ").with_highlights(&style, highlights);
-        let view = cx.view().clone();
 
         InteractiveText::new("text", styled_text).on_click(self.word_ranges(), move |ev, cx| {
             view.update(cx, |text_view, cx| {

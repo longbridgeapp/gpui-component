@@ -162,6 +162,7 @@ impl Colors {
 
 #[derive(Debug)]
 pub struct Theme {
+    pub transparent: Hsla,
     pub background: Hsla,
     pub foreground: Hsla,
     pub card: Hsla,
@@ -189,6 +190,7 @@ impl Global for Theme {}
 impl From<Colors> for Theme {
     fn from(colors: Colors) -> Self {
         Theme {
+            transparent: Hsla::transparent_black(),
             background: colors.background,
             foreground: colors.foreground,
             card: colors.card,
@@ -220,7 +222,7 @@ pub enum ThemeMode {
 
 impl Theme {
     fn new() -> Self {
-        Self::from(Colors::light())
+        Self::from(Colors::dark())
     }
 
     pub fn init(cx: &mut AppContext) {
