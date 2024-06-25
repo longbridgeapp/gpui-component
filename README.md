@@ -20,7 +20,8 @@ https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e42
 - [x] Icon
 - [x] Checkbox
   - [x] With label
-- [ ] Switch
+- [x] Switch
+  - [ ] Toggle Animation
 - [ ] Radio & RadioGroup
 - [ ] Dropdown
   - [ ] Combobox

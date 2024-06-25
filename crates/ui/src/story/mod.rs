@@ -10,10 +10,12 @@ use gpui::{
     RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
     VisualContext, WindowContext,
 };
+use switch_story::SwitchStory;
 
 mod button_story;
 mod checkbox_story;
 mod input_story;
+mod switch_story;
 
 use crate::{
     button::Button,
@@ -75,6 +77,7 @@ enum StoryType {
     Button,
     Input,
     Checkbox,
+    Switch,
 }
 
 impl Display for StoryType {
@@ -83,6 +86,7 @@ impl Display for StoryType {
             Self::Button => write!(f, "Button"),
             Self::Input => write!(f, "Input"),
             Self::Checkbox => write!(f, "Checkbox"),
+            Self::Switch => write!(f, "Switch"),
         }
     }
 }
@@ -92,6 +96,7 @@ pub struct Stories {
 
     button_story: View<ButtonStory>,
     input_story: View<InputStory>,
+    switch_story: View<SwitchStory>,
 }
 
 impl Stories {
@@ -100,6 +105,7 @@ impl Stories {
             active: StoryType::Button,
             button_story: cx.new_view(|cx| ButtonStory {}),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
+            switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
         }
     }
 
@@ -113,18 +119,17 @@ impl Stories {
     }
 
     fn render_story_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let tabs = vec![
-            self.swith_button("story-button", StoryType::Button, cx),
-            self.swith_button("story-input", StoryType::Input, cx),
-            self.swith_button("story-checkbox", StoryType::Checkbox, cx),
-        ];
-
         div()
             .flex()
             .items_center()
             .gap_4()
             .w_full()
-            .child(TabBar::new("story-tabs").children(tabs))
+            .child(TabBar::new("story-tabs").children(vec![
+                self.swith_button("story-button", StoryType::Button, cx),
+                self.swith_button("story-input", StoryType::Input, cx),
+                self.swith_button("story-checkbox", StoryType::Checkbox, cx),
+                self.swith_button("story-switch", StoryType::Switch, cx),
+            ]))
     }
 
     fn swith_button(
@@ -156,6 +161,7 @@ impl Render for Stories {
                 StoryType::Button => this.child(self.button_story.clone()),
                 StoryType::Input => this.child(self.input_story.clone()),
                 StoryType::Checkbox => this.child(CheckboxStory::new(cx).into_any_element()),
+                StoryType::Switch => this.child(self.switch_story.clone()),
             })
     }
 }

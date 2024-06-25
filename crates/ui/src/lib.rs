@@ -15,6 +15,7 @@ pub mod text_field;
 pub mod theme;
 pub mod title_bar;
 pub use styled_ext::StyledExt;
+pub mod switch;
 pub mod tab;
 
 pub use clickable::Clickable;
