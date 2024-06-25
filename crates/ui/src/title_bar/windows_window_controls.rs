@@ -1,6 +1,6 @@
 use gpui::{prelude::*, Rgba, WindowAppearance};
 
-use crate::{prelude::*, stock::h_flex};
+use crate::{prelude::*, stock::h_flex, theme::ActiveTheme};
 
 #[derive(IntoElement)]
 pub struct WindowsWindowControls {
@@ -97,7 +97,8 @@ impl WindowsCaptionButton {
 }
 
 impl RenderOnce for WindowsCaptionButton {
-    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let theme = cx.theme();
         // todo(windows) report this width to the Windows platform API
         // NOTE: this is intentionally hard coded. An option to use the 'native' size
         //       could be added when the width is reported to the Windows platform API
@@ -111,6 +112,8 @@ impl RenderOnce for WindowsCaptionButton {
             .w(width)
             .h_full()
             .text_size(px(10.0))
+            .font_family("Segoe MDL2 Assets")
+            .text_color(theme.foreground)
             .hover(|style| style.bg(self.hover_background_color))
             .active(|style| {
                 let mut active_color = self.hover_background_color;
