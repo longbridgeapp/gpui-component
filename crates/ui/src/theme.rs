@@ -1,7 +1,17 @@
-use std::cmp::min;
+use std::{cmp::min, sync::Arc};
 
 use gpui::{AppContext, Global, Hsla, Rgba};
 use serde_json::json;
+
+pub trait ActiveTheme {
+    fn theme(&self) -> &Theme;
+}
+
+impl ActiveTheme for AppContext {
+    fn theme(&self) -> &Theme {
+        Theme::get_global(self)
+    }
+}
 
 fn hex(color: &str) -> Hsla {
     let color: Rgba = serde_json::from_value(json!(color)).unwrap();
@@ -113,6 +123,8 @@ impl Colorize for Hsla {
 
 #[derive(Debug, Clone, Copy)]
 struct Colors {
+    pub title_bar_background: Hsla,
+
     pub background: Hsla,
     pub foreground: Hsla,
     pub card: Hsla,
@@ -138,6 +150,7 @@ struct Colors {
 impl Colors {
     fn light() -> Colors {
         Colors {
+            title_bar_background: hsl(0.0, 0.0, 1.0),
             background: hsl(0.0, 0.0, 1.0),
             foreground: hsl(240.0, 0.1, 0.039),
             card: hsl(0.0, 0.0, 1.0),
@@ -163,15 +176,16 @@ impl Colors {
 
     fn dark() -> Colors {
         Colors {
-            background: hsl(240.0, 0.1, 0.039),
+            title_bar_background: hsl(0.0, 0.0, 0.12),
+            background: hsl(0.0, 0.0, 0.06),
             foreground: hsl(0.0, 0.0, 0.98),
-            card: hsl(240.0, 0.1, 0.039),
+            card: hsl(299.0, 0.02, 0.09),
             card_foreground: hsl(0.0, 0.0, 0.98),
             popover: hsl(240.0, 0.1, 0.039),
             popover_foreground: hsl(0.0, 0.0, 0.98),
             primary: hsl(0.0, 0.0, 0.98),
             primary_foreground: hsl(240.0, 0.059, 0.1),
-            secondary: hsl(240.0, 0.037, 0.159),
+            secondary: hsl(0.0, 0.0, 0.12),
             secondary_foreground: hsl(0.0, 0.0, 0.98),
             muted: hsl(240.0, 0.037, 0.159),
             muted_foreground: hsl(240.0, 0.05, 0.649),
@@ -179,7 +193,7 @@ impl Colors {
             accent_foreground: hsl(0.0, 0.0, 0.98),
             destructive: hsl(0.0, 0.628, 0.306),
             destructive_foreground: hsl(0.0, 0.0, 0.98),
-            border: hsl(240.0, 0.037, 0.159),
+            border: hsl(0.0, 0.0, 0.17),
             input: hsl(240.0, 0.037, 0.159),
             ring: hsl(240.0, 0.049, 0.839),
             radius: 0.0,
@@ -189,7 +203,9 @@ impl Colors {
 
 #[derive(Debug)]
 pub struct Theme {
+    pub mode: ThemeMode,
     pub transparent: Hsla,
+    pub title_bar_background: Hsla,
     pub background: Hsla,
     pub foreground: Hsla,
     pub card: Hsla,
@@ -214,10 +230,18 @@ pub struct Theme {
 
 impl Global for Theme {}
 
+impl Theme {
+    pub fn get_global(cx: &AppContext) -> &Self {
+        cx.global::<Self>()
+    }
+}
+
 impl From<Colors> for Theme {
     fn from(colors: Colors) -> Self {
         Theme {
+            mode: ThemeMode::Dark,
             transparent: Hsla::transparent_black(),
+            title_bar_background: colors.title_bar_background,
             background: colors.background,
             foreground: colors.foreground,
             card: colors.card,
@@ -242,6 +266,7 @@ impl From<Colors> for Theme {
     }
 }
 
+#[derive(Debug)]
 pub enum ThemeMode {
     Light,
     Dark,
@@ -262,17 +287,10 @@ impl Theme {
             ThemeMode::Dark => Colors::dark(),
         };
 
-        cx.set_global(Self::from(colors));
+        let mut theme = Theme::from(colors);
+        theme.mode = mode;
+
+        cx.set_global(theme);
         cx.refresh();
-    }
-}
-
-pub trait ActiveTheme {
-    fn theme(&self) -> &Theme;
-}
-
-impl ActiveTheme for AppContext {
-    fn theme(&self) -> &Theme {
-        self.global::<Theme>()
     }
 }

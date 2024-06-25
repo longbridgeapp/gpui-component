@@ -3,8 +3,7 @@ use std::ops::Range;
 use super::{
     blink_manager::BlinkManager, cursor_layout::CursorLayout, TextEvent, CURSOR_BLINK_INTERVAL,
 };
-use crate::theme::{Colorize as _, Theme};
-use catppuccin::Hsl;
+use crate::theme::{ActiveTheme, Colorize as _};
 use gpui::{
     px, relative, ContentMask, Context, Element, EventEmitter, FocusHandle, HighlightStyle, Hsla,
     InteractiveText, IntoElement, Model, Point, Render, Style, StyledText, TextStyle,
@@ -35,7 +34,7 @@ impl TextView {
     pub fn init(cx: &mut WindowContext, focus_handle: &FocusHandle) -> View<Self> {
         let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
 
-        let theme = cx.global::<Theme>();
+        let theme = cx.theme();
 
         let line_height = px(20.0);
         let style = TextFieldStyle {
@@ -208,7 +207,7 @@ impl TextView {
     }
 
     fn layout_visible_cursors(&self, cx: &mut WindowContext) -> CursorLayout {
-        let theme = cx.global::<Theme>();
+        let theme = cx.theme();
         let selection = &self.selection;
 
         let x = px(selection.end as f32);
@@ -303,7 +302,7 @@ impl Element for TextView {
 
 impl Render for TextView {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let theme = cx.global::<Theme>();
+        let theme = cx.theme();
 
         let view = cx.view().clone();
         let mut text = self.text.clone();

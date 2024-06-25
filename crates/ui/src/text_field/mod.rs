@@ -2,7 +2,7 @@ mod blink_manager;
 mod cursor_layout;
 mod text_view;
 
-use crate::theme::Theme;
+use crate::theme::ActiveTheme;
 use gpui::{
     div, prelude::FluentBuilder as _, ClipboardItem, EventEmitter, FocusHandle, InteractiveElement,
     IntoElement, KeyDownEvent, MouseButton, ParentElement, RenderOnce, Styled, View, WindowContext,
@@ -59,7 +59,7 @@ impl TextField {
 impl RenderOnce for TextField {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let focus_handle = self.focus_handle.clone();
-        let theme = cx.global::<Theme>();
+        let theme = cx.theme();
 
         let view = self.view.clone();
         let text_view = view.read(cx);

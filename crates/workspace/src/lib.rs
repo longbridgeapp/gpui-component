@@ -1,11 +1,19 @@
 use gpui::*;
+use prelude::FluentBuilder as _;
 
 use std::sync::Arc;
-use ui::{button::Button, disableable::Clickable as _, story::Stories, theme::Theme};
+use ui::{
+    button::Button,
+    disableable::Clickable as _,
+    label::Label,
+    story::Stories,
+    theme::{ActiveTheme, Theme},
+    title_bar::TitleBar,
+    StyledExt as _,
+};
 use util::ResultExt as _;
 
 mod app_state;
-mod item;
 
 pub use app_state::AppState;
 
@@ -37,6 +45,12 @@ impl Workspace {
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(window_bounds)),
+                titlebar: Some(TitlebarOptions {
+                    title: None,
+                    appears_transparent: true,
+                    traffic_light_position: Some(point(px(9.0), px(9.0))),
+                }),
+                kind: WindowKind::Normal,
                 ..Default::default()
             };
 
@@ -61,10 +75,11 @@ impl Workspace {
     }
 }
 
-actions!(workspace, [Open]);
+actions!(workspace, [Open, CloseWindow]);
 
 pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
     cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
+    cx.on_action(|_action: &CloseWindow, _cx| std::process::exit(0));
 
     Theme::init(cx);
 }
@@ -86,33 +101,54 @@ pub fn open_new(
 
 impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let theme = cx.global::<Theme>();
+        let theme = cx.theme();
+
         div()
             .relative()
             .flex()
             .flex_1()
             .flex_col()
             .size_full()
-            .p_4()
             .bg(theme.background)
             .gap_4()
             .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_end()
-                    .gap_2()
+                TitleBar::new("main-title", Box::new(crate::CloseWindow))
+                    .when(cfg!(not(windows)), |this| {
+                        this.on_click(|event, cx| {
+                            if event.up.click_count == 2 {
+                                cx.zoom_window();
+                            }
+                        })
+                    })
+                    // left side
                     .child(
-                        Button::new("btn-light", "Light")
-                            .size(ui::button::ButtonSize::Small)
-                            .on_click(|_e, cx| Theme::change(ui::theme::ThemeMode::Light, cx)),
+                        div()
+                            .flex()
+                            .items_center()
+                            .child(Label::new("GPUI App", cx)),
                     )
                     .child(
-                        Button::new("btn-dark", "Dark")
-                            .size(ui::button::ButtonSize::Small)
-                            .on_click(|_e, cx| Theme::change(ui::theme::ThemeMode::Dark, cx)),
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_end()
+                            .px_2()
+                            .child(
+                                Button::new("btn-light", "Light")
+                                    .size(ui::button::ButtonSize::Small)
+                                    .on_click(|_e, cx| {
+                                        Theme::change(ui::theme::ThemeMode::Light, cx)
+                                    }),
+                            )
+                            .child(
+                                Button::new("btn-dark", "Dark")
+                                    .size(ui::button::ButtonSize::Small)
+                                    .on_click(|_e, cx| {
+                                        Theme::change(ui::theme::ThemeMode::Dark, cx)
+                                    }),
+                            ),
                     ),
             )
-            .child(div().flex().py_3().gap_2().child(self.stories.clone()))
+            .child(div().flex().px_4().gap_2().child(self.stories.clone()))
     }
 }

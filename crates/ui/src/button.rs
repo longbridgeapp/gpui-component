@@ -7,7 +7,7 @@ use gpui::{
 use crate::{
     disableable::{Clickable, Disableable, Selectable},
     label::Label,
-    theme::{Colorize as _, Theme},
+    theme::{ActiveTheme, Colorize as _, Theme, ThemeMode},
 };
 
 pub enum ButtonRounded {
@@ -116,6 +116,7 @@ impl Clickable for Button {
 
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let theme = cx.theme();
         let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
 
@@ -143,6 +144,8 @@ impl RenderOnce for Button {
                     let active_style = style.active(cx);
                     this.bg(active_style.bg).border_color(active_style.border)
                 })
+                .border_color(normal_style.border)
+                .bg(normal_style.bg)
             })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
@@ -161,9 +164,10 @@ impl RenderOnce for Button {
                     .border_color(disabled_style.border)
             })
             .border_1()
-            .border_color(normal_style.border)
-            .bg(normal_style.bg)
-            .shadow_sm()
+            .map(|this| match theme.mode {
+                ThemeMode::Light => this.shadow_sm(),
+                ThemeMode::Dark => this,
+            })
             .child({
                 let text_color = if self.disabled {
                     normal_style.fg.opacity(0.6)
@@ -171,8 +175,8 @@ impl RenderOnce for Button {
                     normal_style.fg
                 };
 
-                Label::new(self.label)
-                    .color(text_color)
+                Label::new(self.label, cx)
+                    .text_color(text_color)
                     .map(|this| match self.size {
                         ButtonSize::Small => this.text_sm(),
                         ButtonSize::Medium => this.text_base(),
@@ -189,33 +193,27 @@ struct ButtonStyles {
 
 impl ButtonStyle {
     fn bg_color(&self, cx: &WindowContext) -> Hsla {
-        let theme = cx.global::<Theme>();
-
         match self {
-            ButtonStyle::Primary => theme.primary,
-            ButtonStyle::Secondary => theme.secondary,
-            ButtonStyle::Danger => theme.destructive,
+            ButtonStyle::Primary => cx.theme().primary,
+            ButtonStyle::Secondary => cx.theme().secondary,
+            ButtonStyle::Danger => cx.theme().destructive,
         }
     }
 
     fn text_color(&self, cx: &WindowContext) -> Hsla {
-        let theme = cx.global::<Theme>();
         match self {
-            ButtonStyle::Primary => theme.primary_foreground,
-            ButtonStyle::Secondary => theme.secondary_foreground,
-            ButtonStyle::Danger => theme.destructive_foreground,
+            ButtonStyle::Primary => cx.theme().primary_foreground,
+            ButtonStyle::Secondary => cx.theme().secondary_foreground,
+            ButtonStyle::Danger => cx.theme().destructive_foreground,
         }
     }
 
     fn border_color(&self, cx: &WindowContext) -> Hsla {
-        let theme = cx.global::<Theme>();
-
         match self {
-            ButtonStyle::Primary => theme.primary,
-            ButtonStyle::Secondary => theme.secondary,
-            ButtonStyle::Danger => theme.destructive,
+            ButtonStyle::Primary => cx.theme().primary.darken(0.05),
+            ButtonStyle::Secondary => cx.theme().border,
+            ButtonStyle::Danger => cx.theme().destructive.darken(0.05),
         }
-        .darken(0.05)
     }
 
     fn normal(&self, cx: &WindowContext) -> ButtonStyles {

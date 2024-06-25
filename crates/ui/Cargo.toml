@@ -9,3 +9,4 @@ gpui.workspace = true
 log.wokrspace = true
 serde.workspace = true
 serde_json.workspace = true
+smallvec = "1.13.2"

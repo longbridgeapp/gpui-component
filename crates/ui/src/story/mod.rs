@@ -1,12 +1,14 @@
 use core::fmt;
 use std::fmt::{Display, Formatter};
 
+use checkbox_story::CheckboxStory;
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
     RenderOnce, SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 mod button_story;
+mod checkbox_story;
 mod input_story;
 
 use crate::{button::Button, disableable::Clickable as _, label::Label};
@@ -42,7 +44,7 @@ impl StoryContainer {
 }
 
 impl RenderOnce for StoryContainer {
-    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         div()
             .flex()
             .flex_col()
@@ -52,8 +54,8 @@ impl RenderOnce for StoryContainer {
                     .flex()
                     .flex_col()
                     .gap_2()
-                    .child(Label::new(self.name).text_size(px(24.0)))
-                    .child(Label::new(self.description).text_size(px(16.0))),
+                    .child(Label::new(self.name, cx).text_size(px(24.0)))
+                    .child(Label::new(self.description, cx).text_size(px(16.0))),
             )
             .children(self.children)
     }
@@ -63,6 +65,7 @@ impl RenderOnce for StoryContainer {
 enum StoryType {
     Button,
     Input,
+    Checkbox,
 }
 
 impl Display for StoryType {
@@ -70,6 +73,7 @@ impl Display for StoryType {
         match self {
             Self::Button => write!(f, "Button"),
             Self::Input => write!(f, "Input"),
+            Self::Checkbox => write!(f, "Checkbox"),
         }
     }
 }
@@ -79,6 +83,7 @@ pub struct Stories {
 
     button_story: View<ButtonStory>,
     input_story: View<InputStory>,
+    checkbox_story: View<CheckboxStory>,
 }
 
 impl Stories {
@@ -87,6 +92,7 @@ impl Stories {
             active: StoryType::Button,
             button_story: cx.new_view(|cx| ButtonStory {}),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
+            checkbox_story: cx.new_view(|cx| CheckboxStory::new(cx)),
         }
     }
 
@@ -106,6 +112,7 @@ impl Stories {
             .gap_4()
             .child(self.swith_button("story-button", StoryType::Button, cx))
             .child(self.swith_button("story-input", StoryType::Input, cx))
+            .child(self.swith_button("story-checkbox", StoryType::Checkbox, cx))
     }
 
     fn swith_button(
@@ -134,6 +141,7 @@ impl Render for Stories {
             .map(|this| match self.active {
                 StoryType::Button => this.child(self.button_story.clone()),
                 StoryType::Input => this.child(self.input_story.clone()),
+                StoryType::Checkbox => this.child(self.checkbox_story.clone()),
             })
     }
 }

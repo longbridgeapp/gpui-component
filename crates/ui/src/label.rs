@@ -1,9 +1,9 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AbsoluteLength, DefiniteLength, Div, Hsla, IntoElement,
+    div, prelude::FluentBuilder as _, px, AbsoluteLength, DefiniteLength, Div, Hsla, IntoElement,
     ParentElement, RenderOnce, SharedString, Styled, WindowContext,
 };
 
-use crate::theme::Theme;
+use crate::theme::ActiveTheme;
 
 #[derive(IntoElement)]
 pub struct Label {
@@ -16,9 +16,10 @@ pub struct Label {
 }
 
 impl Label {
-    pub fn new(label: impl Into<SharedString>) -> Self {
+    pub fn new(label: impl Into<SharedString>, cx: &mut WindowContext) -> Self {
+        let theme = cx.theme();
         Self {
-            base: div(),
+            base: div().text_color(theme.foreground).text_size(px(14.0)),
             label: label.into(),
             multiple_lines: false,
             color: Hsla::white(),
@@ -29,11 +30,6 @@ impl Label {
 
     pub fn multiple_lines(mut self) -> Self {
         self.multiple_lines = true;
-        self
-    }
-
-    pub fn color(mut self, color: Hsla) -> Self {
-        self.color = color;
         self
     }
 }
@@ -54,7 +50,6 @@ impl RenderOnce for Label {
 
         self.base
             .child(label_text)
-            .text_color(self.color)
             .map(|this| {
                 if let Some(text_size) = self.text_size {
                     this.text_size(text_size)
