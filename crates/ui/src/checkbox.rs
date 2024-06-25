@@ -7,10 +7,12 @@ use gpui::{
 use crate::{
     disableable::Disableable,
     label::Label,
-    selectable::Selection,
+    selectable::{Selectable, Selection},
     stock::{h_flex, v_flex},
     theme::{ActiveTheme, Colorize as _},
 };
+
+type OnClick = Box<dyn Fn(&Selection, &mut WindowContext) + 'static>;
 
 #[derive(IntoElement)]
 pub struct Checkbox {
@@ -18,7 +20,7 @@ pub struct Checkbox {
     checked: Selection,
     disabled: bool,
     label: Option<SharedString>,
-    on_click: Option<Box<dyn Fn(&Selection, &mut WindowContext) + 'static>>,
+    on_click: Option<OnClick>,
 }
 
 impl Checkbox {
@@ -52,6 +54,16 @@ impl Disableable for Checkbox {
     fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
+    }
+}
+
+impl Selectable for Checkbox {
+    fn selected(self, selected: bool) -> Self {
+        self.checked(if selected {
+            Selection::Selected
+        } else {
+            Selection::Unselected
+        })
     }
 }
 
@@ -120,6 +132,7 @@ impl RenderOnce for Checkbox {
                 |this, on_click| {
                     this.on_click(move |_, cx| {
                         on_click(&self.checked.inverse(), cx);
+                        cx.refresh()
                     })
                 },
             )

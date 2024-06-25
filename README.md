@@ -6,6 +6,7 @@ https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e42
 
 ## TODO
 
+- [x] Theming
 - [ ] TextField
   - [x] Ctrl+a, e to move cursor to start/end
   - [x] Copy, Cut, Paste by keyboard
@@ -23,7 +24,9 @@ https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e42
 - [ ] Radio & RadioGroup
 - [ ] Dropdown
   - [ ] Combobox
-- [ ] Tabs
+- [x] Tabs
+  - [x] Tab
+  - [x] TabBar
 - [ ] Dockpanel & Splitter
 - [ ] List
 - [ ] Table

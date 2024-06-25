@@ -1,17 +1,26 @@
 use core::fmt;
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 
 use checkbox_story::CheckboxStory;
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
-    RenderOnce, SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
+    VisualContext, WindowContext,
 };
 
 mod button_story;
 mod checkbox_story;
 mod input_story;
 
-use crate::{button::Button, disableable::Clickable as _, label::Label};
+use crate::{
+    button::Button,
+    label::Label,
+    tab::{Tab, TabBar},
+    Selectable,
+};
 
 use button_story::ButtonStory;
 use input_story::InputStory;
@@ -83,7 +92,6 @@ pub struct Stories {
 
     button_story: View<ButtonStory>,
     input_story: View<InputStory>,
-    checkbox_story: View<CheckboxStory>,
 }
 
 impl Stories {
@@ -92,7 +100,6 @@ impl Stories {
             active: StoryType::Button,
             button_story: cx.new_view(|cx| ButtonStory {}),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
-            checkbox_story: cx.new_view(|cx| CheckboxStory::new(cx)),
         }
     }
 
@@ -106,13 +113,18 @@ impl Stories {
     }
 
     fn render_story_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let tabs = vec![
+            self.swith_button("story-button", StoryType::Button, cx),
+            self.swith_button("story-input", StoryType::Input, cx),
+            self.swith_button("story-checkbox", StoryType::Checkbox, cx),
+        ];
+
         div()
             .flex()
             .items_center()
             .gap_4()
-            .child(self.swith_button("story-button", StoryType::Button, cx))
-            .child(self.swith_button("story-input", StoryType::Input, cx))
-            .child(self.swith_button("story-checkbox", StoryType::Checkbox, cx))
+            .w_full()
+            .child(TabBar::new("story-tabs").children(tabs))
     }
 
     fn swith_button(
@@ -122,18 +134,20 @@ impl Stories {
         cx: &mut ViewContext<Self>,
     ) -> impl IntoElement {
         let name = format!("{}", ty);
+        let is_active = ty == self.active;
 
-        Button::new(SharedString::from(id.to_string()), name)
+        Tab::new(SharedString::from(id.to_string()), name)
+            .selected(is_active)
             .on_click(cx.listener(move |this, _, cx| {
                 this.set_active(ty, cx);
             }))
-            .style(crate::button::ButtonStyle::Secondary)
     }
 }
 
 impl Render for Stories {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
+            .w_full()
             .flex()
             .flex_col()
             .gap_4()
@@ -141,7 +155,7 @@ impl Render for Stories {
             .map(|this| match self.active {
                 StoryType::Button => this.child(self.button_story.clone()),
                 StoryType::Input => this.child(self.input_story.clone()),
-                StoryType::Checkbox => this.child(self.checkbox_story.clone()),
+                StoryType::Checkbox => this.child(CheckboxStory::new(cx).into_any_element()),
             })
     }
 }

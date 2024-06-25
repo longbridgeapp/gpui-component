@@ -5,9 +5,9 @@ use gpui::{
 };
 
 use crate::{
-    disableable::{Clickable, Disableable, Selectable},
     label::Label,
-    theme::{ActiveTheme, Colorize as _, Theme, ThemeMode},
+    theme::{ActiveTheme, Colorize as _, ThemeMode},
+    Clickable, Disableable, Selectable,
 };
 
 pub enum ButtonRounded {

@@ -4,12 +4,11 @@ use prelude::FluentBuilder as _;
 use std::sync::Arc;
 use ui::{
     button::Button,
-    disableable::Clickable as _,
     label::Label,
     story::Stories,
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
-    StyledExt as _,
+    Clickable as _, StyledExt as _,
 };
 use util::ResultExt as _;
 
