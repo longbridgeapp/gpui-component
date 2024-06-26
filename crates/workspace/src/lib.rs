@@ -3,8 +3,9 @@ use prelude::FluentBuilder as _;
 
 use std::sync::Arc;
 use ui::{
-    button::Button,
+    button::{Button, ButtonSize},
     label::Label,
+    switch::{LabelSide, Switch},
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
     Clickable as _, StyledExt as _,
@@ -126,25 +127,21 @@ impl Render for Workspace {
                     // left side
                     .child(div().flex().items_center().child(Label::new("GPUI App")))
                     .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .justify_end()
-                            .px_2()
-                            .child(
-                                Button::new("btn-light", "Light")
-                                    .size(ui::button::ButtonSize::Small)
-                                    .on_click(|_e, cx| {
-                                        Theme::change(ui::theme::ThemeMode::Light, cx)
-                                    }),
-                            )
-                            .child(
-                                Button::new("btn-dark", "Dark")
-                                    .size(ui::button::ButtonSize::Small)
-                                    .on_click(|_e, cx| {
-                                        Theme::change(ui::theme::ThemeMode::Dark, cx)
-                                    }),
-                            ),
+                        div().flex().items_center().justify_end().px_2().child(
+                            Switch::new("theme-mode")
+                                .size(ButtonSize::Small)
+                                .checked(cx.theme().mode.is_dark())
+                                .label_side(LabelSide::Left)
+                                .label("Dark Mode")
+                                .on_click(cx.listener(|v, _, cx| {
+                                    let mode = match cx.theme().mode {
+                                        ui::theme::ThemeMode::Light => ui::theme::ThemeMode::Dark,
+                                        ui::theme::ThemeMode::Dark => ui::theme::ThemeMode::Light,
+                                    };
+
+                                    Theme::change(mode, cx);
+                                })),
+                        ),
                     ),
             )
             .child(div().flex().px_4().gap_2().child(self.stories.clone()))

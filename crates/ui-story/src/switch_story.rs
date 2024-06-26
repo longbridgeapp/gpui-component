@@ -3,6 +3,7 @@ use gpui::{
 };
 
 use ui::{
+    button::ButtonSize,
     h_flex,
     label::Label,
     switch::{LabelSide, Switch},
@@ -16,6 +17,7 @@ use super::story_case;
 pub struct SwitchStory {
     switch1: bool,
     switch2: bool,
+    switch3: bool,
 }
 
 impl SwitchStory {
@@ -23,6 +25,7 @@ impl SwitchStory {
         Self {
             switch1: false,
             switch2: true,
+            switch3: true,
         }
     }
 }
@@ -106,7 +109,18 @@ impl Render for SwitchStory {
                                     println!("Switch value changed: {:?}", ev);
                                 }),
                         ))
+                )
+                .child(
+                    card(cx).v_flex()         .items_start().child(title("Disabled Switchs")).child(
+                        h_flex().items_center()
+                        .gap_6()
+                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").size(ButtonSize::Small).on_click(cx.listener(move |view, _, cx| {
+                            view.switch3 = !view.switch3;
+                            cx.notify();
+                        })),
+                    )
                 ),
+            )
         )
     }
 }

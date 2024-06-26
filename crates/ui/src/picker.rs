@@ -463,6 +463,7 @@ impl<D: PickerDelegate> Render for Picker<D> {
             // .on_action(cx.listener(Self::secondary_confirm))
             .on_action(cx.listener(Self::use_selected_query))
             // .on_action(cx.listener(Self::confirm_input))
+            // Render Query Input header
             .child(match self.query_input {
                 Some(ref input) => self.delegate.render_query(input, cx),
                 None => div().child(self.head.clone()),

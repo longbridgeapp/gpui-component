@@ -1,11 +1,12 @@
 use crate::{
+    button::ButtonSize,
     label::Label,
     stock::h_flex,
     theme::{ActiveTheme, Colorize},
     Disableable,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, Div, InteractiveElement, IntoElement,
+    div, prelude::FluentBuilder as _, px, ClickEvent, Div, InteractiveElement, IntoElement,
     ParentElement as _, RenderOnce, SharedString, Stateful, StatefulInteractiveElement,
     Styled as _, WindowContext,
 };
@@ -32,6 +33,7 @@ pub struct Switch {
     label: Option<SharedString>,
     label_side: LabelSide,
     on_click: Option<OnClick>,
+    size: ButtonSize,
 }
 
 impl Switch {
@@ -46,6 +48,7 @@ impl Switch {
             label: None,
             on_click: None,
             label_side: LabelSide::Right,
+            size: ButtonSize::Medium,
         }
     }
 
@@ -56,6 +59,11 @@ impl Switch {
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    pub fn size(mut self, size: ButtonSize) -> Self {
+        self.size = size;
         self
     }
 
@@ -100,11 +108,12 @@ impl RenderOnce for Switch {
             .when(self.label_side.left(), |this| this.flex_row_reverse())
             .child(
                 self.base
-                    .w_11()
-                    .h_6()
+                    .map(|this| match self.size {
+                        ButtonSize::Medium => this.w_11().h_6().rounded_xl(),
+                        ButtonSize::Small => this.w_8().h_4().rounded_lg(),
+                    })
                     .flex()
                     .items_center()
-                    .rounded_xl()
                     .border_2()
                     .border_color(theme.transparent)
                     .bg(bg)
@@ -113,9 +122,22 @@ impl RenderOnce for Switch {
                         true => this.flex_row_reverse(),
                         false => this,
                     })
-                    .child(div().h_4().w_4().rounded_full().bg(toggle_bg)),
+                    .child(
+                        div()
+                            .rounded_full()
+                            .bg(toggle_bg)
+                            .map(|this| match self.size {
+                                ButtonSize::Medium => this.w_5().h_5(),
+                                ButtonSize::Small => this.w_3().h_3(),
+                            }),
+                    ),
             )
-            .when_some(self.label, |this, label| this.child(Label::new(label)))
+            .when_some(self.label, |this, label| {
+                this.child(Label::new(label).map(|this| match self.size {
+                    ButtonSize::Medium => this.text_base(),
+                    ButtonSize::Small => this.text_sm(),
+                }))
+            })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| this.on_click(move |ev, cx| on_click(ev, cx)),

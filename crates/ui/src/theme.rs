@@ -163,7 +163,7 @@ impl Colors {
             secondary_foreground: hsl(240.0, 0.059, 0.1),
             muted: hsl(240.0, 0.048, 0.959),
             muted_foreground: hsl(240.0, 0.038, 0.461),
-            accent: hsl(240.0, 0.048, 0.959),
+            accent: hsl(240.0, 0.05, 0.96),
             accent_foreground: hsl(240.0, 0.059, 0.1),
             destructive: hsl(0.0, 0.842, 0.602),
             destructive_foreground: hsl(0.0, 0.0, 0.98),
@@ -269,10 +269,16 @@ impl From<Colors> for Theme {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd, Eq)]
 pub enum ThemeMode {
     Light,
     Dark,
+}
+
+impl ThemeMode {
+    pub fn is_dark(&self) -> bool {
+        matches!(self, Self::Dark)
+    }
 }
 
 impl Theme {

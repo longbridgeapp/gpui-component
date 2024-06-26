@@ -48,12 +48,12 @@ impl PickerDelegate for ListItemDeletegate {
                 .py_1()
                 .px_3()
                 .when(!selected, |this| {
-                    this.hover(|this| this.bg(cx.theme().card))
+                    this.hover(|this| this.bg(cx.theme().accent))
                 })
                 .child(item.clone())
                 .text_base()
                 .text_color(cx.theme().foreground)
-                .when(selected, |this| this.bg(cx.theme().card.lighten(0.1)));
+                .when(selected, |this| this.bg(cx.theme().accent));
             Some(list_item)
         } else {
             None

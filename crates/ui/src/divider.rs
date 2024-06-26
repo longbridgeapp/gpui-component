@@ -37,7 +37,7 @@ impl RenderOnce for Divider {
                 Orientation::Vertical => this.v_flex().w_0().h_full(),
                 Orientation::Horizontal => this.h_flex().h_0().w_full(),
             })
-            .border_1()
+            .border_b_1()
             .border_color(theme.border)
     }
 }
