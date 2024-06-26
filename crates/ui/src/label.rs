@@ -1,6 +1,6 @@
 use gpui::{
     div, prelude::FluentBuilder as _, px, AbsoluteLength, DefiniteLength, Div, Hsla, IntoElement,
-    ParentElement, RenderOnce, SharedString, Styled, WindowContext,
+    ParentElement, RenderOnce, SharedString, Styled, TextStyleRefinement, WindowContext,
 };
 
 use crate::theme::ActiveTheme;
@@ -35,8 +35,6 @@ impl Styled for Label {
 
 impl RenderOnce for Label {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.theme();
-
         let text = if !self.multiple_lines {
             SharedString::from(self.label.replace('\n', "␤"))
         } else {
@@ -44,8 +42,8 @@ impl RenderOnce for Label {
         };
 
         self.base
-            .text_color(theme.foreground)
-            .text_size(px(theme.font_size))
+            .text_color(cx.theme().foreground)
+            .text_size(px(cx.theme().font_size))
             .child(text)
     }
 }

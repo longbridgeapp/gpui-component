@@ -6,6 +6,7 @@ use gpui::{
 
 use crate::{
     label::Label,
+    span,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
     Clickable, Disableable, Selectable,
 };
@@ -175,7 +176,8 @@ impl RenderOnce for Button {
                     normal_style.fg
                 };
 
-                Label::new(self.label)
+                span()
+                    .child(self.label)
                     .text_color(text_color)
                     .map(|this| match self.size {
                         ButtonSize::Small => this.text_sm(),
