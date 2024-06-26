@@ -3,7 +3,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::{
+use ui::{
     button::{Button, ButtonSize, ButtonStyle},
     Clickable, Disableable as _,
 };

@@ -1,17 +1,13 @@
 use gpui::{
-    div, ClickEvent, Div, IntoElement, ParentElement, Render, RenderOnce, SharedString,
-    StatefulInteractiveElement as _, Styled, ViewContext, VisualContext as _, WindowContext,
+    Div, IntoElement, ParentElement, Render, SharedString, Styled, ViewContext, WindowContext,
 };
 
-use crate::{
-    checkbox::Checkbox,
-    disableable::Disableable as _,
+use ui::{
+    h_flex,
     label::Label,
-    selectable::Selection,
-    stock::{h_flex, v_flex},
     switch::{LabelSide, Switch},
     theme::ActiveTheme,
-    StyledExt,
+    v_flex, Disableable as _, StyledExt,
 };
 
 use super::story_case;

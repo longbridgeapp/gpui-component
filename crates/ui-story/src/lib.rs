@@ -1,8 +1,4 @@
-use core::fmt;
-use std::{
-    fmt::{Display, Formatter},
-    sync::Arc,
-};
+use std::fmt::{self, Display, Formatter};
 
 use checkbox_story::CheckboxStory;
 use gpui::{
@@ -15,10 +11,10 @@ use switch_story::SwitchStory;
 mod button_story;
 mod checkbox_story;
 mod input_story;
+mod picker_story;
 mod switch_story;
 
-use crate::{
-    button::Button,
+use ui::{
     label::Label,
     tab::{Tab, TabBar},
     Selectable,

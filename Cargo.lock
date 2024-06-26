@@ -4171,6 +4171,7 @@ dependencies = [
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "catppuccin",
  "gpui",
  "log",
@@ -4178,6 +4179,14 @@ dependencies = [
  "serde_json",
  "smallvec",
  "windows",
+]
+
+[[package]]
+name = "ui-story"
+version = "0.1.0"
+dependencies = [
+ "gpui",
+ "ui",
 ]
 
 [[package]]
@@ -4866,6 +4875,7 @@ dependencies = [
  "anyhow",
  "gpui",
  "ui",
+ "ui-story",
  "util 0.1.0",
 ]
 

@@ -2,8 +2,9 @@
 members = [
     "crates/app",
     "crates/ui",
+    "crates/ui-story",
     "crates/workspace",
-    "crates/util"
+    "crates/util",
 ]
 
 default-members = ["crates/app"]
@@ -12,6 +13,7 @@ resolver = "2"
 [workspace.dependencies]
 gpui = { git = "https://github.com/zed-industries/zed.git" }
 ui = { path = "crates/ui" }
+ui-story = { path = "crates/ui-story" }
 workspace = { path = "crates/workspace" }
 util = { path = "crates/util" }
 anyhow = "1"

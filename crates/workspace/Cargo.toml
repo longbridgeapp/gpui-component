@@ -6,5 +6,6 @@ edition = "2021"
 [dependencies]
 gpui.workspace = true
 ui.workspace = true
+ui-story.workspace = true
 anyhow.workspace = true
 util.workspace = true

@@ -3,12 +3,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::{
-    checkbox::Checkbox,
-    disableable::Disableable as _,
-    selectable::Selection,
-    stock::{h_flex, v_flex},
-};
+use ui::{checkbox::Checkbox, h_flex, v_flex, Disableable as _, Selection};
 
 use super::story_case;
 

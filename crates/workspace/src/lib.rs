@@ -5,11 +5,11 @@ use std::sync::Arc;
 use ui::{
     button::Button,
     label::Label,
-    story::Stories,
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
     Clickable as _, StyledExt as _,
 };
+use ui_story::Stories;
 use util::ResultExt as _;
 
 mod app_state;

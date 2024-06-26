@@ -4,9 +4,9 @@ mod text_view;
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    div, prelude::FluentBuilder as _, ClipboardItem, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, KeyDownEvent, MouseButton, ParentElement, Render, RenderOnce,
-    Styled, View, WindowContext,
+    div, prelude::FluentBuilder as _, AppContext, ClipboardItem, EventEmitter, FocusHandle,
+    FocusableView, InteractiveElement, IntoElement, KeyDownEvent, MouseButton, ParentElement,
+    Render, RenderOnce, Styled, View, ViewContext, WindowContext,
 };
 use std::time::Duration;
 use text_view::TextView;
@@ -31,29 +31,29 @@ impl TextField {
         cx.focus(&self.focus_handle);
     }
 
-    pub fn set_placeholder(self, placeholder: &str, cx: &mut WindowContext) -> Self {
+    pub fn set_placeholder(&mut self, placeholder: &str, cx: &mut WindowContext) {
         self.view.update(cx, |text_view, cx| {
             text_view.set_placeholder(placeholder, cx)
         });
-        self
     }
 
-    pub fn set_disabled(self, disabled: bool, cx: &mut WindowContext) -> Self {
+    pub fn set_disabled(&mut self, disabled: bool, cx: &mut WindowContext) {
         self.view
             .update(cx, |text_view, cx| text_view.set_disabled(disabled, cx));
-        self
     }
 
-    pub fn set_text(self, text: &str, cx: &mut WindowContext) -> Self {
+    pub fn set_text(&mut self, text: &str, cx: &mut WindowContext) {
         self.view
             .update(cx, |text_view, cx| text_view.set_text(text, cx));
-        self
     }
 
-    pub fn set_masked(self, masked: bool, cx: &mut WindowContext) -> Self {
+    pub fn text(&self, cx: &AppContext) -> String {
+        self.view.read(cx).text.clone()
+    }
+
+    pub fn set_masked(&mut self, masked: bool, cx: &mut WindowContext) {
         self.view
             .update(cx, |text_view, cx| text_view.set_masked(masked, cx));
-        self
     }
 }
 
