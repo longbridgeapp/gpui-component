@@ -56,7 +56,7 @@ pub trait PickerDelegate: Sized + 'static {
     fn confirm(&mut self, secondary: bool, cx: &mut ViewContext<Picker<Self>>) {}
     fn dismissed(&mut self, cx: &mut ViewContext<Picker<Self>>) {}
     fn should_dismiss(&self) -> bool {
-        return true;
+        true
     }
     fn render_query(&self, input: &View<TextField>, _cx: &mut ViewContext<Picker<Self>>) -> Div {
         v_flex()

@@ -1,7 +1,7 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Div, Empty, Entity, InteractiveElement as _, IntoElement,
-    ParentElement, Render, SharedString, Styled, Task, View, ViewContext, VisualContext as _,
-    WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, Div, Empty, Entity, InteractiveElement as _,
+    IntoElement, ParentElement, Render, SharedString, Styled, Task, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
@@ -17,7 +17,10 @@ use ui::{
 
 use super::story_case;
 
+actions!(picker_story, [DismissPicker]);
+
 pub struct ListItemDeletegate {
+    story: WeakView<PickerStory>,
     selected_index: usize,
     items: Vec<String>,
     matches: Vec<String>,
@@ -42,12 +45,12 @@ impl PickerDelegate for ListItemDeletegate {
         &self,
         ix: usize,
         selected: bool,
-        cx: &mut ViewContext<Picker<Self>>,
+        _cx: &mut ViewContext<Picker<Self>>,
     ) -> Option<Self::ListItem> {
-        let is_selected = ix == self.selected_index;
         if let Some(item) = self.matches.get(ix) {
             let list_item = ListItem::new(format!("item-{}", ix))
-                .selected(is_selected)
+                .check_icon(ui::IconName::Check)
+                .selected(selected)
                 .py_1()
                 .px_3()
                 .child(item.clone());
@@ -73,6 +76,27 @@ impl PickerDelegate for ListItemDeletegate {
 
         Task::ready(())
     }
+
+    fn dismissed(&mut self, cx: &mut ViewContext<Picker<Self>>) {
+        if let Some(story) = self.story.upgrade() {
+            cx.update_view(&story, |story, cx| {
+                story.open = false;
+                cx.notify();
+            });
+        }
+    }
+
+    fn confirm(&mut self, _secondary: bool, cx: &mut ViewContext<Picker<Self>>) {
+        if let Some(story) = self.story.upgrade() {
+            cx.update_view(&story, |story, cx| {
+                if let Some(item) = self.matches.get(self.selected_index) {
+                    story.selected_value = Some(item.clone());
+                }
+                story.open = false;
+                cx.notify();
+            });
+        }
+    }
 }
 
 pub struct PickerStory {
@@ -82,7 +106,7 @@ pub struct PickerStory {
 }
 
 impl PickerStory {
-    pub(crate) fn new(cx: &mut WindowContext) -> Self {
+    pub(crate) fn new(cx: &mut ViewContext<Self>) -> Self {
         let items = [
             "Baguette (France)",
             "Baklava (Turkey)",
@@ -135,11 +159,13 @@ impl PickerStory {
             "Wiener Schnitzel (Austria)",
         ];
 
+        let story = cx.view().downgrade();
         let picker = cx.new_view(|cx| {
             let items: Vec<String> = items.iter().map(|s| s.to_string()).collect();
 
             let mut picker = Picker::uniform_list(
                 ListItemDeletegate {
+                    story,
                     selected_index: 0,
                     matches: items.clone(),
                     items,

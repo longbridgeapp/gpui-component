@@ -4,13 +4,14 @@ use gpui::{
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, Disableable, IconName, Selectable};
+use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable};
 
 #[derive(IntoElement)]
 pub struct ListItem {
     base: Stateful<Div>,
     disabled: bool,
     selected: bool,
+    check_icon: Option<IconName>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
 }
@@ -23,7 +24,13 @@ impl ListItem {
             selected: false,
             on_click: None,
             on_secondary_mouse_down: None,
+            check_icon: None,
         }
+    }
+
+    pub fn check_icon(mut self, icon: IconName) -> Self {
+        self.check_icon = Some(icon);
+        self
     }
 
     pub fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
@@ -68,7 +75,10 @@ impl ParentElement for ListItem {
 
 impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        self.base
+        h_flex()
+            .id("item-group")
+            .items_center()
+            .gap_2()
             .w_full()
             .relative()
             .gap_x_2()
@@ -85,12 +95,12 @@ impl RenderOnce for ListItem {
                 this.hover(|this| this.bg(cx.theme().accent))
             })
             .when(self.selected, |this| this.bg(cx.theme().accent))
-            .map(|this| {
-                if self.selected {
-                    this.child(IconName::Check)
+            .child(self.base.when(self.selected, |this| {
+                if let Some(icon) = self.check_icon {
+                    this.child(icon)
                 } else {
-                    this.child(div())
+                    this
                 }
-            })
+            }))
     }
 }
