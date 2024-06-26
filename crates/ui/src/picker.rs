@@ -158,7 +158,7 @@ impl<D: PickerDelegate> Picker<D> {
 
         Self {
             delegate,
-            query_input: None,
+            query_input,
             head: cx.new_view(Empty::new),
             width: None,
             is_modal: false,
@@ -174,7 +174,7 @@ impl<D: PickerDelegate> Picker<D> {
         cx: &mut ViewContext<Self>,
     ) -> View<TextField> {
         cx.new_view(|cx| {
-            let mut input = TextField::new(cx);
+            let mut input = TextField::new(cx).appearance(false);
             input.set_placeholder(placehoder, cx);
             input
         })

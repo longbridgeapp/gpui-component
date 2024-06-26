@@ -2,20 +2,21 @@ mod blink_manager;
 mod cursor_layout;
 mod text_view;
 
-use crate::theme::ActiveTheme;
+use crate::{h_flex, theme::ActiveTheme};
 use gpui::{
-    div, prelude::FluentBuilder as _, AppContext, ClipboardItem, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement, IntoElement, KeyDownEvent, MouseButton, ParentElement,
-    Render, RenderOnce, SharedString, Styled, View, ViewContext, WindowContext,
+    div, prelude::FluentBuilder as _, AppContext, ClipboardItem, Div, EventEmitter, FocusHandle,
+    FocusableView, InteractiveElement, Interactivity, IntoElement, KeyDownEvent, MouseButton,
+    ParentElement, Render, RenderOnce, SharedString, Style, StyleRefinement, Styled, View,
+    ViewContext, WindowContext,
 };
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use text_view::TextView;
 
 const CURSOR_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 
-#[derive(Clone)]
 pub struct TextField {
     focus_handle: FocusHandle,
+    appearance: bool,
     pub view: View<TextView>,
 }
 
@@ -24,11 +25,23 @@ impl TextField {
         let focus_handle = cx.focus_handle();
         let view = TextView::init(cx, &focus_handle);
 
-        Self { focus_handle, view }
+        Self {
+            focus_handle,
+            view,
+            appearance: true,
+        }
     }
 
     pub fn focus(&mut self, cx: &mut WindowContext) {
         cx.focus(&self.focus_handle);
+    }
+
+    /// Set the appearance of the text field.
+    ///
+    /// If false, the text field will not have a border, background and focus ring.
+    pub fn appearance(mut self, appearance: bool) -> Self {
+        self.appearance = appearance;
+        self
     }
 
     pub fn set_placeholder(
@@ -78,7 +91,8 @@ impl Render for TextField {
         let focused = self.focus_handle.is_focused(cx);
         let disabled = text_view.disabled;
 
-        div()
+        h_flex()
+            .w_full()
             .track_focus(&focus_handle)
             .when(!text_view.disabled, |this| {
                 this.on_mouse_down(
@@ -213,16 +227,7 @@ impl Render for TextField {
                                         text_view.selection = i..i;
                                     }
                                 }
-                                _ => {
-                                    if let Some(c) = keystroke.chars().next() {
-                                        text_view.text.replace_range(
-                                            text_view.char_range_to_text_range(&text_view.text),
-                                            c.to_string().as_str(),
-                                        );
-                                        let i = text_view.selection.start + 1;
-                                        text_view.selection = i..i;
-                                    }
-                                }
+                                _ => {}
                             };
                         }
 
@@ -235,19 +240,21 @@ impl Render for TextField {
                     });
                 }))
             })
-            .border_color(if focused { theme.ring } else { theme.input })
-            .border_1()
-            .rounded_sm()
-            .py_1()
-            .px_3()
-            .h_9()
-            .shadow_sm()
-            .min_w_20()
-            .bg(if disabled {
-                theme.muted
-            } else {
-                theme.background
+            .when(self.appearance, |this| {
+                this.border_color(if focused { theme.ring } else { theme.input })
+                    .border_1()
+                    .rounded_sm()
+                    .py_1()
+                    .px_3()
+                    .h_9()
+                    .shadow_sm()
+                    .bg(if disabled {
+                        theme.muted
+                    } else {
+                        theme.background
+                    })
             })
+            .min_w_20()
             .child(view)
     }
 }
