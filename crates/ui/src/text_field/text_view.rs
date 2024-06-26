@@ -6,7 +6,7 @@ use super::{
 use crate::theme::{ActiveTheme, Colorize as _};
 use gpui::{
     px, relative, ContentMask, Context, Element, EventEmitter, FocusHandle, HighlightStyle, Hsla,
-    InteractiveText, IntoElement, Model, Point, Render, Style, StyledText, TextStyle,
+    InteractiveText, IntoElement, Model, Point, Render, SharedString, Style, StyledText, TextStyle,
     TextStyleRefinement, View, ViewContext, VisualContext, WindowContext,
 };
 
@@ -19,7 +19,7 @@ pub struct TextFieldStyle {
 pub struct TextView {
     pub text: String,
     pub style: TextFieldStyle,
-    pub placeholder: String,
+    pub placeholder: SharedString,
     pub word_click: (usize, u16),
     pub selection: Range<usize>,
     pub disabled: bool,
@@ -49,7 +49,7 @@ impl TextView {
         let m = Self {
             text: String::new(),
             style,
-            placeholder: "".to_string(),
+            placeholder: "".into(),
             word_click: (0, 0),
             selection: 0..0,
             blink_manager: blink_manager.clone(),
@@ -187,8 +187,12 @@ impl TextView {
         cx.notify();
     }
 
-    pub fn set_placeholder(&mut self, placeholder: impl ToString, cx: &mut ViewContext<Self>) {
-        self.placeholder = placeholder.to_string();
+    pub fn set_placeholder(
+        &mut self,
+        placeholder: impl Into<SharedString>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.placeholder = placeholder.into();
         cx.notify();
     }
 

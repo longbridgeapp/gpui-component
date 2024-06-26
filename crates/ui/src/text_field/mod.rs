@@ -6,7 +6,7 @@ use crate::theme::ActiveTheme;
 use gpui::{
     div, prelude::FluentBuilder as _, AppContext, ClipboardItem, EventEmitter, FocusHandle,
     FocusableView, InteractiveElement, IntoElement, KeyDownEvent, MouseButton, ParentElement,
-    Render, RenderOnce, Styled, View, ViewContext, WindowContext,
+    Render, RenderOnce, SharedString, Styled, View, ViewContext, WindowContext,
 };
 use std::time::Duration;
 use text_view::TextView;
@@ -31,7 +31,11 @@ impl TextField {
         cx.focus(&self.focus_handle);
     }
 
-    pub fn set_placeholder(&mut self, placeholder: &str, cx: &mut WindowContext) {
+    pub fn set_placeholder(
+        &mut self,
+        placeholder: impl Into<SharedString>,
+        cx: &mut WindowContext,
+    ) {
         self.view.update(cx, |text_view, cx| {
             text_view.set_placeholder(placeholder, cx)
         });

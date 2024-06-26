@@ -16,7 +16,6 @@ pub mod theme;
 pub mod title_bar;
 pub use styled_ext::StyledExt;
 pub mod divider;
-pub mod dropdown;
 pub mod picker;
 pub mod switch;
 pub mod tab;

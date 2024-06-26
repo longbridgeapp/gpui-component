@@ -6,6 +6,7 @@ use gpui::{
     RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
     VisualContext, WindowContext,
 };
+use picker_story::PickerStory;
 use switch_story::SwitchStory;
 
 mod button_story;
@@ -74,6 +75,7 @@ enum StoryType {
     Input,
     Checkbox,
     Switch,
+    Picker,
 }
 
 impl Display for StoryType {
@@ -83,6 +85,7 @@ impl Display for StoryType {
             Self::Input => write!(f, "Input"),
             Self::Checkbox => write!(f, "Checkbox"),
             Self::Switch => write!(f, "Switch"),
+            Self::Picker => write!(f, "Picker"),
         }
     }
 }
@@ -93,6 +96,7 @@ pub struct Stories {
     button_story: View<ButtonStory>,
     input_story: View<InputStory>,
     switch_story: View<SwitchStory>,
+    picker_story: View<PickerStory>,
 }
 
 impl Stories {
@@ -102,6 +106,7 @@ impl Stories {
             button_story: cx.new_view(|cx| ButtonStory {}),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
             switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
+            picker_story: cx.new_view(|cx| PickerStory::new(cx)),
         }
     }
 
@@ -125,6 +130,7 @@ impl Stories {
                 self.swith_button("story-input", StoryType::Input, cx),
                 self.swith_button("story-checkbox", StoryType::Checkbox, cx),
                 self.swith_button("story-switch", StoryType::Switch, cx),
+                self.swith_button("story-picker", StoryType::Picker, cx),
             ]))
     }
 
@@ -158,6 +164,7 @@ impl Render for Stories {
                 StoryType::Input => this.child(self.input_story.clone()),
                 StoryType::Checkbox => this.child(CheckboxStory::new(cx).into_any_element()),
                 StoryType::Switch => this.child(self.switch_story.clone()),
+                StoryType::Picker => this.child(self.picker_story.clone()),
             })
     }
 }
