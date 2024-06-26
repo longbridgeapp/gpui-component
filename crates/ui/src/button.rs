@@ -175,7 +175,7 @@ impl RenderOnce for Button {
                     normal_style.fg
                 };
 
-                Label::new(self.label, cx)
+                Label::new(self.label)
                     .text_color(text_color)
                     .map(|this| match self.size {
                         ButtonSize::Small => this.text_sm(),

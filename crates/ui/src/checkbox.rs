@@ -122,7 +122,7 @@ impl RenderOnce for Checkbox {
             )
             .map(|this| {
                 if let Some(label) = self.label {
-                    this.child(Label::new(label, cx).text_color(color))
+                    this.child(Label::new(label).text_color(color))
                 } else {
                     this
                 }

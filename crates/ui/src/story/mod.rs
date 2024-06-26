@@ -65,8 +65,8 @@ impl RenderOnce for StoryContainer {
                     .flex()
                     .flex_col()
                     .gap_2()
-                    .child(Label::new(self.name, cx).text_size(px(24.0)))
-                    .child(Label::new(self.description, cx).text_size(px(16.0))),
+                    .child(Label::new(self.name).text_size(px(24.0)))
+                    .child(Label::new(self.description).text_size(px(16.0))),
             )
             .children(self.children)
     }

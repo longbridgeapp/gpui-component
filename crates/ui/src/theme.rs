@@ -206,6 +206,8 @@ pub struct Theme {
     pub mode: ThemeMode,
     pub transparent: Hsla,
     pub title_bar_background: Hsla,
+    /// Basic font size
+    pub font_size: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub card: Hsla,
@@ -241,6 +243,7 @@ impl From<Colors> for Theme {
         Theme {
             mode: ThemeMode::Dark,
             transparent: Hsla::transparent_black(),
+            font_size: 14.0,
             title_bar_background: colors.title_bar_background,
             background: colors.background,
             foreground: colors.foreground,

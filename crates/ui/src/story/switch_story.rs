@@ -1,14 +1,17 @@
 use gpui::{
-    div, ClickEvent, IntoElement, ParentElement, Render, RenderOnce,
+    div, ClickEvent, Div, IntoElement, ParentElement, Render, RenderOnce, SharedString,
     StatefulInteractiveElement as _, Styled, ViewContext, VisualContext as _, WindowContext,
 };
 
 use crate::{
     checkbox::Checkbox,
     disableable::Disableable as _,
+    label::Label,
     selectable::Selection,
     stock::{h_flex, v_flex},
-    switch::Switch,
+    switch::{LabelSide, Switch},
+    theme::ActiveTheme,
+    StyledExt,
 };
 
 use super::story_case;
@@ -30,6 +33,25 @@ impl SwitchStory {
 
 impl Render for SwitchStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let theme = cx.theme();
+
+        fn title(title: impl Into<SharedString>) -> Div {
+            v_flex().flex_1().gap_2().child(Label::new(title).text_xl())
+        }
+
+        fn card(cx: &ViewContext<SwitchStory>) -> Div {
+            let theme = cx.theme();
+
+            h_flex()
+                .items_center()
+                .gap_4()
+                .p_4()
+                .w_full()
+                .rounded_lg()
+                .border_1()
+                .border_color(theme.border)
+        }
+
         story_case(
             "Switch",
             "A control that allows the user to toggle between checked and not checked.",
@@ -40,17 +62,30 @@ impl Render for SwitchStory {
                 .justify_center()
                 .gap_4()
                 .child(
-                    h_flex()
-                        .items_center()
-                        .gap_4()
+                    card(cx)
+                    .child(
+                        title("Marketing emails").child(
+                            Label::new("Receive emails about new products, features, and more.").text_color(theme.muted)
+                        )
+                    )
                         .child(
                             Switch::new("switch1")
                                 .checked(self.switch1)
+                                .label_side(LabelSide::Left)
+                                .label("Subscribe")
                                 .on_click(cx.listener(move |view, _, cx| {
                                     view.switch1 = !view.switch1;
                                     cx.notify();
                                 })),
+                        ),
+                )
+                .child(
+                    card(cx)
+                    .child(
+                        title("Security emails").child(
+                            Label::new("Receive emails about your account security. When turn off, you never recive email again.").text_color(theme.muted)
                         )
+                    )
                         .child(
                             Switch::new("switch2")
                                 .checked(self.switch2)
@@ -61,20 +96,20 @@ impl Render for SwitchStory {
                         ),
                 )
                 .child(
-                    h_flex()
-                        .items_center()
-                        .gap_4()
+                    card(cx).v_flex()         .items_start().child(title("Disabled Switchs")).child(
+                        h_flex().items_center()
+                        .gap_6()
                         .child(Switch::new("switch3").disabled(true).on_click(|ev, cx| {
                             println!("Switch value changed: {:?}", ev);
                         }))
                         .child(
-                            Switch::new("switch3_1")
+                            Switch::new("switch3_1").label("Airplane Mode")
                                 .checked(true)
                                 .disabled(true)
                                 .on_click(|ev, cx| {
                                     println!("Switch value changed: {:?}", ev);
                                 }),
-                        ),
+                        ))
                 ),
         )
     }

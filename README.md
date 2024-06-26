@@ -21,6 +21,7 @@ https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e42
 - [x] Checkbox
   - [x] With label
 - [x] Switch
+  - [x] With Label (Left, Right side)
   - [ ] Toggle Animation
 - [ ] Radio & RadioGroup
 - [ ] Dropdown

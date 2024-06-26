@@ -49,6 +49,10 @@ impl Workspace {
                     appears_transparent: true,
                     traffic_light_position: Some(point(px(9.0), px(9.0))),
                 }),
+                window_min_size: Size {
+                    width: px(640.),
+                    height: px(480.),
+                },
                 kind: WindowKind::Normal,
                 ..Default::default()
             };
@@ -120,12 +124,7 @@ impl Render for Workspace {
                         })
                     })
                     // left side
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .child(Label::new("GPUI App", cx)),
-                    )
+                    .child(div().flex().items_center().child(Label::new("GPUI App")))
                     .child(
                         div()
                             .flex()
