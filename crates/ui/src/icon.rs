@@ -1,5 +1,6 @@
-use gpui::{svg, IntoElement, RenderOnce, SharedString, Styled as _, Svg, WindowContext};
+use gpui::{svg, Element, IntoElement, RenderOnce, SharedString, Styled as _, Svg, WindowContext};
 
+#[derive(IntoElement)]
 pub enum IconName {
     Check,
     Minus,
@@ -20,6 +21,12 @@ impl IconName {
             IconName::Close => "icons/close.svg",
         }
         .into()
+    }
+}
+
+impl RenderOnce for IconName {
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        Icon::new(self)
     }
 }
 

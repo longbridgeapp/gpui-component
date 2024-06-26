@@ -8,10 +8,11 @@ use ui::{
     button::Button,
     h_flex,
     label::Label,
+    list::ListItem,
     picker::{Picker, PickerDelegate},
     switch::{LabelSide, Switch},
     theme::{ActiveTheme, Colorize},
-    v_flex, Clickable as _, Disableable as _, StyledExt,
+    v_flex, Clickable as _, Disableable as _, Selectable, StyledExt,
 };
 
 use super::story_case;
@@ -23,7 +24,7 @@ pub struct ListItemDeletegate {
 }
 
 impl PickerDelegate for ListItemDeletegate {
-    type ListItem = Div;
+    type ListItem = ListItem;
 
     fn match_count(&self) -> usize {
         self.matches.len()
@@ -43,17 +44,13 @@ impl PickerDelegate for ListItemDeletegate {
         selected: bool,
         cx: &mut ViewContext<Picker<Self>>,
     ) -> Option<Self::ListItem> {
+        let is_selected = ix == self.selected_index;
         if let Some(item) = self.matches.get(ix) {
-            let list_item = div()
+            let list_item = ListItem::new(format!("item-{}", ix))
+                .selected(is_selected)
                 .py_1()
                 .px_3()
-                .when(!selected, |this| {
-                    this.hover(|this| this.bg(cx.theme().accent))
-                })
-                .child(item.clone())
-                .text_base()
-                .text_color(cx.theme().foreground)
-                .when(selected, |this| this.bg(cx.theme().accent));
+                .child(item.clone());
             Some(list_item)
         } else {
             None
