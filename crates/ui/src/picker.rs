@@ -3,11 +3,10 @@ use std::time::Duration;
 use anyhow::Result;
 use gpui::{
     actions, div, list, prelude::FluentBuilder as _, px, rems, uniform_list, AppContext,
-    ClickEvent, DismissEvent, Div, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, Length, ListSizingBehavior, ListState, MouseButton,
-    MouseUpEvent, ParentElement as _, Render, SharedString, StatefulInteractiveElement as _,
-    Styled as _, Task, UniformListScrollHandle, View, ViewContext, VisualContext as _,
-    WindowContext,
+    ClickEvent, DismissEvent, Div, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
+    IntoElement, Length, ListSizingBehavior, ListState, MouseButton, MouseUpEvent,
+    ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _, Task,
+    UniformListScrollHandle, View, ViewContext, VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -486,5 +485,23 @@ impl<D: PickerDelegate> Render for Picker<D> {
                         .child(div().child(Label::new("No matched.").text_color(cx.theme().muted))),
                 )
             })
+            .on_key_down(cx.listener(|this, ev: &gpui::KeyDownEvent, cx| {
+                let key = ev.keystroke.key.as_str();
+                match key {
+                    "escape" => {
+                        this.cancel(&Cancel, cx);
+                    }
+                    "enter" => {
+                        this.confirm(&Confirm, cx);
+                    }
+                    "down" => {
+                        this.select_next(&SelectNext, cx);
+                    }
+                    "up" => {
+                        this.select_prev(&SelectPrev, cx);
+                    }
+                    _ => {}
+                }
+            }))
     }
 }

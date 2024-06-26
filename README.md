@@ -26,6 +26,9 @@ https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e42
 - [ ] Radio & RadioGroup
 - [ ] Dropdown
   - [ ] Combobox
+  - [ ] Picker
+    - [x] Picker List
+    - [x] Use keyword to select next, prev, enter to select, esc to cancel.
 - [x] Tabs
   - [x] Tab
   - [x] TabBar
