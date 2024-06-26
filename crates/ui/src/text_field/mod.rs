@@ -4,15 +4,16 @@ mod text_view;
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    div, prelude::FluentBuilder as _, ClipboardItem, EventEmitter, FocusHandle, InteractiveElement,
-    IntoElement, KeyDownEvent, MouseButton, ParentElement, RenderOnce, Styled, View, WindowContext,
+    div, prelude::FluentBuilder as _, ClipboardItem, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyDownEvent, MouseButton, ParentElement, Render, RenderOnce,
+    Styled, View, WindowContext,
 };
 use std::time::Duration;
 use text_view::TextView;
 
 const CURSOR_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 
-#[derive(Clone, IntoElement)]
+#[derive(Clone)]
 pub struct TextField {
     focus_handle: FocusHandle,
     pub view: View<TextView>,
@@ -56,8 +57,14 @@ impl TextField {
     }
 }
 
-impl RenderOnce for TextField {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+impl FocusableView for TextField {
+    fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+
+impl Render for TextField {
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         let focus_handle = self.focus_handle.clone();
         let theme = cx.theme();
 
@@ -70,14 +77,17 @@ impl RenderOnce for TextField {
         div()
             .track_focus(&focus_handle)
             .when(!text_view.disabled, |this| {
-                this.on_mouse_down(MouseButton::Left, move |_, cx| {
-                    cx.prevent_default();
-                    self.focus_handle.focus(cx)
-                })
+                this.on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |view, _, cx| {
+                        cx.prevent_default();
+                        view.focus_handle.focus(cx)
+                    }),
+                )
             })
             .when(!disabled, |this| {
-                this.on_key_down(move |ev, cx| {
-                    self.view.update(cx, |text_view, cx| {
+                this.on_key_down(cx.listener(move |this, ev: &KeyDownEvent, cx| {
+                    this.view.update(cx, |text_view, cx| {
                         let prev = text_view.text.clone();
                         cx.emit(TextEvent::KeyDown(ev.clone()));
                         let keystroke = ev.keystroke.key.as_str();
@@ -219,7 +229,7 @@ impl RenderOnce for TextField {
                         }
                         cx.notify();
                     });
-                })
+                }))
             })
             .border_color(if focused { theme.ring } else { theme.input })
             .border_1()
