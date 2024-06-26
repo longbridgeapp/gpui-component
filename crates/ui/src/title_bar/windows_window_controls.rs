@@ -94,6 +94,25 @@ impl WindowsCaptionButton {
             hover_background_color,
         }
     }
+
+    #[cfg(not(target_os = "windows"))]
+    fn get_font() -> &'static str {
+        "Segoe Fluent Icons"
+    }
+
+    #[cfg(target_os = "windows")]
+    fn get_font() -> &'static str {
+        use windows::Wdk::System::SystemServices::RtlGetVersion;
+
+        let mut version = unsafe { std::mem::zeroed() };
+        let status = unsafe { RtlGetVersion(&mut version) };
+
+        if status.is_ok() && version.dwBuildNumber >= 22000 {
+            "Segoe Fluent Icons"
+        } else {
+            "Segoe MDL2 Assets"
+        }
+    }
 }
 
 impl RenderOnce for WindowsCaptionButton {
@@ -112,7 +131,7 @@ impl RenderOnce for WindowsCaptionButton {
             .w(width)
             .h_full()
             .text_size(px(10.0))
-            .font_family("Segoe MDL2 Assets")
+            .font_family(Self::get_font())
             .text_color(theme.foreground)
             .hover(|style| style.bg(self.hover_background_color))
             .active(|style| {
