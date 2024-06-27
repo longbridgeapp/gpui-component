@@ -184,10 +184,11 @@ where
                     }))
                     .child(
                         h_flex()
+                            .w_full()
                             .items_center()
                             .justify_between()
-                            .child(title)
-                            .child(IconName::ChevronDown),
+                            .child(div().flex_1().child(title))
+                            .child(div().w_4().h_4().child(IconName::ChevronDown)),
                     ),
             )
             .when(self.open, |this| {

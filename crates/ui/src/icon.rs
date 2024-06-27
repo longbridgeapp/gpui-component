@@ -1,4 +1,6 @@
-use gpui::{svg, IntoElement, RenderOnce, SharedString, Styled as _, Svg, WindowContext};
+use gpui::{svg, IntoElement, RenderOnce, SharedString, Styled, Svg, WindowContext};
+
+use crate::theme::ActiveTheme;
 
 #[derive(IntoElement)]
 pub enum IconName {
@@ -38,10 +40,16 @@ pub struct Icon {
     path: SharedString,
 }
 
+impl Styled for Icon {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl Icon {
     pub fn new(name: IconName) -> Self {
         Self {
-            base: svg().flex_none().size_full(),
+            base: svg().flex_none().size_4(),
             path: name.path(),
         }
     }
@@ -56,7 +64,7 @@ impl Icon {
 }
 
 impl RenderOnce for Icon {
-    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
-        self.base.path(self.path)
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        self.base.text_color(cx.theme().foreground).path(self.path)
     }
 }
