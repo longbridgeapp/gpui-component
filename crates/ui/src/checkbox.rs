@@ -10,6 +10,7 @@ use crate::{
     selectable::{Selectable, Selection},
     stock::{h_flex, v_flex},
     theme::{ActiveTheme, Colorize as _},
+    IconName,
 };
 
 type OnClick = Box<dyn Fn(&Selection, &mut WindowContext) + 'static>;
@@ -114,8 +115,8 @@ impl RenderOnce for Checkbox {
                             .size_3()
                             .text_color(icon_color)
                             .map(|this| match self.checked {
-                                Selection::Selected => this.path("icons/check.svg"),
-                                Selection::Indeterminate => this.path("icons/minus.svg"),
+                                Selection::Selected => this.path(IconName::Check.path()),
+                                Selection::Indeterminate => this.path(IconName::Minus.path()),
                                 _ => this,
                             }),
                     ),

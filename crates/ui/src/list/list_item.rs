@@ -1,6 +1,6 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
-    MouseButton, MouseDownEvent, ParentElement, RenderOnce, SharedString, Stateful,
+    div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
+    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, SharedString, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
 
@@ -11,7 +11,7 @@ pub struct ListItem {
     base: Stateful<Div>,
     disabled: bool,
     selected: bool,
-    check_icon: Option<IconName>,
+    check_icon: Option<Icon>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
 }
@@ -29,7 +29,7 @@ impl ListItem {
     }
 
     pub fn check_icon(mut self, icon: IconName) -> Self {
-        self.check_icon = Some(icon);
+        self.check_icon = Some(Icon::new(icon));
         self
     }
 
@@ -87,9 +87,7 @@ impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         h_flex()
             .id("item-group")
-            .items_center()
-            .gap_2()
-            .w_full()
+            .flex_none()
             .relative()
             .gap_x_2()
             .text_base()
@@ -105,12 +103,15 @@ impl RenderOnce for ListItem {
                 this.hover(|this| this.bg(cx.theme().accent))
             })
             .when(self.selected, |this| this.bg(cx.theme().accent))
-            .child(self.base.when(self.selected, |this| {
-                if let Some(icon) = self.check_icon {
-                    this.child(icon)
-                } else {
-                    this
-                }
-            }))
+            .child(self.base.w_full().items_center().justify_between().when(
+                self.selected,
+                |this| {
+                    if let Some(icon) = self.check_icon {
+                        this.child(icon.text_color(cx.theme().muted))
+                    } else {
+                        this
+                    }
+                },
+            ))
     }
 }
