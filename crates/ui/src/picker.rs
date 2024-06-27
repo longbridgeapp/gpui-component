@@ -524,5 +524,8 @@ impl<D: PickerDelegate> Render for Picker<D> {
                         .child("No matched."),
                 )
             })
+            .on_mouse_down_out(cx.listener(|_, _, cx| {
+                cx.dispatch_action(Box::new(Cancel));
+            }))
     }
 }

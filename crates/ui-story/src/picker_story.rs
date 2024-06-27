@@ -216,16 +216,7 @@ impl Render for PickerStory {
                             .flex_col()
                             .items_center()
                             .track_focus(&self.picker.focus_handle(cx))
-                            .child(
-                                h_flex()
-                                    .w(px(450.))
-                                    .occlude()
-                                    .child(self.picker.clone())
-                                    .on_mouse_down_out(cx.listener(|this, _, cx| {
-                                        this.open = false;
-                                        cx.notify();
-                                    })),
-                            ),
+                            .child(h_flex().w(px(450.)).occlude().child(self.picker.clone())),
                     ),
                 )
             })
