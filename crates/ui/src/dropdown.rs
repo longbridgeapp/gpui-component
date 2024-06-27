@@ -1,18 +1,30 @@
 use std::rc::Rc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AppContext, Div, ElementId, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, ParentElement as _, Render, RenderOnce, SharedString,
-    Stateful, StatefulInteractiveElement as _, Styled as _, View, ViewContext, VisualContext as _,
-    WeakView,
+    actions, div, prelude::FluentBuilder as _, px, AppContext, Div, ElementId, FocusHandle,
+    FocusableView, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render,
+    RenderOnce, SharedString, Stateful, StatefulInteractiveElement as _, Styled as _, View,
+    ViewContext, VisualContext as _, WeakView,
 };
+
+actions!(dropdown, [Up, Down, Enter, Escape]);
+
+pub fn init(cx: &mut AppContext) {
+    let context = Some("Dropdown");
+    cx.bind_keys([
+        KeyBinding::new("up", Up, context),
+        KeyBinding::new("down", Down, context),
+        KeyBinding::new("enter", Enter, context),
+        KeyBinding::new("escape", Escape, context),
+    ])
+}
 
 use crate::{
     h_flex,
     list::ListItem,
-    picker::{Picker, PickerDelegate},
+    picker::{self, Picker, PickerDelegate},
     theme::ActiveTheme,
-    v_flex, IconName, StyledExt,
+    v_flex, IconName,
 };
 
 /// A trait for items that can be displayed in a dropdown.
@@ -98,6 +110,7 @@ where
                     view.value = Some(item.value().to_string().into());
                 }
                 view.open = false;
+                view.focus_handle.focus(cx);
             });
         }
     }
@@ -139,6 +152,35 @@ where
         self.value = Some(value.into());
         cx.notify();
     }
+
+    fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
+        if !self.open {
+            return;
+        }
+        self.picker.focus_handle(cx).focus(cx);
+        cx.dispatch_action(Box::new(picker::SelectPrev));
+    }
+
+    fn down(&mut self, _: &Down, cx: &mut ViewContext<Self>) {
+        if !self.open {
+            self.open = true;
+        }
+
+        self.picker.focus_handle(cx).focus(cx);
+        cx.dispatch_action(Box::new(picker::SelectNext));
+    }
+
+    fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
+        if !self.open {
+            self.open = true;
+            cx.notify();
+        }
+    }
+
+    fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
+        self.open = false;
+        cx.notify();
+    }
 }
 
 impl<D> FocusableView for Dropdown<D>
@@ -155,11 +197,18 @@ where
     D: DropdownDelegate + 'static,
 {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let group_id = format!("dropdown-group:{}", self.id);
         let title = self.title.clone().unwrap_or_else(|| "Select...".into());
-        let is_focused = self.focus_handle.is_focused(cx);
+        let focused = self.focus_handle.is_focused(cx);
 
         div()
             .key_context("Dropdown")
+            .group(group_id.clone())
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::up))
+            .on_action(cx.listener(Self::down))
+            .on_action(cx.listener(Self::enter))
+            .on_action(cx.listener(Self::escape))
             .size_full()
             .relative()
             .child(
@@ -177,7 +226,7 @@ where
                     .shadow_sm()
                     .px_3()
                     .py_2()
-                    .when(is_focused, |this| this.border_color(cx.theme().ring))
+                    .when(focused, |this| this.border_color(cx.theme().ring))
                     .on_click(cx.listener(|this, _, cx| {
                         this.open = !this.open;
                         cx.notify();
@@ -204,7 +253,11 @@ where
                         .rounded(px(cx.theme().radius))
                         .shadow_md()
                         .track_focus(&self.picker.focus_handle(cx))
-                        .child(self.picker.clone()),
+                        .child(self.picker.clone())
+                        .on_mouse_down_out(cx.listener(|view, _, cx| {
+                            view.open = false;
+                            cx.notify();
+                        })),
                 )
             })
     }

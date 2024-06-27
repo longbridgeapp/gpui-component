@@ -35,4 +35,5 @@ pub use stock::*;
 pub fn init(cx: &mut gpui::AppContext) {
     input::init(cx);
     picker::init(cx);
+    dropdown::init(cx);
 }

@@ -24,11 +24,12 @@ actions!(
 );
 
 pub fn init(cx: &mut AppContext) {
+    let context = Some("Picker");
     cx.bind_keys([
-        KeyBinding::new("enter", Confirm, None),
-        KeyBinding::new("escape", Cancel, None),
-        KeyBinding::new("up", SelectPrev, None),
-        KeyBinding::new("down", SelectNext, None),
+        KeyBinding::new("enter", Confirm, context),
+        KeyBinding::new("escape", Cancel, context),
+        KeyBinding::new("up", SelectPrev, context),
+        KeyBinding::new("down", SelectNext, context),
     ]);
 }
 
