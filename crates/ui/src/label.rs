@@ -41,9 +41,6 @@ impl RenderOnce for Label {
             self.label
         };
 
-        self.base
-            .text_color(cx.theme().foreground)
-            .text_size(px(cx.theme().font_size))
-            .child(text)
+        self.base.text_color(cx.theme().foreground).child(text)
     }
 }

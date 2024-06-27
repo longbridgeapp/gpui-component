@@ -1,16 +1,12 @@
-use std::{rc::Rc, vec};
-
 use gpui::{
-    div, px, ClickEvent, IntoElement, ParentElement, Render, RenderOnce, SharedString, Styled,
-    View, ViewContext, VisualContext, WindowContext,
+    px, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
-    checkbox::Checkbox,
     dropdown::{Dropdown, DropdownDelegate, DropdownItem},
     h_flex,
     theme::ActiveTheme,
-    v_flex, Disableable as _, Selection,
+    v_flex, Selection,
 };
 
 use super::story_case;
@@ -127,8 +123,6 @@ impl Render for DropdownStory {
         .child(
             v_flex()
                 .size_full()
-                .items_start()
-                .justify_start()
                 .gap_4()
                 .child(
                     h_flex()

@@ -244,9 +244,7 @@ where
                 this.child(
                     div()
                         .absolute()
-                        // Top is the dropdown input height + border
-                        .top(px(50.))
-                        .left_0()
+                        .mt_1p5()
                         .bg(cx.theme().background)
                         .border_1()
                         .border_color(cx.theme().input)
