@@ -541,7 +541,7 @@ impl Element for TextElement {
         cx: &mut WindowContext,
     ) {
         let focus_handle = self.input.read(cx).focus_handle.clone();
-        let is_focused = focus_handle.is_focused(cx);
+        let focused = focus_handle.is_focused(cx);
 
         cx.handle_input(
             &focus_handle,
@@ -553,7 +553,7 @@ impl Element for TextElement {
         let line = prepaint.line.take().unwrap();
         line.paint(bounds.origin, cx.line_height(), cx).unwrap();
 
-        if is_focused {
+        if focused {
             if let Some(cursor) = prepaint.cursor.take() {
                 cx.paint_quad(cursor);
             }
