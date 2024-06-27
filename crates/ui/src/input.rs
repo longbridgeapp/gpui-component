@@ -40,15 +40,30 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("right", Right, None),
         KeyBinding::new("shift-left", SelectLeft, None),
         KeyBinding::new("shift-right", SelectRight, None),
-        KeyBinding::new("cmd-a", SelectAll, None),
         KeyBinding::new("home", Home, None),
         KeyBinding::new("end", End, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, None),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-a", SelectAll, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-a", SelectAll, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-c", Copy, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-c", Copy, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-x", Cut, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-x", Cut, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-v", Paste, None),
-        KeyBinding::new("ctrl-a", MoveToStartOfLine, None),
-        KeyBinding::new("ctrl-e", MoveToEndOfLine, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-v", Paste, None),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("ctrl-a", Home, None),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("ctrl-e", End, None),
     ]);
 }
 
@@ -193,14 +208,6 @@ impl TextInput {
         if let Some(clipboard) = cx.read_from_clipboard() {
             self.replace_text_in_range(Some(self.selected_range.clone()), clipboard.text(), cx);
         }
-    }
-
-    fn move_to_start_of_line(&mut self, _: &MoveToStartOfLine, cx: &mut ViewContext<Self>) {
-        self.move_to(0, cx);
-    }
-
-    fn move_to_end_of_line(&mut self, _: &MoveToEndOfLine, cx: &mut ViewContext<Self>) {
-        self.move_to(self.text.len(), cx);
     }
 
     fn move_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
@@ -579,8 +586,6 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::copy))
             .on_action(cx.listener(Self::paste))
             .on_action(cx.listener(Self::cut))
-            .on_action(cx.listener(Self::move_to_start_of_line))
-            .on_action(cx.listener(Self::move_to_end_of_line))
             // Double click to select all
             .on_double_click(cx.listener(|view, _, cx| {
                 view.select_all(&SelectAll, cx);
