@@ -6,6 +6,10 @@ https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e42
 
 https://github.com/huacnlee/gpui-app/assets/5518/5316f9f0-58c8-4b99-bd79-eafffb38c3fc
 
+## Demo
+
+- [main-app-windows.zip](https://github.com/user-attachments/files/16018089/main-app.zip)
+
 ## TODO
 
 - [x] Theming
