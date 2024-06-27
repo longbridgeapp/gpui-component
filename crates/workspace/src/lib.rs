@@ -108,15 +108,14 @@ pub fn open_new(
 
 impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let theme = cx.theme();
-
         div()
             .relative()
             .flex()
             .flex_1()
             .flex_col()
             .size_full()
-            .bg(theme.background)
+            .bg(cx.theme().background)
+            .text_color(cx.theme().foreground)
             .gap_4()
             .child(
                 TitleBar::new("main-title", Box::new(crate::CloseWindow))
