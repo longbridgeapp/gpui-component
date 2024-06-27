@@ -9,7 +9,7 @@ use gpui::{
 
 mod button_story;
 mod checkbox_story;
-// mod dropdown_story;
+mod dropdown_story;
 mod input_story;
 mod picker_story;
 mod switch_story;
@@ -21,6 +21,7 @@ use ui::{
 };
 
 use button_story::ButtonStory;
+use dropdown_story::DropdownStory;
 use input_story::InputStory;
 use picker_story::PickerStory;
 use switch_story::SwitchStory;
@@ -77,6 +78,7 @@ enum StoryType {
     Checkbox,
     Switch,
     Picker,
+    Dropdown,
 }
 
 impl Display for StoryType {
@@ -87,6 +89,7 @@ impl Display for StoryType {
             Self::Checkbox => write!(f, "Checkbox"),
             Self::Switch => write!(f, "Switch"),
             Self::Picker => write!(f, "Picker"),
+            Self::Dropdown => write!(f, "Dropdown"),
         }
     }
 }
@@ -98,6 +101,7 @@ pub struct Stories {
     input_story: View<InputStory>,
     switch_story: View<SwitchStory>,
     picker_story: View<PickerStory>,
+    dropdown_story: View<DropdownStory>,
 }
 
 impl Stories {
@@ -108,6 +112,7 @@ impl Stories {
             input_story: cx.new_view(|cx| InputStory::new(cx)),
             switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
             picker_story: cx.new_view(|cx| PickerStory::new(cx)),
+            dropdown_story: cx.new_view(|cx| DropdownStory::new(cx)),
         }
     }
 
@@ -120,27 +125,23 @@ impl Stories {
         cx.notify();
     }
 
-    fn render_story_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn tabs(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .flex()
             .items_center()
             .gap_4()
             .w_full()
             .child(TabBar::new("story-tabs").children(vec![
-                self.swith_button("story-button", StoryType::Button, cx),
-                self.swith_button("story-input", StoryType::Input, cx),
-                self.swith_button("story-checkbox", StoryType::Checkbox, cx),
-                self.swith_button("story-switch", StoryType::Switch, cx),
-                self.swith_button("story-picker", StoryType::Picker, cx),
+                self.tab("story-button", StoryType::Button, cx),
+                self.tab("story-input", StoryType::Input, cx),
+                self.tab("story-checkbox", StoryType::Checkbox, cx),
+                self.tab("story-switch", StoryType::Switch, cx),
+                self.tab("story-picker", StoryType::Picker, cx),
+                self.tab("story-dropdown", StoryType::Dropdown, cx),
             ]))
     }
 
-    fn swith_button(
-        &self,
-        id: &str,
-        ty: StoryType,
-        cx: &mut ViewContext<Self>,
-    ) -> impl IntoElement {
+    fn tab(&self, id: &str, ty: StoryType, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let name = format!("{}", ty);
         let is_active = ty == self.active;
 
@@ -159,13 +160,14 @@ impl Render for Stories {
             .flex()
             .flex_col()
             .gap_4()
-            .child(self.render_story_buttons(cx))
+            .child(self.tabs(cx))
             .map(|this| match self.active {
                 StoryType::Button => this.child(self.button_story.clone()),
                 StoryType::Input => this.child(self.input_story.clone()),
                 StoryType::Checkbox => this.child(CheckboxStory::new(cx).into_any_element()),
                 StoryType::Switch => this.child(self.switch_story.clone()),
                 StoryType::Picker => this.child(self.picker_story.clone()),
+                StoryType::Dropdown => this.child(self.dropdown_story.clone()),
             })
     }
 }
