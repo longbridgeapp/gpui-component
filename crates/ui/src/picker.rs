@@ -24,8 +24,8 @@ actions!(
 );
 
 use crate::{
-    divider::Divider, empty::Empty, label::Label, stock::*, text_field::TextField,
-    theme::ActiveTheme, StyledExt as _,
+    divider::Divider, empty::Empty, input::TextInput, label::Label, stock::*, theme::ActiveTheme,
+    StyledExt as _,
 };
 
 enum ElementContainer {
@@ -58,7 +58,7 @@ pub trait PickerDelegate: Sized + 'static {
     fn should_dismiss(&self) -> bool {
         true
     }
-    fn render_query(&self, input: &View<TextField>, _cx: &mut ViewContext<Picker<Self>>) -> Div {
+    fn render_query(&self, input: &View<TextInput>, _cx: &mut ViewContext<Picker<Self>>) -> Div {
         v_flex()
             .child(
                 h_flex()
@@ -86,7 +86,7 @@ pub trait PickerDelegate: Sized + 'static {
     }
     fn finalize_update_matches(
         &mut self,
-        _query: String,
+        _query: SharedString,
         _duration: Duration,
         _cx: &mut ViewContext<Picker<Self>>,
     ) -> bool {
@@ -117,7 +117,7 @@ struct PendingUpdateMatches {
 pub struct Picker<D: PickerDelegate> {
     delegate: D,
     element_container: ElementContainer,
-    query_input: Option<View<TextField>>,
+    query_input: Option<View<TextInput>>,
     width: Option<Length>,
     max_height: Option<Length>,
     is_modal: bool,
@@ -130,7 +130,7 @@ impl<D: PickerDelegate> Picker<D> {
     fn new(
         delegate: D,
         kind: ContainerKind,
-        query_input: Option<View<TextField>>,
+        query_input: Option<View<TextInput>>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
         let element_container = match kind {
@@ -172,9 +172,9 @@ impl<D: PickerDelegate> Picker<D> {
     fn new_query_input(
         placehoder: impl Into<SharedString>,
         cx: &mut ViewContext<Self>,
-    ) -> View<TextField> {
+    ) -> View<TextInput> {
         cx.new_view(|cx| {
-            let mut input = TextField::new(cx).appearance(false);
+            let mut input = TextInput::new(cx).appearance(false);
             input.set_placeholder(placehoder, cx);
             input
         })
@@ -212,16 +212,16 @@ impl<D: PickerDelegate> Picker<D> {
 
     pub fn set_query(&mut self, query: &str, cx: &mut ViewContext<Self>) {
         if let Some(input) = &self.query_input {
-            input.update(cx, |this, cx| this.set_text(query, cx));
+            input.update(cx, |this, cx| this.set_text(query.to_string(), cx));
         }
     }
 
     /// Return the query input string.
-    pub fn query(&self, cx: &AppContext) -> String {
+    pub fn query(&self, cx: &AppContext) -> SharedString {
         if let Some(input) = &self.query_input {
-            input.read(cx).text(cx)
+            input.read(cx).text()
         } else {
-            String::new()
+            "".into()
         }
     }
 

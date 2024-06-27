@@ -3,12 +3,12 @@ use prelude::FluentBuilder as _;
 
 use std::sync::Arc;
 use ui::{
-    button::{Button, ButtonSize},
+    button::ButtonSize,
+    input,
     label::Label,
     switch::{LabelSide, Switch},
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
-    Clickable as _, StyledExt as _,
 };
 use ui_story::Stories;
 use util::ResultExt as _;
@@ -41,6 +41,8 @@ impl Workspace {
         cx: &mut AppContext,
     ) -> Task<anyhow::Result<WindowHandle<Workspace>>> {
         let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
+
+        input::init(cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {

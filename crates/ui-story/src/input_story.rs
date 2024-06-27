@@ -3,27 +3,27 @@ use gpui::{
     VisualContext, WindowContext,
 };
 
-use ui::text_field::TextField;
+use ui::input::TextInput;
 
 use super::story_case;
 
 pub struct InputStory {
-    input1: View<TextField>,
-    input2: View<TextField>,
-    mash_input: View<TextField>,
-    disabled_input: View<TextField>,
+    input1: View<TextInput>,
+    input2: View<TextInput>,
+    mash_input: View<TextInput>,
+    disabled_input: View<TextInput>,
 }
 
 impl InputStory {
     pub(crate) fn new(cx: &mut WindowContext) -> Self {
         let input1 = cx.new_view(|cx| {
-            let mut input = TextField::new(cx);
+            let mut input = TextInput::new(cx);
             input.set_text("Hello 世界", cx);
             input
         });
 
         let mask_input = cx.new_view(|cx| {
-            let mut input = TextField::new(cx);
+            let mut input = TextInput::new(cx);
             input.set_masked(true, cx);
             input.set_text("this-is-password", cx);
             input
@@ -32,13 +32,13 @@ impl InputStory {
         Self {
             input1,
             input2: cx.new_view(|cx| {
-                let mut input = TextField::new(cx);
+                let mut input = TextInput::new(cx);
                 input.set_placeholder("Enter text here...", cx);
                 input
             }),
             mash_input: mask_input,
             disabled_input: cx.new_view(|cx| {
-                let mut input = TextField::new(cx);
+                let mut input = TextInput::new(cx);
                 input.set_text("This is disabled input", cx);
                 input.set_disabled(true, cx);
                 input

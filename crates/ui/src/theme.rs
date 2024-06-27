@@ -1,7 +1,4 @@
-use std::{cmp::min, sync::Arc};
-
-use gpui::{AppContext, Global, Hsla, Rgba};
-use serde_json::json;
+use gpui::{hsla, AppContext, Global, Hsla};
 
 pub trait ActiveTheme {
     fn theme(&self) -> &Theme;
@@ -13,13 +10,11 @@ impl ActiveTheme for AppContext {
     }
 }
 
-fn hex(color: &str) -> Hsla {
-    let color: Rgba = serde_json::from_value(json!(color)).unwrap();
-    color.into()
-}
-
+/// h - 0 - 360.0
+/// s - 0.0 - 100.0
+/// l - 0.0 - 100.0
 fn hsl(h: f32, s: f32, l: f32) -> Hsla {
-    Hsla { h, s, l, a: 1.0 }
+    hsla(h / 360., s / 100.0, l / 100.0, 1.0)
 }
 
 pub trait Colorize {
@@ -74,53 +69,6 @@ impl Colorize for Hsla {
     }
 }
 
-// @layer base {
-//   :root {
-//     --background: 0 0% 100%;
-//     --foreground: 240 10% 3.9%;
-//     --card: 0 0% 100%;
-//     --card-foreground: 240 10% 3.9%;
-//     --popover: 0 0% 100%;
-//     --popover-foreground: 240 10% 3.9%;
-//     --primary: 240 5.9% 10%;
-//     --primary-foreground: 0 0% 98%;
-//     --secondary: 240 4.8% 95.9%;
-//     --secondary-foreground: 240 5.9% 10%;
-//     --muted: 240 4.8% 95.9%;
-//     --muted-foreground: 240 3.8% 46.1%;
-//     --accent: 240 4.8% 95.9%;
-//     --accent-foreground: 240 5.9% 10%;
-//     --destructive: 0 84.2% 60.2%;
-//     --destructive-foreground: 0 0% 98%;
-//     --border: 240 5.9% 90%;
-//     --input: 240 5.9% 90%;
-//     --ring: 240 5.9% 10%;
-//     --radius: 0rem;
-//   }
-
-//   .dark {
-//     --background: 240 10% 3.9%;
-//     --foreground: 0 0% 98%;
-//     --card: 240 10% 3.9%;
-//     --card-foreground: 0 0% 98%;
-//     --popover: 240 10% 3.9%;
-//     --popover-foreground: 0 0% 98%;
-//     --primary: 0 0% 98%;
-//     --primary-foreground: 240 5.9% 10%;
-//     --secondary: 240 3.7% 15.9%;
-//     --secondary-foreground: 0 0% 98%;
-//     --muted: 240 3.7% 15.9%;
-//     --muted-foreground: 240 5% 64.9%;
-//     --accent: 240 3.7% 15.9%;
-//     --accent-foreground: 0 0% 98%;
-//     --destructive: 0 62.8% 30.6%;
-//     --destructive-foreground: 0 0% 98%;
-//     --border: 240 3.7% 15.9%;
-//     --input: 240 3.7% 15.9%;
-//     --ring: 240 4.9% 83.9%;
-//   }
-// }
-
 #[derive(Debug, Clone, Copy)]
 struct Colors {
     pub title_bar_background: Hsla,
@@ -144,59 +92,106 @@ struct Colors {
     pub border: Hsla,
     pub input: Hsla,
     pub ring: Hsla,
-    pub radius: f32,
+    pub selection: Hsla,
 }
 
 impl Colors {
+    // .light {
+    //     --title_bar_background: 0 0% 100%;
+    //     --background: 0 0% 100%;
+    //     --foreground: 240 10% 3.9%;
+    //     --card: 0 0% 100%;
+    //     --card-foreground: 240 10% 3.9%;
+    //     --popover: 0 0% 100%;
+    //     --popover-foreground: 240 10% 3.9%;
+    //     --primary: 240 5.9% 10%;
+    //     --primary-foreground: 0 0% 98%;
+    //     --secondary: 240 4.8% 95.9%;
+    //     --secondary-foreground: 240 5.9% 10%;
+    //     --muted: 240 4.8% 95.9%;
+    //     --muted-foreground: 240 3.8% 46.1%;
+    //     --accent: 240 4.8% 95.9%;
+    //     --accent-foreground: 240 5.9% 10%;
+    //     --destructive: 0 84.2% 60.2%;
+    //     --destructive-foreground: 0 0% 98%;
+    //     --border: 240 5.9% 90%;
+    //     --input: 240 5.9% 90%;
+    //     --ring: 240 5.9% 10%;
+    //     --radius: 0rem;
+    //     --selection: 211 97% 85%;
+    // }
     fn light() -> Colors {
         Colors {
-            title_bar_background: hsl(0.0, 0.0, 1.0),
-            background: hsl(0.0, 0.0, 1.0),
-            foreground: hsl(240.0, 0.1, 0.039),
-            card: hsl(0.0, 0.0, 1.0),
-            card_foreground: hsl(240.0, 0.1, 0.039),
+            title_bar_background: hsl(0.0, 0.0, 100.),
+            background: hsl(0.0, 0.0, 100.),
+            foreground: hsl(240.0, 10., 3.9),
+            card: hsl(0.0, 0.0, 100.0),
+            card_foreground: hsl(240.0, 10.0, 3.9),
             popover: hsl(0.0, 0.0, 1.0),
-            popover_foreground: hsl(240.0, 0.1, 0.039),
-            primary: hsl(240.0, 0.059, 0.1),
-            primary_foreground: hsl(0.0, 0.0, 0.98),
-            secondary: hsl(240.0, 0.048, 0.959),
-            secondary_foreground: hsl(240.0, 0.059, 0.1),
-            muted: hsl(240.0, 0.048, 0.959),
-            muted_foreground: hsl(240.0, 0.038, 0.461),
-            accent: hsl(240.0, 0.05, 0.96),
-            accent_foreground: hsl(240.0, 0.059, 0.1),
-            destructive: hsl(0.0, 0.842, 0.602),
-            destructive_foreground: hsl(0.0, 0.0, 0.98),
-            border: hsl(240.0, 0.059, 0.9),
-            input: hsl(240.0, 0.059, 0.9),
-            ring: hsl(240.0, 0.059, 0.1),
-            radius: 0.0,
+            popover_foreground: hsl(240.0, 10.0, 3.9),
+            primary: hsl(240.0, 5.9, 10.0),
+            primary_foreground: hsl(0.0, 0.0, 98.0),
+            secondary: hsl(240.0, 4.8, 95.9),
+            secondary_foreground: hsl(240.0, 59.0, 10.0),
+            muted: hsl(240.0, 4.8, 95.9),
+            muted_foreground: hsl(240.0, 3.8, 46.1),
+            accent: hsl(240.0, 5.0, 96.0),
+            accent_foreground: hsl(240.0, 5.9, 10.0),
+            destructive: hsl(0.0, 84.2, 60.2),
+            destructive_foreground: hsl(0.0, 0.0, 98.0),
+            border: hsl(240.0, 5.9, 90.0),
+            input: hsl(240.0, 5.9, 90.0),
+            ring: hsl(240.0, 5.9, 10.0),
+            selection: hsl(211.0, 97.0, 85.0),
         }
     }
 
+    //   .dark {
+    //     --title_bar_background: 0 0% 12%;
+    //     --background: 240 10% 3.9%;
+    //     --foreground: 0 0% 98%;
+    //     --card: 240 10% 3.9%;
+    //     --card-foreground: 0 0% 98%;
+    //     --popover: 240 10% 3.9%;
+    //     --popover-foreground: 0 0% 98%;
+    //     --primary: 0 0% 98%;
+    //     --primary-foreground: 240 5.9% 10%;
+    //     --secondary: 240 3.7% 15.9%;
+    //     --secondary-foreground: 0 0% 98%;
+    //     --muted: 240 3.7% 15.9%;
+    //     --muted-foreground: 240 5% 64.9%;
+    //     --accent: 240 3.7% 15.9%;
+    //     --accent-foreground: 0 0% 98%;
+    //     --destructive: 0 62.8% 30.6%;
+    //     --destructive-foreground: 0 0% 98%;
+    //     --border: 240 3.7% 15.9%;
+    //     --input: 240 3.7% 15.9%;
+    //     --ring: 240 4.9% 83.9%;
+    //     --selection: 211 97% 85%;
+    //   }
     fn dark() -> Colors {
         Colors {
-            title_bar_background: hsl(0.0, 0.0, 0.12),
-            background: hsl(0.0, 0.0, 0.06),
-            foreground: hsl(0.0, 0.0, 0.98),
-            card: hsl(299.0, 0.02, 0.09),
-            card_foreground: hsl(0.0, 0.0, 0.98),
-            popover: hsl(240.0, 0.1, 0.039),
-            popover_foreground: hsl(0.0, 0.0, 0.98),
-            primary: hsl(0.0, 0.0, 0.98),
-            primary_foreground: hsl(240.0, 0.059, 0.1),
-            secondary: hsl(0.0, 0.0, 0.12),
-            secondary_foreground: hsl(0.0, 0.0, 0.98),
-            muted: hsl(240.0, 0.037, 0.159),
-            muted_foreground: hsl(240.0, 0.05, 0.649),
-            accent: hsl(240.0, 0.037, 0.159),
-            accent_foreground: hsl(0.0, 0.0, 0.98),
-            destructive: hsl(0.0, 0.628, 0.306),
-            destructive_foreground: hsl(0.0, 0.0, 0.98),
-            border: hsl(0.0, 0.0, 0.17),
-            input: hsl(240.0, 0.037, 0.159),
-            ring: hsl(240.0, 0.049, 0.839),
-            radius: 0.0,
+            title_bar_background: hsl(0., 0., 12.),
+            background: hsl(0.0, 0.0, 6.0),
+            foreground: hsl(0., 0., 98.),
+            card: hsl(299.0, 2., 9.),
+            card_foreground: hsl(0.0, 0.0, 98.0),
+            popover: hsl(240.0, 10.0, 3.9),
+            popover_foreground: hsl(0.0, 0.0, 98.0),
+            primary: hsl(0.0, 0.0, 98.0),
+            primary_foreground: hsl(240.0, 5.9, 10.0),
+            secondary: hsl(240.0, 3.7, 15.9),
+            secondary_foreground: hsl(0.0, 0.0, 98.0),
+            muted: hsl(240.0, 3.7, 15.9),
+            muted_foreground: hsl(240.0, 5.0, 64.9),
+            accent: hsl(240.0, 3.7, 15.9),
+            accent_foreground: hsl(0.0, 0.0, 98.0),
+            destructive: hsl(0.0, 62.8, 30.6),
+            destructive_foreground: hsl(0.0, 0.0, 98.0),
+            border: hsl(240.0, 3.7, 15.9),
+            input: hsl(240.0, 3.7, 15.9),
+            ring: hsl(240.0, 4.9, 83.9),
+            selection: hsl(211.0, 97.0, 85.0),
         }
     }
 }
@@ -227,6 +222,7 @@ pub struct Theme {
     pub border: Hsla,
     pub input: Hsla,
     pub ring: Hsla,
+    pub selection: Hsla,
     pub radius: f32,
 }
 
@@ -264,7 +260,8 @@ impl From<Colors> for Theme {
             border: colors.border,
             input: colors.input,
             ring: colors.ring,
-            radius: colors.radius,
+            selection: colors.selection,
+            radius: 0.0,
         }
     }
 }
