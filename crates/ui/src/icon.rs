@@ -8,6 +8,7 @@ pub enum IconName {
     Maximize,
     Minimize,
     Close,
+    ChevronDown,
 }
 
 impl IconName {
@@ -19,6 +20,7 @@ impl IconName {
             IconName::Maximize => "icons/maximize.svg",
             IconName::Minimize => "icons/minimize.svg",
             IconName::Close => "icons/close.svg",
+            IconName::ChevronDown => "icons/chevron-down.svg",
         }
         .into()
     }

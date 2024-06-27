@@ -204,7 +204,6 @@ impl<D: PickerDelegate> Picker<D> {
 
     pub fn uniform_list(delegate: D, cx: &mut ViewContext<Self>) -> Self {
         let query_input = Self::new_query_input("Search...", cx);
-
         Self::new(delegate, ContainerKind::UniformList, Some(query_input), cx)
     }
 
