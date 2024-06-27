@@ -173,7 +173,7 @@ impl Colors {
         Colors {
             title_bar_background: hsl(0., 0., 12.),
             background: hsl(0.0, 0.0, 6.0),
-            foreground: hsl(0., 0., 98.),
+            foreground: hsl(240., 5., 65.),
             card: hsl(299.0, 2., 9.),
             card_foreground: hsl(0.0, 0.0, 98.0),
             popover: hsl(240.0, 10.0, 3.9),
