@@ -173,7 +173,7 @@ where
                     .bg(cx.theme().background)
                     .border_1()
                     .border_color(cx.theme().input)
-                    .rounded_sm()
+                    .rounded(px(cx.theme().radius))
                     .shadow_sm()
                     .px_3()
                     .py_2()
@@ -201,7 +201,7 @@ where
                         .bg(cx.theme().background)
                         .border_1()
                         .border_color(cx.theme().input)
-                        .rounded_sm()
+                        .rounded(px(cx.theme().radius))
                         .shadow_md()
                         .track_focus(&self.picker.focus_handle(cx))
                         .child(self.picker.clone()),

@@ -603,7 +603,7 @@ impl Render for TextInput {
                         cx.theme().input
                     })
                     .border_1()
-                    .rounded_sm()
+                    .rounded(px(cx.theme().radius))
                     .shadow_sm()
                     .px_3()
                     .bg(if self.disabled {

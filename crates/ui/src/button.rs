@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
+    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
     InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
@@ -131,9 +131,9 @@ impl RenderOnce for Button {
                 ButtonSize::Medium => this.px_4().py_2().h_8(),
             })
             .map(|this| match self.rounded {
-                ButtonRounded::Small => this.rounded_sm(),
-                ButtonRounded::Medium => this.rounded_md(),
-                ButtonRounded::Large => this.rounded_lg(),
+                ButtonRounded::Small => this.rounded(px(cx.theme().radius * 0.5)),
+                ButtonRounded::Medium => this.rounded(px(cx.theme().radius)),
+                ButtonRounded::Large => this.rounded(px(cx.theme().radius * 2.0)),
                 ButtonRounded::None => this.rounded_none(),
             })
             .when(!self.disabled, |this| {
