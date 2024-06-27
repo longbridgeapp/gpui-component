@@ -15,6 +15,7 @@ mod picker_story;
 mod switch_story;
 
 use ui::{
+    divider::Divider,
     label::Label,
     tab::{Tab, TabBar},
     Selectable,
@@ -58,15 +59,16 @@ impl RenderOnce for StoryContainer {
         div()
             .flex()
             .flex_col()
-            .gap_4()
+            .gap_6()
             .child(
                 div()
                     .flex()
                     .flex_col()
-                    .gap_2()
+                    .gap_4()
                     .child(Label::new(self.name).text_size(px(24.0)))
                     .child(Label::new(self.description).text_size(px(16.0))),
             )
+            .child(Divider::horizontal())
             .children(self.children)
     }
 }
