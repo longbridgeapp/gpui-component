@@ -8,7 +8,9 @@ use gpui::{
 use ui::{
     checkbox::Checkbox,
     dropdown::{Dropdown, DropdownDelegate, DropdownItem},
-    h_flex, v_flex, Disableable as _, Selection,
+    h_flex,
+    theme::ActiveTheme,
+    v_flex, Disableable as _, Selection,
 };
 
 use super::story_case;
@@ -141,6 +143,11 @@ impl Render for DropdownStory {
                     h_flex()
                         .w_full()
                         .items_center()
+                        .p_10()
+                        .rounded_lg()
+                        .bg(cx.theme().card)
+                        .border_1()
+                        .border_color(cx.theme().border)
                         .gap_4()
                         .child("This is other text."),
                 ),

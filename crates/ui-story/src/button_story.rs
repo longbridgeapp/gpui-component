@@ -1,11 +1,11 @@
 use gpui::{
-    div, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, ViewContext,
+    div, px, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, ViewContext,
     WindowContext,
 };
 
 use ui::{
     button::{Button, ButtonSize, ButtonStyle},
-    Clickable, Disableable as _,
+    h_flex, v_flex, Clickable, Disableable as _,
 };
 
 use super::story_case;
@@ -25,31 +25,33 @@ impl Render for ButtonStory {
             "Displays a button or a component that looks like a button.",
         )
         .child(
-            div()
-                .flex()
-                .flex_col()
+            v_flex()
                 .justify_start()
-                .gap_3()
+                .gap_6()
                 .child(
-                    Button::new("button-1", "Primary Button")
-                        .style(ButtonStyle::Primary)
-                        .on_click(Self::on_click),
+                    v_flex()
+                        .w(px(360.))
+                        .gap_6()
+                        .child(
+                            Button::new("button-1", "Primary Button")
+                                .style(ButtonStyle::Primary)
+                                .on_click(Self::on_click),
+                        )
+                        .child(
+                            Button::new("button-2", "Secondary Button")
+                                .style(ButtonStyle::Secondary)
+                                .on_click(Self::on_click),
+                        )
+                        .child(
+                            Button::new("button-4", "Danger Button")
+                                .style(ButtonStyle::Danger)
+                                .on_click(Self::on_click),
+                        ),
                 )
                 .child(
-                    Button::new("button-2", "Secondary Button")
-                        .style(ButtonStyle::Secondary)
-                        .on_click(Self::on_click),
-                )
-                .child(
-                    Button::new("button-4", "Danger Button")
-                        .style(ButtonStyle::Danger)
-                        .on_click(Self::on_click),
-                )
-                .child(
-                    div()
-                        .flex()
+                    h_flex()
                         .items_center()
-                        .gap_3()
+                        .gap_6()
                         .child(
                             Button::new("button-disabled1", "Disabled Button")
                                 .style(ButtonStyle::Primary)
@@ -70,10 +72,9 @@ impl Render for ButtonStory {
                         ),
                 )
                 .child(
-                    div()
-                        .flex()
+                    h_flex()
                         .items_center()
-                        .gap_3()
+                        .gap_6()
                         .child(
                             Button::new("button-6", "Primary Button")
                                 .style(ButtonStyle::Primary)

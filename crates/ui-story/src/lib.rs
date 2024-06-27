@@ -99,6 +99,7 @@ pub struct Stories {
 
     button_story: View<ButtonStory>,
     input_story: View<InputStory>,
+    checkbox_story: View<CheckboxStory>,
     switch_story: View<SwitchStory>,
     picker_story: View<PickerStory>,
     dropdown_story: View<DropdownStory>,
@@ -108,7 +109,8 @@ impl Stories {
     fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             active: StoryType::Button,
-            button_story: cx.new_view(|cx| ButtonStory {}),
+            button_story: cx.new_view(|_| ButtonStory {}),
+            checkbox_story: cx.new_view(|cx| CheckboxStory::new(cx)),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
             switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
             picker_story: cx.new_view(|cx| PickerStory::new(cx)),
@@ -164,7 +166,7 @@ impl Render for Stories {
             .map(|this| match self.active {
                 StoryType::Button => this.child(self.button_story.clone()),
                 StoryType::Input => this.child(self.input_story.clone()),
-                StoryType::Checkbox => this.child(CheckboxStory::new(cx).into_any_element()),
+                StoryType::Checkbox => this.child(self.checkbox_story.clone()),
                 StoryType::Switch => this.child(self.switch_story.clone()),
                 StoryType::Picker => this.child(self.picker_story.clone()),
                 StoryType::Dropdown => this.child(self.dropdown_story.clone()),
