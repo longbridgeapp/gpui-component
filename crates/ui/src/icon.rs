@@ -1,4 +1,4 @@
-use gpui::{svg, Element, IntoElement, RenderOnce, SharedString, Styled as _, Svg, WindowContext};
+use gpui::{svg, IntoElement, RenderOnce, SharedString, Styled as _, Svg, WindowContext};
 
 #[derive(IntoElement)]
 pub enum IconName {
@@ -27,7 +27,7 @@ impl IconName {
 }
 
 impl RenderOnce for IconName {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
         Icon::new(self)
     }
 }
@@ -41,7 +41,7 @@ pub struct Icon {
 impl Icon {
     pub fn new(name: IconName) -> Self {
         Self {
-            base: svg(),
+            base: svg().flex_none().size_full(),
             path: name.path(),
         }
     }
@@ -56,7 +56,7 @@ impl Icon {
 }
 
 impl RenderOnce for Icon {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        self.base.flex_none().path(self.path)
+    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+        self.base.path(self.path)
     }
 }

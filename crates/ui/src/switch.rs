@@ -133,14 +133,18 @@ impl RenderOnce for Switch {
                     ),
             )
             .when_some(self.label, |this, label| {
-                this.child(Label::new(label).map(|this| match self.size {
+                this.child(div().child(label).map(|this| match self.size {
                     ButtonSize::Medium => this.text_base(),
                     ButtonSize::Small => this.text_sm(),
                 }))
             })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
-                |this, on_click| this.on_click(move |ev, cx| on_click(ev, cx)),
+                |this, on_click| {
+                    this.on_click(move |ev, cx| {
+                        on_click(ev, cx);
+                    })
+                },
             )
     }
 }

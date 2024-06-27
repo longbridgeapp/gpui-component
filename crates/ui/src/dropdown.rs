@@ -183,7 +183,7 @@ where
                         cx.notify();
                     }))
                     .child(
-                        v_flex()
+                        h_flex()
                             .items_center()
                             .justify_between()
                             .child(title)

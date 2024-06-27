@@ -127,23 +127,36 @@ impl Render for Workspace {
                         })
                     })
                     // left side
-                    .child(div().flex().items_center().child(Label::new("GPUI App")))
                     .child(
-                        div().flex().items_center().justify_end().px_2().child(
-                            Switch::new("theme-mode")
-                                .size(ButtonSize::Small)
-                                .checked(cx.theme().mode.is_dark())
-                                .label_side(LabelSide::Left)
-                                .label("Dark Mode")
-                                .on_click(cx.listener(|v, _, cx| {
-                                    let mode = match cx.theme().mode {
-                                        ui::theme::ThemeMode::Light => ui::theme::ThemeMode::Dark,
-                                        ui::theme::ThemeMode::Dark => ui::theme::ThemeMode::Light,
-                                    };
+                        div()
+                            .flex()
+                            .items_center()
+                            .on_mouse_move(|_, cx| cx.stop_propagation())
+                            .child("GPUI App"),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_end()
+                            .px_2()
+                            .on_mouse_move(|_, cx| cx.stop_propagation())
+                            .child(
+                                Switch::new("theme-mode")
+                                    .size(ButtonSize::Small)
+                                    .checked(cx.theme().mode.is_dark())
+                                    .label_side(LabelSide::Left)
+                                    .label("Dark Mode")
+                                    .on_click(move |_, cx| {
+                                        dbg!("theme-mode clicked");
+                                        let mode = match cx.theme().mode.is_dark() {
+                                            false => ui::theme::ThemeMode::Dark,
+                                            true => ui::theme::ThemeMode::Light,
+                                        };
 
-                                    Theme::change(mode, cx);
-                                })),
-                        ),
+                                        Theme::change(mode, cx);
+                                    }),
+                            ),
                     ),
             )
             .child(div().flex().px_4().gap_2().child(self.stories.clone()))

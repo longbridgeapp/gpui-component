@@ -25,7 +25,8 @@ pub mod tab;
 
 pub use clickable::Clickable;
 pub use disableable::Disableable;
-pub use selectable::*;
+pub use event::InterativeElementExt;
+pub use selectable::{Selectable, Selection};
 
 pub use icon::*;
 pub use stock::*;
