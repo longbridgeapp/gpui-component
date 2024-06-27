@@ -29,3 +29,9 @@ pub use selectable::*;
 
 pub use icon::*;
 pub use stock::*;
+
+/// Initialize the UI module.
+pub fn init(cx: &mut gpui::AppContext) {
+    input::init(cx);
+    picker::init(cx);
+}

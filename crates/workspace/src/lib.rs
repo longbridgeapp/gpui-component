@@ -6,6 +6,7 @@ use ui::{
     button::ButtonSize,
     input,
     label::Label,
+    picker,
     switch::{LabelSide, Switch},
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
@@ -40,9 +41,9 @@ impl Workspace {
         app_state: Arc<AppState>,
         cx: &mut AppContext,
     ) -> Task<anyhow::Result<WindowHandle<Workspace>>> {
-        let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
+        ui::init(cx);
 
-        input::init(cx);
+        let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {
