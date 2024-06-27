@@ -22,7 +22,6 @@ actions!(picker_story, [DismissPicker]);
 pub struct ListItemDeletegate {
     story: WeakView<PickerStory>,
     selected_index: usize,
-    items: Vec<String>,
     matches: Vec<String>,
 }
 
@@ -48,7 +47,7 @@ impl PickerDelegate for ListItemDeletegate {
         _cx: &mut ViewContext<Picker<Self>>,
     ) -> Option<Self::ListItem> {
         if let Some(item) = self.matches.get(ix) {
-            let list_item = ListItem::new(format!("item-{}", ix))
+            let list_item = ListItem::new(("item", ix))
                 .check_icon(ui::IconName::Check)
                 .selected(selected)
                 .py_1()
@@ -65,14 +64,18 @@ impl PickerDelegate for ListItemDeletegate {
         query: &str,
         cx: &mut ViewContext<Picker<Self>>,
     ) -> gpui::Task<()> {
-        let matched_items = self
-            .items
-            .iter()
-            .filter(|item| item.contains(query))
-            .cloned()
-            .collect();
+        if let Some(story) = self.story.upgrade() {
+            let matched_items = story
+                .read(cx)
+                .items
+                .iter()
+                .filter(|item| item.contains(query))
+                .cloned()
+                .collect();
 
-        self.matches = matched_items;
+            self.matches = matched_items;
+            cx.notify();
+        }
 
         Task::ready(())
     }
@@ -102,12 +105,13 @@ impl PickerDelegate for ListItemDeletegate {
 pub struct PickerStory {
     picker: View<Picker<ListItemDeletegate>>,
     open: bool,
+    items: Vec<String>,
     selected_value: Option<String>,
 }
 
 impl PickerStory {
     pub(crate) fn new(cx: &mut ViewContext<Self>) -> Self {
-        let items = [
+        let items: Vec<String> = [
             "Baguette (France)",
             "Baklava (Turkey)",
             "Beef Wellington (UK)",
@@ -157,18 +161,18 @@ impl PickerStory {
             "Tortilla (Spain)",
             "Tzatziki (Greece)",
             "Wiener Schnitzel (Austria)",
-        ];
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
 
         let story = cx.view().downgrade();
         let picker = cx.new_view(|cx| {
-            let items: Vec<String> = items.iter().map(|s| s.to_string()).collect();
-
             let mut picker = Picker::uniform_list(
                 ListItemDeletegate {
                     story,
                     selected_index: 0,
                     matches: items.clone(),
-                    items,
                 },
                 cx,
             )
@@ -180,6 +184,7 @@ impl PickerStory {
         });
 
         Self {
+            items,
             picker,
             open: false,
             selected_value: None,

@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, Div, InteractiveElement, IntoElement,
+    div, prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
     MouseButton, MouseDownEvent, ParentElement, RenderOnce, SharedString, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
@@ -17,7 +17,7 @@ pub struct ListItem {
 }
 
 impl ListItem {
-    pub fn new(id: impl Into<SharedString>) -> Self {
+    pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             base: h_flex().id(id.into()),
             disabled: false,
@@ -30,6 +30,16 @@ impl ListItem {
 
     pub fn check_icon(mut self, icon: IconName) -> Self {
         self.check_icon = Some(icon);
+        self
+    }
+
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
         self
     }
 

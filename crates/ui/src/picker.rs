@@ -24,7 +24,12 @@ actions!(
 );
 
 use crate::{
-    divider::Divider, empty::Empty, input::TextInput, label::Label, stock::*, theme::ActiveTheme,
+    divider::Divider,
+    empty::Empty,
+    input::{TextEvent, TextInput},
+    label::Label,
+    stock::*,
+    theme::ActiveTheme,
     StyledExt as _,
 };
 
@@ -80,7 +85,9 @@ pub trait PickerDelegate: Sized + 'static {
     fn separators_after_indices(&self) -> Vec<usize> {
         Vec::new()
     }
-    fn update_matches(&mut self, query: &str, cx: &mut ViewContext<Picker<Self>>) -> Task<()>;
+    fn update_matches(&mut self, query: &str, cx: &mut ViewContext<Picker<Self>>) -> Task<()> {
+        Task::ready(())
+    }
     fn confirm_update_query(&mut self, _cx: &mut ViewContext<Picker<Self>>) -> Option<String> {
         None
     }
@@ -173,11 +180,13 @@ impl<D: PickerDelegate> Picker<D> {
         placehoder: impl Into<SharedString>,
         cx: &mut ViewContext<Self>,
     ) -> View<TextInput> {
-        cx.new_view(|cx| {
+        let input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx).appearance(false);
             input.set_placeholder(placehoder, cx);
             input
-        })
+        });
+        cx.subscribe(&input, Self::on_query_input_event).detach();
+        input
     }
 
     pub fn list(delegate: D, cx: &mut ViewContext<Self>) -> Self {
@@ -444,6 +453,22 @@ impl<D: PickerDelegate> Picker<D> {
         // }
         cx.notify();
     }
+
+    fn on_query_input_event(
+        &mut self,
+        _: View<TextInput>,
+        event: &TextEvent,
+        cx: &mut ViewContext<Self>,
+    ) {
+        #[allow(clippy::single_match)]
+        match event {
+            TextEvent::Input { text } => {
+                self.set_query(text, cx);
+                self.refresh(cx);
+            }
+            _ => {}
+        }
+    }
 }
 
 impl<D: PickerDelegate> Render for Picker<D> {
@@ -481,9 +506,14 @@ impl<D: PickerDelegate> Render for Picker<D> {
             .when(self.delegate.match_count() == 0, |el| {
                 el.child(
                     v_flex()
-                        .flex_grow()
-                        .py_2()
-                        .child(div().child(Label::new("No matched.").text_color(cx.theme().muted))),
+                        .h_full()
+                        .size_full()
+                        .h_16()
+                        .items_center()
+                        .content_center()
+                        .justify_center()
+                        .text_color(cx.theme().muted_foreground)
+                        .child("No matched."),
                 )
             })
             .on_key_down(cx.listener(|this, ev: &gpui::KeyDownEvent, cx| {

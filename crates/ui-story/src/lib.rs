@@ -6,11 +6,10 @@ use gpui::{
     RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
     VisualContext, WindowContext,
 };
-use picker_story::PickerStory;
-use switch_story::SwitchStory;
 
 mod button_story;
 mod checkbox_story;
+// mod dropdown_story;
 mod input_story;
 mod picker_story;
 mod switch_story;
@@ -23,6 +22,8 @@ use ui::{
 
 use button_story::ButtonStory;
 use input_story::InputStory;
+use picker_story::PickerStory;
+use switch_story::SwitchStory;
 
 pub fn story_case(name: &'static str, description: &'static str) -> StoryContainer {
     StoryContainer::new(name, description)

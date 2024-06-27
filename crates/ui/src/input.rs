@@ -7,7 +7,7 @@ use prelude::FluentBuilder as _;
 use unicode_segmentation::*;
 
 actions!(
-    text_input,
+    input,
     [
         Backspace,
         Delete,
@@ -24,8 +24,13 @@ actions!(
         Paste,
         MoveToStartOfLine,
         MoveToEndOfLine,
+        TextChanged,
     ]
 );
+
+pub enum TextEvent {
+    Input { text: SharedString },
+}
 
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
@@ -59,6 +64,8 @@ pub struct TextInput {
     masked: bool,
     appearance: bool,
 }
+
+impl EventEmitter<TextEvent> for TextInput {}
 
 impl TextInput {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
@@ -316,6 +323,9 @@ impl ViewInputHandler for TextInput {
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range.take();
+        cx.emit(TextEvent::Input {
+            text: self.text.clone(),
+        });
         cx.notify();
     }
 
@@ -340,7 +350,9 @@ impl ViewInputHandler for TextInput {
             .map(|range_utf16| self.range_from_utf16(range_utf16))
             .map(|new_range| new_range.start + range.start..new_range.end + range.end)
             .unwrap_or_else(|| range.start + new_text.len()..range.start + new_text.len());
-
+        cx.emit(TextEvent::Input {
+            text: self.text.clone(),
+        });
         cx.notify();
     }
 
