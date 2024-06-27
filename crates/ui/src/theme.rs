@@ -240,6 +240,7 @@ impl From<Colors> for Theme {
             mode: ThemeMode::Dark,
             transparent: Hsla::transparent_black(),
             font_size: 14.0,
+            radius: 4.0,
             title_bar_background: colors.title_bar_background,
             background: colors.background,
             foreground: colors.foreground,
@@ -261,7 +262,6 @@ impl From<Colors> for Theme {
             input: colors.input,
             ring: colors.ring,
             selection: colors.selection,
-            radius: 0.0,
         }
     }
 }
