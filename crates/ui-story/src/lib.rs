@@ -60,6 +60,7 @@ impl StoryContainer {
 impl RenderOnce for StoryContainer {
     fn render(self, _: &mut WindowContext) -> impl IntoElement {
         div()
+            .size_full()
             .flex()
             .flex_col()
             .gap_6()

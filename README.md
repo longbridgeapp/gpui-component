@@ -56,6 +56,7 @@ There have a part of UI components from [Zed](https://github.com/zed-industries/
 
 - title_bar
 - picker
+- popover (based on popup_menu)
 
 > I think we can discuss them with Zed team to change the license to MIT or Apache License for share to community.
 

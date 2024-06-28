@@ -1,16 +1,14 @@
-use std::borrow::Borrow;
-use std::{alloc::Layout, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::theme::ActiveTheme;
 use crate::{Clickable, Selectable, StyledExt};
 use gpui::{
     actions, anchored, deferred, div, prelude::FluentBuilder as _, AnchorCorner, AnyElement,
-    AnyView, AppContext, Bounds, DismissEvent, Div, Element, ElementId, EventEmitter, FocusHandle,
-    FocusableView, HitboxId, InteractiveElement, IntoElement, KeyBinding, LayoutId, ManagedView,
-    MouseButton, ParentElement, Pixels, Render, RenderOnce, StatefulInteractiveElement as _, Style,
-    StyleRefinement, Styled, View, ViewContext, VisualContext, WindowContext,
+    AppContext, Bounds, DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView,
+    HitboxId, InteractiveElement, IntoElement, LayoutId, ManagedView, ParentElement, Pixels,
+    Render, Style, Styled, View, ViewContext, VisualContext, WindowContext,
 };
-use gpui::{px, SharedString};
+use gpui::{point, px, DispatchPhase, MouseDownEvent, Point, SharedString};
 
 actions!(popover, [Dismiss]);
 
@@ -86,7 +84,7 @@ impl<M: ManagedView> Popover<M> {
             id: id.into(),
             trigger_builder: None,
             content_builder: None,
-            anchor: AnchorCorner::BottomRight,
+            anchor: AnchorCorner::TopLeft,
             open: false,
         }
     }
@@ -145,10 +143,27 @@ impl<M: ManagedView> Popover<M> {
         *popover.borrow_mut() = Some(new_popover);
         cx.refresh();
     }
+
+    fn resolved_attach(&self) -> AnchorCorner {
+        match self.anchor {
+            AnchorCorner::TopLeft => AnchorCorner::BottomLeft,
+            AnchorCorner::TopRight => AnchorCorner::BottomRight,
+            AnchorCorner::BottomLeft => AnchorCorner::TopLeft,
+            AnchorCorner::BottomRight => AnchorCorner::TopRight,
+        }
+    }
+
+    fn resolved_offset(&self, cx: &WindowContext) -> Point<Pixels> {
+        let offset = px(0.);
+        match self.anchor {
+            AnchorCorner::TopRight | AnchorCorner::BottomRight => point(offset, px(0.)),
+            AnchorCorner::TopLeft | AnchorCorner::BottomLeft => point(-offset, px(0.)),
+        }
+    }
 }
 
 pub struct PopoverElementState<M> {
-    child_bounds: Option<Bounds<Pixels>>,
+    trigger_bounds: Option<Bounds<Pixels>>,
     popover: Rc<RefCell<Option<View<M>>>>,
 }
 
@@ -156,7 +171,7 @@ impl<M> Clone for PopoverElementState<M> {
     fn clone(&self) -> Self {
         Self {
             popover: Rc::clone(&self.popover),
-            child_bounds: self.child_bounds,
+            trigger_bounds: self.trigger_bounds,
         }
     }
 }
@@ -165,13 +180,13 @@ impl<M> Default for PopoverElementState<M> {
     fn default() -> Self {
         Self {
             popover: Rc::default(),
-            child_bounds: None,
+            trigger_bounds: None,
         }
     }
 }
 
 pub struct PopoverFrameState {
-    trigger_layour_id: Option<LayoutId>,
+    trigger_layout_id: Option<LayoutId>,
     trigger_element: Option<AnyElement>,
     popover_element: Option<AnyElement>,
 }
@@ -201,21 +216,19 @@ impl<M: ManagedView> Element for Popover<M> {
             global_id.unwrap(),
             |element_state: Option<PopoverElementState<M>>, cx| {
                 let element_state = element_state.unwrap_or_default();
-                let style = Style::default();
 
                 let mut popover_layout_id = None;
                 let popover_element = element_state.popover.borrow_mut().as_mut().map(|popover| {
                     let mut anchored = anchored().snap_to_window().anchor(self.anchor);
-                    if let Some(child_bounds) = element_state.child_bounds {
-                        anchored = anchored.position(gpui::Point {
-                            x: child_bounds.origin.x + px(40.),
-                            y: child_bounds.origin.y,
-                        });
+                    if let Some(trigger_bounds) = element_state.trigger_bounds {
+                        anchored = anchored.position(
+                            self.resolved_attach().corner(trigger_bounds)
+                                + self.resolved_offset(cx),
+                        );
                     }
-                    let mut element =
-                        deferred(anchored.child(div().occlude().child(popover.clone())))
-                            .with_priority(1)
-                            .into_any();
+                    let mut element = deferred(anchored.child(popover.clone()))
+                        .with_priority(1)
+                        .into_any();
 
                     popover_layout_id = Some(element.request_layout(cx));
                     element
@@ -230,7 +243,7 @@ impl<M: ManagedView> Element for Popover<M> {
                     .map(|trigger_element| trigger_element.request_layout(cx));
 
                 let layout_id = cx.request_layout(
-                    style,
+                    Style::default(),
                     popover_layout_id.into_iter().chain(trigger_layout_id),
                 );
 
@@ -238,7 +251,7 @@ impl<M: ManagedView> Element for Popover<M> {
                     (
                         layout_id,
                         PopoverFrameState {
-                            trigger_layour_id: trigger_layout_id,
+                            trigger_layout_id,
                             trigger_element,
                             popover_element,
                         },
@@ -256,42 +269,50 @@ impl<M: ManagedView> Element for Popover<M> {
         request_layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
-        if let Some(trigger_element) = &mut request_layout.trigger_element {
-            trigger_element.prepaint(cx);
+        if let Some(element) = &mut request_layout.trigger_element {
+            element.prepaint(cx);
         }
 
-        if let Some(popover_element) = &mut request_layout.popover_element {
-            popover_element.prepaint(cx);
+        if let Some(element) = &mut request_layout.popover_element {
+            element.prepaint(cx);
         }
 
-        let hitbox_id = request_layout.trigger_layour_id.map(|layout_id| {
+        request_layout.trigger_layout_id.map(|layout_id| {
             let bounds = cx.layout_bounds(layout_id);
-            // cx.with_element_state(global_id.unwrap(), |element_state, _cx| {
-            //     let mut element_state: PopoverElementState<M> = element_state.unwrap();
-            //     element_state.child_bounds = Some(bounds);
-            //     ((), element_state)
-            // });
+            cx.with_element_state(global_id.unwrap(), |element_state, _cx| {
+                let mut element_state: PopoverElementState<M> = element_state.unwrap();
+                element_state.trigger_bounds = Some(bounds);
+                ((), element_state)
+            });
 
             cx.insert_hitbox(bounds, false).id
-        });
-
-        hitbox_id
+        })
     }
 
     fn paint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<gpui::Pixels>,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<gpui::Pixels>,
         request_layout: &mut Self::RequestLayoutState,
-        prepaint: &mut Self::PrepaintState,
+        trigger_hitbox: &mut Option<HitboxId>,
         cx: &mut WindowContext,
     ) {
-        if let Some(trigger_element) = &mut request_layout.trigger_element {
-            trigger_element.paint(cx);
+        if let Some(element) = &mut request_layout.trigger_element {
+            element.paint(cx);
         }
 
-        if let Some(popover_element) = &mut request_layout.popover_element {
-            popover_element.paint(cx);
+        if let Some(element) = &mut request_layout.popover_element {
+            element.paint(cx);
+
+            if let Some(hitbox) = *trigger_hitbox {
+                // Mouse-downing outside the menu dismisses it, so we don't
+                // want a click on the toggle to re-open it.
+                cx.on_mouse_event(move |_: &MouseDownEvent, phase, cx| {
+                    if phase == DispatchPhase::Bubble && hitbox.is_hovered(cx) {
+                        cx.stop_propagation()
+                    }
+                })
+            }
         }
     }
 }

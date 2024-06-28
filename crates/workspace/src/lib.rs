@@ -185,6 +185,13 @@ impl Render for Workspace {
                     ),
             )
             .children(self.render_notifications(cx))
-            .child(div().flex().px_4().gap_2().child(self.stories.clone()))
+            .child(
+                div()
+                    .flex()
+                    .flex_1()
+                    .px_4()
+                    .gap_2()
+                    .child(self.stories.clone()),
+            )
     }
 }
