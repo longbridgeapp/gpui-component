@@ -237,7 +237,7 @@ where
                             .items_center()
                             .justify_between()
                             .child(div().flex_1().child(title))
-                            .child(div().w_4().h_4().child(IconName::ChevronDown)),
+                            .child(div().w_4().h_4().child(IconName::ChevronsUpDown)),
                     ),
             )
             .when(self.open, |this| {
