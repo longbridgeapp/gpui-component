@@ -5,12 +5,12 @@ use gpui::{
 
 use ui::{
     button::{Button, ButtonSize, ButtonStyle},
-    h_flex, v_flex, Clickable, Disableable as _,
+    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName,
 };
 
 use super::story_case;
 
-pub struct ButtonStory;
+pub struct ButtonStory {}
 
 impl ButtonStory {
     fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
@@ -26,6 +26,7 @@ impl Render for ButtonStory {
         )
         .child(
             v_flex()
+                .w_full()
                 .justify_start()
                 .gap_6()
                 .child(
@@ -45,6 +46,28 @@ impl Render for ButtonStory {
                         .child(
                             Button::new("button-4", "Danger Button")
                                 .style(ButtonStyle::Danger)
+                                .on_click(Self::on_click),
+                        ),
+                )
+                .child(
+                    h_flex()
+                        .gap_6()
+                        .child(
+                            Button::new("button-icon-1", "Confirm")
+                                .icon(IconName::Check)
+                                .style(ButtonStyle::Primary)
+                                .on_click(Self::on_click),
+                        )
+                        .child(
+                            Button::new("button-icon-2", "Abort")
+                                .icon(IconName::Close)
+                                .style(ButtonStyle::Secondary)
+                                .on_click(Self::on_click),
+                        )
+                        .child(
+                            Button::new("button-icon-3", "Maximize")
+                                .icon(Icon::new(IconName::Maximize))
+                                .style(ButtonStyle::Secondary)
                                 .on_click(Self::on_click),
                         ),
                 )

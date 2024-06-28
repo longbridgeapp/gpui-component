@@ -1,4 +1,7 @@
-use gpui::{svg, IntoElement, RenderOnce, SharedString, Styled, Svg, WindowContext};
+use gpui::{
+    div, rgb, svg, Div, InteractiveElement, IntoElement, ParentElement as _, RenderOnce,
+    SharedString, StyleRefinement, Styled, Svg, TextStyle, TextStyleRefinement, WindowContext,
+};
 
 use crate::theme::ActiveTheme;
 
@@ -30,6 +33,12 @@ impl IconName {
     }
 }
 
+impl Into<Icon> for IconName {
+    fn into(self) -> Icon {
+        Icon::new(self)
+    }
+}
+
 impl RenderOnce for IconName {
     fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
         Icon::new(self)
@@ -42,16 +51,10 @@ pub struct Icon {
     path: SharedString,
 }
 
-impl Styled for Icon {
-    fn style(&mut self) -> &mut gpui::StyleRefinement {
-        self.base.style()
-    }
-}
-
 impl Icon {
     pub fn new(name: IconName) -> Self {
         Self {
-            base: svg().flex_none().size_4(),
+            base: svg().flex_none().size_4().text_color(rgb(0x000000)),
             path: name.path(),
         }
     }
@@ -65,8 +68,14 @@ impl Icon {
     }
 }
 
+impl Styled for Icon {
+    fn style(&mut self) -> &mut StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for Icon {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        self.base.text_color(cx.theme().foreground).path(self.path)
+    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+        self.base.path(self.path)
     }
 }

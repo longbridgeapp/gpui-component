@@ -1,13 +1,13 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
+    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
+    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 use crate::{
-    span,
+    h_flex, span,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
-    Clickable, Disableable, Selectable,
+    Clickable, Disableable, Icon, IconName, Selectable,
 };
 
 pub enum ButtonRounded {
@@ -17,11 +17,13 @@ pub enum ButtonRounded {
     Large,
 }
 
+#[derive(Clone, Copy)]
 pub enum ButtonSize {
     Small,
     Medium,
 }
 
+#[derive(Clone, Copy)]
 pub enum ButtonStyle {
     Primary,
     Secondary,
@@ -32,6 +34,7 @@ pub enum ButtonStyle {
 pub struct Button {
     pub base: Div,
     id: ElementId,
+    icon: Option<Icon>,
     label: SharedString,
     disabled: bool,
     selected: bool,
@@ -49,6 +52,7 @@ impl Button {
         Self {
             base: div(),
             id: id.into(),
+            icon: None,
             label: label.into(),
             disabled: false,
             selected: false,
@@ -79,6 +83,11 @@ impl Button {
 
     pub fn size(mut self, size: ButtonSize) -> Self {
         self.size = size;
+        self
+    }
+
+    pub fn icon(mut self, icon: impl Into<Icon>) -> Self {
+        self.icon = Some(icon.into());
         self
     }
 
@@ -175,9 +184,15 @@ impl RenderOnce for Button {
                     normal_style.fg
                 };
 
-                span()
-                    .child(self.label)
+                h_flex()
+                    .items_center()
+                    .justify_center()
+                    .gap_2()
                     .text_color(text_color)
+                    .when_some(self.icon, |this, icon| {
+                        this.child(icon.text_color(text_color))
+                    })
+                    .child(self.label)
                     .map(|this| match self.size {
                         ButtonSize::Small => this.text_sm(),
                         ButtonSize::Medium => this.text_base(),
