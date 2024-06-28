@@ -134,6 +134,8 @@ impl RenderOnce for Button {
             .flex()
             .items_center()
             .justify_center()
+            .when_some(self.width, |this, width| this.w(width))
+            .when_some(self.height, |this, height| this.h(height))
             .map(|this| match self.size {
                 ButtonSize::Small => this.px_3().py_2().h_6(),
                 ButtonSize::Medium => this.px_4().py_2().h_8(),

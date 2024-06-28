@@ -20,6 +20,7 @@ pub mod dropdown;
 pub mod input;
 pub mod list;
 pub mod picker;
+pub mod popover;
 pub mod switch;
 pub mod tab;
 pub mod tooltip;
@@ -37,4 +38,5 @@ pub fn init(cx: &mut gpui::AppContext) {
     input::init(cx);
     picker::init(cx);
     dropdown::init(cx);
+    popover::init(cx);
 }

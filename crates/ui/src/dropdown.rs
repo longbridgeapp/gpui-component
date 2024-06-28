@@ -24,7 +24,7 @@ use crate::{
     list::ListItem,
     picker::{self, Picker, PickerDelegate},
     theme::ActiveTheme,
-    v_flex, Icon, IconName,
+    Icon, IconName,
 };
 
 /// A trait for items that can be displayed in a dropdown.
