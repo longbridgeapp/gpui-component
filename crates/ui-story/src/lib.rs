@@ -17,7 +17,7 @@ use ui::{
     divider::Divider,
     label::Label,
     tab::{Tab, TabBar},
-    Selectable,
+    Icon, IconName, Selectable,
 };
 
 use button_story::ButtonStory;
@@ -141,25 +141,42 @@ impl Stories {
             .gap_4()
             .w_full()
             .child(TabBar::new("story-tabs").children(vec![
-                self.tab("story-button", StoryType::Button, cx),
-                self.tab("story-input", StoryType::Input, cx),
-                self.tab("story-checkbox", StoryType::Checkbox, cx),
-                self.tab("story-switch", StoryType::Switch, cx),
-                self.tab("story-picker", StoryType::Picker, cx),
-                self.tab("story-dropdown", StoryType::Dropdown, cx),
-                self.tab("story-tooltip", StoryType::Tooltip, cx),
+                self.tab("story-button", StoryType::Button, Some(IconName::Close), cx),
+                self.tab("story-input", StoryType::Input, None, cx),
+                self.tab(
+                    "story-checkbox",
+                    StoryType::Checkbox,
+                    Some(IconName::Check),
+                    cx,
+                ),
+                self.tab("story-switch", StoryType::Switch, None, cx),
+                self.tab("story-picker", StoryType::Picker, None, cx),
+                self.tab("story-dropdown", StoryType::Dropdown, None, cx),
+                self.tab("story-tooltip", StoryType::Tooltip, None, cx),
             ]))
     }
 
-    fn tab(&self, id: &str, ty: StoryType, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn tab(
+        &self,
+        id: &str,
+        ty: StoryType,
+        icon: Option<impl Into<Icon>>,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
         let name = format!("{}", ty);
         let is_active = ty == self.active;
 
-        Tab::new(SharedString::from(id.to_string()), name)
+        let tab = Tab::new(SharedString::from(id.to_string()), name)
             .selected(is_active)
             .on_click(cx.listener(move |this, _, cx| {
                 this.set_active(ty, cx);
-            }))
+            }));
+
+        if let Some(icon) = icon {
+            tab.prefix(icon.into())
+        } else {
+            tab
+        }
     }
 }
 

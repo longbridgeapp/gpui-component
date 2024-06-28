@@ -1,9 +1,10 @@
-use gpui::{
-    div, rgb, svg, Div, InteractiveElement, IntoElement, ParentElement as _, RenderOnce,
-    SharedString, StyleRefinement, Styled, Svg, TextStyle, TextStyleRefinement, WindowContext,
-};
-
 use crate::theme::ActiveTheme;
+use gpui::{
+    div, rgb, svg, AnyElement, Div, Hsla, InteractiveElement, IntoElement, ParentElement as _,
+    RenderOnce, SharedString, StyleRefinement, Styled, Svg, TextStyle, TextStyleRefinement,
+    WindowContext,
+};
+use windows::Win32::Foundation::NOERROR;
 
 #[derive(IntoElement)]
 pub enum IconName {
@@ -49,13 +50,15 @@ impl RenderOnce for IconName {
 pub struct Icon {
     base: Svg,
     path: SharedString,
+    text_color: Option<Hsla>,
 }
 
 impl Icon {
     pub fn new(name: IconName) -> Self {
         Self {
-            base: svg().flex_none().size_4().text_color(rgb(0x000000)),
+            base: svg().flex_none().size_4(),
             path: name.path(),
+            text_color: None,
         }
     }
 
@@ -72,10 +75,23 @@ impl Styled for Icon {
     fn style(&mut self) -> &mut StyleRefinement {
         self.base.style()
     }
+
+    fn text_color(mut self, color: impl Into<Hsla>) -> Self {
+        self.text_color = Some(color.into());
+        self
+    }
 }
 
 impl RenderOnce for Icon {
-    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
-        self.base.path(self.path)
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let text_color = self.text_color.unwrap_or_else(|| cx.theme().foreground);
+
+        self.base.text_color(text_color).path(self.path)
+    }
+}
+
+impl Into<AnyElement> for Icon {
+    fn into(self) -> AnyElement {
+        self.into_any_element()
     }
 }

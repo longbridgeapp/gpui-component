@@ -10,9 +10,7 @@ use ui::{
     label::Label,
     list::ListItem,
     picker::{Picker, PickerDelegate},
-    switch::{LabelSide, Switch},
-    theme::{ActiveTheme, Colorize},
-    v_flex, Clickable as _, Disableable as _, Selectable, StyledExt,
+    v_flex, Clickable as _,
 };
 
 use super::story_case;

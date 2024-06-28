@@ -1,8 +1,9 @@
 use crate::selectable::Selectable;
 use crate::theme::{ActiveTheme, Colorize};
+use crate::Icon;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    div, AnyElement, Div, IntoElement, ParentElement as _, RenderOnce, SharedString, Stateful,
+    div, px, AnyElement, Div, IntoElement, ParentElement as _, RenderOnce, SharedString, Stateful,
     StatefulInteractiveElement, WindowContext,
 };
 use gpui::{InteractiveElement, Styled as _};
@@ -59,7 +60,11 @@ impl StatefulInteractiveElement for Tab {}
 
 impl RenderOnce for Tab {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.theme();
+        let (text_color, bg_color) = match (self.selected, self.disabled) {
+            (true, _) => (cx.theme().foreground, cx.theme().background),
+            (false, true) => (cx.theme().foreground.opacity(0.5), cx.theme().muted),
+            (false, false) => (cx.theme().muted_foreground, cx.theme().muted),
+        };
 
         self.base
             .flex()
@@ -70,17 +75,13 @@ impl RenderOnce for Tab {
             .py_1()
             .px_3()
             .min_w_16()
-            .text_color(theme.muted_foreground)
-            .bg(theme.muted)
-            .when(self.selected, |this| {
-                this.text_color(theme.foreground)
-                    .bg(theme.background)
-                    .rounded_sm()
+            .text_color(text_color)
+            .bg(bg_color)
+            .when(self.selected, |this| this.rounded(px(6.)))
+            .when(self.disabled, |this| this)
+            .when_some(self.prefix, |this, prefix| {
+                this.child(prefix).text_color(text_color)
             })
-            .when(self.disabled, |this| {
-                this.text_color(theme.foreground.opacity(0.5))
-            })
-            .when_some(self.prefix, |this, prefix| this.child(prefix))
             .child(self.label.clone())
             .when_some(self.suffix, |this, suffix| this.child(suffix))
     }

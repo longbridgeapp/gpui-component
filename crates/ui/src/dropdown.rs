@@ -24,7 +24,7 @@ use crate::{
     list::ListItem,
     picker::{self, Picker, PickerDelegate},
     theme::ActiveTheme,
-    v_flex, IconName,
+    v_flex, Icon, IconName,
 };
 
 /// A trait for items that can be displayed in a dropdown.
@@ -237,7 +237,11 @@ where
                             .items_center()
                             .justify_between()
                             .child(div().flex_1().child(title))
-                            .child(div().w_4().h_4().child(IconName::ChevronsUpDown)),
+                            .child(
+                                Icon::new(IconName::ChevronsUpDown)
+                                    .size_4()
+                                    .text_color(cx.theme().muted_foreground),
+                            ),
                     ),
             )
             .when(self.open, |this| {
