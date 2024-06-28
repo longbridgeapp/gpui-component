@@ -1,12 +1,11 @@
 use crate::{
     button::ButtonSize,
-    label::Label,
     stock::h_flex,
     theme::{ActiveTheme, Colorize},
     Disableable,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, ClickEvent, Div, InteractiveElement, IntoElement,
+    div, prelude::FluentBuilder as _, ClickEvent, Div, InteractiveElement, IntoElement,
     ParentElement as _, RenderOnce, SharedString, Stateful, StatefulInteractiveElement,
     Styled as _, WindowContext,
 };
@@ -141,9 +140,8 @@ impl RenderOnce for Switch {
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
-                    this.on_click(move |ev, cx| {
-                        on_click(ev, cx);
-                    })
+                    cx.stop_propagation();
+                    this.on_click(move |ev, cx| on_click(ev, cx))
                 },
             )
     }

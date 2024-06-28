@@ -1,12 +1,10 @@
 use gpui::*;
+use notification::{NotificationHandle, NotificationId};
 use prelude::FluentBuilder as _;
 
 use std::sync::Arc;
 use ui::{
     button::ButtonSize,
-    input,
-    label::Label,
-    picker,
     switch::{LabelSide, Switch},
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
@@ -15,12 +13,14 @@ use ui_story::Stories;
 use util::ResultExt as _;
 
 mod app_state;
+mod notification;
 
 pub use app_state::AppState;
 
 pub struct Workspace {
     weak_self: WeakView<Self>,
     stories: View<Stories>,
+    notifications: Vec<(NotificationId, Box<dyn NotificationHandle>)>,
 }
 
 impl Workspace {
@@ -34,6 +34,7 @@ impl Workspace {
         Workspace {
             weak_self: weak_handle.clone(),
             stories: Stories::view(cx),
+            notifications: Default::default(),
         }
     }
 
@@ -80,6 +81,29 @@ impl Workspace {
             Ok(window)
         })
     }
+
+    fn render_notifications(&self, _cx: &ViewContext<Self>) -> Option<Div> {
+        if self.notifications.is_empty() {
+            None
+        } else {
+            Some(
+                div()
+                    .absolute()
+                    .right_3()
+                    .bottom_3()
+                    .h_full()
+                    .flex()
+                    .flex_col()
+                    .justify_end()
+                    .gap_2()
+                    .children(
+                        self.notifications
+                            .iter()
+                            .map(|(_, notification)| notification.to_any()),
+                    ),
+            )
+        }
+    }
 }
 
 actions!(workspace, [Open, CloseWindow]);
@@ -110,10 +134,10 @@ impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .relative()
+            .size_full()
             .flex()
             .flex_1()
             .flex_col()
-            .size_full()
             .bg(cx.theme().background)
             .text_color(cx.theme().foreground)
             .gap_4()
@@ -159,6 +183,7 @@ impl Render for Workspace {
                             ),
                     ),
             )
+            .children(self.render_notifications(cx))
             .child(div().flex().px_4().gap_2().child(self.stories.clone()))
     }
 }

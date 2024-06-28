@@ -13,7 +13,7 @@ use super::story_case;
 pub struct ButtonStory;
 
 impl ButtonStory {
-    fn on_click(ev: &ClickEvent, cx: &mut WindowContext) {
+    fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
         println!("Button clicked! {:?}", ev);
     }
 }

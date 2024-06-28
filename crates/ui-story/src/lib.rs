@@ -1,12 +1,3 @@
-use std::fmt::{self, Display, Formatter};
-
-use checkbox_story::CheckboxStory;
-use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
-    VisualContext, WindowContext,
-};
-
 mod button_story;
 mod checkbox_story;
 mod dropdown_story;
@@ -14,6 +5,13 @@ mod input_story;
 mod picker_story;
 mod switch_story;
 
+use gpui::{
+    div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
+    VisualContext, WindowContext,
+};
+
+use std::fmt::{self, Display, Formatter};
 use ui::{
     divider::Divider,
     label::Label,
@@ -22,6 +20,7 @@ use ui::{
 };
 
 use button_story::ButtonStory;
+use checkbox_story::CheckboxStory;
 use dropdown_story::DropdownStory;
 use input_story::InputStory;
 use picker_story::PickerStory;
@@ -55,7 +54,7 @@ impl StoryContainer {
 }
 
 impl RenderOnce for StoryContainer {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, _: &mut WindowContext) -> impl IntoElement {
         div()
             .flex()
             .flex_col()
