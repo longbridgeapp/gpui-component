@@ -5,7 +5,7 @@ use gpui::{
 };
 
 use ui::{
-    button::Button,
+    button::{Button, ButtonStyle},
     h_flex,
     label::Label,
     list::ListItem,
@@ -195,14 +195,16 @@ impl PickerStory {
 impl Render for PickerStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         story_case("Picker", "Picker is a list of items that can be selected.")
-            .child(v_flex().items_start().child(
-                Button::new("show-picker", "Show Picker...").on_click(cx.listener(
-                    |this, _, cx| {
-                        this.open = !this.open;
-                        cx.notify();
-                    },
-                )),
-            ))
+            .child(
+                v_flex().items_start().child(
+                    Button::new("show-picker", "Show Picker...")
+                        .style(ButtonStyle::Primary)
+                        .on_click(cx.listener(|this, _, cx| {
+                            this.open = !this.open;
+                            cx.notify();
+                        })),
+                ),
+            )
             .when_some(self.selected_value.clone(), |this, selected_value| {
                 this.child("Selected: ").child(Label::new(selected_value))
             })

@@ -3,12 +3,9 @@ use gpui::{hsla, point, px, BoxShadow, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
-    Background,
     Surface,
     ElevatedSurface,
-    Wash,
     ModalSurface,
-    DraggedElement,
 }
 
 impl ElevationIndex {
