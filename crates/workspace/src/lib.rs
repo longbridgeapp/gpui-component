@@ -18,7 +18,6 @@ mod notification;
 pub use app_state::AppState;
 
 pub struct Workspace {
-    weak_self: WeakView<Self>,
     stories: View<Stories>,
     notifications: Vec<(NotificationId, Box<dyn NotificationHandle>)>,
 }
@@ -29,10 +28,7 @@ impl Workspace {
         _parent: Option<WeakView<Self>>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
-        let weak_handle = cx.view().downgrade();
-
         Workspace {
-            weak_self: weak_handle.clone(),
             stories: Stories::view(cx),
             notifications: Default::default(),
         }

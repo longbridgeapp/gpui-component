@@ -21,6 +21,7 @@ pub trait Colorize {
     fn opacity(&self, opacity: f32) -> Hsla;
     fn divide(&self, divisor: f32) -> Hsla;
     fn invert(&self) -> Hsla;
+    fn invert_l(&self) -> Hsla;
     fn lighten(&self, amount: f32) -> Hsla;
     fn darken(&self, amount: f32) -> Hsla;
 }
@@ -53,6 +54,14 @@ impl Colorize for Hsla {
             s: 1.0 - self.s,
             l: 1.0 - self.l,
             a: self.a,
+        }
+    }
+
+    /// Return inverted lightness
+    fn invert_l(&self) -> Hsla {
+        Hsla {
+            l: 1.0 - self.l,
+            ..*self
         }
     }
 

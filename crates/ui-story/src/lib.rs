@@ -4,6 +4,7 @@ mod dropdown_story;
 mod input_story;
 mod picker_story;
 mod switch_story;
+mod tooltip_stroy;
 
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
@@ -25,6 +26,7 @@ use dropdown_story::DropdownStory;
 use input_story::InputStory;
 use picker_story::PickerStory;
 use switch_story::SwitchStory;
+use tooltip_stroy::TooltipStory;
 
 pub fn story_case(name: &'static str, description: &'static str) -> StoryContainer {
     StoryContainer::new(name, description)
@@ -80,6 +82,7 @@ enum StoryType {
     Switch,
     Picker,
     Dropdown,
+    Tooltip,
 }
 
 impl Display for StoryType {
@@ -91,6 +94,7 @@ impl Display for StoryType {
             Self::Switch => write!(f, "Switch"),
             Self::Picker => write!(f, "Picker"),
             Self::Dropdown => write!(f, "Dropdown"),
+            Self::Tooltip => write!(f, "Tooltip"),
         }
     }
 }
@@ -104,18 +108,20 @@ pub struct Stories {
     switch_story: View<SwitchStory>,
     picker_story: View<PickerStory>,
     dropdown_story: View<DropdownStory>,
+    tooltip_story: View<TooltipStory>,
 }
 
 impl Stories {
     fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
-            active: StoryType::Button,
+            active: StoryType::Tooltip,
             button_story: cx.new_view(|_| ButtonStory {}),
             checkbox_story: cx.new_view(|cx| CheckboxStory::new(cx)),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
             switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
             picker_story: cx.new_view(|cx| PickerStory::new(cx)),
             dropdown_story: cx.new_view(|cx| DropdownStory::new(cx)),
+            tooltip_story: cx.new_view(|_| TooltipStory),
         }
     }
 
@@ -141,6 +147,7 @@ impl Stories {
                 self.tab("story-switch", StoryType::Switch, cx),
                 self.tab("story-picker", StoryType::Picker, cx),
                 self.tab("story-dropdown", StoryType::Dropdown, cx),
+                self.tab("story-tooltip", StoryType::Tooltip, cx),
             ]))
     }
 
@@ -171,6 +178,7 @@ impl Render for Stories {
                 StoryType::Switch => this.child(self.switch_story.clone()),
                 StoryType::Picker => this.child(self.picker_story.clone()),
                 StoryType::Dropdown => this.child(self.dropdown_story.clone()),
+                StoryType::Tooltip => this.child(self.tooltip_story.clone()),
             })
     }
 }
