@@ -38,6 +38,8 @@ This is an example of build app by using GPUI.
 - [x] Tabs
   - [x] Tab
   - [x] TabBar
+- [x] Notification
+- [x] Tooltip
 - [ ] Dockpanel & Splitter
 - [ ] List
 - [ ] Table

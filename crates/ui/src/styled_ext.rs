@@ -1,4 +1,4 @@
-use crate::theme::ActiveTheme;
+use crate::theme::{ActiveTheme, Colorize};
 use gpui::{hsla, point, px, BoxShadow, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 

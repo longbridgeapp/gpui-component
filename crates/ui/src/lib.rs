@@ -22,6 +22,7 @@ pub mod list;
 pub mod picker;
 pub mod switch;
 pub mod tab;
+pub mod tooltip;
 
 pub use clickable::Clickable;
 pub use disableable::Disableable;

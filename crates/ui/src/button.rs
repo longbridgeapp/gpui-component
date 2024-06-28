@@ -5,7 +5,6 @@ use gpui::{
 };
 
 use crate::{
-    label::Label,
     span,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
     Clickable, Disableable, Selectable,
