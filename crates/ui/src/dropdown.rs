@@ -23,6 +23,7 @@ use crate::{
     h_flex,
     list::ListItem,
     picker::{self, Picker, PickerDelegate},
+    popover::Popover,
     theme::ActiveTheme,
     Icon, IconName,
 };
