@@ -1,6 +1,7 @@
-use gpui::{div, px, IntoElement, ParentElement as _, Render, Styled as _, ViewContext};
+use gpui::{div, px, Element, IntoElement, ParentElement as _, Render, Styled as _, ViewContext};
 use ui::{
-    button::Button,
+    button::{Button, ButtonSize},
+    divider::Divider,
     h_flex,
     popover::{Popover, PopoverContent},
     v_flex,
@@ -27,8 +28,15 @@ impl Render for PopoverStory {
                 Popover::new("info-top-left")
                     .trigger(Button::new("info", "Top Left").width(px(300.)))
                     .content(|cx| {
-                        PopoverContent::new(
-                            "Hello, this is a Popover.\nYou can click outside to dissmis.",
+                        PopoverContent::new(|_| {
+                                v_flex().gap_4().child("Hello, this is a Popover.")
+                                    .child(Divider::horizontal())
+                                    .child(
+                                        Button::new("info1", "Yes")
+                                            .width(px(80.))
+                                            .size(ButtonSize::Small)
+                                    ).into_any()
+                            },
                             cx,
                         )
                     }),
@@ -36,8 +44,8 @@ impl Render for PopoverStory {
                 Popover::new("info-top-right")
                 .trigger(Button::new("info", "Top Right").width(px(300.)))
                 .content(|cx| {
-                    PopoverContent::new(
-                        "Hello, this is a Popover.\nYou can click outside to dissmis.",
+                    PopoverContent::new(|_|
+                        "Hello, this is a Popover.\nYou can click outside to dissmis.".into_any(),
                         cx,
                     )
                 }),
@@ -49,15 +57,15 @@ impl Render for PopoverStory {
                 Popover::new("info-bottom-left")
                     .trigger(Button::new("pop", "Bottom Left").width(px(300.)))
                     .content(|cx| {
-                        PopoverContent::new("这是另外一个 Popover。\n你可以点击外部来关闭。\nThis popover has position bottom_4().left_0().w_full().h_10().", cx)
+                        PopoverContent::new(|_| "这是另外一个 Popover。\n你可以点击外部来关闭。\nThis popover has position bottom_4().left_0().w_full().h_10().".into_any(), cx)
                     })).child(
                 Popover::new("info-bottom-right")
                     .trigger(Button::new("pop", "Bottom Right").width(px(300.)))
                     .content(|cx| {
-                        PopoverContent::new("这是另外一个 Popover。\n你可以点击外部来关闭。\nThis popover has position bottom_4().left_0().w_full().h_10().", cx)
+                        PopoverContent::new(|_| "这是另外一个 Popover。\n你可以点击外部来关闭。\nThis popover has position bottom_4().left_0().w_full().h_10().".into_any(), cx)
                     }))
-                    
-                    
+
+
             ),
         )
     }

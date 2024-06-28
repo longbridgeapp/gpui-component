@@ -8,7 +8,7 @@ use gpui::{
     HitboxId, InteractiveElement, IntoElement, LayoutId, ManagedView, ParentElement, Pixels,
     Render, Style, Styled, View, ViewContext, VisualContext, WindowContext,
 };
-use gpui::{point, px, DispatchPhase, MouseDownEvent, Point, SharedString};
+use gpui::{point, px, DispatchPhase, MouseDownEvent, Point};
 
 actions!(popover, [Dismiss]);
 
@@ -19,17 +19,20 @@ pub fn init(_cx: &mut AppContext) {}
 
 pub struct PopoverContent {
     focus_handle: FocusHandle,
-    content: SharedString,
+    content: Rc<dyn Fn(&mut WindowContext) -> AnyElement>,
 }
 
 impl PopoverContent {
-    pub fn new(content: impl Into<SharedString>, cx: &mut WindowContext) -> View<Self> {
+    pub fn new<B>(content: B, cx: &mut WindowContext) -> View<Self>
+    where
+        B: Fn(&mut WindowContext) -> AnyElement + 'static,
+    {
         cx.new_view(|cx| {
             let focus_handle = cx.focus_handle();
 
             Self {
                 focus_handle,
-                content: content.into(),
+                content: Rc::new(content),
             }
         })
     }
@@ -57,7 +60,7 @@ impl Render for PopoverContent {
             .max_w_128()
             .w_80()
             .occlude()
-            .child(self.content.clone())
+            .child(self.content.clone()(cx))
             .on_mouse_down_out(cx.listener(|_, _, cx| cx.emit(DismissEvent)))
     }
 }
@@ -75,7 +78,6 @@ pub struct Popover<M: ManagedView> {
         >,
     >,
     content_builder: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
-    open: bool,
 }
 
 impl<M: ManagedView> Popover<M> {
@@ -85,7 +87,6 @@ impl<M: ManagedView> Popover<M> {
             trigger_builder: None,
             content_builder: None,
             anchor: AnchorCorner::TopLeft,
-            open: false,
         }
     }
 
