@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::{alloc::Layout, cell::RefCell, rc::Rc};
 
 use crate::theme::ActiveTheme;
@@ -9,30 +10,28 @@ use gpui::{
     MouseButton, ParentElement, Pixels, Render, RenderOnce, StatefulInteractiveElement as _, Style,
     StyleRefinement, Styled, View, ViewContext, VisualContext, WindowContext,
 };
+use gpui::{px, SharedString};
 
 actions!(popover, [Dismiss]);
 
 pub trait Triggerable: IntoElement + Clickable + Selectable + 'static {}
 impl<T: IntoElement + Clickable + Selectable + 'static> Triggerable for T {}
 
-pub fn init(cx: &mut AppContext) {
-    let context = Some("Popover");
-    cx.bind_keys([KeyBinding::new("escape", Dismiss, context)])
-}
+pub fn init(_cx: &mut AppContext) {}
 
 pub struct PopoverContent {
     focus_handle: FocusHandle,
-    children: Vec<AnyElement>,
+    content: SharedString,
 }
 
 impl PopoverContent {
-    pub fn new(content: impl IntoElement, cx: &mut WindowContext) -> View<Self> {
+    pub fn new(content: impl Into<SharedString>, cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| {
             let focus_handle = cx.focus_handle();
 
             Self {
                 focus_handle,
-                children: vec![],
+                content: content.into(),
             }
         })
     }
@@ -45,15 +44,23 @@ impl FocusableView for PopoverContent {
     }
 }
 
-impl ParentElement for PopoverContent {
-    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
-        self.children.extend(elements)
-    }
-}
-
 impl Render for PopoverContent {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().child("asdgadsgasdgasdg")
+        div()
+            .id("test")
+            // .on_action(cx.listener(Self::dissmiss))
+            .absolute()
+            .mt_2()
+            .elevation_2(cx)
+            .bg(cx.theme().popover)
+            .border_1()
+            .border_color(cx.theme().border)
+            .p_4()
+            .max_w_128()
+            .w_80()
+            .occlude()
+            .child(self.content.clone())
+            .on_mouse_down_out(cx.listener(|_, _, cx| cx.emit(DismissEvent)))
     }
 }
 
@@ -86,14 +93,15 @@ impl<M: ManagedView> Popover<M> {
 
     pub fn trigger<T: Triggerable>(mut self, trigger: T) -> Self {
         self.trigger_builder = Some(Box::new(|popover, builder| {
-            let open = popover.borrow().is_some();
+            let open = popover.borrow_mut().is_some();
             trigger
                 .selected(open)
-                .when_some(builder, |el, builder| {
-                    el.on_click(move |_, cx| Self::show_popover(&builder, &popover, cx))
+                .when_some(builder, |this, builder| {
+                    this.on_click(move |_, cx| Self::show_popover(&builder, &popover, cx))
                 })
                 .into_any_element()
         }));
+
         self
     }
 
@@ -132,6 +140,7 @@ impl<M: ManagedView> Popover<M> {
             cx.refresh();
         })
         .detach();
+
         cx.focus_view(&new_popover);
         *popover.borrow_mut() = Some(new_popover);
         cx.refresh();
@@ -194,33 +203,20 @@ impl<M: ManagedView> Element for Popover<M> {
                 let element_state = element_state.unwrap_or_default();
                 let style = Style::default();
 
-                let anchored = anchored().snap_to_window().anchor(self.anchor);
-
                 let mut popover_layout_id = None;
-                let popover_element = self.content_builder.take().map(|builder| {
-                    let popover = div().when(self.open, |this| {
-                        this.child(
-                            div()
-                                .key_context("Popover")
-                                .id(self.id.clone())
-                                // .on_action(cx.listener(Self::dissmiss))
-                                .absolute()
-                                .mt_2()
-                                .elevation_2(cx)
-                                .bg(cx.theme().popover)
-                                .border_1()
-                                .border_color(cx.theme().border)
-                                .p_4()
-                                .max_w_128()
-                                .w_64()
-                                .occlude()
-                                .child(builder(cx)),
-                        )
-                    });
+                let popover_element = element_state.popover.borrow_mut().as_mut().map(|popover| {
+                    let mut anchored = anchored().snap_to_window().anchor(self.anchor);
+                    if let Some(child_bounds) = element_state.child_bounds {
+                        anchored = anchored.position(gpui::Point {
+                            x: child_bounds.origin.x + px(40.),
+                            y: child_bounds.origin.y,
+                        });
+                    }
+                    let mut element =
+                        deferred(anchored.child(div().occlude().child(popover.clone())))
+                            .with_priority(1)
+                            .into_any();
 
-                    let mut element = deferred(anchored.child(popover))
-                        .with_priority(1)
-                        .into_any();
                     popover_layout_id = Some(element.request_layout(cx));
                     element
                 });

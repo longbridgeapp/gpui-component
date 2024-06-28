@@ -1,22 +1,15 @@
-use gpui::{
-    div, px, Entity, IntoElement, ParentElement as _, Render, Styled as _, ViewContext,
-    VisualContext,
-};
+use gpui::{px, IntoElement, ParentElement as _, Render, Styled as _, ViewContext};
 use ui::{
     button::Button,
     popover::{Popover, PopoverContent},
     v_flex,
 };
 
-pub struct PopoverStory {
-    // info_btn: View<Popover>,
-}
+pub struct PopoverStory {}
 
 impl PopoverStory {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
-        Self {
-            // info_btn: cx.new_view(|cx| {}),
-        }
+        Self {}
     }
 }
 
