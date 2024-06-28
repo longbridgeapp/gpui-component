@@ -262,13 +262,11 @@ impl<D: PickerDelegate> Picker<D> {
             )
             .with_sizing_behavior(sizing_behavior)
             .flex_grow()
-            .py_2()
             .track_scroll(scroll_handle.clone())
             .into_any_element(),
             ElementContainer::List(state) => list(state.clone())
                 .with_sizing_behavior(sizing_behavior)
                 .flex_grow()
-                .py_2()
                 .into_any_element(),
         }
     }

@@ -127,7 +127,7 @@ impl Colors {
             foreground: hsl(240.0, 10., 3.9),
             card: hsl(0.0, 0.0, 100.0),
             card_foreground: hsl(240.0, 10.0, 3.9),
-            popover: hsl(0.0, 0.0, 1.0),
+            popover: hsl(0.0, 0.0, 100.0),
             popover_foreground: hsl(240.0, 10.0, 3.9),
             primary: hsl(240.0, 5.9, 10.0),
             primary_foreground: hsl(0.0, 0.0, 98.0),
