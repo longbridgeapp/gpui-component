@@ -1,7 +1,4 @@
-use gpui::{
-    div, prelude::FluentBuilder as _, px, AbsoluteLength, DefiniteLength, Div, Hsla, IntoElement,
-    ParentElement, RenderOnce, SharedString, Styled, TextStyleRefinement, WindowContext,
-};
+use gpui::{div, Div, IntoElement, ParentElement, RenderOnce, SharedString, Styled, WindowContext};
 
 use crate::theme::ActiveTheme;
 

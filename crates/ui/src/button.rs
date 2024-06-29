@@ -1,13 +1,12 @@
-use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
-    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
-    StatefulInteractiveElement as _, Styled, WindowContext,
-};
-
 use crate::{
-    h_flex, span,
+    h_flex,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
-    Clickable, Disableable, Icon, IconName, Selectable,
+    Clickable, Disableable, Icon, Selectable,
+};
+use gpui::{
+    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -134,6 +133,8 @@ impl RenderOnce for Button {
             .flex()
             .items_center()
             .justify_center()
+            .when_some(self.width, |this, width| this.w(width))
+            .when_some(self.height, |this, height| this.h(height))
             .map(|this| match self.size {
                 ButtonSize::Small => this.px_3().py_2().h_6(),
                 ButtonSize::Medium => this.px_4().py_2().h_8(),
@@ -144,7 +145,12 @@ impl RenderOnce for Button {
                 ButtonRounded::Large => this.rounded(px(cx.theme().radius * 2.0)),
                 ButtonRounded::None => this.rounded_none(),
             })
-            .when(!self.disabled, |this| {
+            .when(self.selected, |this| {
+                let selected_style = style.selected(cx);
+                this.bg(selected_style.bg)
+                    .border_color(selected_style.border)
+            })
+            .when(!self.disabled && !self.selected, |this| {
                 this.hover(|this| {
                     let hover_style = style.hovered(cx);
                     this.bg(hover_style.bg).border_color(hover_style.border)
@@ -174,7 +180,13 @@ impl RenderOnce for Button {
             })
             .border_1()
             .map(|this| match theme.mode {
-                ThemeMode::Light => this.shadow_sm(),
+                ThemeMode::Light => {
+                    if self.disabled {
+                        this
+                    } else {
+                        this.shadow_sm()
+                    }
+                }
                 ThemeMode::Dark => this,
             })
             .child({
@@ -251,15 +263,23 @@ impl ButtonStyle {
 
     fn active(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = self.bg_color(cx).darken(0.05);
-        let border = self.border_color(cx).darken(0.05);
+        let border = self.border_color(cx);
         let fg = self.text_color(cx).darken(0.05);
 
         ButtonStyles { bg, border, fg }
     }
 
+    fn selected(&self, cx: &WindowContext) -> ButtonStyles {
+        let bg = self.bg_color(cx).darken(0.07);
+        let border = self.border_color(cx);
+        let fg = self.text_color(cx).darken(0.07);
+
+        ButtonStyles { bg, border, fg }
+    }
+
     fn disabled(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color(cx).grayscale();
-        let border = self.border_color(cx).grayscale();
+        let bg = self.bg_color(cx).grayscale().opacity(0.9);
+        let border = self.border_color(cx).grayscale().opacity(0.9);
         let fg = self.text_color(cx).grayscale();
 
         ButtonStyles { bg, border, fg }

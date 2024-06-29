@@ -173,7 +173,6 @@ impl Render for Workspace {
                                     .label_side(LabelSide::Left)
                                     .label("Dark Mode")
                                     .on_click(move |_, cx| {
-                                        dbg!("theme-mode clicked");
                                         let mode = match cx.theme().mode.is_dark() {
                                             false => ui::theme::ThemeMode::Dark,
                                             true => ui::theme::ThemeMode::Light,
@@ -185,6 +184,13 @@ impl Render for Workspace {
                     ),
             )
             .children(self.render_notifications(cx))
-            .child(div().flex().px_4().gap_2().child(self.stories.clone()))
+            .child(
+                div()
+                    .flex()
+                    .flex_1()
+                    .px_4()
+                    .gap_2()
+                    .child(self.stories.clone()),
+            )
     }
 }

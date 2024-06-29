@@ -1,7 +1,6 @@
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, Div, Empty, Entity, InteractiveElement as _,
-    IntoElement, ParentElement, Render, SharedString, Styled, Task, View, ViewContext,
-    VisualContext as _, WeakView, WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
+    ParentElement, Render, Styled, Task, View, ViewContext, VisualContext as _, WeakView,
 };
 
 use ui::{

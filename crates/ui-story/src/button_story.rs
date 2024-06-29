@@ -5,7 +5,7 @@ use gpui::{
 
 use ui::{
     button::{Button, ButtonSize, ButtonStyle},
-    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName,
+    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable,
 };
 
 use super::story_case;
@@ -115,6 +115,26 @@ impl Render for ButtonStory {
                                 .style(ButtonStyle::Danger)
                                 .size(ButtonSize::Small)
                                 .on_click(Self::on_click),
+                        ),
+                )
+                .child(
+                    h_flex()
+                        .items_center()
+                        .gap_6()
+                        .child(
+                            Button::new("button-6", "Selected Button")
+                                .style(ButtonStyle::Primary)
+                                .selected(true),
+                        )
+                        .child(
+                            Button::new("button-7", "Selected Button")
+                                .style(ButtonStyle::Secondary)
+                                .selected(true),
+                        )
+                        .child(
+                            Button::new("button-8", "Selected Button")
+                                .style(ButtonStyle::Danger)
+                                .selected(true),
                         ),
                 ),
         )

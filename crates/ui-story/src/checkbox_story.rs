@@ -1,7 +1,4 @@
-use gpui::{
-    div, ClickEvent, IntoElement, ParentElement, Render, RenderOnce, Styled, ViewContext,
-    WindowContext,
-};
+use gpui::{IntoElement, ParentElement, Render, Styled, ViewContext, WindowContext};
 
 use ui::{checkbox::Checkbox, h_flex, v_flex, Disableable as _, Selection};
 

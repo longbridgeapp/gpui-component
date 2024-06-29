@@ -21,7 +21,7 @@ pub struct SwitchStory {
 }
 
 impl SwitchStory {
-    pub(crate) fn new(cx: &mut WindowContext) -> Self {
+    pub(crate) fn new(_cx: &mut WindowContext) -> Self {
         Self {
             switch1: false,
             switch2: true,
@@ -98,14 +98,14 @@ impl Render for SwitchStory {
                     card(cx).v_flex()         .items_start().child(title("Disabled Switchs")).child(
                         h_flex().items_center()
                         .gap_6()
-                        .child(Switch::new("switch3").disabled(true).on_click(|ev, cx| {
+                        .child(Switch::new("switch3").disabled(true).on_click(|ev, _| {
                             println!("Switch value changed: {:?}", ev);
                         }))
                         .child(
                             Switch::new("switch3_1").label("Airplane Mode")
                                 .checked(true)
                                 .disabled(true)
-                                .on_click(|ev, cx| {
+                                .on_click(|ev, _| {
                                     println!("Switch value changed: {:?}", ev);
                                 }),
                         ))

@@ -1,12 +1,10 @@
 use gpui::{
-    prelude::FluentBuilder as _, px, svg, ElementId, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _,
-    WindowContext,
+    prelude::FluentBuilder as _, svg, ElementId, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, WindowContext,
 };
 
 use crate::{
     disableable::Disableable,
-    label::Label,
     selectable::{Selectable, Selection},
     stock::{h_flex, v_flex},
     theme::{ActiveTheme, Colorize as _},
@@ -25,7 +23,7 @@ pub struct Checkbox {
 }
 
 impl Checkbox {
-    pub fn new(id: impl Into<ElementId>, cx: &mut WindowContext) -> Self {
+    pub fn new(id: impl Into<ElementId>, _: &mut WindowContext) -> Self {
         Self {
             id: id.into(),
             checked: Selection::Unselected,
@@ -95,7 +93,7 @@ impl RenderOnce for Checkbox {
                     .border_1()
                     .border_color(color)
                     .rounded_sm()
-                    .size(px(16.))
+                    .size_4()
                     .map(|this| match self.checked {
                         Selection::Unselected => this.bg(theme.transparent),
                         _ => this.bg(color),
@@ -123,7 +121,7 @@ impl RenderOnce for Checkbox {
             )
             .map(|this| {
                 if let Some(label) = self.label {
-                    this.child(Label::new(label).text_color(color))
+                    this.child(label).text_color(color)
                 } else {
                     this
                 }

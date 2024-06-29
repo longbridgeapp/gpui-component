@@ -3,6 +3,7 @@ mod checkbox_story;
 mod dropdown_story;
 mod input_story;
 mod picker_story;
+mod popover_story;
 mod switch_story;
 mod tooltip_stroy;
 
@@ -25,6 +26,7 @@ use checkbox_story::CheckboxStory;
 use dropdown_story::DropdownStory;
 use input_story::InputStory;
 use picker_story::PickerStory;
+use popover_story::PopoverStory;
 use switch_story::SwitchStory;
 use tooltip_stroy::TooltipStory;
 
@@ -58,6 +60,7 @@ impl StoryContainer {
 impl RenderOnce for StoryContainer {
     fn render(self, _: &mut WindowContext) -> impl IntoElement {
         div()
+            .size_full()
             .flex()
             .flex_col()
             .gap_6()
@@ -83,6 +86,7 @@ enum StoryType {
     Picker,
     Dropdown,
     Tooltip,
+    Popover,
 }
 
 impl Display for StoryType {
@@ -95,6 +99,7 @@ impl Display for StoryType {
             Self::Picker => write!(f, "Picker"),
             Self::Dropdown => write!(f, "Dropdown"),
             Self::Tooltip => write!(f, "Tooltip"),
+            Self::Popover => write!(f, "Popover"),
         }
     }
 }
@@ -109,6 +114,7 @@ pub struct Stories {
     picker_story: View<PickerStory>,
     dropdown_story: View<DropdownStory>,
     tooltip_story: View<TooltipStory>,
+    popover_story: View<PopoverStory>,
 }
 
 impl Stories {
@@ -119,9 +125,10 @@ impl Stories {
             checkbox_story: cx.new_view(|cx| CheckboxStory::new(cx)),
             input_story: cx.new_view(|cx| InputStory::new(cx)),
             switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
-            picker_story: cx.new_view(|cx| PickerStory::new(cx)),
-            dropdown_story: cx.new_view(|cx| DropdownStory::new(cx)),
             tooltip_story: cx.new_view(|_| TooltipStory),
+            picker_story: cx.new_view(PickerStory::new),
+            dropdown_story: cx.new_view(DropdownStory::new),
+            popover_story: cx.new_view(PopoverStory::new),
         }
     }
 
@@ -153,6 +160,7 @@ impl Stories {
                 self.tab("story-picker", StoryType::Picker, None, cx),
                 self.tab("story-dropdown", StoryType::Dropdown, None, cx),
                 self.tab("story-tooltip", StoryType::Tooltip, None, cx),
+                self.tab("story-popover", StoryType::Popover, None, cx),
             ]))
     }
 
@@ -196,6 +204,7 @@ impl Render for Stories {
                 StoryType::Picker => this.child(self.picker_story.clone()),
                 StoryType::Dropdown => this.child(self.dropdown_story.clone()),
                 StoryType::Tooltip => this.child(self.tooltip_story.clone()),
+                StoryType::Popover => this.child(self.popover_story.clone()),
             })
     }
 }

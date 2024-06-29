@@ -1,7 +1,7 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, SharedString, Stateful,
-    StatefulInteractiveElement as _, Style, Styled, WindowContext,
+    prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
+    MouseButton, MouseDownEvent, ParentElement, RenderOnce, Stateful,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable};
