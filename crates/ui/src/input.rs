@@ -2,9 +2,12 @@ use std::ops::Range;
 
 use crate::event::InterativeElementExt as _;
 use crate::theme::ActiveTheme;
+use blink_cursor::BlinkCursor;
 use gpui::*;
 use prelude::FluentBuilder as _;
 use unicode_segmentation::*;
+
+mod blink_cursor;
 
 actions!(
     input,
@@ -71,6 +74,7 @@ pub struct TextInput {
     focus_handle: FocusHandle,
     text: SharedString,
     placeholder: SharedString,
+    blink_cursor: Model<BlinkCursor>,
     selected_range: Range<usize>,
     selection_reversed: bool,
     marked_range: Option<Range<usize>>,
@@ -84,10 +88,13 @@ impl EventEmitter<TextEvent> for TextInput {}
 
 impl TextInput {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
-        Self {
-            focus_handle: cx.focus_handle(),
+        let focus_handle = cx.focus_handle();
+        let blink_cursor = cx.new_model(|cx| BlinkCursor::new(cx));
+        let input = Self {
+            focus_handle: focus_handle.clone(),
             text: "".into(),
             placeholder: "".into(),
+            blink_cursor,
             selected_range: 0..0,
             selection_reversed: false,
             marked_range: None,
@@ -95,7 +102,25 @@ impl TextInput {
             disabled: false,
             masked: false,
             appearance: true,
-        }
+        };
+
+        // Observe the blink cursor to repaint the view when it changes.
+        cx.observe(&input.blink_cursor, |_, _, cx| cx.notify())
+            .detach();
+        // Blink the cursor when the window is active, pause when it's not.
+        cx.observe_window_activation(|input, cx| {
+            if cx.is_window_active() {
+                input.blink_cursor.update(cx, |blink_cursor, cx| {
+                    blink_cursor.start(cx);
+                });
+            }
+        })
+        .detach();
+
+        cx.on_focus(&focus_handle, Self::on_focus).detach();
+        cx.on_blur(&focus_handle, Self::on_blur).detach();
+
+        input
     }
 
     /// Set the text of the input field.
@@ -287,6 +312,23 @@ impl TextInput {
             .grapheme_indices(true)
             .find_map(|(idx, _)| (idx > offset).then_some(idx))
             .unwrap_or(self.text.len())
+    }
+
+    /// Returns the true to let InputElement to render cursor, when Input is focused and current BlinkCursor is visible.
+    pub(crate) fn show_cursor(&self, cx: &WindowContext) -> bool {
+        self.focus_handle.is_focused(cx) && self.blink_cursor.read(cx).visible()
+    }
+
+    fn on_focus(&mut self, cx: &mut ViewContext<Self>) {
+        self.blink_cursor.update(cx, |blink_cursor, cx| {
+            blink_cursor.start(cx);
+        });
+    }
+
+    fn on_blur(&mut self, cx: &mut ViewContext<Self>) {
+        self.blink_cursor.update(cx, |blink_cursor, cx| {
+            blink_cursor.pause(cx);
+        });
     }
 }
 
@@ -496,7 +538,7 @@ impl Element for TextElement {
             .unwrap();
 
         let cursor_pos = line.x_for_index(cursor);
-        let (selection, cursor) = if selected_range.is_empty() {
+        let (selection, cursor) = if selected_range.is_empty() && input.show_cursor(cx) {
             (
                 None,
                 Some(fill(
