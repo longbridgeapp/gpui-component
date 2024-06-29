@@ -19,6 +19,7 @@ pub mod divider;
 pub mod dropdown;
 pub mod input;
 pub mod list;
+pub mod old_popover;
 pub mod picker;
 pub mod popover;
 pub mod switch;
@@ -38,5 +39,5 @@ pub fn init(cx: &mut gpui::AppContext) {
     input::init(cx);
     picker::init(cx);
     dropdown::init(cx);
-    popover::init(cx);
+    old_popover::init(cx);
 }
