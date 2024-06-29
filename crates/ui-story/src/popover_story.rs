@@ -1,7 +1,7 @@
 use gpui::{
-    div, px, AppContext, DismissEvent, Div, Element, EventEmitter, FocusHandle, FocusableView,
-    IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext,
-    WindowContext,
+    div, px, AnchorCorner, AppContext, DismissEvent, Div, Element, EventEmitter, FocusHandle,
+    FocusableView, IntoElement, MouseButton, ParentElement as _, Render, Styled as _, View,
+    ViewContext, VisualContext, WindowContext,
 };
 use ui::{
     button::{Button, ButtonSize},
@@ -88,12 +88,13 @@ impl Render for PopoverStory {
                 )
                 .child(
                     Popover::new("info-top-right")
+                        .anchor(AnchorCorner::TopRight)
                         .trigger(Button::new("info-top-right", "Top Right"))
                         .content(|cx| {
                             PopoverContent::new(cx, |_| {
                                 v_flex()
                                     .gap_4()
-                                    .child("Hello, this is a Popover.")
+                                    .child("Hello, this is a Popover on the Top Right.")
                                     .child(Divider::horizontal())
                                     .child(
                                         Button::new("info1", "Yes")
@@ -112,17 +113,20 @@ impl Render for PopoverStory {
                     .justify_between()
                     .child(
                         Popover::new("info-bottom-left")
+                            .anchor(AnchorCorner::BottomLeft)
                             .trigger(Button::new("pop", "Popup with Form").width(px(300.)))
                             .content(move |_| form.clone()),
                     )
                     .child(
                         Popover::new("info-bottom-right")
-                            .trigger(Button::new("pop", "Bottom Right").width(px(300.)))
+                            .anchor(AnchorCorner::BottomRight)
+                            .mouse_button(MouseButton::Right)
+                            .trigger(Button::new("pop", "Mouse Right Click").width(px(300.)))
                             .content(|cx| {
                                 PopoverContent::new(cx, |_| {
                                     v_flex()
                                         .gap_4()
-                                        .child("Hello, this is a Popover.")
+                                        .child("Hello, this is a Popover on the Bottom Right.")
                                         .child(Divider::horizontal())
                                         .child(
                                             Button::new("info1", "Yes")

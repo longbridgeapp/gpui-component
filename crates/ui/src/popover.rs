@@ -11,6 +11,8 @@ use gpui::{
 
 actions!(popover, [Open, Dismiss]);
 
+pub fn init(_cx: &AppContext) {}
+
 pub struct PopoverContent {
     focus_handle: FocusHandle,
     content: Rc<dyn Fn(&mut WindowContext) -> AnyElement>,
@@ -50,6 +52,7 @@ pub struct Popover<M: ManagedView> {
     anchor: AnchorCorner,
     trigger: Option<Box<dyn FnOnce(&WindowContext) -> AnyElement + 'static>>,
     content: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
+    mouse_button: MouseButton,
 }
 
 impl<M> Popover<M>
@@ -62,11 +65,18 @@ where
             anchor: AnchorCorner::TopLeft,
             trigger: None,
             content: None,
+            mouse_button: MouseButton::Left,
         }
     }
 
     pub fn anchor(mut self, anchor: AnchorCorner) -> Self {
         self.anchor = anchor;
+        self
+    }
+
+    /// Set the mouse button to trigger the popover, default is `MouseButton::Left`.
+    pub fn mouse_button(mut self, mouse_button: MouseButton) -> Self {
+        self.mouse_button = mouse_button;
         self
     }
 
@@ -113,12 +123,12 @@ where
 
     fn with_element_state<R>(
         &mut self,
-        global_id: &GlobalElementId,
+        id: &GlobalElementId,
         cx: &mut WindowContext,
         f: impl FnOnce(&mut Self, &mut PopoverElementState<M>, &mut WindowContext) -> R,
     ) -> R {
         cx.with_optional_element_state::<PopoverElementState<M>, _>(
-            Some(global_id),
+            Some(id),
             |element_state, cx| {
                 let mut element_state = element_state.unwrap().unwrap_or_default();
                 let result = f(self, &mut element_state, cx);
@@ -144,6 +154,8 @@ pub struct PopoverElementState<M> {
     popover_element: Option<AnyElement>,
     trigger_element: Option<AnyElement>,
     content_view: Rc<RefCell<Option<View<M>>>>,
+    /// Trigger bounds for positioning the popover.
+    trigger_bounds: Option<Bounds<Pixels>>,
 }
 
 impl<M> Default for PopoverElementState<M> {
@@ -153,12 +165,14 @@ impl<M> Default for PopoverElementState<M> {
             popover_element: None,
             trigger_element: None,
             content_view: Rc::new(RefCell::new(None)),
+            trigger_bounds: None,
         }
     }
 }
 
 pub struct PrepaintState {
     hitbox: Hitbox,
+    /// Trigger bounds for limit a rect to handle mouse click.
     trigger_bounds: Option<Bounds<Pixels>>,
 }
 
@@ -184,8 +198,13 @@ impl<M: ManagedView> Element for Popover<M> {
             let mut popover_element = None;
 
             if let Some(content_view) = element_state.content_view.borrow_mut().as_mut() {
-                let anchored = anchored().snap_to_window().anchor(this.anchor);
                 let content_view_mut = element_state.content_view.clone();
+
+                let mut anchored = anchored().snap_to_window().anchor(this.anchor);
+                if let Some(trigger_bounds) = element_state.trigger_bounds {
+                    anchored = anchored.position(this.resolved_corner(trigger_bounds));
+                }
+
                 let mut element = deferred(
                     anchored.child(
                         div()
@@ -265,6 +284,8 @@ impl<M: ManagedView> Element for Popover<M> {
         cx: &mut WindowContext,
     ) {
         self.with_element_state(id.unwrap(), cx, |this, element_state, cx| {
+            element_state.trigger_bounds = prepaint.trigger_bounds;
+
             if let Some(mut element) = request_layout.trigger_element.take() {
                 element.paint(cx);
             }
@@ -280,10 +301,11 @@ impl<M: ManagedView> Element for Popover<M> {
 
             let old_content_view = element_state.content_view.clone();
             let hitbox_id = prepaint.hitbox.id;
+            let mouse_button = this.mouse_button;
             // When mouse click down in the trigger bounds, open the popover.
             cx.on_mouse_event(move |event: &MouseDownEvent, phase, cx| {
                 if phase == DispatchPhase::Bubble
-                    && event.button == MouseButton::Left
+                    && event.button == mouse_button
                     && hitbox_id.is_hovered(cx)
                 {
                     let new_content_view = (content_build)(cx);
