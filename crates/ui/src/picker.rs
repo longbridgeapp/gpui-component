@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use anyhow::Result;
 use gpui::{
     actions, div, list, prelude::FluentBuilder as _, px, rems, uniform_list, AppContext,
@@ -12,7 +10,6 @@ use gpui::{
 actions!(
     picker,
     [
-        UseSelectedQuery,
         Cancel,
         Confirm,
         SecondaryConfirm,
@@ -57,8 +54,13 @@ pub trait PickerDelegate: Sized + 'static {
     type ListItem: IntoElement;
 
     fn match_count(&self) -> usize;
+
+    /// Return the index of the selected item.
     fn selected_index(&self) -> usize;
-    fn set_selected_index(&mut self, index: usize, cx: &mut ViewContext<Picker<Self>>);
+
+    /// Update the selected index.
+    fn set_selected_index(&mut self, ix: usize, cx: &mut ViewContext<Picker<Self>>);
+
     fn selected_index_changed(
         &self,
         _ix: usize,
@@ -67,11 +69,18 @@ pub trait PickerDelegate: Sized + 'static {
         None
     }
 
+    /// Callback when the picker is confirmed.
     fn confirm(&mut self, _secondary: bool, _cx: &mut ViewContext<Picker<Self>>) {}
+
+    /// Callback when the picker is dismissed.
     fn dismissed(&mut self, _cx: &mut ViewContext<Picker<Self>>) {}
+
+    /// Determine if the picker should be dismissed, return true by default. Return false will abort the dismiss action.
     fn should_dismiss(&self) -> bool {
         true
     }
+
+    /// Override this method to customize the query input header container.
     fn render_query(&self, input: &View<TextInput>, _cx: &mut ViewContext<Picker<Self>>) -> Div {
         v_flex()
             .child(
@@ -84,7 +93,9 @@ pub trait PickerDelegate: Sized + 'static {
             )
             .child(Divider::horizontal())
     }
-    fn render_match(
+
+    /// Render the list item at the given index.
+    fn render_item(
         &self,
         ix: usize,
         selected: bool,
@@ -94,21 +105,19 @@ pub trait PickerDelegate: Sized + 'static {
     fn separators_after_indices(&self) -> Vec<usize> {
         Vec::new()
     }
+
     fn update_matches(&mut self, _query: &str, _cx: &mut ViewContext<Picker<Self>>) -> Task<()> {
         Task::ready(())
     }
-    fn confirm_update_query(&mut self, _cx: &mut ViewContext<Picker<Self>>) -> Option<String> {
+
+    fn confirm_update_query(
+        &mut self,
+        _cx: &mut ViewContext<Picker<Self>>,
+    ) -> Option<SharedString> {
         None
     }
-    fn finalize_update_matches(
-        &mut self,
-        _query: SharedString,
-        _duration: Duration,
-        _cx: &mut ViewContext<Picker<Self>>,
-    ) -> bool {
-        false
-    }
-    fn selected_as_query(&self) -> Option<String> {
+
+    fn selected_as_query(&self) -> Option<SharedString> {
         None
     }
 }
@@ -137,9 +146,9 @@ pub struct Picker<D: PickerDelegate> {
     width: Option<Length>,
     max_height: Option<Length>,
     is_modal: bool,
+    /// Just a empty view for holding the focus
     head: View<Empty>,
     pending_update_matches: Option<PendingUpdateMatches>,
-    confirm_on_update: Option<bool>,
 }
 
 impl<D: PickerDelegate> Picker<D> {
@@ -181,7 +190,6 @@ impl<D: PickerDelegate> Picker<D> {
             max_height: Some(rems(20.).into()),
             element_container,
             pending_update_matches: None,
-            confirm_on_update: None,
         }
     }
 
@@ -225,6 +233,12 @@ impl<D: PickerDelegate> Picker<D> {
 
     pub fn focus(&self, cx: &mut WindowContext) {
         self.focus_handle(cx).focus(cx);
+    }
+
+    /// Hide the query input.
+    pub fn no_query(mut self) -> Self {
+        self.query_input = None;
+        self
     }
 
     pub fn set_query(&mut self, query: &str, cx: &mut ViewContext<Self>) {
@@ -292,7 +306,7 @@ impl<D: PickerDelegate> Picker<D> {
             )
             .children(
                 self.delegate
-                    .render_match(ix, ix == self.delegate.selected_index(), cx),
+                    .render_item(ix, ix == self.delegate.selected_index(), cx),
             )
             .when(
                 self.delegate.separators_after_indices().contains(&ix),
@@ -313,12 +327,12 @@ impl<D: PickerDelegate> Picker<D> {
     }
 
     fn do_confirm(&mut self, secondary: bool, cx: &mut ViewContext<Self>) {
-        // if let Some(update_query) = self.delegate.confirm_update_query(cx) {
-        //     self.set_query(update_query, cx);
-        //     self.delegate.set_selected_index(0, cx);
-        // } else {
-        self.delegate.confirm(secondary, cx)
-        // }
+        if let Some(update_query) = self.delegate.confirm_update_query(cx) {
+            self.set_query(&update_query, cx);
+            self.delegate.set_selected_index(0, cx);
+        } else {
+            self.delegate.confirm(secondary, cx)
+        }
     }
 
     pub fn set_selected_index(
@@ -349,16 +363,7 @@ impl<D: PickerDelegate> Picker<D> {
     }
 
     fn confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
-        if self.pending_update_matches.is_some()
-            && !self
-                .delegate
-                .finalize_update_matches(self.query(cx), Duration::from_millis(16), cx)
-        {
-            self.confirm_on_update = Some(false)
-        } else {
-            self.pending_update_matches.take();
-            self.do_confirm(false, cx);
-        }
+        self.do_confirm(false, cx);
     }
 
     pub fn select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
@@ -402,13 +407,6 @@ impl<D: PickerDelegate> Picker<D> {
         if self.delegate.should_dismiss() {
             self.delegate.dismissed(cx);
             cx.emit(DismissEvent);
-        }
-    }
-
-    fn use_selected_query(&mut self, _: &UseSelectedQuery, cx: &mut ViewContext<Self>) {
-        if let Some(new_query) = self.delegate.selected_as_query() {
-            self.set_query(&new_query, cx);
-            cx.stop_propagation();
         }
     }
 
@@ -478,9 +476,12 @@ impl<D: PickerDelegate> Picker<D> {
 
 impl<D: PickerDelegate> Render for Picker<D> {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let focus_handle = self.focus_handle(cx);
+
         v_flex()
             .key_context("Picker")
             .size_full()
+            .track_focus(&focus_handle)
             .when_some(self.width, |el, width| el.w(width))
             .overflow_hidden()
             .when(self.is_modal, |this| this.elevation_3(cx))
@@ -490,9 +491,6 @@ impl<D: PickerDelegate> Render for Picker<D> {
             .on_action(cx.listener(Self::select_last))
             .on_action(cx.listener(Self::cancel))
             .on_action(cx.listener(Self::confirm))
-            // .on_action(cx.listener(Self::secondary_confirm))
-            .on_action(cx.listener(Self::use_selected_query))
-            // .on_action(cx.listener(Self::confirm_input))
             // Render Query Input header
             .child(match self.query_input {
                 Some(ref input) => self.delegate.render_query(input, cx),
@@ -504,7 +502,6 @@ impl<D: PickerDelegate> Render for Picker<D> {
                         .flex_grow()
                         .when_some(self.max_height, |div, max_h| div.max_h(max_h))
                         .overflow_hidden()
-                        // .children(self.delegate.render_header(cx))
                         .child(self.render_element_container(cx)),
                 )
             })

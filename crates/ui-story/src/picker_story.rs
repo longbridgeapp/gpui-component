@@ -37,7 +37,7 @@ impl PickerDelegate for ListItemDeletegate {
         self.selected_index = index
     }
 
-    fn render_match(
+    fn render_item(
         &self,
         ix: usize,
         selected: bool,
@@ -198,23 +198,27 @@ impl Render for PickerStory {
                         .style(ButtonStyle::Primary)
                         .on_click(cx.listener(|this, _, cx| {
                             this.open = !this.open;
+                            this.picker.focus_handle(cx).focus(cx);
                             cx.notify();
                         })),
                 ),
             )
             .when_some(self.selected_value.clone(), |this, selected_value| {
-                this.child("Selected: ").child(Label::new(selected_value))
+                this.child(
+                    h_flex()
+                        .gap_1()
+                        .child("You have selected:")
+                        .child(selected_value),
+                )
             })
             .when(self.open, |this| {
                 this.child(
                     div().absolute().size_full().top_0().left_0().child(
                         v_flex()
-                            // .h(px(0.0))
                             .top_10()
                             .flex()
                             .flex_col()
                             .items_center()
-                            .track_focus(&self.picker.focus_handle(cx))
                             .child(h_flex().w(px(450.)).occlude().child(self.picker.clone())),
                     ),
                 )

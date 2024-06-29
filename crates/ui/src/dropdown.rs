@@ -73,7 +73,7 @@ where
         self.selected_index = index;
     }
 
-    fn render_match(
+    fn render_item(
         &self,
         ix: usize,
         selected: bool,
@@ -135,7 +135,7 @@ where
             selected_index: 0,
         };
 
-        let picker = cx.new_view(|cx| Picker::uniform_list(picker_delegate, cx));
+        let picker = cx.new_view(|cx| Picker::uniform_list(picker_delegate, cx).no_query());
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
