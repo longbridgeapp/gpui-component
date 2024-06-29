@@ -1,4 +1,4 @@
-use gpui::{hsla, AppContext, Global, Hsla};
+use gpui::{hsla, AppContext, Global, Hsla, WindowAppearance};
 
 pub trait ActiveTheme {
     fn theme(&self) -> &Theme;
@@ -293,7 +293,20 @@ impl Theme {
     }
 
     pub fn init(cx: &mut AppContext) {
-        cx.set_global(Theme::new())
+        cx.set_global(Theme::new());
+        Self::sync_system_appearance(cx)
+    }
+
+    /// Sync the theme with the system appearance
+    pub fn sync_system_appearance(cx: &mut AppContext) {
+        match cx.window_appearance() {
+            WindowAppearance::Dark | WindowAppearance::VibrantDark => {
+                Self::change(ThemeMode::Dark, cx)
+            }
+            WindowAppearance::Light | WindowAppearance::VibrantLight => {
+                Self::change(ThemeMode::Light, cx)
+            }
+        }
     }
 
     pub fn change(mode: ThemeMode, cx: &mut AppContext) {

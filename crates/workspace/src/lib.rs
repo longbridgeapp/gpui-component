@@ -28,6 +28,11 @@ impl Workspace {
         _parent: Option<WeakView<Self>>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
+        cx.observe_window_appearance(|_workspace, cx| {
+            Theme::sync_system_appearance(cx);
+        })
+        .detach();
+
         Workspace {
             stories: Stories::view(cx),
             notifications: Default::default(),

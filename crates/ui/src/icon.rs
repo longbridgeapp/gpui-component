@@ -4,7 +4,6 @@ use gpui::{
     RenderOnce, SharedString, StyleRefinement, Styled, Svg, TextStyle, TextStyleRefinement,
     WindowContext,
 };
-use windows::Win32::Foundation::NOERROR;
 
 #[derive(IntoElement)]
 pub enum IconName {
