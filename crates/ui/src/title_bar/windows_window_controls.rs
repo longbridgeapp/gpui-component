@@ -1,4 +1,4 @@
-use gpui::{prelude::*, Rgba, WindowAppearance};
+use gpui::{hsla, prelude::*, Hsla};
 
 use crate::{prelude::*, stock::h_flex, theme::ActiveTheme};
 
@@ -15,26 +15,12 @@ impl WindowsWindowControls {
 
 impl RenderOnce for WindowsWindowControls {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let close_button_hover_color = Rgba {
-            r: 232.0 / 255.0,
-            g: 17.0 / 255.0,
-            b: 32.0 / 255.0,
-            a: 1.0,
-        };
+        let close_button_hover_color = hsla(356.0 / 360.0, 0.86, 0.4, 1.0);
 
-        let button_hover_color = match cx.appearance() {
-            WindowAppearance::Light | WindowAppearance::VibrantLight => Rgba {
-                r: 0.1,
-                g: 0.1,
-                b: 0.1,
-                a: 0.2,
-            },
-            WindowAppearance::Dark | WindowAppearance::VibrantDark => Rgba {
-                r: 0.9,
-                g: 0.9,
-                b: 0.9,
-                a: 0.1,
-            },
+        let button_hover_color = if cx.theme().mode.is_dark() {
+            hsla(180.0 / 360.0, 0.01, 0.21, 1.0)
+        } else {
+            hsla(0.0, 0.0, 0.91, 1.0)
         };
 
         div()
@@ -79,14 +65,14 @@ enum WindowsCaptionButtonIcon {
 struct WindowsCaptionButton {
     id: ElementId,
     icon: WindowsCaptionButtonIcon,
-    hover_background_color: Rgba,
+    hover_background_color: Hsla,
 }
 
 impl WindowsCaptionButton {
     pub fn new(
         id: impl Into<ElementId>,
         icon: WindowsCaptionButtonIcon,
-        hover_background_color: Rgba,
+        hover_background_color: Hsla,
     ) -> Self {
         Self {
             id: id.into(),
@@ -117,7 +103,6 @@ impl WindowsCaptionButton {
 
 impl RenderOnce for WindowsCaptionButton {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.theme();
         // todo(windows) report this width to the Windows platform API
         // NOTE: this is intentionally hard coded. An option to use the 'native' size
         //       could be added when the width is reported to the Windows platform API
@@ -132,11 +117,11 @@ impl RenderOnce for WindowsCaptionButton {
             .h_full()
             .text_size(px(10.0))
             .font_family(Self::get_font())
-            .text_color(theme.foreground)
+            .text_color(cx.theme().foreground)
             .hover(|style| style.bg(self.hover_background_color))
             .active(|style| {
                 let mut active_color = self.hover_background_color;
-                active_color.a *= 0.2;
+                active_color.l *= 0.95;
 
                 style.bg(active_color)
             })

@@ -6,7 +6,6 @@ use gpui::{
 use ui::{
     button::{Button, ButtonStyle},
     h_flex,
-    label::Label,
     list::ListItem,
     picker::{Picker, PickerDelegate},
     v_flex, Clickable as _,
