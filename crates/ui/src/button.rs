@@ -1,13 +1,12 @@
-use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
-    FocusHandle, FocusableView, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
-};
-
 use crate::{
-    h_flex, span,
+    h_flex,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
-    Clickable, Disableable, Icon, IconName, Selectable,
+    Clickable, Disableable, Icon, Selectable,
+};
+use gpui::{
+    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
+    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {

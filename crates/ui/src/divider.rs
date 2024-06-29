@@ -1,5 +1,5 @@
 use gpui::IntoElement;
-use gpui::{div, prelude::FluentBuilder as _, Div, RenderOnce, Styled as _};
+use gpui::{div, prelude::FluentBuilder as _, RenderOnce, Styled as _};
 
 use crate::theme::ActiveTheme;
 use crate::StyledExt as _;

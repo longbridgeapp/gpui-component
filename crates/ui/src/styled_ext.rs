@@ -1,4 +1,4 @@
-use crate::theme::{ActiveTheme, Colorize};
+use crate::theme::ActiveTheme;
 use gpui::{hsla, point, px, BoxShadow, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
@@ -34,8 +34,6 @@ impl ElevationIndex {
                     spread_radius: px(-2.),
                 }
             ],
-
-            _ => smallvec![],
         }
     }
 }

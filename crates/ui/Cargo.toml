@@ -13,3 +13,6 @@ wry = "0"
 smallvec = "1.13.2"
 windows = "0.57.0"
 unicode-segmentation = "1.11.0"
+
+[lints]
+workspace = true

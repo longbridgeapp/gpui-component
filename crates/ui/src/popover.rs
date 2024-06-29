@@ -40,7 +40,7 @@ impl PopoverContent {
 impl EventEmitter<DismissEvent> for PopoverContent {}
 
 impl FocusableView for PopoverContent {
-    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
@@ -127,12 +127,12 @@ impl<M: ManagedView> Popover<M> {
         let new_popover = (builder)(cx);
 
         let popover_cloned = popover.clone();
-        let previous_focus_handle = cx.focused();
+        let prev_focus_handle = cx.focused();
 
         cx.subscribe(&new_popover, move |modal, _: &DismissEvent, cx| {
             if modal.focus_handle(cx).contains_focused(cx) {
-                if let Some(previous_focus_handle) = previous_focus_handle.as_ref() {
-                    cx.focus(previous_focus_handle);
+                if let Some(prev_focus_handle) = prev_focus_handle.as_ref() {
+                    cx.focus(prev_focus_handle);
                 }
             }
             *popover_cloned.borrow_mut() = None;
@@ -154,7 +154,7 @@ impl<M: ManagedView> Popover<M> {
         }
     }
 
-    fn resolved_offset(&self, cx: &WindowContext) -> Point<Pixels> {
+    fn resolved_offset(&self, _cx: &WindowContext) -> Point<Pixels> {
         let offset = px(0.);
         match self.anchor {
             AnchorCorner::TopRight | AnchorCorner::BottomRight => point(offset, px(0.)),

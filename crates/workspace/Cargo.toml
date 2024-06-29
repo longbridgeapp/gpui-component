@@ -9,3 +9,6 @@ ui.workspace = true
 ui-story.workspace = true
 anyhow.workspace = true
 util.workspace = true
+
+[lints]
+workspace = true

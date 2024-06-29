@@ -9,3 +9,6 @@ anyhow.workspace = true
 rust-embed = "8"
 log.workspace = true
 workspace.workspace = true
+
+[lints]
+workspace = true

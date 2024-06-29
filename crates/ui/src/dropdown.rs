@@ -1,10 +1,8 @@
-use std::rc::Rc;
-
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AppContext, Div, ElementId, FocusHandle,
+    actions, div, prelude::FluentBuilder as _, px, AppContext, ElementId, FocusHandle,
     FocusableView, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render,
-    RenderOnce, SharedString, Stateful, StatefulInteractiveElement as _, Styled as _, View,
-    ViewContext, VisualContext as _, WeakView,
+    SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
+    VisualContext as _, WeakView,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
@@ -23,7 +21,6 @@ use crate::{
     h_flex,
     list::ListItem,
     picker::{self, Picker, PickerDelegate},
-    popover::Popover,
     theme::ActiveTheme,
     Icon, IconName,
 };
@@ -97,7 +94,7 @@ where
 
     fn dismissed(&mut self, cx: &mut ViewContext<Picker<Self>>) {
         if let Some(view) = self.dropdown.upgrade() {
-            cx.update_view(&view, |view, cx| {
+            cx.update_view(&view, |view, _| {
                 view.open = false;
             });
         }

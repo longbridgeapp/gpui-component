@@ -12,13 +12,13 @@ use crate::story_case;
 pub struct PopoverStory {}
 
 impl PopoverStory {
-    pub fn new(cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(_: &mut ViewContext<Self>) -> Self {
         Self {}
     }
 }
 
 impl Render for PopoverStory {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
         story_case(
             "Popover",
             "Displays rich content in a portal, triggered by a button.",

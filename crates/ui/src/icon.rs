@@ -1,7 +1,6 @@
 use crate::theme::ActiveTheme;
 use gpui::{
-    div, rgb, svg, AnyElement, Div, Hsla, InteractiveElement, IntoElement, ParentElement as _,
-    RenderOnce, SharedString, StyleRefinement, Styled, Svg, TextStyle, TextStyleRefinement,
+    svg, AnyElement, Hsla, IntoElement, RenderOnce, SharedString, StyleRefinement, Styled, Svg,
     WindowContext,
 };
 
@@ -33,9 +32,9 @@ impl IconName {
     }
 }
 
-impl Into<Icon> for IconName {
-    fn into(self) -> Icon {
-        Icon::new(self)
+impl From<IconName> for Icon {
+    fn from(val: IconName) -> Self {
+        Icon::new(val)
     }
 }
 
@@ -89,8 +88,8 @@ impl RenderOnce for Icon {
     }
 }
 
-impl Into<AnyElement> for Icon {
-    fn into(self) -> AnyElement {
-        self.into_any_element()
+impl From<Icon> for AnyElement {
+    fn from(val: Icon) -> Self {
+        val.into_any_element()
     }
 }

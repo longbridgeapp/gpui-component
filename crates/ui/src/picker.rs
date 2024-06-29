@@ -67,8 +67,8 @@ pub trait PickerDelegate: Sized + 'static {
         None
     }
 
-    fn confirm(&mut self, secondary: bool, cx: &mut ViewContext<Picker<Self>>) {}
-    fn dismissed(&mut self, cx: &mut ViewContext<Picker<Self>>) {}
+    fn confirm(&mut self, _secondary: bool, _cx: &mut ViewContext<Picker<Self>>) {}
+    fn dismissed(&mut self, _cx: &mut ViewContext<Picker<Self>>) {}
     fn should_dismiss(&self) -> bool {
         true
     }
@@ -94,7 +94,7 @@ pub trait PickerDelegate: Sized + 'static {
     fn separators_after_indices(&self) -> Vec<usize> {
         Vec::new()
     }
-    fn update_matches(&mut self, query: &str, cx: &mut ViewContext<Picker<Self>>) -> Task<()> {
+    fn update_matches(&mut self, _query: &str, _cx: &mut ViewContext<Picker<Self>>) -> Task<()> {
         Task::ready(())
     }
     fn confirm_update_query(&mut self, _cx: &mut ViewContext<Picker<Self>>) -> Option<String> {
@@ -472,7 +472,6 @@ impl<D: PickerDelegate> Picker<D> {
                 self.set_query(text, cx);
                 self.refresh(cx);
             }
-            _ => {}
         }
     }
 }

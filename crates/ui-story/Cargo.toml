@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 ui.workspace = true
 gpui.workspace = true
+
+[lints]
+workspace = true

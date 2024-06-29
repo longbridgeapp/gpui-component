@@ -128,7 +128,7 @@ impl Stories {
             tooltip_story: cx.new_view(|_| TooltipStory),
             picker_story: cx.new_view(PickerStory::new),
             dropdown_story: cx.new_view(DropdownStory::new),
-            popover_story: cx.new_view(|cx| PopoverStory::new(cx)),
+            popover_story: cx.new_view(PopoverStory::new),
         }
     }
 
