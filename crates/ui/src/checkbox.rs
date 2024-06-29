@@ -95,7 +95,7 @@ impl RenderOnce for Checkbox {
                     .border_1()
                     .border_color(color)
                     .rounded_sm()
-                    .size(px(16.))
+                    .size_4()
                     .map(|this| match self.checked {
                         Selection::Unselected => this.bg(theme.transparent),
                         _ => this.bg(color),
@@ -123,7 +123,7 @@ impl RenderOnce for Checkbox {
             )
             .map(|this| {
                 if let Some(label) = self.label {
-                    this.child(Label::new(label).text_color(color))
+                    this.child(label).text_color(color)
                 } else {
                     this
                 }
