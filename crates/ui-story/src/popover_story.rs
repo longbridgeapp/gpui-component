@@ -1,5 +1,5 @@
 use gpui::{
-    div, px, AnchorCorner, AppContext, DismissEvent, Div, Element, EventEmitter, FocusHandle,
+    div, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter, FocusHandle,
     FocusableView, IntoElement, MouseButton, ParentElement as _, Render, Styled as _, View,
     ViewContext, VisualContext, WindowContext,
 };
@@ -60,7 +60,7 @@ impl PopoverStory {
 }
 
 impl Render for PopoverStory {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
 
         story_case(
