@@ -2,11 +2,11 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
 use gpui::{
-    actions, anchored, deferred, div, AnchorCorner, AnyElement, AppContext, Bounds, DismissEvent,
-    DispatchPhase, Element, ElementId, EventEmitter, FocusHandle, FocusableView, GlobalElementId,
-    Hitbox, InteractiveElement, IntoElement, LayoutId, ManagedView, MouseButton, MouseDownEvent,
-    ParentElement as _, Pixels, Point, Render, Style, Styled as _, View, ViewContext,
-    VisualContext, WindowContext,
+    actions, anchored, deferred, div, prelude::FluentBuilder, AnchorCorner, AnyElement, AppContext,
+    Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
+    FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId, ManagedView,
+    MouseButton, MouseDownEvent, ParentElement as _, Pixels, Point, Render, Style, Styled as _,
+    View, ViewContext, VisualContext, WindowContext,
 };
 
 actions!(popover, [Open, Dismiss]);
@@ -209,17 +209,20 @@ impl<M: ManagedView> Element for Popover<M> {
                     anchored.child(
                         div()
                             .occlude()
-                            .absolute()
-                            .mt_2()
+                            .map(|d| match this.anchor {
+                                AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_2(),
+                                AnchorCorner::BottomLeft | AnchorCorner::BottomRight => d.mb_2(),
+                            })
                             .elevation_2(cx)
                             .bg(cx.theme().popover)
                             .border_1()
                             .border_color(cx.theme().border)
                             .p_4()
                             .max_w_128()
-                            .w_80()
                             .occlude()
                             .on_mouse_down_out(move |_, cx| {
+                                // Update the element_state.content_view to `None`,
+                                // so that the `paint`` method will not paint it.
                                 *content_view_mut.borrow_mut() = None;
                                 cx.refresh();
                             })
@@ -252,8 +255,8 @@ impl<M: ManagedView> Element for Popover<M> {
 
     fn prepaint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<gpui::Pixels>,
+        _id: Option<&gpui::GlobalElementId>,
+        _bounds: gpui::Bounds<gpui::Pixels>,
         request_layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
@@ -278,7 +281,7 @@ impl<M: ManagedView> Element for Popover<M> {
     fn paint(
         &mut self,
         id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<gpui::Pixels>,
+        _bounds: gpui::Bounds<gpui::Pixels>,
         request_layout: &mut Self::RequestLayoutState,
         prepaint: &mut Self::PrepaintState,
         cx: &mut WindowContext,

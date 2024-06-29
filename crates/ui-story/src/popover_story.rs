@@ -9,7 +9,7 @@ use ui::{
     h_flex,
     input::TextInput,
     popover::{Popover, PopoverContent},
-    v_flex,
+    v_flex, Clickable,
 };
 
 use crate::story_case;
@@ -36,10 +36,15 @@ impl EventEmitter<DismissEvent> for Form {}
 
 impl Render for Form {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
-            .p_5()
+        v_flex()
+            .gap_4()
+            .size_full()
             .child("This is a form container.")
             .child(self.input1.clone())
+            .child(
+                Button::primary("submit", "Submit")
+                    .on_click(cx.listener(|_, _, cx| cx.emit(DismissEvent))),
+            )
     }
 }
 
