@@ -4,7 +4,7 @@ use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
     Surface,
-    ElevatedSurface,
+    PopoverSurface,
     ModalSurface,
 }
 
@@ -13,7 +13,7 @@ impl ElevationIndex {
         match self {
             ElevationIndex::Surface => smallvec![],
 
-            ElevationIndex::ElevatedSurface => smallvec![BoxShadow {
+            ElevationIndex::PopoverSurface => smallvec![BoxShadow {
                 color: hsla(0., 0., 0., 0.12),
                 offset: point(px(0.), px(2.)),
                 blur_radius: px(3.),
@@ -22,23 +22,17 @@ impl ElevationIndex {
 
             ElevationIndex::ModalSurface => smallvec![
                 BoxShadow {
-                    color: hsla(0., 0., 0., 0.12),
-                    offset: point(px(0.), px(2.)),
-                    blur_radius: px(3.),
-                    spread_radius: px(0.),
-                },
-                BoxShadow {
-                    color: hsla(0., 0., 0., 0.08),
-                    offset: point(px(0.), px(3.)),
+                    color: hsla(0., 0., 0., 0.1),
+                    offset: point(px(0.), px(4.)),
                     blur_radius: px(6.),
-                    spread_radius: px(0.),
+                    spread_radius: px(-1.),
                 },
                 BoxShadow {
-                    color: hsla(0., 0., 0., 0.04),
-                    offset: point(px(0.), px(6.)),
-                    blur_radius: px(12.),
-                    spread_radius: px(0.),
-                },
+                    color: hsla(0., 0., 0., 0.1),
+                    offset: point(px(0.), px(2.)),
+                    blur_radius: px(4.),
+                    spread_radius: px(-2.),
+                }
             ],
 
             _ => smallvec![],
@@ -79,7 +73,7 @@ pub trait StyledExt: Styled + Sized {
 
     /// Appear above most UI elements
     fn elevation_2(self, cx: &mut WindowContext) -> Self {
-        elevated(self, cx, ElevationIndex::ElevatedSurface)
+        elevated(self, cx, ElevationIndex::PopoverSurface)
     }
 
     // Above all other UI elements and are located above the wash layer

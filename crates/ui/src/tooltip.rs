@@ -3,7 +3,7 @@ use gpui::{
     SharedString, Styled, ViewContext, VisualContext, WindowContext,
 };
 
-use crate::{h_flex, styled_ext::ElevationIndex, theme::ActiveTheme, v_flex};
+use crate::{h_flex, theme::ActiveTheme, v_flex, StyledExt};
 
 pub struct Tooltip {
     title: SharedString,
@@ -63,7 +63,7 @@ pub fn tooltip_container<V>(
             .rounded(px(8.))
             .border_1()
             .border_color(cx.theme().border)
-            .shadow(ElevationIndex::ElevatedSurface.shadow())
+            .elevation_2(cx)
             .text_color(cx.theme().popover_foreground)
             .py_1p5()
             .px_2()
