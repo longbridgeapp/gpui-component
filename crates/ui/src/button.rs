@@ -65,6 +65,18 @@ impl Button {
         }
     }
 
+    pub fn primary(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
+        Self::new(id, label).style(ButtonStyle::Primary)
+    }
+
+    pub fn danger(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
+        Self::new(id, label).style(ButtonStyle::Danger)
+    }
+
+    pub fn small(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
+        Self::new(id, label).size(ButtonSize::Small)
+    }
+
     pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
         self.width = Some(width.into());
         self

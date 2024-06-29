@@ -38,13 +38,11 @@ impl ElevationIndex {
     }
 }
 
-fn elevated<E: Styled>(this: E, cx: &mut WindowContext, index: ElevationIndex) -> E {
-    let theme = cx.theme();
-
-    this.bg(theme.popover)
+fn elevated<E: Styled>(this: E, cx: &WindowContext, index: ElevationIndex) -> E {
+    this.bg(cx.theme().popover)
         .rounded(px(8.))
         .border_1()
-        .border_color(theme.border)
+        .border_color(cx.theme().border)
         .shadow(index.shadow())
 }
 
@@ -65,17 +63,17 @@ pub trait StyledExt: Styled + Sized {
     }
 
     /// Located above the app background
-    fn elevation_1(self, cx: &mut WindowContext) -> Self {
+    fn elevation_1(self, cx: &WindowContext) -> Self {
         elevated(self, cx, ElevationIndex::Surface)
     }
 
     /// Appear above most UI elements
-    fn elevation_2(self, cx: &mut WindowContext) -> Self {
+    fn elevation_2(self, cx: &WindowContext) -> Self {
         elevated(self, cx, ElevationIndex::PopoverSurface)
     }
 
     // Above all other UI elements and are located above the wash layer
-    fn elevation_3(self, cx: &mut WindowContext) -> Self {
+    fn elevation_3(self, cx: &WindowContext) -> Self {
         elevated(self, cx, ElevationIndex::ModalSurface)
     }
 }
