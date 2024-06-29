@@ -5,7 +5,7 @@ mod input_story;
 mod picker_story;
 mod popover_story;
 mod switch_story;
-mod tooltip_stroy;
+mod tooltip_story;
 
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, IntoElement, ParentElement, Render,
@@ -28,7 +28,7 @@ use input_story::InputStory;
 use picker_story::PickerStory;
 use popover_story::PopoverStory;
 use switch_story::SwitchStory;
-use tooltip_stroy::TooltipStory;
+use tooltip_story::TooltipStory;
 
 pub fn story_case(name: &'static str, description: &'static str) -> StoryContainer {
     StoryContainer::new(name, description)

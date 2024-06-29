@@ -145,13 +145,14 @@ impl<M: ManagedView> Popover<M> {
         cx.refresh();
     }
 
-    fn resolved_attach(&self) -> AnchorCorner {
+    fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
         match self.anchor {
             AnchorCorner::TopLeft => AnchorCorner::BottomLeft,
             AnchorCorner::TopRight => AnchorCorner::BottomRight,
             AnchorCorner::BottomLeft => AnchorCorner::TopLeft,
             AnchorCorner::BottomRight => AnchorCorner::TopRight,
         }
+        .corner(bounds)
     }
 
     fn resolved_offset(&self, _cx: &WindowContext) -> Point<Pixels> {
@@ -223,8 +224,7 @@ impl<M: ManagedView> Element for Popover<M> {
                     let mut anchored = anchored().snap_to_window().anchor(self.anchor);
                     if let Some(trigger_bounds) = element_state.trigger_bounds {
                         anchored = anchored.position(
-                            self.resolved_attach().corner(trigger_bounds)
-                                + self.resolved_offset(cx),
+                            self.resolved_corner(trigger_bounds) + self.resolved_offset(cx),
                         );
                     }
                     let mut element = deferred(anchored.child(popover.clone()))

@@ -25,6 +25,7 @@ impl Render for PopoverStory {
         )
         .child(
             h_flex().items_center().justify_between().child(
+               v_flex().gap_4().child( 
                 Popover::new("info-top-left")
                     .trigger(Button::new("info", "Top Left").width(px(300.)))
                     .content(|cx| {
@@ -39,7 +40,8 @@ impl Render for PopoverStory {
                             },
                             cx,
                         )
-                    }),
+                    })
+            ).child("This is background text, should be covered by Popover.")
             ).child(
                 Popover::new("info-top-right")
                 .trigger(Button::new("info", "Top Right").width(px(300.)))

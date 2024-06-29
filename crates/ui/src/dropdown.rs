@@ -1,8 +1,9 @@
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AppContext, ElementId, FocusHandle,
-    FocusableView, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render,
-    SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
-    VisualContext as _, WeakView,
+    actions, deferred, div, prelude::FluentBuilder as _, px, AnyElement, AppContext, DismissEvent,
+    Element, ElementId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
+    KeyBinding, LayoutId, ParentElement as _, Render, SharedString,
+    StatefulInteractiveElement as _, Styled as _, View, ViewContext, VisualContext as _, WeakView,
+    WindowContext,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
@@ -172,6 +173,9 @@ where
         if !self.open {
             self.open = true;
             cx.notify();
+        } else {
+            self.picker.focus_handle(cx).focus(cx);
+            cx.dispatch_action(Box::new(picker::Confirm));
         }
     }
 
@@ -179,8 +183,25 @@ where
         self.open = false;
         cx.notify();
     }
+
+    fn render_menu_content(&self, cx: &WindowContext) -> impl IntoElement {
+        div()
+            .absolute()
+            .mt_1p5()
+            .bg(cx.theme().background)
+            .border_1()
+            .border_color(cx.theme().input)
+            .rounded(px(cx.theme().radius))
+            .shadow_md()
+            .track_focus(&self.picker.focus_handle(cx))
+            .child(self.picker.clone())
+            .on_mouse_down_out(|_, cx| {
+                cx.dispatch_action(Box::new(Escape));
+            })
+    }
 }
 
+impl<D> EventEmitter<DismissEvent> for Dropdown<D> where D: DropdownDelegate + 'static {}
 impl<D> FocusableView for Dropdown<D>
 where
     D: DropdownDelegate + 'static,
@@ -242,23 +263,118 @@ where
                             ),
                     ),
             )
-            .when(self.open, |this| {
-                this.child(
-                    div()
-                        .absolute()
-                        .mt_1p5()
-                        .bg(cx.theme().background)
-                        .border_1()
-                        .border_color(cx.theme().input)
-                        .rounded(px(cx.theme().radius))
-                        .shadow_md()
-                        .track_focus(&self.picker.focus_handle(cx))
-                        .child(self.picker.clone())
-                        .on_mouse_down_out(cx.listener(|view, _, cx| {
-                            view.open = false;
-                            cx.notify();
-                        })),
-                )
+            .child(DropdownMenuElement {
+                id: "dropdown-menu".into(),
+                dropdown: cx.view().clone(),
             })
+    }
+}
+
+struct DropdownMenuElement<D: DropdownDelegate + 'static> {
+    id: ElementId,
+    dropdown: View<Dropdown<D>>,
+}
+
+struct DropdownMenuElementState {
+    menu_element: Option<AnyElement>,
+    layout_id: Option<LayoutId>,
+}
+
+impl Default for DropdownMenuElementState {
+    fn default() -> Self {
+        Self {
+            menu_element: None,
+            layout_id: None,
+        }
+    }
+}
+
+impl<D> IntoElement for DropdownMenuElement<D>
+where
+    D: DropdownDelegate + 'static,
+{
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
+impl<D> Element for DropdownMenuElement<D>
+where
+    D: DropdownDelegate + 'static,
+{
+    type RequestLayoutState = DropdownMenuElementState;
+
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<ElementId> {
+        Some(self.id.clone())
+    }
+
+    fn request_layout(
+        &mut self,
+        id: Option<&gpui::GlobalElementId>,
+        cx: &mut gpui::WindowContext,
+    ) -> (gpui::LayoutId, Self::RequestLayoutState) {
+        cx.with_element_state(
+            id.unwrap(),
+            |element_state: Option<DropdownMenuElementState>, cx| {
+                let state = element_state.unwrap_or_default();
+
+                let menu = self
+                    .dropdown
+                    .read(cx)
+                    .render_menu_content(cx)
+                    .into_any_element();
+
+                let mut element = deferred(menu).with_priority(1).into_any();
+                let layout_id = element.request_layout(cx);
+                (
+                    (
+                        layout_id.clone(),
+                        DropdownMenuElementState {
+                            layout_id: Some(layout_id),
+                            menu_element: Some(element),
+                        },
+                    ),
+                    state,
+                )
+            },
+        )
+    }
+
+    fn prepaint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<gpui::Pixels>,
+        request_layout: &mut DropdownMenuElementState,
+        cx: &mut gpui::WindowContext,
+    ) -> Self::PrepaintState {
+        if self.dropdown.read(cx).open {
+            if let Some(element) = &mut request_layout.menu_element {
+                element.prepaint(cx);
+            }
+
+            if let Some(layout_id) = request_layout.layout_id {
+                let bounds = cx.layout_bounds(layout_id);
+                cx.insert_hitbox(bounds, false);
+            }
+        }
+    }
+
+    fn paint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<gpui::Pixels>,
+        request_layout: &mut Self::RequestLayoutState,
+        _: &mut Self::PrepaintState,
+        cx: &mut gpui::WindowContext,
+    ) {
+        if self.dropdown.read(cx).open {
+            if let Some(element) = &mut request_layout.menu_element {
+                element.paint(cx);
+            }
+        }
     }
 }
