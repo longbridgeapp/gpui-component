@@ -6,9 +6,11 @@ This is an example of build app by using GPUI.
 
 <https://github.com/huacnlee/gpui-app/assets/5518/5316f9f0-58c8-4b99-bd79-eafffb38c3fc>
 
+<https://github.com/huacnlee/gpui-app/assets/5518/0273e031-4426-4ab5-a41c-f7cbbb0e55bc>
+
 ## Demo
 
-- [main-app-windows.zip](https://github.com/user-attachments/files/16018089/main-app.zip)
+[gpui-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
 
 ## TODO
 
@@ -18,8 +20,9 @@ This is an example of build app by using GPUI.
   - [x] Copy, Cut, Paste by keyboard
   - [ ] ContextMenu to let user copy, cut, paste
   - [ ] Selection by mouse, drag to select text
-  - [ ] Cursor blink
+  - [x] Cursor blinking
 - [x] Button
+  - [x] Button with Icon
   - [ ] IconButton
   - [ ] ToggleButton
 - [x] Label
@@ -30,9 +33,9 @@ This is an example of build app by using GPUI.
   - [x] With Label (Left, Right side)
   - [ ] Toggle Animation
 - [ ] Radio & RadioGroup
-- [ ] Dropdown
+- [x] Dropdown
   - [ ] Combobox
-  - [ ] Picker
+  - [x] Picker
     - [x] Picker List
     - [x] Use keyword to select next, prev, enter to select, esc to cancel.
 - [x] Tabs
@@ -40,6 +43,7 @@ This is an example of build app by using GPUI.
   - [x] TabBar
 - [x] Notification
 - [x] Tooltip
+- [x] Popover
 - [ ] Dockpanel & Splitter
 - [ ] List
 - [ ] Table
