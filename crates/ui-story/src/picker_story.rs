@@ -172,8 +172,8 @@ impl PickerStory {
                 },
                 cx,
             )
-            .modal(true)
-            .max_height(Some(px(350.0).into()));
+            .modal(true);
+
             picker.focus(cx);
             picker.set_query("c", cx);
             picker
@@ -213,12 +213,13 @@ impl Render for PickerStory {
             .when(self.open, |this| {
                 this.child(
                     div().absolute().size_full().top_0().left_0().child(
-                        v_flex()
-                            .top_10()
-                            .flex()
-                            .flex_col()
-                            .items_center()
-                            .child(h_flex().w(px(450.)).occlude().child(self.picker.clone())),
+                        v_flex().top_10().flex().flex_col().items_center().child(
+                            div()
+                                .w(px(450.))
+                                .h(px(350.))
+                                .occlude()
+                                .child(self.picker.clone()),
+                        ),
                     ),
                 )
             })

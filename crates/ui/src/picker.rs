@@ -2,12 +2,11 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 
 use anyhow::Result;
 use gpui::{
-    actions, div, list, prelude::FluentBuilder as _, px, rems, uniform_list, AppContext,
-    ClickEvent, DismissEvent, Div, Element, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, ListState,
-    MouseButton, MouseUpEvent, ParentElement as _, Render, SharedString,
-    StatefulInteractiveElement as _, Styled as _, Task, UniformListScrollHandle, View, ViewContext,
-    VisualContext as _, WindowContext,
+    actions, div, list, prelude::FluentBuilder as _, px, uniform_list, AppContext, ClickEvent,
+    DismissEvent, Div, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
+    KeyBinding, Length, ListSizingBehavior, ListState, MouseButton, MouseUpEvent,
+    ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _, Task,
+    UniformListScrollHandle, View, ViewContext, VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -344,7 +343,7 @@ impl<D: PickerDelegate> Picker<D> {
             )
     }
 
-    fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
+    fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<Scrollbar> {
         if !self.scrollbar_enable {
             return None;
         }
@@ -574,13 +573,25 @@ impl<D: PickerDelegate> Render for Picker<D> {
             })
             .when(self.delegate.match_count() > 0, |this| {
                 this.child(
-                    h_flex()
+                    v_flex()
                         .flex_grow()
                         .min_h(px(100.))
                         .when_some(self.max_height, |div, max_h| div.max_h(max_h))
                         .overflow_hidden()
                         .child(self.render_element_container(cx))
-                        .children(self.render_scrollbar(cx)),
+                        .children(self.render_scrollbar(cx).map(|bar| {
+                            // This for let the scrollbar can render on top of the list container.
+                            div()
+                                .occlude()
+                                .absolute()
+                                .h_full()
+                                .left_auto()
+                                .top_0()
+                                .right_0()
+                                .w(px(bar.width()))
+                                .bottom_0()
+                                .child(bar)
+                        })),
                 )
             })
             .when(self.delegate.match_count() == 0, |el| {

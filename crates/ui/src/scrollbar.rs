@@ -68,6 +68,10 @@ impl Scrollbar {
             drag_state,
         })
     }
+
+    pub fn width(&self) -> f32 {
+        self.width
+    }
 }
 
 impl IntoElement for Scrollbar {
