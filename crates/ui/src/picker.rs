@@ -508,6 +508,7 @@ impl<D: PickerDelegate> Render for Picker<D> {
                 el.child(
                     v_flex()
                         .flex_grow()
+                        .min_h(px(100.))
                         .when_some(self.max_height, |div, max_h| div.max_h(max_h))
                         .overflow_hidden()
                         .child(self.render_element_container(cx)),

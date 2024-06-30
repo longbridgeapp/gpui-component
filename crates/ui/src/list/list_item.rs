@@ -85,36 +85,32 @@ impl ParentElement for ListItem {
 
 impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        div()
-            .id("item-group")
-            .w_full()
+        h_flex()
+            .id("list-item")
             .relative()
             .gap_x_2()
+            .items_center()
+            .justify_between()
             .text_base()
             .text_color(cx.theme().foreground)
             .when_some(self.on_click, |this, on_click| {
                 this.cursor_pointer().on_click(on_click)
             })
+            .when(self.selected, |this| this.bg(cx.theme().accent))
+            .when(!self.selected, |this| {
+                this.hover(|this| this.bg(cx.theme().accent))
+            })
             // Right click
             .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {
                 this.on_mouse_down(MouseButton::Right, move |ev, cx| (on_mouse_down)(ev, cx))
             })
-            .when(self.selected, |this| this.bg(cx.theme().accent))
-            .child(
-                self.base
-                    .when(!self.selected, |this| {
-                        this.hover(|this| this.bg(cx.theme().accent))
-                    })
-                    .w_full()
-                    .items_center()
-                    .justify_between()
-                    .when(self.selected, |this| {
-                        if let Some(icon) = self.check_icon {
-                            this.child(icon.text_color(cx.theme().muted))
-                        } else {
-                            this
-                        }
-                    }),
-            )
+            .child(self.base.w_full())
+            .when(self.selected, |this| {
+                if let Some(icon) = self.check_icon {
+                    this.child(icon.text_color(cx.theme().muted_foreground).mr_2())
+                } else {
+                    this
+                }
+            })
     }
 }
