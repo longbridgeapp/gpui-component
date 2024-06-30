@@ -38,6 +38,8 @@ impl RenderOnce for Label {
             self.label
         };
 
-        self.base.text_color(cx.theme().foreground).child(text)
+        div()
+            .text_color(cx.theme().foreground)
+            .child(self.base.child(text))
     }
 }

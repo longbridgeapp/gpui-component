@@ -1,10 +1,11 @@
-use std::{fmt::format, rc::Rc};
+use core::time;
+use std::{cell::RefCell, fmt::format, rc::Rc};
 
 use fake::Fake;
 use gpui::{
     actions, div, impl_actions, prelude::FluentBuilder as _, px, Action, ElementId,
-    InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, View, ViewContext,
-    VisualContext, WindowContext,
+    InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, Timer, View,
+    ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -13,13 +14,14 @@ use ui::{
     list::ListItem,
     picker::{Picker, PickerDelegate},
     theme::{hsl, ActiveTheme, Colorize as _},
-    v_flex, Icon, IconName,
+    v_flex,
 };
 
 use super::story_case;
 
 actions!(list_story, [SelectedCompany]);
 
+#[derive(Clone)]
 struct Company {
     name: String,
     industry: String,
@@ -30,7 +32,7 @@ struct Company {
 
 impl Company {
     fn random_update(&mut self) {
-        self.last_done = self.prev_close * (-0.1..0.1).fake::<f64>();
+        self.last_done = self.prev_close * (1.0 + (-0.2..0.2).fake::<f64>());
     }
 
     fn change_percent(&self) -> f64 {
@@ -41,14 +43,16 @@ impl Company {
 #[derive(IntoElement)]
 struct CompanyListItem {
     base: ListItem,
-    copmpany: Rc<Company>,
+    ix: usize,
+    copmpany: Company,
     selected: bool,
 }
 
 impl CompanyListItem {
-    pub fn new(id: impl Into<ElementId>, copmpany: Rc<Company>, selected: bool) -> Self {
+    pub fn new(id: impl Into<ElementId>, copmpany: Company, ix: usize, selected: bool) -> Self {
         CompanyListItem {
             copmpany,
+            ix,
             base: ListItem::new(id),
             selected,
         }
@@ -69,12 +73,22 @@ impl RenderOnce for CompanyListItem {
             _ => cx.theme().foreground,
         };
 
+        let bg_color = if self.selected {
+            cx.theme().accent
+        } else {
+            if self.ix % 2 == 0 {
+                cx.theme().background
+            } else {
+                cx.theme().accent.opacity(0.3)
+            }
+        };
+
         self.base
             .px_3()
             .py_1()
             .rounded_lg()
             .overflow_x_hidden()
-            .when(self.selected, |this| this.bg(cx.theme().accent))
+            .bg(bg_color)
             .child(
                 h_flex()
                     .items_center()
@@ -87,10 +101,11 @@ impl RenderOnce for CompanyListItem {
                             .max_w(px(500.))
                             .overflow_x_hidden()
                             .flex_nowrap()
-                            .child(Label::new(self.copmpany.name.clone()))
+                            .child(Label::new(self.copmpany.name.clone()).whitespace_nowrap())
                             .child(
                                 div().text_sm().overflow_x_hidden().child(
                                     Label::new(self.copmpany.industry.clone())
+                                        .whitespace_nowrap()
                                         .text_color(text_color.opacity(0.5)),
                                 ),
                             ),
@@ -107,14 +122,13 @@ impl RenderOnce for CompanyListItem {
                                     .child(format!("{:.2}", self.copmpany.last_done)),
                             )
                             .child(
-                                div().w(px(65.)).child(
+                                h_flex().w(px(65.)).justify_end().child(
                                     div()
-                                        .flex_none()
-                                        .text_color(cx.theme().primary_foreground)
                                         .rounded_md()
+                                        .whitespace_nowrap()
                                         .text_size(px(12.))
                                         .px_1()
-                                        .bg(trend_color)
+                                        .text_color(trend_color)
                                         .child(format!("{:.2}%", self.copmpany.change_percent())),
                                 ),
                             ),
@@ -124,7 +138,7 @@ impl RenderOnce for CompanyListItem {
 }
 
 struct CompanyListDelegate {
-    companies: Vec<Rc<Company>>,
+    companies: Vec<Company>,
     selected_index: usize,
 }
 
@@ -151,7 +165,7 @@ impl PickerDelegate for CompanyListDelegate {
         _cx: &mut ViewContext<ui::picker::Picker<Self>>,
     ) -> Option<Self::ListItem> {
         if let Some(company) = self.companies.get(ix) {
-            return Some(CompanyListItem::new(ix, company.clone(), selected));
+            return Some(CompanyListItem::new(ix, company.clone(), ix, selected));
         }
 
         None
@@ -159,14 +173,14 @@ impl PickerDelegate for CompanyListDelegate {
 }
 
 impl CompanyListDelegate {
-    fn selected_company(&self) -> Option<Rc<Company>> {
+    fn selected_company(&self) -> Option<Company> {
         self.companies.get(self.selected_index).cloned()
     }
 }
 
 pub struct ListStory {
     company_list: View<Picker<CompanyListDelegate>>,
-    selected_company: Option<Rc<Company>>,
+    selected_company: Option<Company>,
 }
 
 fn random_company() -> Company {
@@ -185,8 +199,8 @@ impl ListStory {
     pub(crate) fn new(cx: &mut ViewContext<Self>) -> Self {
         let companies = (0..10_000)
             .into_iter()
-            .map(|_| Rc::new(random_company()))
-            .collect::<Vec<Rc<Company>>>();
+            .map(|_| random_company())
+            .collect::<Vec<Company>>();
 
         let company_list = cx.new_view(|cx| {
             Picker::uniform_list(
@@ -198,6 +212,27 @@ impl ListStory {
             )
             .no_query()
         });
+
+        // Spawn a background to random refresh the list
+        cx.spawn(move |this, mut cx| async move {
+            loop {
+                Timer::after(time::Duration::from_secs_f64(0.5)).await;
+                this.update(&mut cx, |this, cx| {
+                    this.company_list.update(cx, |picker, cx| {
+                        picker
+                            .delegate_mut()
+                            .companies
+                            .iter_mut()
+                            .for_each(|company| {
+                                company.random_update();
+                            });
+                    });
+                    cx.notify();
+                })
+                .ok();
+            }
+        })
+        .detach();
 
         Self {
             company_list,

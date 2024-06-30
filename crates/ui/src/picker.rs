@@ -210,6 +210,10 @@ impl<D: PickerDelegate> Picker<D> {
         &self.delegate
     }
 
+    pub fn delegate_mut(&mut self) -> &mut D {
+        &mut self.delegate
+    }
+
     pub fn list(delegate: D, cx: &mut ViewContext<Self>) -> Self {
         let query_input = Self::new_query_input("Search...", cx);
         Self::new(delegate, ContainerKind::List, Some(query_input), cx)
