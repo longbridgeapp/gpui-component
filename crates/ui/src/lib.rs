@@ -17,6 +17,7 @@ pub mod theme;
 pub mod title_bar;
 pub use styled_ext::StyledExt;
 pub mod divider;
+pub mod dock;
 pub mod dropdown;
 pub mod input;
 pub mod list;

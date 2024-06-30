@@ -2118,7 +2118,7 @@ dependencies = [
  "raw-window-handle 0.6.2",
  "refineable",
  "resvg",
- "schemars",
+ "schemars 0.8.21",
  "seahash",
  "semantic_version",
  "serde",
@@ -4172,14 +4172,37 @@ dependencies = [
 
 [[package]]
 name = "schemars"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be77ed66abed6954aabf6a3e31a84706bedbf93750d267e92ef4a6d90bbd6a61"
+dependencies = [
+ "schemars_derive 0.7.6",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars"
 version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09c024468a378b7e36765cd36702b7a90cc3cba11654f6685c8f233408e89e92"
 dependencies = [
  "dyn-clone",
- "schemars_derive",
+ "schemars_derive 0.8.21",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11af7a475c9ee266cfaa9e303a47c830ebe072bf3101ab907a7b7b9d816fa01d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals 0.25.0",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4190,7 +4213,7 @@ checksum = "b1eee588578aff73f856ab961cd2f79e36bc45d7ded33a7562adba4667aecc0e"
 dependencies = [
  "proc-macro2",
  "quote",
- "serde_derive_internals",
+ "serde_derive_internals 0.29.1",
  "syn 2.0.66",
 ]
 
@@ -4277,6 +4300,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.66",
+]
+
+[[package]]
+name = "serde_derive_internals"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dbab34ca63057a1f15280bdf3c39f2b1eb1b54c17e98360e511637aef7418c6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -5119,6 +5153,7 @@ dependencies = [
  "anyhow",
  "gpui",
  "log",
+ "schemars 0.7.6",
  "serde",
  "serde_json",
  "smallvec",
