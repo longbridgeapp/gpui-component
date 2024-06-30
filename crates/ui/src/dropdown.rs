@@ -1,7 +1,7 @@
 use gpui::{
-    actions, deferred, div, prelude::FluentBuilder as _, px, AnyElement, AppContext, DismissEvent,
-    Element, ElementId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
-    KeyBinding, LayoutId, ParentElement as _, Render, SharedString,
+    actions, deferred, div, prelude::FluentBuilder as _, px, rems, AnyElement, AppContext,
+    DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
+    IntoElement, KeyBinding, LayoutId, ParentElement as _, Render, SharedString,
     StatefulInteractiveElement as _, Styled as _, View, ViewContext, VisualContext as _, WeakView,
     WindowContext,
 };
@@ -136,7 +136,11 @@ where
             selected_index: 0,
         };
 
-        let picker = cx.new_view(|cx| Picker::uniform_list(picker_delegate, cx).no_query());
+        let picker = cx.new_view(|cx| {
+            Picker::uniform_list(picker_delegate, cx)
+                .no_query()
+                .max_height(Some(rems(20.).into()))
+        });
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
