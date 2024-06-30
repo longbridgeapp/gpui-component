@@ -1,11 +1,10 @@
 use core::time;
-use std::{cell::RefCell, fmt::format, rc::Rc};
 
 use fake::Fake;
 use gpui::{
-    actions, div, impl_actions, prelude::FluentBuilder as _, px, Action, ElementId,
-    InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, Timer, View,
-    ViewContext, VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, ElementId, InteractiveElement, IntoElement,
+    ParentElement, Render, RenderOnce, Styled, Timer, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
@@ -86,7 +85,6 @@ impl RenderOnce for CompanyListItem {
         self.base
             .px_3()
             .py_1()
-            .rounded_lg()
             .overflow_x_hidden()
             .bg(bg_color)
             .child(
@@ -210,6 +208,7 @@ impl ListStory {
                 },
                 cx,
             )
+            // .max_height(Some(px(350.0).into()))
             .no_query()
         });
 
@@ -218,7 +217,7 @@ impl ListStory {
             loop {
                 Timer::after(time::Duration::from_secs_f64(0.5)).await;
                 this.update(&mut cx, |this, cx| {
-                    this.company_list.update(cx, |picker, cx| {
+                    this.company_list.update(cx, |picker, _| {
                         picker
                             .delegate_mut()
                             .companies
@@ -257,13 +256,13 @@ impl Render for ListStory {
                 .gap_4()
                 .mb_4()
                 .child(
-                    div()
+                    v_flex()
                         .h_full()
                         .border_1()
                         .border_color(cx.theme().border)
-                        .p_1()
                         .rounded_md()
                         .w(px(400.))
+                        .occlude()
                         .child(self.company_list.clone()),
                 )
                 .child(
@@ -280,7 +279,15 @@ impl Render for ListStory {
                                 div()
                                     .flex_1()
                                     .gap_2()
-                                    .child(div().text_3xl().mb_6().child(company.name.clone()))
+                                    .child(
+                                        h_flex()
+                                            .items_start()
+                                            .justify_between()
+                                            .child(
+                                                div().text_3xl().mb_6().child(company.name.clone()),
+                                            )
+                                            .child(format!("{:.2}", company.last_done)),
+                                    )
                                     .child(company.industry.clone())
                                     .child(company.description.clone()),
                             )

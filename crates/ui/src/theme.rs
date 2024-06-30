@@ -68,13 +68,13 @@ impl Colorize for Hsla {
     }
 
     fn lighten(&self, amount: f32) -> Hsla {
-        let l = (self.l + amount).min(1.0);
+        let l = (self.l * (1.0 + amount)).min(1.0);
 
         Hsla { l, ..*self }
     }
 
     fn darken(&self, amount: f32) -> Hsla {
-        let l = (self.l - amount).max(0.0);
+        let l = (self.l * (1.0 - amount)).max(0.0);
 
         Hsla { l, ..*self }
     }
@@ -104,6 +104,8 @@ struct Colors {
     pub input: Hsla,
     pub ring: Hsla,
     pub selection: Hsla,
+    pub scrollbar: Hsla,
+    pub scrollbar_thumb: Hsla,
 }
 
 impl Colors {
@@ -154,6 +156,8 @@ impl Colors {
             input: hsl(240.0, 5.9, 90.0),
             ring: hsl(240.0, 5.9, 10.0),
             selection: hsl(211.0, 97.0, 85.0),
+            scrollbar: Hsla::transparent_black(),
+            scrollbar_thumb: hsl(240.0, 5.9, 90.0),
         }
     }
 
@@ -203,6 +207,8 @@ impl Colors {
             input: hsl(240.0, 3.7, 15.9),
             ring: hsl(240.0, 4.9, 83.9),
             selection: hsl(211.0, 97.0, 85.0),
+            scrollbar: Hsla::transparent_black(),
+            scrollbar_thumb: hsl(240.0, 3.7, 15.9),
         }
     }
 }
@@ -234,6 +240,8 @@ pub struct Theme {
     pub input: Hsla,
     pub ring: Hsla,
     pub selection: Hsla,
+    pub scrollbar: Hsla,
+    pub scrollbar_thumb: Hsla,
     pub radius: f32,
 }
 
@@ -272,6 +280,8 @@ impl From<Colors> for Theme {
             border: colors.border,
             input: colors.input,
             ring: colors.ring,
+            scrollbar: colors.scrollbar,
+            scrollbar_thumb: colors.scrollbar_thumb,
             selection: colors.selection,
         }
     }

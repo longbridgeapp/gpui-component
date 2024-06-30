@@ -139,6 +139,7 @@ where
         let picker = cx.new_view(|cx| {
             Picker::uniform_list(picker_delegate, cx)
                 .no_query()
+                .scrollbar_enable(false)
                 .max_height(Some(rems(20.).into()))
         });
         Self {
