@@ -187,7 +187,7 @@ impl<D: PickerDelegate> Picker<D> {
             head: cx.new_view(Empty::new),
             width: None,
             is_modal: false,
-            max_height: Some(rems(20.).into()),
+            max_height: None,
             element_container,
             pending_update_matches: None,
         }
@@ -204,6 +204,14 @@ impl<D: PickerDelegate> Picker<D> {
         });
         cx.subscribe(&input, Self::on_query_input_event).detach();
         input
+    }
+
+    pub fn delegate(&self) -> &D {
+        &self.delegate
+    }
+
+    pub fn delegate_mut(&mut self) -> &mut D {
+        &mut self.delegate
     }
 
     pub fn list(delegate: D, cx: &mut ViewContext<Self>) -> Self {

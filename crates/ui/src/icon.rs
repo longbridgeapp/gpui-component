@@ -14,6 +14,10 @@ pub enum IconName {
     Close,
     ChevronDown,
     ChevronsUpDown,
+    Plus,
+    Info,
+    Ellipsis,
+    EllipsisVertical,
 }
 
 impl IconName {
@@ -27,6 +31,10 @@ impl IconName {
             IconName::Close => "icons/close.svg",
             IconName::ChevronDown => "icons/chevron-down.svg",
             IconName::ChevronsUpDown => "icons/chevrons-up-down.svg",
+            IconName::Plus => "icons/plus.svg",
+            IconName::Info => "icons/info.svg",
+            IconName::Ellipsis => "icons/ellipsis.svg",
+            IconName::EllipsisVertical => "icons/ellipsis-vertical.svg",
         }
         .into()
     }

@@ -2,6 +2,7 @@ mod button_story;
 mod checkbox_story;
 mod dropdown_story;
 mod input_story;
+mod list_story;
 mod picker_story;
 mod popover_story;
 mod switch_story;
@@ -25,6 +26,7 @@ use button_story::ButtonStory;
 use checkbox_story::CheckboxStory;
 use dropdown_story::DropdownStory;
 use input_story::InputStory;
+use list_story::ListStory;
 use picker_story::PickerStory;
 use popover_story::PopoverStory;
 use switch_story::SwitchStory;
@@ -84,6 +86,7 @@ enum StoryType {
     Checkbox,
     Switch,
     Picker,
+    List,
     Dropdown,
     Tooltip,
     Popover,
@@ -97,6 +100,7 @@ impl Display for StoryType {
             Self::Checkbox => write!(f, "Checkbox"),
             Self::Switch => write!(f, "Switch"),
             Self::Picker => write!(f, "Picker"),
+            Self::List => write!(f, "List"),
             Self::Dropdown => write!(f, "Dropdown"),
             Self::Tooltip => write!(f, "Tooltip"),
             Self::Popover => write!(f, "Popover"),
@@ -112,6 +116,7 @@ pub struct Stories {
     checkbox_story: View<CheckboxStory>,
     switch_story: View<SwitchStory>,
     picker_story: View<PickerStory>,
+    list_story: View<ListStory>,
     dropdown_story: View<DropdownStory>,
     tooltip_story: View<TooltipStory>,
     popover_story: View<PopoverStory>,
@@ -127,6 +132,7 @@ impl Stories {
             switch_story: cx.new_view(|cx| SwitchStory::new(cx)),
             tooltip_story: cx.new_view(|_| TooltipStory),
             picker_story: cx.new_view(PickerStory::new),
+            list_story: cx.new_view(|cx| ListStory::new(cx)),
             dropdown_story: cx.new_view(DropdownStory::new),
             popover_story: cx.new_view(PopoverStory::new),
         }
@@ -158,6 +164,7 @@ impl Stories {
                 ),
                 self.tab("story-switch", StoryType::Switch, None, cx),
                 self.tab("story-picker", StoryType::Picker, None, cx),
+                self.tab("story-list", StoryType::List, None, cx),
                 self.tab("story-dropdown", StoryType::Dropdown, None, cx),
                 self.tab("story-tooltip", StoryType::Tooltip, None, cx),
                 self.tab("story-popover", StoryType::Popover, None, cx),
@@ -202,6 +209,7 @@ impl Render for Stories {
                 StoryType::Checkbox => this.child(self.checkbox_story.clone()),
                 StoryType::Switch => this.child(self.switch_story.clone()),
                 StoryType::Picker => this.child(self.picker_story.clone()),
+                StoryType::List => this.child(self.list_story.clone()),
                 StoryType::Dropdown => this.child(self.dropdown_story.clone()),
                 StoryType::Tooltip => this.child(self.tooltip_story.clone()),
                 StoryType::Popover => this.child(self.popover_story.clone()),

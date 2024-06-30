@@ -1,4 +1,4 @@
-# GPUI App Example
+# GPUI Compoment
 
 This is an example of build app by using GPUI.
 

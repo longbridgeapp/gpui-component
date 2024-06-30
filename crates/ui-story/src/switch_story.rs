@@ -64,7 +64,7 @@ impl Render for SwitchStory {
                     card(cx)
                     .child(
                         title("Marketing emails").child(
-                            Label::new("Receive emails about new products, features, and more.").text_color(theme.muted)
+                            Label::new("Receive emails about new products, features, and more.").text_color(theme.muted_foreground)
                         )
                     )
                         .child(
@@ -82,7 +82,7 @@ impl Render for SwitchStory {
                     card(cx)
                     .child(
                         title("Security emails").child(
-                            Label::new("Receive emails about your account security. When turn off, you never recive email again.").text_color(theme.muted)
+                            Label::new("Receive emails about your account security. When turn off, you never recive email again.").text_color(theme.muted_foreground)
                         )
                     )
                         .child(

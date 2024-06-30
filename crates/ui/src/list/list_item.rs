@@ -1,5 +1,5 @@
 use gpui::{
-    prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
+    div, prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
     MouseButton, MouseDownEvent, ParentElement, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
@@ -19,7 +19,7 @@ pub struct ListItem {
 impl ListItem {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
-            base: h_flex().id(id.into()),
+            base: div().id(id.into()),
             disabled: false,
             selected: false,
             on_click: None,
@@ -85,9 +85,9 @@ impl ParentElement for ListItem {
 
 impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        h_flex()
+        div()
             .id("item-group")
-            .flex_none()
+            .w_full()
             .relative()
             .gap_x_2()
             .text_base()
@@ -99,19 +99,22 @@ impl RenderOnce for ListItem {
             .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {
                 this.on_mouse_down(MouseButton::Right, move |ev, cx| (on_mouse_down)(ev, cx))
             })
-            .when(!self.selected, |this| {
-                this.hover(|this| this.bg(cx.theme().accent))
-            })
             .when(self.selected, |this| this.bg(cx.theme().accent))
-            .child(self.base.w_full().items_center().justify_between().when(
-                self.selected,
-                |this| {
-                    if let Some(icon) = self.check_icon {
-                        this.child(icon.text_color(cx.theme().muted))
-                    } else {
-                        this
-                    }
-                },
-            ))
+            .child(
+                self.base
+                    .when(!self.selected, |this| {
+                        this.hover(|this| this.bg(cx.theme().accent))
+                    })
+                    .w_full()
+                    .items_center()
+                    .justify_between()
+                    .when(self.selected, |this| {
+                        if let Some(icon) = self.check_icon {
+                            this.child(icon.text_color(cx.theme().muted))
+                        } else {
+                            this
+                        }
+                    }),
+            )
     }
 }

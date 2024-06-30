@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 ui.workspace = true
 gpui.workspace = true
+serde.workspace = true
+fake = "2.9.2"
+anyhow = "1"
 
 [lints]
 workspace = true
