@@ -257,11 +257,11 @@ impl Render for ListStory {
                 .gap_4()
                 .mb_4()
                 .child(
-                    div()
+                    v_flex()
                         .h_full()
                         .border_1()
                         .border_color(cx.theme().border)
-                        .p_1()
+                        // .p_1()
                         .rounded_md()
                         .w(px(400.))
                         .child(self.company_list.clone()),

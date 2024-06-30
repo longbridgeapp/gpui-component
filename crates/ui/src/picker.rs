@@ -1,10 +1,13 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use gpui::{
     actions, div, list, prelude::FluentBuilder as _, px, rems, uniform_list, AppContext,
-    ClickEvent, DismissEvent, Div, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
-    IntoElement, KeyBinding, Length, ListSizingBehavior, ListState, MouseButton, MouseUpEvent,
-    ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _, Task,
-    UniformListScrollHandle, View, ViewContext, VisualContext as _, WindowContext,
+    ClickEvent, DismissEvent, Div, Element, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, ListState,
+    MouseButton, MouseUpEvent, ParentElement as _, Render, SharedString,
+    StatefulInteractiveElement as _, Styled as _, Task, UniformListScrollHandle, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -34,6 +37,7 @@ use crate::{
     divider::Divider,
     empty::Empty,
     input::{TextEvent, TextInput},
+    scrollbar::Scrollbar,
     stock::*,
     theme::ActiveTheme,
     StyledExt as _,
@@ -149,6 +153,8 @@ pub struct Picker<D: PickerDelegate> {
     /// Just a empty view for holding the focus
     head: View<Empty>,
     pending_update_matches: Option<PendingUpdateMatches>,
+    show_scrollbar: bool,
+    hide_scrollbar_task: Option<Task<()>>,
 }
 
 impl<D: PickerDelegate> Picker<D> {
@@ -190,6 +196,8 @@ impl<D: PickerDelegate> Picker<D> {
             max_height: None,
             element_container,
             pending_update_matches: None,
+            show_scrollbar: false,
+            hide_scrollbar_task: None,
         }
     }
 
@@ -325,6 +333,42 @@ impl<D: PickerDelegate> Picker<D> {
                         .pb(px(-1.0))
                 },
             )
+    }
+
+    fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
+        if !self.show_scrollbar {
+            return None;
+        }
+
+        if let Some(scroll_handle) = match &self.element_container {
+            ElementContainer::List(_state) => None,
+            ElementContainer::UniformList(scroll_handle) => Some(scroll_handle.clone()),
+        } {
+            Scrollbar::new(
+                cx.view().clone().into(),
+                scroll_handle,
+                self.delegate.match_count(),
+                true,
+            )
+        } else {
+            None
+        }
+    }
+
+    fn hide_scrollbar(&mut self, cx: &mut ViewContext<Self>) {
+        const SCROLLBAR_SHOW_INTERVAL: Duration = Duration::from_secs(1);
+        self.show_scrollbar = false;
+        self.hide_scrollbar_task = Some(cx.spawn(|panel, mut cx| async move {
+            cx.background_executor()
+                .timer(SCROLLBAR_SHOW_INTERVAL)
+                .await;
+            panel
+                .update(&mut cx, |panel, cx| {
+                    panel.show_scrollbar = false;
+                    cx.notify();
+                })
+                .ok();
+        }))
     }
 
     fn on_click(&mut self, ix: usize, secondary: bool, cx: &mut ViewContext<Self>) {
@@ -487,6 +531,7 @@ impl<D: PickerDelegate> Render for Picker<D> {
         let focus_handle = self.focus_handle(cx);
 
         v_flex()
+            .id("picker")
             .key_context("Picker")
             .size_full()
             .track_focus(&focus_handle)
@@ -499,19 +544,28 @@ impl<D: PickerDelegate> Render for Picker<D> {
             .on_action(cx.listener(Self::select_last))
             .on_action(cx.listener(Self::cancel))
             .on_action(cx.listener(Self::confirm))
+            .on_hover(cx.listener(|this, hovered: &bool, cx| {
+                if *hovered {
+                    this.show_scrollbar = true;
+                    this.hide_scrollbar_task.take();
+                    cx.notify();
+                } else {
+                    this.hide_scrollbar(cx);
+                }
+            }))
             // Render Query Input header
             .child(match self.query_input {
                 Some(ref input) => self.delegate.render_query(input, cx),
                 None => div().child(self.head.clone()),
             })
-            .when(self.delegate.match_count() > 0, |el| {
-                el.child(
+            .when(self.delegate.match_count() > 0, |this| {
+                this.child(
                     v_flex()
                         .flex_grow()
                         .min_h(px(100.))
                         .when_some(self.max_height, |div, max_h| div.max_h(max_h))
                         .overflow_hidden()
-                        .child(self.render_element_container(cx)),
+                        .child(self.render_element_container(cx)), // .children(self.render_scrollbar(cx)),
                 )
             })
             .when(self.delegate.match_count() == 0, |el| {

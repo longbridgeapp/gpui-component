@@ -4,6 +4,7 @@ mod event;
 mod icon;
 mod platform;
 mod prelude;
+mod scrollbar;
 mod selectable;
 mod stock;
 mod styled_ext;
