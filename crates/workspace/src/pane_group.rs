@@ -1,16 +1,13 @@
 use anyhow::{anyhow, Result};
 use element::pane_axis;
 use gpui::{
-    div, point, size, AnyView, AnyWeakView, Axis, Bounds, Element as _, IntoElement, Model,
-    MouseButton, ParentElement as _, Pixels, Point, StyleRefinement, Styled as _, View,
-    ViewContext,
+    div, point, size, AnyView, AnyWeakView, Axis, Bounds, Element as _, IntoElement,
+    ParentElement as _, Pixels, Point, StyleRefinement, Styled as _, View, ViewContext,
 };
 use parking_lot::Mutex;
 use serde::Deserialize;
 use std::sync::Arc;
-
-use crate::theme::ActiveTheme;
-use crate::StyledExt as _;
+use ui::StyledExt as _;
 
 use super::{pane::Pane, workspace::Workspace};
 
@@ -460,7 +457,6 @@ mod element {
     use std::mem;
     use std::{cell::RefCell, iter, rc::Rc, sync::Arc};
 
-    use crate::theme::ActiveTheme;
     use gpui::{
         px, relative, Along, AnyElement, Axis, Bounds, Element, ElementId, GlobalElementId,
         IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Pixels, Point,
@@ -469,9 +465,10 @@ mod element {
     use gpui::{CursorStyle, Hitbox};
     use parking_lot::Mutex;
     use smallvec::SmallVec;
+    use ui::theme::ActiveTheme;
     use util::ResultExt;
 
-    use crate::dock::workspace::Workspace;
+    use crate::Workspace;
 
     use super::{HANDLE_HITBOX_SIZE, HORIZONTAL_MIN_SIZE, VERTICAL_MIN_SIZE};
 

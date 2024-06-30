@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use app_state::AppState;
 use assets::Assets;
 use gpui::{App, AppContext};
-use workspace::AppState;
 
+mod app_state;
 mod assets;
+mod story_workspace;
 
 fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
-    workspace::init(app_state.clone(), cx);
+    story_workspace::init(app_state.clone(), cx);
 
     Ok(())
 }
@@ -26,7 +28,7 @@ fn main() {
             return;
         }
 
-        workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
+        story_workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
             // do something
         })
         .detach();

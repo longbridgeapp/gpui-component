@@ -61,6 +61,10 @@ impl Workspace {
         cx.notify();
     }
 
+    pub fn dismiss_notification(&mut self, id: &NotificationId, cx: &mut ViewContext<Self>) {
+        self.dismiss_notification_internal(id, cx)
+    }
+
     fn dismiss_notification_internal(&mut self, id: &NotificationId, cx: &mut ViewContext<Self>) {
         self.notifications.retain(|(existing_id, _)| {
             if existing_id == id {
@@ -70,10 +74,6 @@ impl Workspace {
                 true
             }
         });
-    }
-
-    pub fn dismiss_notification(&mut self, id: &NotificationId, cx: &mut ViewContext<Self>) {
-        self.dismiss_notification_internal(id, cx)
     }
 
     pub fn show_toast(&mut self, toast: Toast, cx: &mut ViewContext<Self>) {
@@ -89,6 +89,15 @@ impl Workspace {
                 None => MessageNotification::new(toast.msg.clone()),
             })
         })
+    }
+
+    pub fn dismiss_toast(&mut self, id: &NotificationId, cx: &mut ViewContext<Self>) {
+        self.dismiss_notification(id, cx);
+    }
+
+    pub fn clear_all_notifications(&mut self, cx: &mut ViewContext<Self>) {
+        self.notifications.clear();
+        cx.notify();
     }
 }
 

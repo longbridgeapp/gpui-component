@@ -13,13 +13,13 @@ use gpui::{
     actions, div, impl_actions, prelude::FluentBuilder as _, AnyElement, AppContext, ClickEvent,
     DefiniteLength, DragMoveEvent, Element as _, EntityId, EventEmitter, FocusHandle,
     FocusOutEvent, FocusableView, InteractiveElement as _, IntoElement, KeyContext, MouseButton,
-    MouseDownEvent, ParentElement, Point, Render, RenderOnce as _, ScrollHandle,
+    MouseDownEvent, ParentElement, Pixels, Point, Render, RenderOnce as _, ScrollHandle,
     StatefulInteractiveElement, Styled as _, Subscription, Task, View, ViewContext,
     VisualContext as _, WeakFocusHandle, WeakView, WindowContext,
 };
 use serde::Deserialize;
 
-use crate::{
+use ui::{
     tab::{Tab, TabBar},
     theme::ActiveTheme,
     tooltip::Tooltip,
@@ -333,6 +333,12 @@ impl Pane {
 
     pub fn active_item(&self) -> Option<Box<dyn ItemHandle>> {
         self.items.get(self.active_item_index).cloned()
+    }
+
+    pub fn pixel_position_of_cursor(&self, cx: &AppContext) -> Option<Point<Pixels>> {
+        self.items
+            .get(self.active_item_index)?
+            .pixel_position_of_cursor(cx)
     }
 
     pub fn activate_item(

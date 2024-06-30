@@ -2867,6 +2867,9 @@ dependencies = [
  "gpui",
  "log",
  "rust-embed",
+ "ui",
+ "ui-story",
+ "util 0.1.0",
  "workspace",
 ]
 
@@ -5153,13 +5156,10 @@ dependencies = [
  "anyhow",
  "gpui",
  "log",
- "parking_lot",
- "schemars 0.7.6",
  "serde",
  "serde_json",
  "smallvec",
  "unicode-segmentation",
- "util 0.1.0",
  "windows",
  "wry",
 ]
@@ -6027,8 +6027,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui",
+ "log",
+ "parking_lot",
+ "schemars 0.7.6",
+ "serde",
+ "smallvec",
  "ui",
- "ui-story",
  "util 0.1.0",
 ]
 

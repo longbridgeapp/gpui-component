@@ -181,7 +181,7 @@ impl Stories {
         let name = format!("{}", ty);
         let is_active = ty == self.active;
 
-        let tab = Tab::new(SharedString::from(id.to_string()), name)
+        let tab = Tab::new(SharedString::from(id.to_string()), name.into_any_element())
             .selected(is_active)
             .on_click(cx.listener(move |this, _, cx| {
                 this.set_active(ty, cx);
