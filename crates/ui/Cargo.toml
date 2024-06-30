@@ -14,6 +14,8 @@ smallvec = "1.13.2"
 windows = "0.57.0"
 unicode-segmentation = "1.11.0"
 schemars = "0.7.0"
+util.workspace = true
+parking_lot = "0.12.1"
 
 [lints]
 workspace = true

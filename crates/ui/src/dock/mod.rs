@@ -1,4 +1,5 @@
 mod dock;
-mod panel;
-mod panel_group;
+mod item;
+mod pane;
+mod pane_group;
 mod workspace;

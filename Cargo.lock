@@ -5153,11 +5153,13 @@ dependencies = [
  "anyhow",
  "gpui",
  "log",
+ "parking_lot",
  "schemars 0.7.6",
  "serde",
  "serde_json",
  "smallvec",
  "unicode-segmentation",
+ "util 0.1.0",
  "windows",
  "wry",
 ]

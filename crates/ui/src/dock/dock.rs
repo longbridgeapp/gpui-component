@@ -54,6 +54,10 @@ pub trait Panel: FocusableView + EventEmitter<PanelEvent> {
     /// Set the active state of the panel.
     fn set_active(&self, active: bool, cx: &mut WindowContext);
     fn icon(&self, cx: &WindowContext) -> Option<IconName>;
+    fn is_zoomed(&self, _cx: &WindowContext) -> bool {
+        false
+    }
+    fn set_zoomed(&mut self, _zoomed: bool, _cx: &mut ViewContext<Self>) {}
 }
 
 pub trait PanelHandle: Send + Sync {
@@ -66,6 +70,8 @@ pub trait PanelHandle: Send + Sync {
     fn icon(&self, cx: &WindowContext) -> Option<IconName>;
     fn focus_handle(&self, cx: &AppContext) -> FocusHandle;
     fn set_active(&self, active: bool, cx: &mut WindowContext);
+    fn is_zoomed(&self, cx: &WindowContext) -> bool;
+    fn set_zoomed(&self, zoomed: bool, cx: &mut WindowContext);
     fn to_any(&self) -> AnyView;
 }
 
@@ -107,6 +113,14 @@ where
 
     fn set_active(&self, active: bool, cx: &mut WindowContext) {
         self.update(cx, |this, cx| this.set_active(active, cx));
+    }
+
+    fn is_zoomed(&self, cx: &WindowContext) -> bool {
+        self.read(cx).is_zoomed(cx)
+    }
+
+    fn set_zoomed(&self, zoomed: bool, cx: &mut WindowContext) {
+        self.update(cx, |this, cx| this.set_zoomed(zoomed, cx));
     }
 
     fn to_any(&self) -> AnyView {

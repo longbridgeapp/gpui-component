@@ -2,15 +2,15 @@ use crate::selectable::Selectable;
 use crate::theme::{ActiveTheme, Colorize};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    div, px, AnyElement, Div, IntoElement, ParentElement as _, RenderOnce, SharedString, Stateful,
-    StatefulInteractiveElement, WindowContext,
+    div, px, AnyElement, Div, ElementId, IntoElement, ParentElement as _, RenderOnce, SharedString,
+    Stateful, StatefulInteractiveElement, WindowContext,
 };
 use gpui::{InteractiveElement, Styled as _};
 
 #[derive(IntoElement)]
 pub struct Tab {
     base: Stateful<Div>,
-    label: SharedString,
+    label: AnyElement,
     prefix: Option<AnyElement>,
     suffix: Option<AnyElement>,
     disabled: bool,
@@ -18,7 +18,7 @@ pub struct Tab {
 }
 
 impl Tab {
-    pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
+    pub fn new(id: impl Into<ElementId>, label: impl Into<AnyElement>) -> Self {
         Self {
             base: div().id(id.into()),
             label: label.into(),
@@ -81,7 +81,7 @@ impl RenderOnce for Tab {
             .when_some(self.prefix, |this, prefix| {
                 this.child(prefix).text_color(text_color)
             })
-            .child(self.label.clone())
+            .child(self.label)
             .when_some(self.suffix, |this, suffix| this.child(suffix))
     }
 }
