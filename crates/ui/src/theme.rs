@@ -10,10 +10,12 @@ impl ActiveTheme for AppContext {
     }
 }
 
+/// Make a [gpui::Hsla] color.
+///
 /// h - 0 - 360.0
 /// s - 0.0 - 100.0
 /// l - 0.0 - 100.0
-fn hsl(h: f32, s: f32, l: f32) -> Hsla {
+pub fn hsl(h: f32, s: f32, l: f32) -> Hsla {
     hsla(h / 360., s / 100.0, l / 100.0, 1.0)
 }
 
