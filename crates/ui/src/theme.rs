@@ -68,13 +68,13 @@ impl Colorize for Hsla {
     }
 
     fn lighten(&self, amount: f32) -> Hsla {
-        let l = (self.l + amount).min(1.0);
+        let l = (self.l * (1.0 + amount)).min(1.0);
 
         Hsla { l, ..*self }
     }
 
     fn darken(&self, amount: f32) -> Hsla {
-        let l = (self.l - amount).max(0.0);
+        let l = (self.l * (1.0 - amount)).max(0.0);
 
         Hsla { l, ..*self }
     }

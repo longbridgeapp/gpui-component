@@ -266,9 +266,9 @@ impl ButtonStyle {
 
     fn hovered(&self, cx: &WindowContext) -> ButtonStyles {
         // Hover color = color/90
-        let bg = self.bg_color(cx).divide(0.9);
-        let border = self.border_color(cx).divide(0.9);
-        let fg = self.text_color(cx).divide(0.9);
+        let bg = self.bg_color(cx);
+        let border = self.border_color(cx);
+        let fg = self.text_color(cx);
 
         ButtonStyles { bg, border, fg }
     }

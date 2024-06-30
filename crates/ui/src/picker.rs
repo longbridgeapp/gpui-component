@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use anyhow::Result;
 use gpui::{
@@ -153,8 +153,10 @@ pub struct Picker<D: PickerDelegate> {
     /// Just a empty view for holding the focus
     head: View<Empty>,
     pending_update_matches: Option<PendingUpdateMatches>,
+    scrollbar_enable: bool,
     show_scrollbar: bool,
     hide_scrollbar_task: Option<Task<()>>,
+    scrollbar_drag_state: Rc<Cell<Option<f32>>>,
 }
 
 impl<D: PickerDelegate> Picker<D> {
@@ -196,8 +198,10 @@ impl<D: PickerDelegate> Picker<D> {
             max_height: None,
             element_container,
             pending_update_matches: None,
+            scrollbar_enable: true,
             show_scrollbar: false,
             hide_scrollbar_task: None,
+            scrollbar_drag_state: Rc::new(Cell::new(None)),
         }
     }
 
@@ -254,6 +258,11 @@ impl<D: PickerDelegate> Picker<D> {
     /// Hide the query input.
     pub fn no_query(mut self) -> Self {
         self.query_input = None;
+        self
+    }
+
+    pub fn scrollbar_enable(mut self, enable: bool) -> Self {
+        self.scrollbar_enable = enable;
         self
     }
 
@@ -336,6 +345,9 @@ impl<D: PickerDelegate> Picker<D> {
     }
 
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
+        if !self.scrollbar_enable {
+            return None;
+        }
         if !self.show_scrollbar {
             return None;
         }
@@ -347,6 +359,7 @@ impl<D: PickerDelegate> Picker<D> {
             Scrollbar::new(
                 cx.view().clone().into(),
                 scroll_handle,
+                self.scrollbar_drag_state.clone(),
                 self.delegate.match_count(),
                 true,
             )
@@ -533,6 +546,7 @@ impl<D: PickerDelegate> Render for Picker<D> {
         v_flex()
             .id("picker")
             .key_context("Picker")
+            .group("picker-group")
             .size_full()
             .track_focus(&focus_handle)
             .when_some(self.width, |el, width| el.w(width))
@@ -544,12 +558,12 @@ impl<D: PickerDelegate> Render for Picker<D> {
             .on_action(cx.listener(Self::select_last))
             .on_action(cx.listener(Self::cancel))
             .on_action(cx.listener(Self::confirm))
-            .on_hover(cx.listener(|this, hovered: &bool, cx| {
+            .on_hover(cx.listener(move |this, hovered: &bool, cx| {
                 if *hovered {
                     this.show_scrollbar = true;
                     this.hide_scrollbar_task.take();
                     cx.notify();
-                } else {
+                } else if !focus_handle.is_focused(cx) {
                     this.hide_scrollbar(cx);
                 }
             }))
@@ -560,12 +574,13 @@ impl<D: PickerDelegate> Render for Picker<D> {
             })
             .when(self.delegate.match_count() > 0, |this| {
                 this.child(
-                    v_flex()
+                    h_flex()
                         .flex_grow()
                         .min_h(px(100.))
                         .when_some(self.max_height, |div, max_h| div.max_h(max_h))
                         .overflow_hidden()
-                        .child(self.render_element_container(cx)), // .children(self.render_scrollbar(cx)),
+                        .child(self.render_element_container(cx))
+                        .children(self.render_scrollbar(cx)),
                 )
             })
             .when(self.delegate.match_count() == 0, |el| {

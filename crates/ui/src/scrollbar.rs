@@ -1,33 +1,32 @@
-use std::{
-    cell::{Cell, RefCell},
-    ops::Range,
-    rc::Rc,
-};
+use std::{cell::Cell, ops::Range, rc::Rc};
 
-use crate::theme::ActiveTheme;
+use crate::theme::{ActiveTheme, Colorize};
 use gpui::{
-    deferred, div, fill, point, px, relative, AnyElement, AnyView, Bounds, ContentMask, Element,
-    Hitbox, InteractiveElement, IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    ScrollWheelEvent, StatefulInteractiveElement as _, Style, Styled as _, UniformListScrollHandle,
+    fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, ScrollWheelEvent, Style,
+    UniformListScrollHandle,
 };
-
-pub struct Scrollbar {
-    items_count: usize,
-    width: f32,
-    list_height: f64,
-    current_offset: f64,
-    thumb: Range<f32>,
-    handle: UniformListScrollHandle,
-    drag_state: Rc<Cell<Option<f32>>>,
-    view: AnyView,
-}
 
 const MIN_THUMB_PERCENTAGE_HEIGHT: f64 = 0.03;
+const THUMB_RADIUS: Pixels = Pixels(5.0);
+const THUMB_INSET: Pixels = Pixels(0.8);
+
+pub struct Scrollbar {
+    width: f32,
+    view: AnyView,
+    handle: UniformListScrollHandle,
+    /// This is the state of the scrollbar thumb when it is being dragged.
+    /// It must ref from the parent view.
+    drag_state: Rc<Cell<Option<f32>>>,
+    items_count: usize,
+    thumb: Range<f32>,
+}
 
 impl Scrollbar {
     pub fn new(
         view: AnyView,
         handle: UniformListScrollHandle,
+        drag_state: Rc<Cell<Option<f32>>>,
         items_count: usize,
         show_scrollbar: bool,
     ) -> Option<Self> {
@@ -63,26 +62,11 @@ impl Scrollbar {
         Some(Self {
             view,
             items_count,
-            list_height,
-            width: 10.0,
+            width: 12.0,
             thumb,
             handle: cloned_handle,
-            current_offset,
-            drag_state: Rc::new(Cell::new(None)),
+            drag_state,
         })
-    }
-
-    fn render_bar(&self, cx: &mut gpui::WindowContext) -> impl IntoElement {
-        div()
-            .id("scrollbar")
-            .occlude()
-            .absolute()
-            .right_0()
-            .top_0()
-            .bottom_0()
-            .h_full()
-            .w(px(self.width))
-            .cursor_default()
     }
 }
 
@@ -93,8 +77,10 @@ impl IntoElement for Scrollbar {
     }
 }
 
+pub struct ScrollbarState {}
+
 impl Element for Scrollbar {
-    type RequestLayoutState = ();
+    type RequestLayoutState = ScrollbarState;
 
     type PrepaintState = Hitbox;
 
@@ -104,7 +90,7 @@ impl Element for Scrollbar {
 
     fn request_layout(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         cx: &mut gpui::WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let mut style = Style::default();
@@ -113,19 +99,14 @@ impl Element for Scrollbar {
         style.size.width = px(self.width).into();
         style.size.height = relative(1.).into();
 
-        let mut bar = deferred(self.render_bar(cx).into_any_element())
-            .priority(1)
-            .into_any_element();
-        let bar_layout_id = bar.request_layout(cx);
-
-        (cx.request_layout(style, vec![bar_layout_id]), ())
+        (cx.request_layout(style, None), ScrollbarState {})
     }
 
     fn prepaint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         bounds: gpui::Bounds<gpui::Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
+        _: &mut Self::RequestLayoutState,
         cx: &mut gpui::WindowContext,
     ) -> Self::PrepaintState {
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
@@ -135,37 +116,45 @@ impl Element for Scrollbar {
 
     fn paint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         bounds: gpui::Bounds<gpui::Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
-        prepaint: &mut Self::PrepaintState,
+        _: &mut Self::RequestLayoutState,
+        _: &mut Self::PrepaintState,
         cx: &mut gpui::WindowContext,
     ) {
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+            let is_draging = self.drag_state.get().is_some();
             let bar_bg = cx.theme().scrollbar;
             let thumb_bg = cx.theme().scrollbar_thumb;
-
-            let thumb_offset = self.thumb.start * bounds.size.height;
-            let thumb_end = self.thumb.end * bounds.size.height;
-            let thumb_percentage_size = self.thumb.end - self.thumb.start;
-            let thumb_bounds = {
-                let thumb_upper_left = point(bounds.origin.x, bounds.origin.y + thumb_offset);
-                let thumb_lower_right = point(
-                    bounds.origin.x + bounds.size.width,
-                    bounds.origin.y + thumb_end,
-                );
-                Bounds::from_corners(thumb_upper_left, thumb_lower_right)
+            let thumb_bg = if is_draging {
+                thumb_bg.darken(0.1)
+            } else {
+                thumb_bg
             };
 
+            let thumb_top = self.thumb.start * bounds.size.height;
+            let thumb_bottom = self.thumb.end * bounds.size.height;
+            let thumb_percentage_size = self.thumb.end - self.thumb.start;
+            let thumb_bounds = Bounds::from_corners(
+                point(
+                    bounds.origin.x + THUMB_INSET,
+                    bounds.origin.y + thumb_top + THUMB_INSET,
+                ),
+                point(
+                    bounds.origin.x + bounds.size.width - (THUMB_INSET * 2),
+                    bounds.origin.y + thumb_bottom - (THUMB_INSET * 2),
+                ),
+            );
+
             cx.paint_quad(fill(bounds, bar_bg));
-            cx.paint_quad(fill(thumb_bounds, thumb_bg));
+            cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
 
             let handle = self.handle.clone();
             let items_count = self.items_count;
 
+            let drag_state = self.drag_state.clone();
             cx.on_mouse_event({
                 let scroll = self.handle.clone();
-                let is_dragging = self.drag_state.clone();
                 move |event: &MouseDownEvent, phase, _cx| {
                     if phase.bubble() && bounds.contains(&event.position) {
                         if !thumb_bounds.contains(&event.position) {
@@ -183,7 +172,7 @@ impl Element for Scrollbar {
                         } else {
                             let thumb_top_offset =
                                 (event.position.y - thumb_bounds.origin.y) / bounds.size.height;
-                            is_dragging.set(Some(thumb_top_offset));
+                            drag_state.set(Some(thumb_top_offset));
                         }
                     }
                 }
@@ -200,8 +189,9 @@ impl Element for Scrollbar {
                     }
                 }
             });
-            let drag_state = self.drag_state.clone();
+
             let view_id = self.view.entity_id();
+            let drag_state = self.drag_state.clone();
             cx.on_mouse_event(move |event: &MouseMoveEvent, _, cx| {
                 if let Some(drag_state) = drag_state.get().filter(|_| event.dragging()) {
                     let scroll = handle.0.borrow();
@@ -220,10 +210,11 @@ impl Element for Scrollbar {
                     drag_state.set(None);
                 }
             });
-            let is_dragging = self.drag_state.clone();
+
+            let drag_state = self.drag_state.clone();
             cx.on_mouse_event(move |_event: &MouseUpEvent, phase, cx| {
                 if phase.bubble() {
-                    is_dragging.set(None);
+                    drag_state.set(None);
                     cx.notify(view_id);
                 }
             });
