@@ -5173,6 +5173,7 @@ dependencies = [
  "gpui",
  "serde",
  "ui",
+ "workspace",
 ]
 
 [[package]]

@@ -9,6 +9,7 @@ gpui.workspace = true
 serde.workspace = true
 fake = "2.9.2"
 anyhow = "1"
+workspace.workspace = true
 
 [lints]
 workspace = true

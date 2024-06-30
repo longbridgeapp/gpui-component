@@ -1,5 +1,6 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
+use ui_story::{ButtonStory, CheckboxStory, DropdownStory, StoryContainer};
 use workspace::{
     dock::{DockPosition, Panel, PanelEvent},
     notification::{NotificationHandle, NotificationId},
@@ -13,7 +14,6 @@ use ui::{
     theme::{ActiveTheme, Theme},
     title_bar::TitleBar,
 };
-use ui_story::Stories;
 use util::ResultExt as _;
 
 use crate::app_state::AppState;
@@ -26,75 +26,6 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 
     Theme::init(cx);
     ui::init(cx);
-}
-
-struct StoriesPanel {
-    focus_handle: FocusHandle,
-    stories: View<Stories>,
-    position: DockPosition,
-    width: Option<Pixels>,
-}
-
-impl StoriesPanel {
-    fn new(cx: &mut WindowContext) -> View<Self> {
-        let focus_handle = cx.focus_handle();
-        let stories = Stories::view(cx);
-
-        cx.new_view(|_| Self {
-            focus_handle,
-            stories,
-            position: DockPosition::Left,
-            width: None,
-        })
-    }
-}
-
-impl Panel for StoriesPanel {
-    fn persistent_name() -> &'static str {
-        "stories-panel"
-    }
-
-    fn position(&self, cx: &WindowContext) -> workspace::dock::DockPosition {
-        self.position
-    }
-
-    fn can_position(&self, position: workspace::dock::DockPosition, cx: &WindowContext) -> bool {
-        true
-    }
-
-    fn size(&self, cx: &WindowContext) -> Pixels {
-        px(680.)
-    }
-
-    fn set_position(&mut self, position: workspace::dock::DockPosition, cx: &mut WindowContext) {
-        self.position = position;
-    }
-
-    fn set_size(&mut self, size: Option<Pixels>, cx: &mut WindowContext) {
-        if let Some(size) = size {
-            self.width = Some(size);
-        }
-    }
-
-    fn set_active(&mut self, active: bool, cx: &mut WindowContext) {}
-
-    fn starts_open(&self, _cx: &WindowContext) -> bool {
-        true
-    }
-}
-
-impl FocusableView for StoriesPanel {
-    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
-        self.focus_handle.clone()
-    }
-}
-
-impl EventEmitter<PanelEvent> for StoriesPanel {}
-
-impl Render for StoriesPanel {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        self.stories.clone()
-    }
 }
 
 pub struct StoryWorkspace {
@@ -112,9 +43,29 @@ impl StoryWorkspace {
         })
         .detach();
 
-        let panel = StoriesPanel::new(cx);
+        let button_panel = cx.new_view(|cx| {
+            StoryContainer::new("Buttons", "Button components", cx)
+                .position(DockPosition::Left)
+                .width(px(460.))
+                .story(ButtonStory::view(cx).into())
+        });
+        let input_panel = cx.new_view(|cx| {
+            StoryContainer::new("Inputs", "Input components", cx)
+                .position(DockPosition::Right)
+                .width(px(360.))
+                .story(CheckboxStory::view(cx).into())
+        });
+        let dropdown_panel = cx.new_view(|cx| {
+            StoryContainer::new("Dropdowns", "Dropdown components", cx)
+                .position(DockPosition::Bottom)
+                .width(px(360.))
+                .story(DropdownStory::new(cx).into())
+        });
+
         workspace.update(cx, |workspace, cx| {
-            workspace.add_panel(panel, cx);
+            workspace.add_panel(button_panel, cx);
+            workspace.add_panel(input_panel, cx);
+            workspace.add_panel(dropdown_panel, cx)
         });
 
         Self { workspace }
@@ -124,7 +75,7 @@ impl StoryWorkspace {
         app_state: Arc<AppState>,
         cx: &mut AppContext,
     ) -> Task<anyhow::Result<WindowHandle<Self>>> {
-        let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
+        let window_bounds = Bounds::centered(None, size(px(1400.0), px(1200.0)), cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {
