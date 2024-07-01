@@ -25,8 +25,8 @@ use gpui::{
 };
 use workspace::{
     dock::{DockPosition, Panel, PanelEvent},
-    item::Item,
-    Workspace,
+    item::{Item, ItemEvent},
+    Workspace, WorkspaceId,
 };
 
 use anyhow::Result;
@@ -44,7 +44,6 @@ pub struct StoryContainer {
     focus_handle: gpui::FocusHandle,
     name: SharedString,
     description: SharedString,
-    children: Vec<AnyElement>,
     position: DockPosition,
     width: Option<gpui::Pixels>,
     height: Option<gpui::Pixels>,
@@ -100,6 +99,7 @@ impl Panel for StoryContainer {
     }
 }
 
+#[derive(Debug)]
 pub enum ContainerEvent {
     Close,
 }
@@ -114,15 +114,34 @@ impl Item for StoryContainer {
     ) -> AnyElement {
         Label::new(self.name.clone()).into_any_element()
     }
+
+    fn deactivated(&mut self, _: &mut ViewContext<Self>) {
+        self.active = false;
+    }
+
+    fn workspace_deactivated(&mut self, _cx: &mut ViewContext<Self>) {
+        self.active = false;
+    }
+
+    fn clone_on_split(
+        &self,
+        _: Option<WorkspaceId>,
+        cx: &mut ViewContext<Self>,
+    ) -> Option<View<Self>> {
+        Some(cx.new_view(|cx| {
+            Self::new(self.name.clone(), self.description.clone(), cx)
+                .story(self.story.clone().unwrap())
+        }))
+    }
+
+    fn to_item_events(event: &Self::Event, mut f: impl FnMut(ItemEvent)) {
+        match event {
+            ContainerEvent::Close => f(ItemEvent::CloseItem),
+        }
+    }
 }
 
 impl EventEmitter<ContainerEvent> for StoryContainer {}
-
-impl ParentElement for StoryContainer {
-    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
-        self.children.extend(elements)
-    }
-}
 
 impl StoryContainer {
     pub fn new(
@@ -136,7 +155,6 @@ impl StoryContainer {
             focus_handle,
             name: name.into(),
             description: description.into(),
-            children: Vec::new(),
             width: None,
             height: None,
             position: DockPosition::Left,

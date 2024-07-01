@@ -10,10 +10,10 @@ use std::{
 
 use anyhow::Result;
 use gpui::{
-    actions, div, impl_actions, prelude::FluentBuilder as _, AnyElement, AppContext,
+    actions, div, impl_actions, prelude::FluentBuilder as _, px, AnyElement, AppContext,
     DefiniteLength, DragMoveEvent, Element as _, EntityId, EventEmitter, FocusHandle,
     FocusOutEvent, FocusableView, InteractiveElement as _, IntoElement, KeyContext, ParentElement,
-    Pixels, Point, Render, RenderOnce as _, ScrollHandle, StatefulInteractiveElement, Styled as _,
+    Pixels, Point, Render, RenderOnce as _, ScrollHandle, StatefulInteractiveElement, Styled,
     Subscription, Task, View, ViewContext, VisualContext as _, WeakFocusHandle, WeakView,
     WindowContext,
 };
@@ -22,9 +22,9 @@ use serde::Deserialize;
 use ui::{
     label::Label,
     tab::{Tab, TabBar},
-    theme::ActiveTheme,
+    theme::{ActiveTheme, Colorize as _},
     tooltip::Tooltip,
-    v_flex, Selectable, StyledExt as _,
+    v_flex, Icon, IconName, Selectable, StyledExt as _,
 };
 use util::ResultExt;
 
@@ -239,6 +239,10 @@ impl Pane {
         activate_pane: bool,
         cx: &mut ViewContext<Self>,
     ) {
+        let close_pane_if_empty = true;
+        // self.activation_history
+        //     .retain(|entry| entry.entity_id != self.items[item_index].item_id());
+
         if item_index == self.active_item_index {
             let index_to_activate = item_index.min(self.items.len()).saturating_sub(1);
 
@@ -249,6 +253,32 @@ impl Pane {
                 self.activate_item(index_to_activate, should_activate, should_activate, cx);
             }
         }
+
+        let item = self.items.remove(item_index);
+        cx.emit(Event::RemoveItem {
+            item_id: item.item_id(),
+        });
+        if self.items.is_empty() {
+            item.deactivated(cx);
+            if close_pane_if_empty {
+                cx.emit(Event::Remove);
+            }
+        }
+
+        if item_index < self.active_item_index {
+            self.active_item_index -= 1;
+        }
+
+        // let mode = self.nav_history.mode();
+        // self.nav_history.set_mode(NavigationMode::ClosingItem);
+        // item.deactivated(cx);
+        // self.nav_history.set_mode(mode);
+
+        if self.items.is_empty() && close_pane_if_empty && self.zoomed {
+            cx.emit(Event::ZoomOut);
+        }
+
+        cx.notify();
     }
 
     pub fn add_item(
@@ -622,12 +652,25 @@ impl Pane {
             cx,
         );
         // let indicator = render_item_indicator(item.boxed_clone(), cx);
-        let _item_id = item.item_id();
+        let item_id = item.item_id();
         let _is_first_item = ix == 0;
         let _is_last_item = ix == self.items.len() - 1;
         let _position_relative_to_active_item = ix.cmp(&self.active_item_index);
 
         Tab::new(ix, label)
+            .suffix(
+                div()
+                    .id("close-tab")
+                    .p(px(1.5))
+                    .rounded_md()
+                    .child(Icon::new(IconName::Close).size_3())
+                    .hover(|this| this.bg(cx.theme().accent.darken(0.1)))
+                    .active(|this| this.bg(cx.theme().accent.darken(0.2)))
+                    .on_click(cx.listener(move |pane, _, cx| {
+                        pane.close_item_by_id(item_id, cx).detach_and_log_err(cx);
+                    }))
+                    .into_any(),
+            )
             .selected(is_active)
             .on_click(
                 cx.listener(move |pane: &mut Self, _, cx| pane.activate_item(ix, true, true, cx)),

@@ -27,21 +27,33 @@ pub struct TabContentParams {
 pub trait Item: FocusableView + EventEmitter<Self::Event> {
     type Event;
 
+    /// Returns the content of the tab for this item.
     fn tab_content(&self, _params: TabContentParams, _cx: &WindowContext) -> AnyElement {
         gpui::Empty.into_any()
     }
-    fn to_item_events(_event: &Self::Event, _f: impl FnMut(ItemEvent)) {}
-    fn deactivated(&mut self, _: &mut ViewContext<Self>) {}
-    fn workspace_deactivated(&self, _cx: &mut ViewContext<Self>) {}
+
+    /// Returns the tooltip for the tab.
     fn tab_tooltip(&self, _: &AppContext) -> Option<SharedString> {
         None
     }
+
+    /// Returns the description for the tab.
     fn tab_description(&self, _: usize, _: &AppContext) -> Option<SharedString> {
         None
     }
+
+    fn to_item_events(_event: &Self::Event, _f: impl FnMut(ItemEvent)) {}
+
+    /// Invoked when the item is deactivated.
+    fn deactivated(&mut self, _: &mut ViewContext<Self>) {}
+
+    /// Invoked when the workspace is deactivated.
+    fn workspace_deactivated(&mut self, _cx: &mut ViewContext<Self>) {}
+
     fn is_singleton(&self, _cx: &AppContext) -> bool {
         false
     }
+
     fn clone_on_split(
         &self,
         _workspace_id: Option<WorkspaceId>,
@@ -52,6 +64,7 @@ pub trait Item: FocusableView + EventEmitter<Self::Event> {
     {
         None
     }
+
     fn act_as_type<'a>(
         &'a self,
         type_id: TypeId,
