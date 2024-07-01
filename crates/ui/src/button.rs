@@ -269,9 +269,9 @@ impl ButtonStyle {
 
     fn border_color(&self, cx: &WindowContext) -> Hsla {
         match self {
-            ButtonStyle::Primary => cx.theme().primary.darken(0.05),
+            ButtonStyle::Primary => cx.theme().primary,
             ButtonStyle::Secondary => cx.theme().border,
-            ButtonStyle::Danger => cx.theme().destructive.darken(0.05),
+            ButtonStyle::Danger => cx.theme().destructive,
         }
     }
 
@@ -284,8 +284,11 @@ impl ButtonStyle {
     }
 
     fn hovered(&self, cx: &WindowContext) -> ButtonStyles {
-        // Hover color = color/90
-        let bg = self.bg_color(cx);
+        let bg = match self {
+            ButtonStyle::Primary => cx.theme().primary_hover,
+            ButtonStyle::Secondary => cx.theme().secondary_hover,
+            ButtonStyle::Danger => cx.theme().destructive_hover,
+        };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
 
@@ -293,17 +296,25 @@ impl ButtonStyle {
     }
 
     fn active(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color(cx).darken(0.05);
+        let bg = match self {
+            ButtonStyle::Primary => cx.theme().primary_active,
+            ButtonStyle::Secondary => cx.theme().secondary_active,
+            ButtonStyle::Danger => cx.theme().destructive_active,
+        };
         let border = self.border_color(cx);
-        let fg = self.text_color(cx).darken(0.05);
+        let fg = self.text_color(cx);
 
         ButtonStyles { bg, border, fg }
     }
 
     fn selected(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color(cx).darken(0.07);
+        let bg = match self {
+            ButtonStyle::Primary => cx.theme().primary_active,
+            ButtonStyle::Secondary => cx.theme().secondary_active,
+            ButtonStyle::Danger => cx.theme().destructive_active,
+        };
         let border = self.border_color(cx);
-        let fg = self.text_color(cx).darken(0.07);
+        let fg = self.text_color(cx);
 
         ButtonStyles { bg, border, fg }
     }
