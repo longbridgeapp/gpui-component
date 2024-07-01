@@ -9,8 +9,6 @@ use ui::{
     v_flex, Selection,
 };
 
-use super::story_case;
-
 struct Country {
     name: &'static str,
     code: &'static str,
@@ -69,7 +67,7 @@ impl DropdownDelegate for FuritDelegate {
 }
 
 impl DropdownStory {
-    pub(crate) fn new(cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(cx: &mut WindowContext) -> View<Self> {
         let countries = CounterDelegate(vec![
             Country::new("United States", "US"),
             Country::new("Canada", "CA"),
@@ -102,10 +100,10 @@ impl DropdownStory {
         );
         let furit_dropdown = cx.new_view(|cx| Dropdown::new("dropdown-furits", furits, cx));
 
-        Self {
+        cx.new_view(|_| Self {
             country_dropdown,
             furit_dropdown,
-        }
+        })
     }
 
     #[allow(unused)]
@@ -116,35 +114,29 @@ impl DropdownStory {
 
 impl Render for DropdownStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        story_case(
-            "Dropdown",
-            "Displays a list of options for the user to pick from—triggered by a button.",
-        )
-        .child(
-            v_flex()
-                .size_full()
-                .gap_4()
-                .child(
-                    h_flex()
-                        .w_full()
-                        .max_w(px(640.))
-                        .items_center()
-                        .gap_4()
-                        .child(self.country_dropdown.clone())
-                        .child(self.furit_dropdown.clone()),
-                )
-                .child(
-                    h_flex()
-                        .w_full()
-                        .items_center()
-                        .p_10()
-                        .rounded_lg()
-                        .bg(cx.theme().card)
-                        .border_1()
-                        .border_color(cx.theme().border)
-                        .gap_4()
-                        .child("This is other text."),
-                ),
-        )
+        v_flex()
+            .size_full()
+            .gap_4()
+            .child(
+                h_flex()
+                    .w_full()
+                    .max_w(px(640.))
+                    .items_center()
+                    .gap_4()
+                    .child(self.country_dropdown.clone())
+                    .child(self.furit_dropdown.clone()),
+            )
+            .child(
+                h_flex()
+                    .w_full()
+                    .items_center()
+                    .p_10()
+                    .rounded_lg()
+                    .bg(cx.theme().card)
+                    .border_1()
+                    .border_color(cx.theme().border)
+                    .gap_4()
+                    .child("This is other text."),
+            )
     }
 }

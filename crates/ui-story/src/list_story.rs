@@ -16,8 +16,6 @@ use ui::{
     v_flex,
 };
 
-use super::story_case;
-
 actions!(list_story, [SelectedCompany]);
 
 #[derive(Clone)]
@@ -194,9 +192,12 @@ fn random_company() -> Company {
 }
 
 impl ListStory {
-    pub(crate) fn new(cx: &mut ViewContext<Self>) -> Self {
+    pub fn view(cx: &mut WindowContext) -> View<Self> {
+        cx.new_view(|cx| Self::new(cx))
+    }
+
+    fn new(cx: &mut ViewContext<Self>) -> Self {
         let companies = (0..10_000)
-            .into_iter()
             .map(|_| random_company())
             .collect::<Vec<Company>>();
 
@@ -249,50 +250,46 @@ impl ListStory {
 
 impl Render for ListStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        story_case("List", "A list for container 10K ListItems.").child(
-            h_flex()
-                .size_full()
-                .on_action(cx.listener(Self::selected_company))
-                .gap_4()
-                .mb_4()
-                .child(
-                    v_flex()
-                        .h_full()
-                        .border_1()
-                        .border_color(cx.theme().border)
-                        .rounded_md()
-                        .w(px(400.))
-                        .occlude()
-                        .child(self.company_list.clone()),
-                )
-                .child(
-                    div()
-                        .flex_1()
-                        .size_full()
-                        .border_1()
-                        .border_color(cx.theme().border)
-                        .py_1()
-                        .px_4()
-                        .rounded_md()
-                        .when_some(self.selected_company.clone(), |this, company| {
-                            this.child(
-                                div()
-                                    .flex_1()
-                                    .gap_2()
-                                    .child(
-                                        h_flex()
-                                            .items_start()
-                                            .justify_between()
-                                            .child(
-                                                div().text_3xl().mb_6().child(company.name.clone()),
-                                            )
-                                            .child(format!("{:.2}", company.last_done)),
-                                    )
-                                    .child(company.industry.clone())
-                                    .child(company.description.clone()),
-                            )
-                        }),
-                ),
-        )
+        h_flex()
+            .size_full()
+            .on_action(cx.listener(Self::selected_company))
+            .gap_4()
+            .mb_4()
+            .child(
+                v_flex()
+                    .h_full()
+                    .border_1()
+                    .border_color(cx.theme().border)
+                    .rounded_md()
+                    .w(px(400.))
+                    .occlude()
+                    .child(self.company_list.clone()),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .size_full()
+                    .border_1()
+                    .border_color(cx.theme().border)
+                    .py_1()
+                    .px_4()
+                    .rounded_md()
+                    .when_some(self.selected_company.clone(), |this, company| {
+                        this.child(
+                            div()
+                                .flex_1()
+                                .gap_2()
+                                .child(
+                                    h_flex()
+                                        .items_start()
+                                        .justify_between()
+                                        .child(div().text_3xl().mb_6().child(company.name.clone()))
+                                        .child(format!("{:.2}", company.last_done)),
+                                )
+                                .child(company.industry.clone())
+                                .child(company.description.clone()),
+                        )
+                    }),
+            )
     }
 }

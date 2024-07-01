@@ -54,7 +54,6 @@ impl RenderOnce for TabBar {
             .p_1()
             .bg(theme.muted)
             .text_color(theme.muted_foreground)
-            .rounded_md()
             .relative()
             .overflow_x_hidden()
             .child(

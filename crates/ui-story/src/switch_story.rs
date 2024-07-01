@@ -1,5 +1,6 @@
 use gpui::{
-    Div, IntoElement, ParentElement, Render, SharedString, Styled, ViewContext, WindowContext,
+    Div, IntoElement, ParentElement, Render, SharedString, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 use ui::{
@@ -11,8 +12,6 @@ use ui::{
     v_flex, Disableable as _, StyledExt,
 };
 
-use super::story_case;
-
 #[derive(Default)]
 pub struct SwitchStory {
     switch1: bool,
@@ -21,10 +20,14 @@ pub struct SwitchStory {
 }
 
 impl SwitchStory {
-    pub(crate) fn new(_cx: &mut WindowContext) -> Self {
+    pub fn view(cx: &mut WindowContext) -> View<Self> {
+        cx.new_view(|cx| Self::new(cx))
+    }
+
+    pub fn new(_: &mut WindowContext) -> Self {
         Self {
-            switch1: false,
-            switch2: true,
+            switch1: true,
+            switch2: false,
             switch3: true,
         }
     }
@@ -51,10 +54,7 @@ impl Render for SwitchStory {
                 .border_color(theme.border)
         }
 
-        story_case(
-            "Switch",
-            "A control that allows the user to toggle between checked and not checked.",
-        )
+        v_flex().gap_6()
         .child(
             v_flex()
                 .items_start()

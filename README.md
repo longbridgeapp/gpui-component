@@ -44,8 +44,10 @@ This is an example of build app by using GPUI.
 - [x] Notification
 - [x] Tooltip
 - [x] Popover
-- [ ] Dockpanel & Splitter
+- [x] Dockpanel
+- [ ] Splitter
 - [ ] List
+  - [x] A complex List example.
 - [ ] Table
 
 ## How to build
@@ -58,6 +60,7 @@ cargo run
 
 There have a part of UI components from [Zed](https://github.com/zed-industries/zed/tree/main/crates/ui), that are under GPL v3.0 license.
 
+- workspace (crate)
 - title_bar
 - picker
 - scrollbar
