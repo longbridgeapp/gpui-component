@@ -38,18 +38,7 @@ impl Render for TooltipStory {
                             .style(ButtonStyle::Primary),
                     )
                     .id("tooltip-1")
-                    .tooltip(|cx| Tooltip::text("This is a Button", cx)),
-            )
-            .child(
-                div()
-                    .cursor(CursorStyle::PointingHand)
-                    .child(
-                        Button::new("button-meta")
-                            .label("With meta, Hover me")
-                            .style(ButtonStyle::Primary),
-                    )
-                    .id("tooltip-2")
-                    .tooltip(|cx| Tooltip::with_meta("This is a Button", "Click if you want", cx)),
+                    .tooltip(|cx| Tooltip::new("This is a Button", cx)),
             )
             .child(
                 h_flex()
@@ -57,7 +46,7 @@ impl Render for TooltipStory {
                     .cursor(CursorStyle::PointingHand)
                     .child(Label::new("Hover me"))
                     .id("tooltip-3")
-                    .tooltip(|cx| Tooltip::text("This is a Label", cx)),
+                    .tooltip(|cx| Tooltip::new("This is a Label", cx)),
             )
             .child(
                 div()
@@ -68,7 +57,7 @@ impl Render for TooltipStory {
                             .checked(Selection::Selected),
                     )
                     .id("tooltip-4")
-                    .tooltip(|cx| Tooltip::text("Checked!", cx)),
+                    .tooltip(|cx| Tooltip::new("Checked!", cx)),
             )
     }
 }

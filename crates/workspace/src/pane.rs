@@ -695,7 +695,7 @@ impl Pane {
                 this.handle_tab_drop(dragged_tab, ix, cx)
             }))
             .when_some(item.tab_tooltip(cx), |tab, text| {
-                tab.tooltip(move |cx| Tooltip::text(text.clone(), cx))
+                tab.tooltip(move |cx| Tooltip::new(text.clone(), cx))
             })
     }
 
