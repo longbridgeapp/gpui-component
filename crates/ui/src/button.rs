@@ -18,6 +18,7 @@ pub enum ButtonRounded {
 
 #[derive(Clone, Copy)]
 pub enum ButtonSize {
+    XSmall,
     Small,
     Medium,
 }
@@ -34,7 +35,7 @@ pub struct Button {
     pub base: Div,
     id: ElementId,
     icon: Option<Icon>,
-    label: SharedString,
+    label: Option<SharedString>,
     disabled: bool,
     selected: bool,
     width: Option<DefiniteLength>,
@@ -47,12 +48,12 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
+    pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             base: div(),
             id: id.into(),
             icon: None,
-            label: label.into(),
+            label: None,
             disabled: false,
             selected: false,
             style: ButtonStyle::Secondary,
@@ -66,15 +67,15 @@ impl Button {
     }
 
     pub fn primary(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
-        Self::new(id, label).style(ButtonStyle::Primary)
+        Self::new(id).label(label).style(ButtonStyle::Primary)
     }
 
     pub fn danger(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
-        Self::new(id, label).style(ButtonStyle::Danger)
+        Self::new(id).label(label).style(ButtonStyle::Danger)
     }
 
     pub fn small(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
-        Self::new(id, label).size(ButtonSize::Small)
+        Self::new(id).label(label).size(ButtonSize::Small)
     }
 
     pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
@@ -97,6 +98,12 @@ impl Button {
         self
     }
 
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    /// Set the icon of the button, if the Button have no label, the button well in Icon Button mode.
     pub fn icon(mut self, icon: impl Into<Icon>) -> Self {
         self.icon = Some(icon.into());
         self
@@ -147,9 +154,20 @@ impl RenderOnce for Button {
             .justify_center()
             .when_some(self.width, |this, width| this.w(width))
             .when_some(self.height, |this, height| this.h(height))
-            .map(|this| match self.size {
-                ButtonSize::Small => this.px_3().py_2().h_6(),
-                ButtonSize::Medium => this.px_4().py_2().h_8(),
+            .map(|this| {
+                if self.label.is_none() {
+                    match self.size {
+                        ButtonSize::XSmall => this.size_5(),
+                        ButtonSize::Small => this.size_6(),
+                        ButtonSize::Medium => this.size_8(),
+                    }
+                } else {
+                    match self.size {
+                        ButtonSize::XSmall => this.px_1().py_1().h_5(),
+                        ButtonSize::Small => this.px_3().py_2().h_6(),
+                        ButtonSize::Medium => this.px_4().py_2().h_8(),
+                    }
+                }
             })
             .map(|this| match self.rounded {
                 ButtonRounded::Small => this.rounded(px(cx.theme().radius * 0.5)),
@@ -214,10 +232,11 @@ impl RenderOnce for Button {
                     .gap_2()
                     .text_color(text_color)
                     .when_some(self.icon, |this, icon| {
-                        this.child(icon.text_color(text_color))
+                        this.child(icon.size(self.size).text_color(text_color))
                     })
-                    .child(self.label)
+                    .when_some(self.label, |this, label| this.child(label))
                     .map(|this| match self.size {
+                        ButtonSize::XSmall => this.text_xs(),
                         ButtonSize::Small => this.text_sm(),
                         ButtonSize::Medium => this.text_base(),
                     })

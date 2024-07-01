@@ -25,14 +25,18 @@ impl TooltipStory {
 }
 
 impl Render for TooltipStory {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()
             .w(px(360.))
             .gap_5()
             .child(
                 div()
                     .cursor(CursorStyle::PointingHand)
-                    .child(Button::new("button", "Hover me").style(ButtonStyle::Primary))
+                    .child(
+                        Button::new("button")
+                            .label("Hover me")
+                            .style(ButtonStyle::Primary),
+                    )
                     .id("tooltip-1")
                     .tooltip(|cx| Tooltip::text("This is a Button", cx)),
             )
@@ -40,7 +44,8 @@ impl Render for TooltipStory {
                 div()
                     .cursor(CursorStyle::PointingHand)
                     .child(
-                        Button::new("button-meta", "With meta, Hover me")
+                        Button::new("button-meta")
+                            .label("With meta, Hover me")
                             .style(ButtonStyle::Primary),
                     )
                     .id("tooltip-2")
@@ -58,7 +63,7 @@ impl Render for TooltipStory {
                 div()
                     .cursor(CursorStyle::PointingHand)
                     .child(
-                        Checkbox::new("check", cx)
+                        Checkbox::new("check")
                             .label("Remember me")
                             .checked(Selection::Selected),
                     )

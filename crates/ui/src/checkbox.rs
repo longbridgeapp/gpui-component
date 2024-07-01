@@ -23,7 +23,7 @@ pub struct Checkbox {
 }
 
 impl Checkbox {
-    pub fn new(id: impl Into<ElementId>, _: &mut WindowContext) -> Self {
+    pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
             checked: Selection::Unselected,

@@ -218,7 +218,7 @@ impl Render for StoryWorkspace {
                             .items_center()
                             .justify_end()
                             .px_2()
-                            .on_mouse_move(|_, cx| cx.stop_propagation())
+                            .mr_3()
                             .child(
                                 Switch::new("theme-mode")
                                     .size(ButtonSize::Small)
