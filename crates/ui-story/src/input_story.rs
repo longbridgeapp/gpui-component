@@ -1,11 +1,9 @@
 use gpui::{
-    div, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
+    ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
     VisualContext, WindowContext,
 };
 
-use ui::input::TextInput;
-
-use super::story_case;
+use ui::{input::TextInput, v_flex};
 
 pub struct InputStory {
     input1: View<TextInput>,
@@ -15,7 +13,11 @@ pub struct InputStory {
 }
 
 impl InputStory {
-    pub(crate) fn new(cx: &mut WindowContext) -> Self {
+    pub fn view(cx: &mut WindowContext) -> View<Self> {
+        cx.new_view(|cx| Self::new(cx))
+    }
+
+    fn new(cx: &mut WindowContext) -> Self {
         let input1 = cx.new_view(|cx| {
             let mut input = TextInput::new(cx);
             input.set_text("Hello 世界", cx);
@@ -54,16 +56,13 @@ impl InputStory {
 
 impl Render for InputStory {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        story_case("Input", "A text input field.").child(
-            div()
-                .flex()
-                .flex_col()
-                .justify_start()
-                .gap_3()
-                .child(self.input1.clone())
-                .child(self.input2.clone())
-                .child(self.disabled_input.clone())
-                .child(self.mash_input.clone()),
-        )
+        v_flex()
+            .size_full()
+            .justify_start()
+            .gap_3()
+            .child(self.input1.clone())
+            .child(self.input2.clone())
+            .child(self.disabled_input.clone())
+            .child(self.mash_input.clone())
     }
 }

@@ -3,9 +3,8 @@ use std::sync::Arc;
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Axis, Entity, EntityId,
     EventEmitter, FocusHandle, FocusableView, InteractiveElement as _, MouseButton, MouseDownEvent,
-    MouseUpEvent, ParentElement as _, Pixels, Render, SharedString, StatefulInteractiveElement,
-    StyleRefinement, Styled as _, Subscription, View, ViewContext, VisualContext, WeakView,
-    WindowContext,
+    MouseUpEvent, ParentElement as _, Pixels, Render, StatefulInteractiveElement, StyleRefinement,
+    Styled as _, Subscription, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -55,7 +54,7 @@ pub trait Panel: FocusableView + EventEmitter<PanelEvent> {
     fn set_size(&mut self, size: Option<Pixels>, cx: &mut WindowContext);
     /// Set the active state of the panel.
     fn set_active(&mut self, active: bool, cx: &mut WindowContext);
-    fn icon(&self, cx: &WindowContext) -> Option<IconName> {
+    fn icon(&self, _cx: &WindowContext) -> Option<IconName> {
         None
     }
     fn is_zoomed(&self, _cx: &WindowContext) -> bool {
@@ -169,7 +168,7 @@ impl FocusableView for Dock {
 impl Dock {
     pub fn new(position: DockPosition, cx: &mut ViewContext<Workspace>) -> View<Self> {
         let focus_handle = cx.focus_handle();
-        let workspace = cx.view().clone();
+        // let workspace = cx.view().clone();
 
         let dock = cx.new_view(|cx: &mut ViewContext<Self>| {
             let focus_subscription = cx.on_focus(&focus_handle, |dock, cx| {
@@ -191,11 +190,11 @@ impl Dock {
 
         cx.on_focus_in(&focus_handle, {
             let dock = dock.downgrade();
-            move |workspace, cx| {
+            move |_workspace, cx| {
                 let Some(dock) = dock.upgrade() else {
                     return;
                 };
-                let Some(panel) = dock.read(cx).active_panel() else {
+                let Some(_panel) = dock.read(cx).active_panel() else {
                     return;
                 };
 
@@ -294,7 +293,7 @@ impl Dock {
             }),
         ];
 
-        let name = panel.persistent_name().to_string();
+        let _name = panel.persistent_name().to_string();
 
         self.panel_entries.push(PanelEntry {
             panel: Arc::new(panel.clone()),
@@ -392,6 +391,7 @@ impl Dock {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone, Render)]
 struct DraggedDock(DockPosition);
 
@@ -421,7 +421,7 @@ impl Render for Dock {
                     MouseButton::Left,
                     cx.listener(|v, e: &MouseUpEvent, cx| {
                         if e.click_count == 2 {
-                            // v.resize_active_panel(None, cx);
+                            v.resize_active_panel(None, cx);
                             cx.stop_propagation();
                         }
                     }),

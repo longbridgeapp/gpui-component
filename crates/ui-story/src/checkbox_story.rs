@@ -5,8 +5,6 @@ use gpui::{
 
 use ui::{checkbox::Checkbox, h_flex, v_flex, Disableable as _, Selection};
 
-use super::story_case;
-
 pub struct CheckboxStory {
     check1: Selection,
     check2: Selection,

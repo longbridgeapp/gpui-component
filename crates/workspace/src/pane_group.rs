@@ -24,10 +24,6 @@ pub struct PaneGroup {
 }
 
 impl PaneGroup {
-    pub(crate) fn with_root(root: Member) -> Self {
-        Self { root }
-    }
-
     pub fn new(pane: View<Pane>) -> Self {
         Self {
             root: Member::Pane(pane),
@@ -106,6 +102,7 @@ impl PaneGroup {
         panes
     }
 
+    #[allow(unused)]
     pub(crate) fn first_pane(&self) -> View<Pane> {
         self.root.first_pane()
     }
@@ -209,6 +206,7 @@ impl PaneAxis {
         }
     }
 
+    #[allow(unused)]
     pub fn load(axis: Axis, members: Vec<Member>, flexes: Option<Vec<f32>>) -> Self {
         let flexes = flexes.unwrap_or_else(|| vec![1.; members.len()]);
         debug_assert!(members.len() == flexes.len());

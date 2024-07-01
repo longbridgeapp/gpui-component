@@ -1,6 +1,7 @@
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
     ParentElement, Render, Styled, Task, View, ViewContext, VisualContext as _, WeakView,
+    WindowContext,
 };
 
 use ui::{
@@ -10,8 +11,6 @@ use ui::{
     picker::{Picker, PickerDelegate},
     v_flex, Clickable as _,
 };
-
-use super::story_case;
 
 actions!(picker_story, [DismissPicker]);
 
@@ -106,7 +105,11 @@ pub struct PickerStory {
 }
 
 impl PickerStory {
-    pub(crate) fn new(cx: &mut ViewContext<Self>) -> Self {
+    pub fn view(cx: &mut WindowContext) -> View<Self> {
+        cx.new_view(|cx| Self::new(cx))
+    }
+
+    fn new(cx: &mut ViewContext<Self>) -> Self {
         let items: Vec<String> = [
             "Baguette (France)",
             "Baklava (Turkey)",
@@ -190,7 +193,8 @@ impl PickerStory {
 
 impl Render for PickerStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        story_case("Picker", "Picker is a list of items that can be selected.")
+        v_flex()
+            .gap_6()
             .child(
                 v_flex().items_start().child(
                     Button::new("show-picker", "Show Picker...")

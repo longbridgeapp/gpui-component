@@ -5,30 +5,30 @@ use std::{
     fmt, mem,
     ops::ControlFlow,
     rc::Rc,
-    sync::{atomic::AtomicUsize, Arc},
+    sync::Arc,
 };
 
 use anyhow::Result;
 use gpui::{
-    actions, div, impl_actions, prelude::FluentBuilder as _, AnyElement, AppContext, ClickEvent,
+    actions, div, impl_actions, prelude::FluentBuilder as _, AnyElement, AppContext,
     DefiniteLength, DragMoveEvent, Element as _, EntityId, EventEmitter, FocusHandle,
-    FocusOutEvent, FocusableView, InteractiveElement as _, IntoElement, KeyContext, MouseButton,
-    MouseDownEvent, ParentElement, Pixels, Point, Render, RenderOnce as _, ScrollHandle,
-    StatefulInteractiveElement, Styled as _, Subscription, Task, View, ViewContext,
-    VisualContext as _, WeakFocusHandle, WeakView, WindowContext,
+    FocusOutEvent, FocusableView, InteractiveElement as _, IntoElement, KeyContext, ParentElement,
+    Pixels, Point, Render, RenderOnce as _, ScrollHandle, StatefulInteractiveElement, Styled as _,
+    Subscription, Task, View, ViewContext, VisualContext as _, WeakFocusHandle, WeakView,
+    WindowContext,
 };
 use serde::Deserialize;
 
 use ui::{
+    label::Label,
     tab::{Tab, TabBar},
     theme::ActiveTheme,
     tooltip::Tooltip,
-    v_flex, Selectable,
+    v_flex, Selectable, StyledExt as _,
 };
 use util::ResultExt;
 
 use super::{
-    dock::DockPosition,
     item::{ItemHandle, TabContentParams},
     pane_group::SplitDirection,
     workspace::Workspace,
@@ -158,7 +158,7 @@ impl Pane {
             cx.on_focus_out(&focus_handle, Pane::focus_out),
         ];
 
-        let handle = cx.view().downgrade();
+        let _handle = cx.view().downgrade();
         Self {
             workspace,
             focus_handle,
@@ -271,13 +271,10 @@ impl Pane {
             )
         };
 
-        let existing_item_index = self.items.iter().position(|existing_item| {
-            if existing_item.item_id() == item.item_id() {
-                true
-            } else {
-                false
-            }
-        });
+        let existing_item_index = self
+            .items
+            .iter()
+            .position(|existing_item| existing_item.item_id() == item.item_id());
 
         if let Some(existing_item_index) = existing_item_index {
             // If the item already exists, move it to the desired destination and activate it
@@ -507,7 +504,7 @@ impl Pane {
         cx.emit(Event::Split(direction));
     }
 
-    fn handle_drag_move<T>(&mut self, event: &DragMoveEvent<T>, cx: &mut ViewContext<Self>) {
+    fn handle_drag_move<T>(&mut self, event: &DragMoveEvent<T>, _cx: &mut ViewContext<Self>) {
         if !self.can_split {
             return;
         }
@@ -625,10 +622,10 @@ impl Pane {
             cx,
         );
         // let indicator = render_item_indicator(item.boxed_clone(), cx);
-        let item_id = item.item_id();
-        let is_first_item = ix == 0;
-        let is_last_item = ix == self.items.len() - 1;
-        let position_relative_to_active_item = ix.cmp(&self.active_item_index);
+        let _item_id = item.item_id();
+        let _is_first_item = ix == 0;
+        let _is_last_item = ix == self.items.len() - 1;
+        let _position_relative_to_active_item = ix.cmp(&self.active_item_index);
 
         Tab::new(ix, label)
             .selected(is_active)
@@ -858,6 +855,16 @@ impl Render for Pane {
                     .group("")
                     .on_drag_move::<DraggedTab>(cx.listener(Self::handle_drag_move))
                     .on_drag_move::<DraggedSelection>(cx.listener(Self::handle_drag_move))
+                    .map(|div| {
+                        if let Some(item) = self.active_item() {
+                            div.v_flex()
+                                // .child(self.toolbar.clone())
+                                .child(item.to_any())
+                        } else {
+                            let placeholder = div.h_flex().size_full().justify_center();
+                            placeholder.child(Label::new("No panel."))
+                        }
+                    })
                     .child(
                         // drag target
                         div()

@@ -1,11 +1,10 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
-use ui_story::{ButtonStory, CheckboxStory, DropdownStory, StoryContainer};
-use workspace::{
-    dock::{DockPosition, Panel, PanelEvent},
-    notification::{NotificationHandle, NotificationId},
-    Workspace,
+use ui_story::{
+    ButtonStory, CheckboxStory, DropdownStory, InputStory, ListStory, PickerStory, PopoverStory,
+    StoryContainer, SwitchStory, TooltipStory,
 };
+use workspace::Workspace;
 
 use std::sync::Arc;
 use ui::{
@@ -43,30 +42,85 @@ impl StoryWorkspace {
         })
         .detach();
 
-        let button_panel = cx.new_view(|cx| {
-            StoryContainer::new("Buttons", "Button components", cx)
-                .position(DockPosition::Left)
-                .width(px(460.))
-                .story(ButtonStory::view(cx).into())
-        });
-        let input_panel = cx.new_view(|cx| {
-            StoryContainer::new("Inputs", "Input components", cx)
-                .position(DockPosition::Right)
-                .width(px(360.))
-                .story(CheckboxStory::view(cx).into())
-        });
-        let dropdown_panel = cx.new_view(|cx| {
-            StoryContainer::new("Dropdowns", "Dropdown components", cx)
-                .position(DockPosition::Bottom)
-                .width(px(360.))
-                .story(DropdownStory::new(cx).into())
-        });
+        StoryContainer::open(
+            "Buttons",
+            "Displays a button or a component that looks like a button.",
+            ButtonStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
 
-        workspace.update(cx, |workspace, cx| {
-            workspace.add_panel(button_panel, cx);
-            workspace.add_panel(input_panel, cx);
-            workspace.add_panel(dropdown_panel, cx)
-        });
+        StoryContainer::open(
+            "Inputs",
+            "Displays a text input field.",
+            InputStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::open(
+            "Checkbox",
+            "A control that allows the user to toggle between checked and not checked.",
+            CheckboxStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::open(
+            "Switch",
+            "A control that allows the user to toggle between two states.",
+            SwitchStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::open(
+            "Dropdowns",
+            "Displays a list of options for the user to pick from—triggered by a button.",
+            DropdownStory::new(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::open(
+            "Picker",
+            "Picker is a component that allows the user to select an item from a list of options.",
+            PickerStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::open(
+            "Popover",
+            "Displays rich content in a portal, triggered by a button.",
+            PopoverStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::open(
+            "Tooltip",
+            "A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.",
+            TooltipStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        ).detach();
+
+        StoryContainer::open(
+            "List",
+            "A complex list example, includes use Picker, Scrollbar, and more.",
+            ListStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
 
         Self { workspace }
     }
@@ -75,7 +129,7 @@ impl StoryWorkspace {
         app_state: Arc<AppState>,
         cx: &mut AppContext,
     ) -> Task<anyhow::Result<WindowHandle<Self>>> {
-        let window_bounds = Bounds::centered(None, size(px(1400.0), px(1200.0)), cx);
+        let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {

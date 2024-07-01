@@ -32,7 +32,7 @@ pub trait Item: FocusableView + EventEmitter<Self::Event> {
     }
     fn to_item_events(_event: &Self::Event, _f: impl FnMut(ItemEvent)) {}
     fn deactivated(&mut self, _: &mut ViewContext<Self>) {}
-    fn workspace_deactivated(&self, cx: &mut ViewContext<Self>);
+    fn workspace_deactivated(&self, _cx: &mut ViewContext<Self>) {}
     fn tab_tooltip(&self, _: &AppContext) -> Option<SharedString> {
         None
     }
@@ -184,7 +184,7 @@ impl<T: Item> ItemHandle for View<T> {
         pane: View<Pane>,
         cx: &mut ViewContext<Workspace>,
     ) {
-        let weak_item = self.downgrade();
+        let _weak_item = self.downgrade();
 
         if workspace
             .panes_by_item

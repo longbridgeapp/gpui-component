@@ -9,8 +9,6 @@ use ui::{
     v_flex, Selection,
 };
 
-use super::story_case;
-
 struct Country {
     name: &'static str,
     code: &'static str,
@@ -102,7 +100,7 @@ impl DropdownStory {
         );
         let furit_dropdown = cx.new_view(|cx| Dropdown::new("dropdown-furits", furits, cx));
 
-        cx.new_view(|cx| Self {
+        cx.new_view(|_| Self {
             country_dropdown,
             furit_dropdown,
         })

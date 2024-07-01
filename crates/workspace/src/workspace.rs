@@ -13,10 +13,10 @@ use crate::{
 };
 use anyhow::Result;
 use gpui::{
-    actions, canvas, div, impl_actions, prelude::FluentBuilder as _, relative, AnyWeakView,
-    AppContext, Bounds, Div, DragMoveEvent, Entity as _, EntityId, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement as _, IntoElement, KeyContext, ParentElement as _, Pixels,
-    Point, Render, Styled as _, Task, View, ViewContext, VisualContext as _, WeakView,
+    actions, canvas, div, impl_actions, prelude::FluentBuilder as _, AnyWeakView, AppContext,
+    Bounds, Div, DragMoveEvent, Entity as _, EntityId, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, KeyContext, ParentElement as _, Pixels, Point, Render,
+    Styled as _, Subscription, Task, View, ViewContext, VisualContext as _, WeakView,
     WindowContext,
 };
 use serde::Deserialize;
@@ -87,6 +87,7 @@ pub struct Workspace {
     modal_layer: View<ModalLayer>,
     workspace_actions: Vec<Box<dyn Fn(Div, &mut ViewContext<Self>) -> Div>>,
     bounds_save_task_queued: Option<Task<()>>,
+    _subscriptions: Vec<Subscription>,
 }
 
 pub enum Event {
@@ -115,15 +116,15 @@ impl Render for Workspace {
         let mut context = KeyContext::new_with_defaults();
         context.add("Workspace");
 
-        let render_padding = |size| {
-            (size > 0.0).then(|| {
-                div()
-                    .h_full()
-                    .w(relative(size))
-                    .bg(cx.theme().background)
-                    .border_color(cx.theme().border)
-            })
-        };
+        // let render_padding = |size| {
+        //     (size > 0.0).then(|| {
+        //         div()
+        //             .h_full()
+        //             .w(relative(size))
+        //             .bg(cx.theme().background)
+        //             .border_color(cx.theme().border)
+        //     })
+        // };
 
         self.actions(div(), cx)
             .key_context(context)
@@ -259,7 +260,7 @@ impl Workspace {
         .detach();
 
         let weak_handle = cx.view().downgrade();
-        let pane_history_timestamp = Arc::new(AtomicUsize::new(0));
+        let _pane_history_timestamp = Arc::new(AtomicUsize::new(0));
 
         let center_pane = cx.new_view(|cx| Pane::new(weak_handle.clone(), None, cx));
         cx.subscribe(&center_pane, Self::handle_pane_event).detach();
@@ -289,9 +290,9 @@ impl Workspace {
                         .await;
                     this.update(&mut cx, |this, cx| {
                         if let Some(display) = cx.display() {
-                            if let Some(display_uuid) = display.uuid().ok() {
-                                let window_bounds = cx.window_bounds();
-                                if let Some(database_id) = workspace_id {
+                            if let Some(_display_uuid) = display.uuid().ok() {
+                                let _window_bounds = cx.window_bounds();
+                                if let Some(_database_id) = workspace_id {
                                     // cx.background_executor()
                                     //     .spawn(DB.set_window_open_status(
                                     //         database_id,
@@ -347,12 +348,13 @@ impl Workspace {
             // This data will be incorrect, but it will be overwritten by the time it needs to be used.
             bounds: Default::default(),
             bounds_save_task_queued: None,
+            _subscriptions: subscriptions,
         }
     }
 
     pub fn on_window_activation_changed(&mut self, cx: &mut ViewContext<Self>) {
         if cx.is_window_active() {
-            if let Some(database_id) = self.database_id {
+            if let Some(_database_id) = self.database_id {
                 // cx.background_executor()
                 //     .spawn(persistence::DB.update_timestamp(database_id))
                 //     .detach();
@@ -431,7 +433,7 @@ impl Workspace {
             )
             .on_action(cx.listener(Workspace::activate_pane_at_index))
             .on_action(
-                cx.listener(|workspace: &mut Workspace, _: &ReopenClosedItem, cx| {
+                cx.listener(|_workspace: &mut Workspace, _: &ReopenClosedItem, _cx| {
                     // workspace.reopen_closed_item(cx).detach();
                 }),
             )
@@ -451,7 +453,7 @@ impl Workspace {
 
     pub fn close_inactive_items_and_panes(
         &mut self,
-        action: &CloseInactiveTabsAndPanes,
+        _action: &CloseInactiveTabsAndPanes,
         cx: &mut ViewContext<Self>,
     ) {
         if let Some(task) = self.close_all_internal(true, cx) {
@@ -461,7 +463,7 @@ impl Workspace {
 
     pub fn close_all_items_and_panes(
         &mut self,
-        action: &CloseAllItemsAndPanes,
+        _action: &CloseAllItemsAndPanes,
         cx: &mut ViewContext<Self>,
     ) {
         if let Some(task) = self.close_all_internal(false, cx) {
@@ -871,7 +873,7 @@ impl Workspace {
                 self.split_and_clone(pane, *direction, cx);
             }
             pane::Event::Remove => self.remove_pane(pane, cx),
-            pane::Event::ActivateItem { local } => {
+            pane::Event::ActivateItem { local: _ } => {
                 cx.emit(Event::ActiveItemChanged);
             }
             pane::Event::ChangeItemTitle => {
@@ -1005,7 +1007,7 @@ impl Workspace {
         cx.notify();
     }
 
-    pub(crate) fn serialize_workspace(&mut self, cx: &mut ViewContext<Self>) {
+    pub(crate) fn serialize_workspace(&mut self, _cx: &mut ViewContext<Self>) {
         // if self._schedule_serialize.is_none() {
         //     self._schedule_serialize = Some(cx.spawn(|this, mut cx| async move {
         //         cx.background_executor()

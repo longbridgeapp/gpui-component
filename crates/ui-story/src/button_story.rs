@@ -8,13 +8,11 @@ use ui::{
     h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable,
 };
 
-use super::story_case;
-
 pub struct ButtonStory {}
 
 impl ButtonStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self {})
+        cx.new_view(|_| Self {})
     }
 
     fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
@@ -27,7 +25,6 @@ impl Render for ButtonStory {
         v_flex()
             .w_full()
             .justify_start()
-            .debug()
             .gap_6()
             .child(
                 v_flex()

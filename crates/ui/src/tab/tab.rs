@@ -2,8 +2,8 @@ use crate::selectable::Selectable;
 use crate::theme::{ActiveTheme, Colorize};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    div, px, AnyElement, Div, ElementId, IntoElement, ParentElement as _, RenderOnce, SharedString,
-    Stateful, StatefulInteractiveElement, WindowContext,
+    div, px, AnyElement, Div, ElementId, IntoElement, ParentElement as _, RenderOnce, Stateful,
+    StatefulInteractiveElement, WindowContext,
 };
 use gpui::{InteractiveElement, Styled as _};
 
