@@ -12,7 +12,8 @@ This is an example of build app by using GPUI.
 
 ## Demo
 
-[gpui-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
+[main-app-windows.zip](https://github.com/user-attachments/files/16049565/main-app.zip) - Updated at 2024/07/01
+[main-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
 
 ## TODO
 

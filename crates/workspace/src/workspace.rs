@@ -129,7 +129,6 @@ impl Render for Workspace {
         self.actions(div(), cx)
             .key_context(context)
             .relative()
-            .debug()
             .size_full()
             .flex()
             .flex_col()
