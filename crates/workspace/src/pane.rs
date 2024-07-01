@@ -19,6 +19,7 @@ use gpui::{
 };
 use serde::Deserialize;
 
+use crate::util::ResultExt;
 use ui::{
     label::Label,
     tab::{Tab, TabBar},
@@ -26,7 +27,6 @@ use ui::{
     tooltip::Tooltip,
     v_flex, Icon, IconName, Selectable, StyledExt as _,
 };
-use util::ResultExt;
 
 use super::{
     item::{ItemHandle, TabContentParams},

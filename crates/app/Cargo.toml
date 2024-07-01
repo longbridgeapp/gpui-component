@@ -10,8 +10,8 @@ rust-embed = "8"
 log.workspace = true
 workspace.workspace = true
 ui.workspace = true
-ui-story.workspace = true
-util.workspace = true
+story.workspace = true
+
 
 [lints]
 workspace = true

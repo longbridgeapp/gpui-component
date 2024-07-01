@@ -455,6 +455,7 @@ mod element {
     use std::mem;
     use std::{cell::RefCell, iter, rc::Rc, sync::Arc};
 
+    use crate::util::ResultExt;
     use gpui::{
         px, relative, Along, AnyElement, Axis, Bounds, Element, ElementId, GlobalElementId,
         IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Pixels, Point,
@@ -464,7 +465,6 @@ mod element {
     use parking_lot::Mutex;
     use smallvec::SmallVec;
     use ui::theme::ActiveTheme;
-    use util::ResultExt;
 
     use crate::Workspace;
 

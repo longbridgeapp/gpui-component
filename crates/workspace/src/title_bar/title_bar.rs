@@ -1,10 +1,11 @@
 use gpui::{Action, AnyElement, Interactivity, Stateful};
 use smallvec::SmallVec;
 
-use crate::{platform::PlatformStyle, prelude::*, stock::h_flex, theme::ActiveTheme};
+use ui::{h_flex, prelude::*, theme::ActiveTheme};
 
 use super::{
-    linux_window_controls::LinuxWindowControls, windows_window_controls::WindowsWindowControls,
+    linux_window_controls::LinuxWindowControls, platform::PlatformStyle,
+    windows_window_controls::WindowsWindowControls,
 };
 
 #[derive(IntoElement)]

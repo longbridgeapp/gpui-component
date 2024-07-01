@@ -1,19 +1,17 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
-use ui_story::{
+use story::{
     ButtonStory, CheckboxStory, DropdownStory, InputStory, ListStory, PickerStory, PopoverStory,
     StoryContainer, SwitchStory, TooltipStory,
 };
-use workspace::Workspace;
+use workspace::{TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
     button::ButtonSize,
     switch::{LabelSide, Switch},
     theme::{ActiveTheme, Theme},
-    title_bar::TitleBar,
 };
-use util::ResultExt as _;
 
 use crate::app_state::AppState;
 
@@ -162,7 +160,7 @@ impl StoryWorkspace {
                     })
                     .detach();
                 })
-                .log_err();
+                .expect("failed to update window");
 
             Ok(window)
         })
@@ -177,10 +175,10 @@ pub fn open_new(
     let task: Task<std::result::Result<WindowHandle<StoryWorkspace>, anyhow::Error>> =
         StoryWorkspace::new_local(app_state, cx);
     cx.spawn(|mut cx| async move {
-        if let Some(workspace) = task.await.log_err() {
+        if let Some(workspace) = task.await.ok() {
             workspace
                 .update(&mut cx, |workspace, cx| init(workspace, cx))
-                .log_err();
+                .expect("failed to init workspace");
         }
     })
 }

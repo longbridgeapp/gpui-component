@@ -3,7 +3,7 @@ use gpui::{
     VisualContext, WindowContext,
 };
 
-use ui::{input::TextInput, v_flex, Icon, IconName};
+use ui::{input::TextInput, v_flex, IconName};
 
 use crate::section;
 

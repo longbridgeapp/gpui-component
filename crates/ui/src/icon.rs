@@ -1,8 +1,6 @@
-use std::ops::Deref;
-
 use crate::{button::ButtonSize, theme::ActiveTheme};
 use gpui::{
-    prelude::FluentBuilder as _, svg, AnyElement, AnyView, Hsla, IntoElement, Render, RenderOnce,
+    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
     SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
 };
 

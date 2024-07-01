@@ -2132,7 +2132,7 @@ dependencies = [
  "thiserror",
  "time",
  "usvg",
- "util 0.1.0 (git+https://github.com/zed-industries/zed.git)",
+ "util",
  "uuid",
  "waker-fn",
  "wayland-backend",
@@ -2867,9 +2867,8 @@ dependencies = [
  "gpui",
  "log",
  "rust-embed",
+ "story",
  "ui",
- "ui-story",
- "util 0.1.0",
  "workspace",
 ]
 
@@ -4584,6 +4583,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "story"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fake",
+ "gpui",
+ "serde",
+ "ui",
+ "workspace",
+]
+
+[[package]]
 name = "strict-num"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5165,18 +5176,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ui-story"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fake",
- "gpui",
- "serde",
- "ui",
- "workspace",
-]
-
-[[package]]
 name = "unicase"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5296,13 +5295,6 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
-
-[[package]]
-name = "util"
-version = "0.1.0"
-dependencies = [
- "log",
-]
 
 [[package]]
 name = "util"
@@ -6034,7 +6026,7 @@ dependencies = [
  "serde",
  "smallvec",
  "ui",
- "util 0.1.0",
+ "windows",
 ]
 
 [[package]]

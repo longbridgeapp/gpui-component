@@ -17,6 +17,7 @@ macro_rules! debug_panic {
     };
 }
 
+#[allow(unused)]
 pub trait ResultExt<E> {
     type Ok;
 

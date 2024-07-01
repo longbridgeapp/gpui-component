@@ -32,8 +32,6 @@ impl Scrollbar {
     ) -> Option<Self> {
         let cloned_handle = handle.clone();
 
-        // Ref from: Zed crates\project_panel\src\project_panel.rs
-        // render_scrollbar method
         let scroll_state = handle.0.borrow();
         let last_item_height = scroll_state
             .last_item_height

@@ -1,6 +1,6 @@
 use gpui::{hsla, prelude::*, Hsla};
 
-use crate::{prelude::*, stock::h_flex, theme::ActiveTheme};
+use ui::{h_flex, prelude::*, theme::ActiveTheme};
 
 #[derive(IntoElement)]
 pub struct WindowsWindowControls {

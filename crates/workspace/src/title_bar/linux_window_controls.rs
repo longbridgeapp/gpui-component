@@ -1,6 +1,5 @@
 use gpui::{prelude::*, Action, Rgba, WindowAppearance};
-
-use crate::{prelude::*, stock::h_flex, Icon, IconName};
+use ui::{h_flex, prelude::*, Icon, IconName};
 
 #[derive(IntoElement)]
 pub struct LinuxWindowControls {

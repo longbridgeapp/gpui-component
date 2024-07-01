@@ -1,11 +1,11 @@
 use crate::selectable::Selectable;
 use crate::theme::{ActiveTheme, Colorize};
 use gpui::prelude::FluentBuilder as _;
+use gpui::InteractiveElement;
 use gpui::{
     div, px, AnyElement, Div, ElementId, IntoElement, ParentElement as _, RenderOnce, Stateful,
-    StatefulInteractiveElement, WindowContext,
+    StatefulInteractiveElement, Styled, WindowContext,
 };
-use gpui::{InteractiveElement, Styled as _};
 
 #[derive(IntoElement)]
 pub struct Tab {
@@ -70,6 +70,8 @@ impl RenderOnce for Tab {
             .items_center()
             .gap_2()
             .h_full()
+            .flex_shrink_0()
+            .overflow_scroll()
             .cursor_pointer()
             .py_1()
             .px_3()
