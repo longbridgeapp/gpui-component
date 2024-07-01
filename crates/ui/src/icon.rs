@@ -1,7 +1,9 @@
+use std::ops::Deref;
+
 use crate::{button::ButtonSize, theme::ActiveTheme};
 use gpui::{
-    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, RenderOnce, SharedString,
-    StyleRefinement, Styled, Svg, WindowContext,
+    prelude::FluentBuilder as _, svg, AnyElement, AnyView, Hsla, IntoElement, Render, RenderOnce,
+    SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
 };
 
 #[derive(IntoElement)]
@@ -44,11 +46,22 @@ impl IconName {
         }
         .into()
     }
+
+    /// Return the icon as a View<Icon>
+    pub fn view(self, cx: &mut WindowContext) -> View<Icon> {
+        Icon::new(self).view(cx)
+    }
 }
 
 impl From<IconName> for Icon {
     fn from(val: IconName) -> Self {
         Icon::new(val)
+    }
+}
+
+impl From<IconName> for AnyElement {
+    fn from(val: IconName) -> Self {
+        Icon::new(val).into_any_element()
     }
 }
 
@@ -89,6 +102,11 @@ impl Icon {
 
         self
     }
+
+    /// Create a new view for the icon
+    pub fn view(self, cx: &mut WindowContext) -> View<Icon> {
+        cx.new_view(|_| self)
+    }
 }
 
 impl Styled for Icon {
@@ -120,5 +138,22 @@ impl RenderOnce for Icon {
 impl From<Icon> for AnyElement {
     fn from(val: Icon) -> Self {
         val.into_any_element()
+    }
+}
+
+impl Render for Icon {
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
+        let text_color = self.text_color.unwrap_or_else(|| cx.theme().foreground);
+
+        svg()
+            .flex_none()
+            .size_4()
+            .text_color(text_color)
+            .map(|this| match self.size {
+                ButtonSize::XSmall => this.size_3(),
+                ButtonSize::Small => this.size_3p5(),
+                ButtonSize::Medium => this.size_4(),
+            })
+            .path(self.path.clone())
     }
 }

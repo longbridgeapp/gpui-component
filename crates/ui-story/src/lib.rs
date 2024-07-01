@@ -19,7 +19,7 @@ pub use switch_story::SwitchStory;
 pub use tooltip_story::TooltipStory;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, EventEmitter,
+    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
     FocusableView, IntoElement, ParentElement, Render, SharedString, Styled as _, Task, View,
     ViewContext, VisualContext, WindowContext,
 };
@@ -30,7 +30,7 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, label::Label, v_flex};
+use ui::{divider::Divider, h_flex, label::Label, v_flex};
 
 pub fn story_case(
     name: &'static str,
@@ -38,6 +38,23 @@ pub fn story_case(
     cx: &mut WindowContext,
 ) -> StoryContainer {
     StoryContainer::new(name, description, cx)
+}
+
+pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
+    use ui::theme::ActiveTheme;
+    let theme = cx.theme();
+
+    h_flex()
+        .items_center()
+        .gap_4()
+        .p_4()
+        .w_full()
+        .rounded_lg()
+        .border_1()
+        .border_color(theme.border)
+        .flex_wrap()
+        .justify_around()
+        .child(div().flex_none().w_full().child(title.into()))
 }
 
 pub struct StoryContainer {

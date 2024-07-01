@@ -73,6 +73,8 @@ pub fn init(cx: &mut AppContext) {
 pub struct TextInput {
     focus_handle: FocusHandle,
     text: SharedString,
+    prefix: Option<AnyView>,
+    suffix: Option<AnyView>,
     placeholder: SharedString,
     blink_cursor: Model<BlinkCursor>,
     selected_range: Range<usize>,
@@ -102,6 +104,8 @@ impl TextInput {
             disabled: false,
             masked: false,
             appearance: true,
+            prefix: None,
+            suffix: None,
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -155,6 +159,24 @@ impl TextInput {
     /// Set the appearance of the input field.
     pub fn appearance(mut self, appearance: bool) -> Self {
         self.appearance = appearance;
+        self
+    }
+
+    /// Set the prefix element of the input field, for example a search Icon.
+    pub fn prefix(mut self, prefix: impl Into<AnyView>) -> Self {
+        self.prefix = Some(prefix.into());
+        self
+    }
+
+    /// Set the placeholder text of the input field.
+    pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Set the suffix element of the input field, for example a clear button.
+    pub fn suffix(mut self, suffix: impl Into<AnyView>) -> Self {
+        self.suffix = Some(suffix.into());
         self
     }
 
@@ -609,6 +631,7 @@ impl Element for TextElement {
 impl Render for TextInput {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let focused = self.focus_handle.is_focused(cx);
+
         div()
             .flex()
             .key_context("TextInput")
@@ -654,8 +677,12 @@ impl Render for TextInput {
                         cx.theme().background
                     })
             })
-            .child(div().w_full().child(TextElement {
+            .when_some(self.prefix.clone(), |this, prefix| this.child(prefix))
+            .gap_1()
+            .items_center()
+            .child(div().flex_grow().overflow_x_hidden().child(TextElement {
                 input: cx.view().clone(),
             }))
+            .when_some(self.suffix.clone(), |this, suffix| this.child(suffix))
     }
 }
