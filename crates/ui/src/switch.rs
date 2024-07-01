@@ -109,7 +109,7 @@ impl RenderOnce for Switch {
                 self.base
                     .map(|this| match self.size {
                         ButtonSize::Medium => this.w_11().h_6().rounded_xl(),
-                        ButtonSize::Small => this.w_8().h_4().rounded_lg(),
+                        ButtonSize::XSmall | ButtonSize::Small => this.w_8().h_4().rounded_lg(),
                     })
                     .flex()
                     .items_center()
@@ -127,21 +127,24 @@ impl RenderOnce for Switch {
                             .bg(toggle_bg)
                             .map(|this| match self.size {
                                 ButtonSize::Medium => this.w_5().h_5(),
-                                ButtonSize::Small => this.w_3().h_3(),
+                                ButtonSize::XSmall | ButtonSize::Small => this.w_3().h_3(),
                             }),
                     ),
             )
             .when_some(self.label, |this, label| {
                 this.child(div().child(label).map(|this| match self.size {
                     ButtonSize::Medium => this.text_base(),
-                    ButtonSize::Small => this.text_sm(),
+                    ButtonSize::XSmall | ButtonSize::Small => this.text_sm(),
                 }))
             })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
-                    cx.stop_propagation();
-                    this.on_click(move |ev, cx| on_click(ev, cx))
+                    this.on_click(move |ev, cx| {
+                        dbg!("---- switch clicked");
+                        cx.stop_propagation();
+                        on_click(ev, cx);
+                    })
                 },
             )
     }

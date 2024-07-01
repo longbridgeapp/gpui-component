@@ -1,7 +1,7 @@
-use crate::theme::ActiveTheme;
+use crate::{button::ButtonSize, theme::ActiveTheme};
 use gpui::{
-    svg, AnyElement, Hsla, IntoElement, RenderOnce, SharedString, StyleRefinement, Styled, Svg,
-    WindowContext,
+    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, RenderOnce, SharedString,
+    StyleRefinement, Styled, Svg, WindowContext,
 };
 
 #[derive(IntoElement)]
@@ -18,6 +18,9 @@ pub enum IconName {
     Info,
     Ellipsis,
     EllipsisVertical,
+    Search,
+    Delete,
+    CicleX,
 }
 
 impl IconName {
@@ -35,6 +38,9 @@ impl IconName {
             IconName::Info => "icons/info.svg",
             IconName::Ellipsis => "icons/ellipsis.svg",
             IconName::EllipsisVertical => "icons/ellipsis-vertical.svg",
+            IconName::Search => "icons/search.svg",
+            IconName::Delete => "icons/delete.svg",
+            IconName::CicleX => "icons/circle-x.svg",
         }
         .into()
     }
@@ -57,6 +63,7 @@ pub struct Icon {
     base: Svg,
     path: SharedString,
     text_color: Option<Hsla>,
+    size: ButtonSize,
 }
 
 impl Icon {
@@ -65,6 +72,7 @@ impl Icon {
             base: svg().flex_none().size_4(),
             path: name.path(),
             text_color: None,
+            size: ButtonSize::Medium,
         }
     }
 
@@ -73,6 +81,12 @@ impl Icon {
     /// For example: `icons/foo.svg`
     pub fn path(mut self, path: impl Into<SharedString>) -> Self {
         self.path = path.into();
+        self
+    }
+
+    pub fn size(mut self, size: ButtonSize) -> Self {
+        self.size = size;
+
         self
     }
 }
@@ -92,7 +106,14 @@ impl RenderOnce for Icon {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let text_color = self.text_color.unwrap_or_else(|| cx.theme().foreground);
 
-        self.base.text_color(text_color).path(self.path)
+        self.base
+            .text_color(text_color)
+            .map(|this| match self.size {
+                ButtonSize::XSmall => this.size_3(),
+                ButtonSize::Small => this.size_3p5(),
+                ButtonSize::Medium => this.size_4(),
+            })
+            .path(self.path)
     }
 }
 

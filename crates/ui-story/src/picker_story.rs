@@ -9,7 +9,7 @@ use ui::{
     h_flex,
     list::ListItem,
     picker::{Picker, PickerDelegate},
-    v_flex, Clickable as _,
+    v_flex, Clickable as _, IconName,
 };
 
 actions!(picker_story, [DismissPicker]);
@@ -197,7 +197,9 @@ impl Render for PickerStory {
             .gap_6()
             .child(
                 v_flex().items_start().child(
-                    Button::new("show-picker", "Show Picker...")
+                    Button::new("show-picker")
+                        .label("Show Picker...")
+                        .icon(IconName::Search)
                         .style(ButtonStyle::Primary)
                         .on_click(cx.listener(|this, _, cx| {
                             this.open = !this.open;

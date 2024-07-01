@@ -75,7 +75,7 @@ impl Render for PopoverStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
-                                .trigger(Button::new("info-top-left", "Top Left"))
+                                .trigger(Button::new("info-top-left").label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |_| {
                                         v_flex()
@@ -83,7 +83,8 @@ impl Render for PopoverStory {
                                             .child("Hello, this is a Popover.")
                                             .child(Divider::horizontal())
                                             .child(
-                                                Button::new("info1", "Yes")
+                                                Button::new("info1")
+                                                    .label("Yes")
                                                     .width(px(80.))
                                                     .size(ButtonSize::Small),
                                             )
@@ -95,7 +96,7 @@ impl Render for PopoverStory {
                     .child(
                         Popover::new("info-top-right")
                             .anchor(AnchorCorner::TopRight)
-                            .trigger(Button::new("info-top-right", "Top Right"))
+                            .trigger(Button::new("info-top-right").label("Top Right"))
                             .content(|cx| {
                                 PopoverContent::new(cx, |_| {
                                     v_flex()
@@ -103,7 +104,8 @@ impl Render for PopoverStory {
                                         .child("Hello, this is a Popover on the Top Right.")
                                         .child(Divider::horizontal())
                                         .child(
-                                            Button::new("info1", "Yes")
+                                            Button::new("info1")
+                                                .label("Yes")
                                                 .width(px(80.))
                                                 .size(ButtonSize::Small),
                                         )
@@ -120,14 +122,20 @@ impl Render for PopoverStory {
                         .child(
                             Popover::new("info-bottom-left")
                                 .anchor(AnchorCorner::BottomLeft)
-                                .trigger(Button::new("pop", "Popup with Form").width(px(300.)))
+                                .trigger(
+                                    Button::new("pop").label("Popup with Form").width(px(300.)),
+                                )
                                 .content(move |_| form.clone()),
                         )
                         .child(
                             Popover::new("info-bottom-right")
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
-                                .trigger(Button::new("pop", "Mouse Right Click").width(px(300.)))
+                                .trigger(
+                                    Button::new("pop")
+                                        .label("Mouse Right Click")
+                                        .width(px(300.)),
+                                )
                                 .content(|cx| {
                                     PopoverContent::new(cx, |_| {
                                         v_flex()
@@ -135,7 +143,8 @@ impl Render for PopoverStory {
                                             .child("Hello, this is a Popover on the Bottom Right.")
                                             .child(Divider::horizontal())
                                             .child(
-                                                Button::new("info1", "Yes")
+                                                Button::new("info1")
+                                                    .label("Yes")
                                                     .width(px(80.))
                                                     .size(ButtonSize::Small),
                                             )

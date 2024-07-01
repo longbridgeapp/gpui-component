@@ -39,13 +39,15 @@ impl Render for CheckboxStory {
                     h_flex()
                         .items_center()
                         .gap_6()
-                        .child(Checkbox::new("check1", cx).checked(self.check1).on_click(
-                            cx.listener(|v, _, _| {
-                                v.check1 = v.check1.inverse();
-                            }),
-                        ))
                         .child(
-                            Checkbox::new("check2", cx)
+                            Checkbox::new("check1")
+                                .checked(self.check1)
+                                .on_click(cx.listener(|v, _, _| {
+                                    v.check1 = v.check1.inverse();
+                                })),
+                        )
+                        .child(
+                            Checkbox::new("check2")
                                 .checked(self.check2)
                                 .label("Subscribe to newsletter")
                                 .on_click(cx.listener(|v, _, _| {
@@ -53,7 +55,7 @@ impl Render for CheckboxStory {
                                 })),
                         )
                         .child(
-                            Checkbox::new("check3", cx)
+                            Checkbox::new("check3")
                                 .checked(self.check3)
                                 .label("Remember me")
                                 .on_click(cx.listener(|v, _, _| {
@@ -68,19 +70,19 @@ impl Render for CheckboxStory {
                         .items_center()
                         .gap_6()
                         .child(
-                            Checkbox::new("check3", cx)
+                            Checkbox::new("check3")
                                 .label("Disabled Checked")
                                 .checked(Selection::Selected)
                                 .disabled(true),
                         )
                         .child(
-                            Checkbox::new("check3_1", cx)
+                            Checkbox::new("check3_1")
                                 .label("Disabled Unchecked")
                                 .checked(Selection::Unselected)
                                 .disabled(true),
                         )
                         .child(
-                            Checkbox::new("check3_2", cx)
+                            Checkbox::new("check3_2")
                                 .label("Disabled Indeterminate")
                                 .checked(Selection::Indeterminate)
                                 .disabled(true),
