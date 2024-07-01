@@ -8,6 +8,8 @@ use ui::{
     h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable,
 };
 
+use crate::section;
+
 pub struct ButtonStory {}
 
 impl ButtonStory {
@@ -22,23 +24,6 @@ impl ButtonStory {
 
 impl Render for ButtonStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        fn section(title: impl Into<SharedString>, cx: &ViewContext<ButtonStory>) -> Div {
-            use ui::theme::ActiveTheme;
-            let theme = cx.theme();
-
-            h_flex()
-                .items_center()
-                .gap_4()
-                .p_4()
-                .w_full()
-                .rounded_lg()
-                .border_1()
-                .border_color(theme.border)
-                .flex_wrap()
-                .justify_around()
-                .child(div().flex_none().w_full().child(title.into()))
-        }
-
         v_flex()
             .w_full()
             .justify_start()

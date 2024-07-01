@@ -24,10 +24,11 @@ This is an example of build app by using GPUI.
   - [ ] ContextMenu to let user copy, cut, paste
   - [ ] Selection by mouse, drag to select text
   - [x] Cursor blinking
+  - [ ] Textarea
+  - [ ] Input icon
 - [x] Button
   - [x] Button with Icon
-  - [ ] IconButton
-  - [ ] ToggleButton
+  - [x] IconButton
 - [x] Label
 - [x] Icon
 - [x] Checkbox
