@@ -534,6 +534,7 @@ impl<D: PickerDelegate> Picker<D> {
                 self.set_query(text, cx);
                 self.refresh(cx);
             }
+            _ => {}
         }
     }
 }

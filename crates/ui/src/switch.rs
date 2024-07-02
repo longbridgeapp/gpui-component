@@ -141,7 +141,6 @@ impl RenderOnce for Switch {
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_click(move |ev, cx| {
-                        dbg!("---- switch clicked");
                         cx.stop_propagation();
                         on_click(ev, cx);
                     })

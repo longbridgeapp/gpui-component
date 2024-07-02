@@ -14,6 +14,7 @@ actions!(
     [
         Backspace,
         Delete,
+        Enter,
         Left,
         Right,
         SelectLeft,
@@ -33,12 +34,14 @@ actions!(
 
 pub enum TextEvent {
     Input { text: SharedString },
+    PressEnter,
 }
 
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
         KeyBinding::new("backspace", Backspace, None),
         KeyBinding::new("delete", Delete, None),
+        KeyBinding::new("enter", Enter, None),
         KeyBinding::new("left", Left, None),
         KeyBinding::new("right", Right, None),
         KeyBinding::new("shift-left", SelectLeft, None),
@@ -236,16 +239,28 @@ impl TextInput {
         self.replace_text_in_range(None, "", cx)
     }
 
+    fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
+        cx.emit(TextEvent::PressEnter);
+    }
+
     fn show_character_palette(&mut self, _: &ShowCharacterPalette, cx: &mut ViewContext<Self>) {
         cx.show_character_palette();
     }
 
     fn copy(&mut self, _: &Copy, cx: &mut ViewContext<Self>) {
+        if self.selected_range.is_empty() {
+            return;
+        }
+
         let selected_text = self.text[self.selected_range.clone()].to_string();
         cx.write_to_clipboard(ClipboardItem::new(selected_text));
     }
 
     fn cut(&mut self, _: &Cut, cx: &mut ViewContext<Self>) {
+        if self.selected_range.is_empty() {
+            return;
+        }
+
         let selected_text = self.text[self.selected_range.clone()].to_string();
         cx.write_to_clipboard(ClipboardItem::new(selected_text));
         self.replace_text_in_range(Some(self.selected_range.clone()), "", cx);
@@ -253,7 +268,8 @@ impl TextInput {
 
     pub fn paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
         if let Some(clipboard) = cx.read_from_clipboard() {
-            self.replace_text_in_range(Some(self.selected_range.clone()), clipboard.text(), cx);
+            let new_text = clipboard.text().replace('\n', "");
+            self.replace_text_in_range(Some(self.selected_range.clone()), &new_text, cx);
         }
     }
 
@@ -639,6 +655,7 @@ impl Render for TextInput {
             .when(!self.disabled, |this| {
                 this.on_action(cx.listener(Self::backspace))
                     .on_action(cx.listener(Self::delete))
+                    .on_action(cx.listener(Self::enter))
             })
             .on_action(cx.listener(Self::left))
             .on_action(cx.listener(Self::right))
