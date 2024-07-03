@@ -6,6 +6,7 @@ mod scrollbar;
 mod selectable;
 mod stock;
 mod styled_ext;
+mod svg_img;
 
 pub mod button;
 pub mod checkbox;
@@ -31,6 +32,7 @@ pub use selectable::{Selectable, Selection};
 
 pub use icon::*;
 pub use stock::*;
+pub use svg_img::*;
 
 /// Initialize the UI module.
 pub fn init(cx: &mut gpui::AppContext) {

@@ -13,6 +13,9 @@ wry = "0"
 smallvec = "1.13.2"
 windows = "0.57.0"
 unicode-segmentation = "1.11.0"
+image = "0.25.1"
+resvg = { version = "0.41.0", default-features = false }
+usvg = { version = "0.41.0", default-features = false }
 
 [lints]
 workspace = true

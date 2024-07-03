@@ -1,8 +1,8 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
-    ButtonStory, CheckboxStory, DropdownStory, InputStory, ListStory, PickerStory, PopoverStory,
-    StoryContainer, SwitchStory, TooltipStory,
+    ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
+    PopoverStory, StoryContainer, SwitchStory, TooltipStory,
 };
 use workspace::{TitleBar, Workspace};
 
@@ -120,6 +120,15 @@ impl StoryWorkspace {
         )
         .detach();
 
+        StoryContainer::open(
+            "Image",
+            "Render SVG image and Chart",
+            ImageStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
         Self { workspace }
     }
 
@@ -137,10 +146,10 @@ impl StoryWorkspace {
                     appears_transparent: true,
                     traffic_light_position: Some(point(px(9.0), px(9.0))),
                 }),
-                window_min_size: Size {
+                window_min_size: Some(Size {
                     width: px(640.),
                     height: px(480.),
-                },
+                }),
                 kind: WindowKind::Normal,
                 ..Default::default()
             };
