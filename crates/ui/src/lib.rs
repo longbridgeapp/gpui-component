@@ -1,4 +1,3 @@
-mod charts;
 mod clickable;
 mod disableable;
 mod event;
@@ -31,7 +30,6 @@ pub use disableable::Disableable;
 pub use event::InterativeElementExt;
 pub use selectable::{Selectable, Selection};
 
-pub use charts::*;
 pub use icon::*;
 pub use stock::*;
 pub use svg_img::*;

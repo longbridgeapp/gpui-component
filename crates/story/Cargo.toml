@@ -10,7 +10,7 @@ serde.workspace = true
 fake = "2.9.2"
 anyhow = "1"
 workspace.workspace = true
-charts-rs = { version = "0.3", features = ["image-encoder"] }
+charts-rs = "0.3"
 image = "0.25.1"
 
 [lints]
