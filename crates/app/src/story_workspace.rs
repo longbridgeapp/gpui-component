@@ -3,7 +3,7 @@ use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
     PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
-    TableStory, TooltipStory,
+    TableStory, TooltipStory, WebViewStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -123,6 +123,15 @@ impl StoryWorkspace {
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::add_pane(
+            "WebView",
+            "A webview element can display a wry webview.",
+            WebViewStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
