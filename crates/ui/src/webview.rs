@@ -7,8 +7,8 @@ use wry::{
 
 use gpui::{
     div, AppContext, Bounds, DismissEvent, Element, ElementId, EventEmitter, FocusHandle,
-    FocusableView, GlobalElementId, Hitbox, IntoElement, LayoutId, ParentElement as _, Pixels,
-    Render, Size, Style, Styled as _, View, WindowContext,
+    FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
+    ParentElement as _, Pixels, Render, Size, Style, Styled as _, View, WindowContext,
 };
 
 pub fn init(_cx: &AppContext) {}
@@ -23,6 +23,16 @@ impl WebView {
     pub fn new(cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
         let window_handle = cx.raw_window_handle();
+        // window_handle.on_active_status_change(Box::new(|active| {
+        //     dbg!("active", active);
+        // }));
+        // window_handle.on_input(Box::new(|input| {
+        //     dbg!("input", input);
+        //     DispatchEventResult {
+        //         default_prevented: false,
+        //         propagate: false,
+        //     }
+        // }));
         let webview = wry::WebView::new_as_child(&window_handle)
             .expect("failed to create webview to child window");
 
@@ -63,6 +73,7 @@ impl Render for WebView {
         let view = cx.view().clone();
 
         div()
+            .track_focus(&self.focus_handle)
             .size_full()
             .debug()
             .child(WebViewElement::new(self.webview.clone(), view, cx))
@@ -77,9 +88,7 @@ pub struct WebViewElement {
 
 impl WebViewElement {
     /// Create a new webview element from a wry WebView.
-    pub fn new(view: Rc<wry::WebView>, parent: View<WebView>, cx: &mut WindowContext) -> Self {
-        let focus_handle = cx.focus_handle();
-
+    pub fn new(view: Rc<wry::WebView>, parent: View<WebView>, _: &mut WindowContext) -> Self {
         Self { view, parent }
     }
 }
@@ -109,7 +118,6 @@ impl Element for WebViewElement {
         style.flex_grow = 0.0;
         style.flex_shrink = 1.;
         style.size = Size::full();
-
         // If the parent view is no longer visible, we don't need to layout the webview
 
         let id = cx.request_layout(style, []);
