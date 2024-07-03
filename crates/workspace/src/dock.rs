@@ -45,15 +45,17 @@ pub trait Panel: FocusableView + EventEmitter<PanelEvent> {
     /// Return the position of the panel.
     fn position(&self, cx: &WindowContext) -> DockPosition;
     /// Return true if the panel can be positioned at the given position.
-    fn can_position(&self, position: DockPosition, cx: &WindowContext) -> bool;
+    fn can_position(&self, position: DockPosition) -> bool {
+        true
+    }
     /// Set the position of the panel.
-    fn set_position(&mut self, position: DockPosition, cx: &mut WindowContext);
+    fn set_position(&mut self, position: DockPosition, cx: &mut ViewContext<Self>) {}
     /// Return the size of the panel.
     fn size(&self, cx: &WindowContext) -> Pixels;
     /// Set the size of the panel.
-    fn set_size(&mut self, size: Option<Pixels>, cx: &mut WindowContext);
+    fn set_size(&mut self, size: Option<Pixels>, cx: &mut ViewContext<Self>) {}
     /// Set the active state of the panel.
-    fn set_active(&mut self, active: bool, cx: &mut WindowContext);
+    fn set_active(&mut self, active: bool, cx: &mut ViewContext<Self>) {}
     fn icon(&self, _cx: &WindowContext) -> Option<IconName> {
         None
     }
@@ -62,7 +64,7 @@ pub trait Panel: FocusableView + EventEmitter<PanelEvent> {
     }
     fn set_zoomed(&mut self, _zoomed: bool, _cx: &mut ViewContext<Self>) {}
     fn starts_open(&self, _cx: &WindowContext) -> bool {
-        false
+        true
     }
 }
 
@@ -99,7 +101,7 @@ where
     }
 
     fn can_position(&self, position: DockPosition, cx: &WindowContext) -> bool {
-        self.read(cx).can_position(position, cx)
+        self.read(cx).can_position(position)
     }
 
     fn set_position(&self, position: DockPosition, cx: &mut WindowContext) {

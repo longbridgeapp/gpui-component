@@ -2,9 +2,9 @@ use core::time;
 
 use fake::Fake;
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, ElementId, InteractiveElement, IntoElement,
-    ParentElement, Render, RenderOnce, Styled, Timer, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, ElementId, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, Timer, View,
+    ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -175,20 +175,9 @@ impl CompanyListDelegate {
 }
 
 pub struct ListStory {
+    focus_handle: FocusHandle,
     company_list: View<Picker<CompanyListDelegate>>,
     selected_company: Option<Company>,
-}
-
-fn random_company() -> Company {
-    let last_done = (0.0..999.0).fake::<f64>();
-    let prev_close = last_done * (-0.1..0.1).fake::<f64>();
-    Company {
-        name: fake::faker::company::en::CompanyName().fake(),
-        industry: fake::faker::company::en::Industry().fake(),
-        description: fake::faker::lorem::en::Paragraph(3..5).fake(),
-        last_done,
-        prev_close,
-    }
 }
 
 impl ListStory {
@@ -235,6 +224,7 @@ impl ListStory {
         .detach();
 
         Self {
+            focus_handle: cx.focus_handle(),
             company_list,
             selected_company: None,
         }
@@ -248,48 +238,68 @@ impl ListStory {
     }
 }
 
+fn random_company() -> Company {
+    let last_done = (0.0..999.0).fake::<f64>();
+    let prev_close = last_done * (-0.1..0.1).fake::<f64>();
+    Company {
+        name: fake::faker::company::en::CompanyName().fake(),
+        industry: fake::faker::company::en::Industry().fake(),
+        description: fake::faker::lorem::en::Paragraph(3..5).fake(),
+        last_done,
+        prev_close,
+    }
+}
+
+impl FocusableView for ListStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+
 impl Render for ListStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         h_flex()
-            .size_full()
+            .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::selected_company))
+            .size_full()
             .gap_4()
             .mb_4()
             .child(
                 v_flex()
                     .h_full()
+                    .w_full()
                     .border_1()
                     .border_color(cx.theme().border)
                     .rounded_md()
-                    .w(px(400.))
                     .occlude()
                     .child(self.company_list.clone()),
             )
-            .child(
-                div()
-                    .flex_1()
-                    .size_full()
-                    .border_1()
-                    .border_color(cx.theme().border)
-                    .py_1()
-                    .px_4()
-                    .rounded_md()
-                    .when_some(self.selected_company.clone(), |this, company| {
-                        this.child(
-                            div()
-                                .flex_1()
-                                .gap_2()
-                                .child(
-                                    h_flex()
-                                        .items_start()
-                                        .justify_between()
-                                        .child(div().text_3xl().mb_6().child(company.name.clone()))
-                                        .child(format!("{:.2}", company.last_done)),
-                                )
-                                .child(company.industry.clone())
-                                .child(company.description.clone()),
-                        )
-                    }),
-            )
+        // .child(
+        //     div()
+        //         .invisible()
+        //         .flex_1()
+        //         .size_full()
+        //         .border_1()
+        //         .border_color(cx.theme().border)
+        //         .py_1()
+        //         .px_4()
+        //         .rounded_md()
+        //         .when_some(self.selected_company.clone(), |this, company| {
+        //             this.child(
+        //                 div()
+        //                     .flex_1()
+        //                     .gap_2()
+        //                     .child(
+        //                         h_flex()
+        //                             .items_start()
+        //                             .justify_between()
+        //                             .child(div().text_3xl().mb_6().child(company.name.clone()))
+        //                             .child(format!("{:.2}", company.last_done)),
+        //                     )
+        //                     .child(company.industry.clone())
+        //                     .child(company.description.clone()),
+        //             )
+        //         }),
+        // )
     }
 }

@@ -20,7 +20,7 @@ pub struct Tab {
 impl Tab {
     pub fn new(id: impl Into<ElementId>, label: impl Into<AnyElement>) -> Self {
         Self {
-            base: div().id(id.into()),
+            base: div().id(id.into()).gap_1().py_1().px_3(),
             label: label.into(),
             disabled: false,
             selected: false,
@@ -57,6 +57,12 @@ impl InteractiveElement for Tab {
 
 impl StatefulInteractiveElement for Tab {}
 
+impl Styled for Tab {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for Tab {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let (text_color, bg_color) = match (self.selected, self.disabled) {
@@ -68,14 +74,10 @@ impl RenderOnce for Tab {
         self.base
             .flex()
             .items_center()
-            .gap_2()
             .h_full()
             .flex_shrink_0()
             .overflow_scroll()
             .cursor_pointer()
-            .py_1()
-            .px_3()
-            .min_w_16()
             .text_color(text_color)
             .bg(bg_color)
             .when(self.selected, |this| this.rounded(px(6.)))

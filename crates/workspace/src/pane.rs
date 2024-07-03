@@ -183,6 +183,13 @@ impl Pane {
         cx.notify();
     }
 
+    pub fn set_should_display_tab_bar<F>(&mut self, f: F)
+    where
+        F: 'static + Fn(&ViewContext<Pane>) -> bool,
+    {
+        self.should_display_tab_bar = Rc::new(f);
+    }
+
     pub fn set_custom_drop_handle<F>(&mut self, cx: &mut ViewContext<Self>, handle: F)
     where
         F: 'static + Fn(&mut Pane, &dyn Any, &mut ViewContext<Pane>) -> ControlFlow<(), ()>,
@@ -651,24 +658,30 @@ impl Pane {
             },
             cx,
         );
-        // let indicator = render_item_indicator(item.boxed_clone(), cx);
+
         let item_id = item.item_id();
         let _is_first_item = ix == 0;
         let _is_last_item = ix == self.items.len() - 1;
         let _position_relative_to_active_item = ix.cmp(&self.active_item_index);
 
         Tab::new(ix, label)
+            .group("tab")
+            .px(px(5.))
+            .prefix(div().size_2().into_any_element())
+            .gap_0p5()
             .suffix(
                 div()
                     .id("close-tab")
-                    .p(px(1.5))
-                    .rounded_md()
-                    .child(Icon::new(IconName::Close).size_3())
+                    .p(px(0.5))
+                    .rounded_lg()
+                    .invisible()
+                    .child(Icon::new(IconName::Close).size_2())
                     .hover(|this| this.bg(cx.theme().accent.darken(0.1)))
                     .active(|this| this.bg(cx.theme().accent.darken(0.2)))
                     .on_click(cx.listener(move |pane, _, cx| {
                         pane.close_item_by_id(item_id, cx).detach_and_log_err(cx);
                     }))
+                    .group_hover("tab", |this| this.visible())
                     .into_any(),
             )
             .selected(is_active)
@@ -685,7 +698,11 @@ impl Pane {
                 },
                 |tab, cx| cx.new_view(|_| tab.clone()),
             )
-            .drag_over::<DraggedTab>(|tab, _, cx| tab.bg(cx.theme().drop_target))
+            .drag_over::<DraggedTab>(|tab, _, cx| {
+                tab.border_l_3()
+                    .rounded_l_none()
+                    .border_color(cx.theme().drop_target)
+            })
             .drag_over::<DraggedSelection>(|tab, _, cx| tab.bg(cx.theme().drop_target))
             .when_some(self.can_drop_predicate.clone(), |this, p| {
                 this.can_drop(move |a, cx| p(a, cx))
@@ -722,6 +739,7 @@ impl Pane {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
+            .gap(px(2.))
             .when(self.has_focus(cx), |tab_bar| {
                 tab_bar.child({
                     let render_tab_buttons = self.render_tab_bar_buttons.clone();
@@ -739,8 +757,6 @@ impl Pane {
                 div()
                     .id("tab-bar-drop-target")
                     .min_w_6()
-                    // HACK: This empty child is currently necessary to force the drop target to appear
-                    // despite us setting a min width above.
                     .child("")
                     .h_full()
                     .flex_grow()

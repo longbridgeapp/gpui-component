@@ -4,7 +4,7 @@ use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
     PopoverStory, StoryContainer, SwitchStory, TooltipStory,
 };
-use workspace::{TitleBar, Workspace};
+use workspace::{dock::DockPosition, TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
@@ -40,7 +40,7 @@ impl StoryWorkspace {
         })
         .detach();
 
-        StoryContainer::open(
+        StoryContainer::add_pane(
             "Buttons",
             "Displays a button or a component that looks like a button.",
             ButtonStory::view(cx).into(),
@@ -49,25 +49,23 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::open(
-            "Inputs",
-            "Displays a text input field.",
+        StoryContainer::add_panel(
             InputStory::view(cx).into(),
             workspace.clone(),
+            DockPosition::Right,
+            px(500.0),
             cx,
-        )
-        .detach();
+        );
 
-        StoryContainer::open(
-            "Checkbox",
-            "A control that allows the user to toggle between checked and not checked.",
+        StoryContainer::add_panel(
             CheckboxStory::view(cx).into(),
             workspace.clone(),
+            DockPosition::Bottom,
+            px(300.),
             cx,
-        )
-        .detach();
+        );
 
-        StoryContainer::open(
+        StoryContainer::add_pane(
             "Switch",
             "A control that allows the user to toggle between two states.",
             SwitchStory::view(cx).into(),
@@ -76,7 +74,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::open(
+        StoryContainer::add_pane(
             "Dropdowns",
             "Displays a list of options for the user to pick from—triggered by a button.",
             DropdownStory::new(cx).into(),
@@ -85,7 +83,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::open(
+        StoryContainer::add_pane(
             "Picker",
             "Picker is a component that allows the user to select an item from a list of options.",
             PickerStory::view(cx).into(),
@@ -94,7 +92,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::open(
+        StoryContainer::add_pane(
             "Popover",
             "Displays rich content in a portal, triggered by a button.",
             PopoverStory::view(cx).into(),
@@ -103,24 +101,24 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::open(
+        StoryContainer::add_pane(
             "Tooltip",
-            "A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.",
+            "Displays a short message when users hover over an element.",
             TooltipStory::view(cx).into(),
-            workspace.clone(),
-            cx,
-        ).detach();
-
-        StoryContainer::open(
-            "List",
-            "A complex list example, includes use Picker, Scrollbar, and more.",
-            ListStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
         .detach();
 
-        StoryContainer::open(
+        StoryContainer::add_panel(
+            ListStory::view(cx).into(),
+            workspace.clone(),
+            DockPosition::Left,
+            px(360.),
+            cx,
+        );
+
+        StoryContainer::add_pane(
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
@@ -136,7 +134,7 @@ impl StoryWorkspace {
         app_state: Arc<AppState>,
         cx: &mut AppContext,
     ) -> Task<anyhow::Result<WindowHandle<Self>>> {
-        let window_bounds = Bounds::centered(None, size(px(1200.0), px(900.0)), cx);
+        let window_bounds = Bounds::centered(None, size(px(1600.0), px(1200.0)), cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {

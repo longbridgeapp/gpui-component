@@ -1,11 +1,11 @@
 use crate::stock::h_flex;
 use crate::theme::ActiveTheme;
 use gpui::prelude::FluentBuilder as _;
+use gpui::InteractiveElement;
 use gpui::{
     div, AnyElement, Div, IntoElement, ParentElement, RenderOnce, ScrollHandle, SharedString,
-    StatefulInteractiveElement as _, WindowContext,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
-use gpui::{InteractiveElement, Styled as _};
 use smallvec::SmallVec;
 
 #[derive(IntoElement)]
@@ -19,7 +19,7 @@ pub struct TabBar {
 impl TabBar {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
-            base: div(),
+            base: div().h_10().p_1(),
             id: id.into(),
             children: SmallVec::new(),
             scroll_handle: None,
@@ -39,6 +39,12 @@ impl ParentElement for TabBar {
     }
 }
 
+impl Styled for TabBar {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for TabBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let theme = cx.theme();
@@ -50,8 +56,6 @@ impl RenderOnce for TabBar {
             .flex_none()
             .items_center()
             .w_full()
-            .h_10()
-            .p_1()
             .bg(theme.muted)
             .text_color(theme.muted_foreground)
             .relative()

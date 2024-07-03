@@ -170,7 +170,7 @@ impl Colors {
             ring: hsl(240.0, 5.9, 10.0),
             selection: hsl(211.0, 97.0, 85.0),
             scrollbar: Hsla::transparent_black(),
-            scrollbar_thumb: hsl(240.0, 5.9, 90.0),
+            scrollbar_thumb: hsl(240.0, 5.9, 90.0).opacity(0.7),
             panel: hsl(0.0, 0.0, 100.0),
             drop_target: hsl(240.0, 65., 44.0).opacity(0.15),
         }
@@ -229,9 +229,9 @@ impl Colors {
             ring: hsl(240.0, 4.9, 83.9),
             selection: hsl(211.0, 97.0, 85.0),
             scrollbar: Hsla::transparent_black(),
-            scrollbar_thumb: hsl(240.0, 3.7, 15.9),
+            scrollbar_thumb: hsl(240.0, 3.7, 15.9).opacity(0.7),
             panel: hsl(299.0, 2., 9.),
-            drop_target: hsl(240.0, 65., 29.0).opacity(0.3),
+            drop_target: hsl(240.0, 89., 67.0).opacity(0.8),
         }
     }
 }

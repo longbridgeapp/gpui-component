@@ -21,9 +21,10 @@ pub use switch_story::SwitchStory;
 pub use tooltip_story::TooltipStory;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, IntoElement, ParentElement, Render, SharedString, Styled as _, Task, View,
-    ViewContext, VisualContext, WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, Element,
+    EventEmitter, FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
+    ScrollHandle, SharedString, StatefulInteractiveElement, Styled as _, Task, View, ViewContext,
+    VisualContext, WindowContext,
 };
 use workspace::{
     dock::{DockPosition, Panel, PanelEvent},
@@ -32,7 +33,7 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex};
+use ui::{divider::Divider, h_flex, label::Label, v_flex, StyledExt};
 
 pub fn story_case(
     name: &'static str,
@@ -61,6 +62,7 @@ pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
 
 pub struct StoryContainer {
     focus_handle: gpui::FocusHandle,
+    scroll_handle: gpui::ScrollHandle,
     name: SharedString,
     description: SharedString,
     position: DockPosition,
@@ -73,48 +75,6 @@ pub struct StoryContainer {
 impl FocusableView for StoryContainer {
     fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
         self.focus_handle.clone()
-    }
-}
-
-impl EventEmitter<PanelEvent> for StoryContainer {}
-
-impl Panel for StoryContainer {
-    fn persistent_name() -> &'static str {
-        "story-container"
-    }
-
-    fn position(&self, _: &WindowContext) -> workspace::dock::DockPosition {
-        self.position
-    }
-
-    fn can_position(&self, _: workspace::dock::DockPosition, _: &WindowContext) -> bool {
-        true
-    }
-
-    fn set_position(&mut self, position: workspace::dock::DockPosition, _: &mut WindowContext) {
-        self.position = position;
-    }
-
-    fn size(&self, _: &WindowContext) -> gpui::Pixels {
-        match self.position {
-            DockPosition::Left | DockPosition::Right => self.width.unwrap_or(px(360.)),
-            DockPosition::Bottom => self.height.unwrap_or(px(360.)),
-        }
-    }
-
-    fn set_size(&mut self, size: Option<gpui::Pixels>, _: &mut WindowContext) {
-        match self.position {
-            DockPosition::Left | DockPosition::Right => self.width = size,
-            DockPosition::Bottom => self.height = size,
-        }
-    }
-
-    fn set_active(&mut self, active: bool, _: &mut WindowContext) {
-        self.active = active;
-    }
-
-    fn starts_open(&self, _cx: &WindowContext) -> bool {
-        true
     }
 }
 
@@ -172,6 +132,7 @@ impl StoryContainer {
 
         Self {
             focus_handle,
+            scroll_handle: ScrollHandle::new(),
             name: name.into(),
             description: description.into(),
             width: None,
@@ -182,7 +143,7 @@ impl StoryContainer {
         }
     }
 
-    pub fn open(
+    pub fn add_pane(
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
         story: AnyView,
@@ -201,6 +162,19 @@ impl StoryContainer {
                 view
             })
         })
+    }
+
+    pub fn add_panel(
+        story: AnyView,
+        workspace: View<Workspace>,
+        position: DockPosition,
+        size: gpui::Pixels,
+        cx: &mut WindowContext,
+    ) {
+        workspace.update(cx, |workspace, cx| {
+            let panel = cx.new_view(|cx| MyPanel::new(story, position, size, cx));
+            workspace.add_panel(panel, cx)
+        });
     }
 
     pub fn width(mut self, width: gpui::Pixels) -> Self {
@@ -226,21 +200,112 @@ impl StoryContainer {
 
 impl Render for StoryContainer {
     fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
-        v_flex()
+        div()
+            .id("story-container")
+            .overflow_y_scroll()
+            .track_scroll(&self.scroll_handle)
             .size_full()
-            .gap_6()
-            .p_2()
             .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_4()
-                    .child(Label::new(self.name.clone()).text_size(px(24.0)))
-                    .child(Label::new(self.description.clone()).text_size(px(16.0))),
+                v_flex()
+                    .size_full()
+                    .gap_6()
+                    .p_4()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap_4()
+                            .child(Label::new(self.name.clone()).text_size(px(24.0)))
+                            .child(Label::new(self.description.clone()).text_size(px(16.0))),
+                    )
+                    .child(Divider::horizontal())
+                    .when_some(self.story.clone(), |this, story| {
+                        this.child(v_flex().size_full().child(story))
+                    }),
             )
-            .child(Divider::horizontal())
-            .when_some(self.story.clone(), |this, story| {
-                this.child(v_flex().size_full().child(story))
-            })
+    }
+}
+
+struct MyPanel {
+    focus_handle: gpui::FocusHandle,
+    view: AnyView,
+    _position: DockPosition,
+    width: Option<Pixels>,
+    height: Option<Pixels>,
+}
+
+impl MyPanel {
+    fn new(view: AnyView, position: DockPosition, size: Pixels, cx: &mut WindowContext) -> Self {
+        let mut this = Self {
+            focus_handle: cx.focus_handle(),
+            view,
+            _position: position,
+            width: None,
+            height: None,
+        };
+        this.update_size(size);
+        this
+    }
+
+    fn update_size(&mut self, size: Pixels) {
+        match self._position {
+            DockPosition::Bottom => self.height = Some(size),
+            DockPosition::Left | DockPosition::Right => self.width = Some(size),
+        }
+    }
+}
+
+impl Panel for MyPanel {
+    fn persistent_name() -> &'static str {
+        "my-panel"
+    }
+
+    fn can_position(&self, position: DockPosition) -> bool {
+        match self._position {
+            DockPosition::Bottom => matches!(position, DockPosition::Bottom),
+            DockPosition::Left | DockPosition::Right => {
+                matches!(position, DockPosition::Left | DockPosition::Right)
+            }
+        }
+    }
+
+    fn position(&self, _cx: &WindowContext) -> DockPosition {
+        self._position
+    }
+
+    fn set_position(&mut self, position: DockPosition, cx: &mut ViewContext<Self>) {
+        self._position = position;
+        cx.notify()
+    }
+
+    fn size(&self, _cx: &WindowContext) -> gpui::Pixels {
+        match self._position {
+            DockPosition::Bottom => self.height.unwrap_or(px(100.)),
+            DockPosition::Left | DockPosition::Right => self.width.unwrap_or(px(100.)),
+        }
+    }
+
+    fn set_size(&mut self, size: Option<gpui::Pixels>, cx: &mut ViewContext<Self>) {
+        dbg!("================ set_size", size);
+        if let Some(size) = size {
+            self.update_size(size)
+        }
+        cx.notify();
+    }
+}
+
+impl EventEmitter<PanelEvent> for MyPanel {}
+impl FocusableView for MyPanel {
+    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+impl Render for MyPanel {
+    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+            .id("my-panel")
+            .track_focus(&self.focus_handle)
+            .size_full()
+            .child(self.view.clone())
     }
 }

@@ -27,7 +27,7 @@ impl TooltipStory {
 impl Render for TooltipStory {
     fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()
-            .w(px(360.))
+            .p_4()
             .gap_5()
             .child(
                 div()

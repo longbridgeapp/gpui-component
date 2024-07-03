@@ -83,6 +83,7 @@ impl Render for InputStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .size_full()
+            .p_4()
             .justify_start()
             .gap_3()
             .child(

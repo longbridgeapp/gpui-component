@@ -33,6 +33,7 @@ impl CheckboxStory {
 impl Render for CheckboxStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
+            .p_4()
             .gap_6()
             .child(
                 v_flex().items_start().justify_start().gap_6().child(

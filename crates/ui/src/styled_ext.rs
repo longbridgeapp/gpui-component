@@ -1,4 +1,4 @@
-use crate::theme::ActiveTheme;
+use crate::theme::{hsl, ActiveTheme};
 use gpui::{hsla, point, px, BoxShadow, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
@@ -75,6 +75,26 @@ pub trait StyledExt: Styled + Sized {
     // Above all other UI elements and are located above the wash layer
     fn elevation_3(self, cx: &WindowContext) -> Self {
         elevated(self, cx, ElevationIndex::ModalSurface)
+    }
+
+    /// Render a border with a width of 1px, color blue
+    fn debug_blue(self) -> Self {
+        self.border_1().border_color(gpui::blue())
+    }
+
+    /// Render a border with a width of 1px, color yellow
+    fn debug_yellow(self) -> Self {
+        self.border_1().border_color(gpui::yellow())
+    }
+
+    /// Render a border with a width of 1px, color green
+    fn debug_green(self) -> Self {
+        self.border_1().border_color(gpui::green())
+    }
+
+    /// Render a border with a width of 1px, color pink
+    fn debug_pink(self) -> Self {
+        self.border_1().border_color(hsl(300., 100., 47.))
     }
 }
 

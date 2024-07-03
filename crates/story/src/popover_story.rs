@@ -66,6 +66,7 @@ impl Render for PopoverStory {
         let form = self.form.clone();
 
         v_flex()
+            .p_4()
             .size_full()
             .gap_6()
             .child(
