@@ -1,0 +1,66 @@
+{
+  "border_radius": 2,
+  "width": 400,
+  "height": 300,
+  "inner_radus": 30,
+  "legend_margin": {
+    "top": 0
+  },
+  "legend_show": true,
+  "radius": 110,
+  "rose_type": true,
+  "series_list": [
+    {
+      "name": "rose 1",
+      "data": [
+        40
+      ]
+    },
+    {
+      "name": "rose 2",
+      "data": [
+        38
+      ]
+    },
+    {
+      "name": "rose 3",
+      "data": [
+        32
+      ]
+    },
+    {
+      "name": "rose 4",
+      "data": [
+        30
+      ]
+    },
+    {
+      "name": "rose 5",
+      "data": [
+        28
+      ]
+    },
+    {
+      "name": "rose 6",
+      "data": [
+        26
+      ]
+    },
+    {
+      "name": "rose 7",
+      "data": [
+        22
+      ]
+    },
+    {
+      "name": "rose 8",
+      "data": [
+        18
+      ]
+    }
+  ],
+  "sub_title_text": "Sub Title",
+  "theme": "light",
+  "title_text": "Nightingale Chart",
+  "type": "pie"
+}

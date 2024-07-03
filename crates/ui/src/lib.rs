@@ -1,3 +1,4 @@
+mod charts;
 mod clickable;
 mod disableable;
 mod event;
@@ -6,6 +7,7 @@ mod scrollbar;
 mod selectable;
 mod stock;
 mod styled_ext;
+mod svg_img;
 
 pub mod button;
 pub mod checkbox;
@@ -29,8 +31,10 @@ pub use disableable::Disableable;
 pub use event::InterativeElementExt;
 pub use selectable::{Selectable, Selection};
 
+pub use charts::*;
 pub use icon::*;
 pub use stock::*;
+pub use svg_img::*;
 
 /// Initialize the UI module.
 pub fn init(cx: &mut gpui::AppContext) {
