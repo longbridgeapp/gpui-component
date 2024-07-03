@@ -41,14 +41,14 @@ impl Company {
 struct CompanyListItem {
     base: ListItem,
     ix: usize,
-    copmpany: Company,
+    company: Company,
     selected: bool,
 }
 
 impl CompanyListItem {
-    pub fn new(id: impl Into<ElementId>, copmpany: Company, ix: usize, selected: bool) -> Self {
+    pub fn new(id: impl Into<ElementId>, company: Company, ix: usize, selected: bool) -> Self {
         CompanyListItem {
-            copmpany,
+            company,
             ix,
             base: ListItem::new(id),
             selected,
@@ -64,7 +64,7 @@ impl RenderOnce for CompanyListItem {
             cx.theme().foreground
         };
 
-        let trend_color = match self.copmpany.change_percent() {
+        let trend_color = match self.company.change_percent() {
             change if change > 0.0 => hsl(0.0, 79.0, 53.0),
             change if change < 0.0 => hsl(100.0, 79.0, 53.0),
             _ => cx.theme().foreground,
@@ -97,10 +97,10 @@ impl RenderOnce for CompanyListItem {
                             .max_w(px(500.))
                             .overflow_x_hidden()
                             .flex_nowrap()
-                            .child(Label::new(self.copmpany.name.clone()).whitespace_nowrap())
+                            .child(Label::new(self.company.name.clone()).whitespace_nowrap())
                             .child(
                                 div().text_sm().overflow_x_hidden().child(
-                                    Label::new(self.copmpany.industry.clone())
+                                    Label::new(self.company.industry.clone())
                                         .whitespace_nowrap()
                                         .text_color(text_color.opacity(0.5)),
                                 ),
@@ -115,7 +115,7 @@ impl RenderOnce for CompanyListItem {
                                 div()
                                     .w(px(65.))
                                     .text_color(text_color)
-                                    .child(format!("{:.2}", self.copmpany.last_done)),
+                                    .child(format!("{:.2}", self.company.last_done)),
                             )
                             .child(
                                 h_flex().w(px(65.)).justify_end().child(
@@ -125,7 +125,7 @@ impl RenderOnce for CompanyListItem {
                                         .text_size(px(12.))
                                         .px_1()
                                         .text_color(trend_color)
-                                        .child(format!("{:.2}%", self.copmpany.change_percent())),
+                                        .child(format!("{:.2}%", self.company.change_percent())),
                                 ),
                             ),
                     ),
