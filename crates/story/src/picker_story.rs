@@ -1,5 +1,5 @@
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
+    deferred, div, hsla, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
     ParentElement, Render, Styled, Task, View, ViewContext, VisualContext as _, WeakView,
     WindowContext,
 };
@@ -9,10 +9,9 @@ use ui::{
     h_flex,
     list::ListItem,
     picker::{Picker, PickerDelegate},
-    v_flex, Clickable as _, IconName,
+    theme::hsl,
+    v_flex, Clickable as _, IconName, StyledExt,
 };
-
-actions!(picker_story, [DismissPicker]);
 
 pub struct ListItemDeletegate {
     story: WeakView<PickerStory>,
@@ -200,7 +199,6 @@ impl Render for PickerStory {
                     Button::new("show-picker", cx)
                         .label("Show Picker...")
                         .icon(IconName::Search)
-                        .style(ButtonStyle::Primary)
                         .on_click(cx.listener(|this, _, cx| {
                             this.open = !this.open;
                             this.picker.focus_handle(cx).focus(cx);
@@ -213,21 +211,24 @@ impl Render for PickerStory {
                     h_flex()
                         .gap_1()
                         .child("You have selected:")
-                        .child(selected_value),
+                        .child(div().child(selected_value).text_color(gpui::red())),
                 )
             })
             .when(self.open, |this| {
-                this.child(
+                this.child(deferred(
                     div().absolute().size_full().top_0().left_0().child(
-                        v_flex().top_10().flex().flex_col().items_center().child(
+                        v_flex().flex().flex_col().items_center().child(
                             div()
                                 .w(px(450.))
                                 .h(px(350.))
-                                .occlude()
-                                .child(self.picker.clone()),
+                                .child(self.picker.clone())
+                                .on_mouse_down_out(cx.listener(|this, _, cx| {
+                                    this.open = false;
+                                    cx.notify();
+                                })),
                         ),
                     ),
-                )
+                ))
             })
     }
 }

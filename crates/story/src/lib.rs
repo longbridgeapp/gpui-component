@@ -203,7 +203,7 @@ impl StoryContainer {
 }
 
 impl Render for StoryContainer {
-    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .id("story-container")
             .overflow_y_scroll()

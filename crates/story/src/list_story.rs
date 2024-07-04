@@ -186,7 +186,7 @@ impl ListStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
-        let companies = (0..10_000)
+        let companies = (0..1_000)
             .map(|_| random_company())
             .collect::<Vec<Company>>();
 
@@ -268,10 +268,8 @@ impl Render for ListStory {
                 v_flex()
                     .h_full()
                     .w_full()
-                    .border_1()
+                    .border_r_1()
                     .border_color(cx.theme().border)
-                    .rounded_md()
-                    .occlude()
                     .child(self.company_list.clone()),
             )
         // .child(

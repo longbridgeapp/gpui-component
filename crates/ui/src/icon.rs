@@ -4,7 +4,7 @@ use gpui::{
     SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
 };
 
-#[derive(IntoElement)]
+#[derive(IntoElement, Clone)]
 pub enum IconName {
     Check,
     Minus,
@@ -77,14 +77,26 @@ pub struct Icon {
     size: ButtonSize,
 }
 
-impl Icon {
-    pub fn new(name: IconName) -> Self {
+impl Default for Icon {
+    fn default() -> Self {
         Self {
             base: svg().flex_none().size_4(),
-            path: name.path(),
+            path: "".into(),
             text_color: None,
             size: ButtonSize::Medium,
         }
+    }
+}
+
+impl Clone for Icon {
+    fn clone(&self) -> Self {
+        Self::default().path(self.path.clone()).size(self.size)
+    }
+}
+
+impl Icon {
+    pub fn new(name: IconName) -> Self {
+        Self::default().path(name.path())
     }
 
     /// Set the icon path of the Assets bundle

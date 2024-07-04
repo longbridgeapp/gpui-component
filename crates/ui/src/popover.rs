@@ -2,14 +2,12 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
 use gpui::{
-    actions, anchored, deferred, div, prelude::FluentBuilder, AnchorCorner, AnyElement, AppContext,
-    Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
-    FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId, ManagedView,
-    MouseButton, MouseDownEvent, ParentElement as _, Pixels, Point, Render, Style, Styled as _,
-    View, ViewContext, VisualContext, WindowContext,
+    anchored, deferred, div, prelude::FluentBuilder, AnchorCorner, AnyElement, AppContext, Bounds,
+    DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle, FocusableView,
+    GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId, ManagedView, MouseButton,
+    MouseDownEvent, ParentElement as _, Pixels, Point, Render, Style, Styled as _, View,
+    ViewContext, VisualContext, WindowContext,
 };
-
-actions!(popover, [Open, Dismiss]);
 
 pub fn init(_cx: &AppContext) {}
 
@@ -43,7 +41,7 @@ impl FocusableView for PopoverContent {
 
 impl Render for PopoverContent {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().child(self.content.clone()(cx))
+        div().p_4().max_w_128().child(self.content.clone()(cx))
     }
 }
 
@@ -209,17 +207,14 @@ impl<M: ManagedView> Element for Popover<M> {
                     anchored.child(
                         div()
                             .occlude()
-                            .map(|d| match this.anchor {
-                                AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_2(),
-                                AnchorCorner::BottomLeft | AnchorCorner::BottomRight => d.mb_2(),
-                            })
                             .elevation_2(cx)
                             .bg(cx.theme().popover)
                             .border_1()
                             .border_color(cx.theme().border)
-                            .p_4()
-                            .max_w_128()
-                            .occlude()
+                            .map(|d| match this.anchor {
+                                AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_2(),
+                                AnchorCorner::BottomLeft | AnchorCorner::BottomRight => d.mb_2(),
+                            })
                             .on_mouse_down_out(move |_, cx| {
                                 // Update the element_state.content_view to `None`,
                                 // so that the `paint`` method will not paint it.

@@ -4,7 +4,7 @@ use gpui::{
     WindowContext,
 };
 
-use ui::{button::Button, h_flex, input::TextInput, v_flex, FocusableCycle, IconName};
+use ui::{button::Button, h_flex, input::TextInput, v_flex, Clickable, FocusableCycle, IconName};
 
 use crate::section;
 
@@ -18,7 +18,6 @@ pub fn init(cx: &mut AppContext) {
 }
 
 pub struct InputStory {
-    focus_handle: FocusHandle,
     input1: View<TextInput>,
     input2: View<TextInput>,
     mash_input: View<TextInput>,
@@ -65,7 +64,6 @@ impl InputStory {
         });
 
         Self {
-            focus_handle: cx.focus_handle(),
             input1,
             input2: cx.new_view(|cx| {
                 let mut input = TextInput::new(cx);
@@ -116,17 +114,10 @@ impl FocusableCycle for InputStory {
     }
 }
 
-impl FocusableView for InputStory {
-    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
-        self.focus_handle.clone()
-    }
-}
-
 impl Render for InputStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .key_context("InputStory")
-            .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::tab))
             .on_action(cx.listener(Self::tab_prev))
             .size_full()
@@ -158,7 +149,8 @@ impl Render for InputStory {
                         Button::new("btn-submit", cx)
                             .w_full()
                             .style(ui::button::ButtonStyle::Primary)
-                            .label("Submit"),
+                            .label("Submit")
+                            .on_click(cx.listener(|_, _, cx| cx.dispatch_action(Box::new(Tab)))),
                     )
                     .child(
                         Button::new("btn-cancel", cx)
