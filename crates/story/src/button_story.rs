@@ -50,6 +50,18 @@ impl Render for ButtonStory {
                                     .label("Danger Button")
                                     .style(ButtonStyle::Danger)
                                     .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-5", cx)
+                                    .label("Outline Button")
+                                    .style(ButtonStyle::Outline)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-6", cx)
+                                    .label("Ghost Button")
+                                    .style(ButtonStyle::Ghost)
+                                    .on_click(Self::on_click),
                             ),
                     )
                     .child(
@@ -197,6 +209,19 @@ impl Render for ButtonStory {
                             .size(ButtonSize::Small)
                             .style(ButtonStyle::Primary),
                     )
+                    .child(
+                        Button::new("icon-button-0-outline", cx)
+                            .icon(IconName::Search)
+                            .style(ButtonStyle::Outline),
+                    )
+                    .child(
+                        Button::new("icon-button-1", cx)
+                            .icon(IconName::Info)
+                            .style(ButtonStyle::Ghost),
+                    ),
+            )
+            .child(
+                section("Icon Button", cx)
                     .child(
                         Button::new("icon-button-4", cx)
                             .icon(IconName::Info)

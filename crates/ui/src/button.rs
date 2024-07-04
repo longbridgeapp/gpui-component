@@ -29,6 +29,8 @@ pub enum ButtonStyle {
     Primary,
     Secondary,
     Danger,
+    Outline,
+    Ghost,
 }
 
 #[derive(IntoElement)]
@@ -282,6 +284,8 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary,
             ButtonStyle::Secondary => cx.theme().secondary,
             ButtonStyle::Danger => cx.theme().destructive,
+            ButtonStyle::Outline => cx.theme().transparent,
+            ButtonStyle::Ghost => cx.theme().transparent,
         }
     }
 
@@ -290,6 +294,8 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary_foreground,
             ButtonStyle::Secondary => cx.theme().secondary_foreground,
             ButtonStyle::Danger => cx.theme().destructive_foreground,
+            ButtonStyle::Outline => cx.theme().secondary_foreground,
+            ButtonStyle::Ghost => cx.theme().secondary_foreground,
         }
     }
 
@@ -298,6 +304,8 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary,
             ButtonStyle::Secondary => cx.theme().border,
             ButtonStyle::Danger => cx.theme().destructive,
+            ButtonStyle::Outline => cx.theme().border,
+            ButtonStyle::Ghost => cx.theme().transparent,
         }
     }
 
@@ -314,6 +322,8 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary_hover,
             ButtonStyle::Secondary => cx.theme().secondary_hover,
             ButtonStyle::Danger => cx.theme().destructive_hover,
+            ButtonStyle::Outline => cx.theme().secondary_hover,
+            ButtonStyle::Ghost => cx.theme().secondary_hover,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
@@ -326,6 +336,8 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary_active,
             ButtonStyle::Secondary => cx.theme().secondary_active,
             ButtonStyle::Danger => cx.theme().destructive_active,
+            ButtonStyle::Outline => cx.theme().secondary_active,
+            ButtonStyle::Ghost => cx.theme().secondary_active,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
@@ -338,6 +350,8 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary_active,
             ButtonStyle::Secondary => cx.theme().secondary_active,
             ButtonStyle::Danger => cx.theme().destructive_active,
+            ButtonStyle::Outline => cx.theme().secondary_active,
+            ButtonStyle::Ghost => cx.theme().secondary_active,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
