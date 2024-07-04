@@ -1,6 +1,6 @@
 use gpui::{
     div, prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
-    MouseButton, MouseDownEvent, ParentElement, RenderOnce, Stateful,
+    MouseButton, MouseDownEvent, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
@@ -12,6 +12,7 @@ pub struct ListItem {
     disabled: bool,
     selected: bool,
     check_icon: Option<Icon>,
+    border_radius: Option<Pixels>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
 }
@@ -25,6 +26,7 @@ impl ListItem {
             on_click: None,
             on_secondary_mouse_down: None,
             check_icon: None,
+            border_radius: None,
         }
     }
 
@@ -40,6 +42,11 @@ impl ListItem {
 
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+
+    pub fn rounded(mut self, r: impl Into<Pixels>) -> Self {
+        self.border_radius = Some(r.into());
         self
     }
 
@@ -93,16 +100,25 @@ impl RenderOnce for ListItem {
             .justify_between()
             .text_base()
             .text_color(cx.theme().foreground)
+            .when_some(self.border_radius, |this, r| this.rounded(r))
             .when_some(self.on_click, |this, on_click| {
-                this.cursor_pointer().on_click(on_click)
+                if !self.disabled {
+                    this.cursor_pointer().on_click(on_click)
+                } else {
+                    this
+                }
             })
             .when(self.selected, |this| this.bg(cx.theme().accent))
-            .when(!self.selected, |this| {
+            .when(!self.selected && !self.disabled, |this| {
                 this.hover(|this| this.bg(cx.theme().accent))
             })
             // Right click
             .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {
-                this.on_mouse_down(MouseButton::Right, move |ev, cx| (on_mouse_down)(ev, cx))
+                if !self.disabled {
+                    this.on_mouse_down(MouseButton::Right, move |ev, cx| (on_mouse_down)(ev, cx))
+                } else {
+                    this
+                }
             })
             .child(self.base.w_full())
             .when(self.selected, |this| {

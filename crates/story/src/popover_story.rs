@@ -1,7 +1,7 @@
 use gpui::{
-    div, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter, FocusHandle,
-    FocusableView, IntoElement, MouseButton, ParentElement as _, Render, Styled as _, View,
-    ViewContext, VisualContext, WindowContext,
+    actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
+    FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, ParentElement as _,
+    Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::{
     button::{Button, ButtonSize},
@@ -9,8 +9,20 @@ use ui::{
     h_flex,
     input::TextInput,
     popover::{Popover, PopoverContent},
-    v_flex, Clickable,
+    popup_menu::PopupMenu,
+    v_flex, Clickable, IconName,
 };
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+enum MenuItemAction {
+    Copy,
+    Cut,
+    Paste,
+    SelectAll,
+}
+
+actions!(popover_story, [MenuCopy]);
+impl_actions!(popover_story, [MenuItemAction]);
 
 struct Form {
     input1: View<TextInput>,
@@ -36,6 +48,7 @@ impl Render for Form {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .gap_4()
+            .p_4()
             .size_full()
             .child("This is a form container.")
             .child(self.input1.clone())
@@ -59,6 +72,10 @@ impl PopoverStory {
         let form = Form::new(cx);
         Self { form }
     }
+
+    fn on_menu_action(&mut self, action: &MenuCopy, cx: &mut ViewContext<Self>) {
+        println!("You have clicked: {:?}", action);
+    }
 }
 
 impl Render for PopoverStory {
@@ -66,8 +83,15 @@ impl Render for PopoverStory {
         let form = self.form.clone();
 
         v_flex()
+            .id("popover-story")
+            .on_action(cx.listener(Self::on_menu_action))
             .p_4()
             .size_full()
+            .child(
+                Button::new("test1", cx)
+                    .label("Hello")
+                    .on_click(|_, cx| cx.dispatch_action(Box::new(MenuCopy))),
+            )
             .gap_6()
             .child(
                 h_flex()
@@ -114,6 +138,25 @@ impl Render for PopoverStory {
                                 })
                             }),
                     ),
+            )
+            .child(
+                h_flex().child(
+                    Popover::new("popup-menu")
+                        .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
+                        .content(|cx| {
+                            PopupMenu::build(cx, |mut this, _| {
+                                this.label("Open...")
+                                    .separator()
+                                    .menu("Copy", Box::new(MenuCopy))
+                                    .menu("Cut", Box::new(MenuItemAction::Cut))
+                                    .menu("Paste", Box::new(MenuItemAction::Paste))
+                                    .separator()
+                                    .menu("Select All", Box::new(MenuItemAction::SelectAll));
+
+                                this
+                            })
+                        }),
+                ),
             )
             .child(
                 div().absolute().bottom_4().left_0().w_full().h_10().child(
