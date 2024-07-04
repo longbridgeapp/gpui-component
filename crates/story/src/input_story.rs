@@ -1,9 +1,9 @@
 use gpui::{
-    ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
-    VisualContext, WindowContext,
+    ClickEvent, IntoElement, ParentElement as _, Render, Styled, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
-use ui::{input::TextInput, v_flex, IconName};
+use ui::{button::Button, h_flex, input::TextInput, v_flex, IconName, StyledExt};
 
 use crate::section;
 
@@ -101,6 +101,25 @@ impl Render for InputStory {
                     .child(self.prefix_input1.clone())
                     .child(self.both_input1.clone())
                     .child(self.suffix_input1.clone()),
+            )
+            .child(
+                h_flex()
+                    .items_center()
+                    .w_full()
+                    .debug_pink()
+                    .child(
+                        Button::new("btn-submit", cx)
+                            .w_full()
+                            .style(ui::button::ButtonStyle::Primary)
+                            .label("Submit")
+                            .into_element(),
+                    )
+                    .child(
+                        Button::new("btn-cancel", cx)
+                            .w_full()
+                            .label("Cancel")
+                            .into_element(),
+                    ),
             )
     }
 }

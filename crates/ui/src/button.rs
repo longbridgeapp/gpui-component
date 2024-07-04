@@ -1,12 +1,12 @@
 use crate::{
     h_flex,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
-    Clickable, Disableable, Icon, Selectable,
+    Clickable, Disableable, Focusable, Icon, Selectable,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, Hsla,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
-    StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, FocusHandle,
+    FocusableView, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
+    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -34,6 +34,7 @@ pub enum ButtonStyle {
 pub struct Button {
     pub base: Div,
     id: ElementId,
+    focus_handle: FocusHandle,
     icon: Option<Icon>,
     label: Option<SharedString>,
     disabled: bool,
@@ -48,9 +49,10 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(id: impl Into<ElementId>, cx: &mut WindowContext) -> Self {
         Self {
             base: div(),
+            focus_handle: cx.focus_handle(),
             id: id.into(),
             icon: None,
             label: None,
@@ -66,16 +68,28 @@ impl Button {
         }
     }
 
-    pub fn primary(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
-        Self::new(id).label(label).style(ButtonStyle::Primary)
+    pub fn primary(
+        id: impl Into<ElementId>,
+        label: impl Into<SharedString>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        Self::new(id, cx).label(label).style(ButtonStyle::Primary)
     }
 
-    pub fn danger(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
-        Self::new(id).label(label).style(ButtonStyle::Danger)
+    pub fn danger(
+        id: impl Into<ElementId>,
+        label: impl Into<SharedString>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        Self::new(id, cx).label(label).style(ButtonStyle::Danger)
     }
 
-    pub fn small(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
-        Self::new(id).label(label).size(ButtonSize::Small)
+    pub fn small(
+        id: impl Into<ElementId>,
+        label: impl Into<SharedString>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        Self::new(id, cx).label(label).size(ButtonSize::Small)
     }
 
     pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
@@ -141,14 +155,30 @@ impl Clickable for Button {
     }
 }
 
+impl Focusable for Button {}
+
+impl FocusableView for Button {
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+
+impl Styled for Button {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let theme = cx.theme();
         let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
+        let focused = self.focus_handle.is_focused(cx);
 
         self.base
             .id(self.id)
+            .track_focus(&self.focus_handle)
             .flex()
             .items_center()
             .justify_center()
@@ -192,6 +222,7 @@ impl RenderOnce for Button {
                 .border_color(normal_style.border)
                 .bg(normal_style.bg)
             })
+            .when(focused, |this| this.border_color(cx.theme().ring))
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {

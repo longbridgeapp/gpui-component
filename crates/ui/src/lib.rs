@@ -1,6 +1,7 @@
 mod clickable;
 mod disableable;
 mod event;
+mod focusable;
 mod icon;
 mod scrollbar;
 mod selectable;
@@ -28,6 +29,7 @@ pub mod tooltip;
 pub use clickable::Clickable;
 pub use disableable::Disableable;
 pub use event::InterativeElementExt;
+pub use focusable::Focusable;
 pub use selectable::{Selectable, Selection};
 
 pub use icon::*;
