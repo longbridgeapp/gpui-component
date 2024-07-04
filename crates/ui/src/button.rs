@@ -1,12 +1,13 @@
 use crate::{
     h_flex,
     theme::{ActiveTheme, Colorize as _, ThemeMode},
-    Clickable, Disableable, Focusable, Icon, Selectable,
+    Clickable, Disableable, Icon, Selectable, StyledExt,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, FocusHandle,
-    FocusableView, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    Focusable, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Render,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, View, ViewContext,
+    VisualContext, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -155,14 +156,6 @@ impl Clickable for Button {
     }
 }
 
-impl Focusable for Button {}
-
-impl FocusableView for Button {
-    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
-        self.focus_handle.clone()
-    }
-}
-
 impl Styled for Button {
     fn style(&mut self) -> &mut gpui::StyleRefinement {
         self.base.style()
@@ -222,7 +215,9 @@ impl RenderOnce for Button {
                 .border_color(normal_style.border)
                 .bg(normal_style.bg)
             })
-            .when(focused, |this| this.border_color(cx.theme().ring))
+            .when(focused, |this| {
+                this.border_color(cx.theme().ring).debug_blue()
+            })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {

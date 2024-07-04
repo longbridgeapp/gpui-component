@@ -21,10 +21,10 @@ pub use switch_story::SwitchStory;
 pub use tooltip_story::TooltipStory;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, Element,
-    EventEmitter, FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
-    ScrollHandle, SharedString, StatefulInteractiveElement, Styled as _, Task, View, ViewContext,
-    VisualContext, WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
+    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    SharedString, StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext,
+    WindowContext,
 };
 use workspace::{
     dock::{DockPosition, Panel, PanelEvent},
@@ -33,7 +33,11 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex, StyledExt};
+use ui::{divider::Divider, h_flex, label::Label, v_flex};
+
+pub fn init(cx: &mut AppContext) {
+    input_story::init(cx);
+}
 
 pub fn story_case(
     name: &'static str,
@@ -286,7 +290,6 @@ impl Panel for MyPanel {
     }
 
     fn set_size(&mut self, size: Option<gpui::Pixels>, cx: &mut ViewContext<Self>) {
-        dbg!("================ set_size", size);
         if let Some(size) = size {
             self.update_size(size)
         }

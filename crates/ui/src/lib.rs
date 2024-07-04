@@ -29,7 +29,7 @@ pub mod tooltip;
 pub use clickable::Clickable;
 pub use disableable::Disableable;
 pub use event::InterativeElementExt;
-pub use focusable::Focusable;
+pub use focusable::FocusableCycle;
 pub use selectable::{Selectable, Selection};
 
 pub use icon::*;

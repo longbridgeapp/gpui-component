@@ -23,6 +23,7 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 
     Theme::init(cx);
     ui::init(cx);
+    story::init(cx);
 }
 
 pub struct StoryWorkspace {
