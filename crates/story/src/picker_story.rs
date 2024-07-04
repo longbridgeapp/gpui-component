@@ -197,7 +197,7 @@ impl Render for PickerStory {
             .gap_6()
             .child(
                 v_flex().items_start().child(
-                    Button::new("show-picker")
+                    Button::new("show-picker", cx)
                         .label("Show Picker...")
                         .icon(IconName::Search)
                         .style(ButtonStyle::Primary)

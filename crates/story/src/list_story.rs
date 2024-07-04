@@ -2,9 +2,9 @@ use core::time;
 
 use fake::Fake;
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, ElementId, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, Timer, View,
-    ViewContext, VisualContext, WindowContext,
+    actions, div, px, ElementId, FocusHandle, FocusableView, InteractiveElement, IntoElement,
+    ParentElement, Render, RenderOnce, Styled, Timer, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{

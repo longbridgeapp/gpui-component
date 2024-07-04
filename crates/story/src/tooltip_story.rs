@@ -1,5 +1,5 @@
 use gpui::{
-    div, px, CursorStyle, InteractiveElement, ParentElement, Render, StatefulInteractiveElement,
+    div, CursorStyle, InteractiveElement, ParentElement, Render, StatefulInteractiveElement,
     Styled, View, VisualContext as _, WindowContext,
 };
 
@@ -25,7 +25,7 @@ impl TooltipStory {
 }
 
 impl Render for TooltipStory {
-    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()
             .p_4()
             .gap_5()
@@ -33,7 +33,7 @@ impl Render for TooltipStory {
                 div()
                     .cursor(CursorStyle::PointingHand)
                     .child(
-                        Button::new("button")
+                        Button::new("button", cx)
                             .label("Hover me")
                             .style(ButtonStyle::Primary),
                     )

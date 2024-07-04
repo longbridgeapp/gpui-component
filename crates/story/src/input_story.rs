@@ -1,13 +1,24 @@
 use gpui::{
-    ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
-    VisualContext, WindowContext,
+    actions, AppContext, ClickEvent, FocusHandle, FocusableView, InteractiveElement, IntoElement,
+    KeyBinding, ParentElement as _, Render, Styled, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
-use ui::{input::TextInput, v_flex, IconName};
+use ui::{button::Button, h_flex, input::TextInput, v_flex, FocusableCycle, IconName};
 
 use crate::section;
 
+actions!(input_story, [Tab, TabPrev]);
+
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([
+        KeyBinding::new("shift-tab", TabPrev, Some("InputStory")),
+        KeyBinding::new("tab", Tab, Some("InputStory")),
+    ])
+}
+
 pub struct InputStory {
+    focus_handle: FocusHandle,
     input1: View<TextInput>,
     input2: View<TextInput>,
     mash_input: View<TextInput>,
@@ -54,6 +65,7 @@ impl InputStory {
         });
 
         Self {
+            focus_handle: cx.focus_handle(),
             input1,
             input2: cx.new_view(|cx| {
                 let mut input = TextInput::new(cx);
@@ -77,11 +89,46 @@ impl InputStory {
     fn on_change(ev: &ClickEvent, cx: &mut WindowContext) {
         println!("Input changed: {:?}", ev);
     }
+
+    fn tab(&mut self, _: &Tab, cx: &mut ViewContext<Self>) {
+        self.cycle_focus(true, cx);
+    }
+
+    fn tab_prev(&mut self, _: &TabPrev, cx: &mut ViewContext<Self>) {
+        self.cycle_focus(false, cx);
+    }
+}
+
+impl FocusableCycle for InputStory {
+    fn cycle_focus_handles(&self, cx: &mut ViewContext<Self>) -> Vec<FocusHandle> {
+        [
+            &self.input1,
+            &self.input2,
+            &self.disabled_input,
+            &self.mash_input,
+            &self.prefix_input1,
+            &self.both_input1,
+            &self.suffix_input1,
+        ]
+        .iter()
+        .map(|v| v.focus_handle(cx))
+        .collect()
+    }
+}
+
+impl FocusableView for InputStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
+        self.focus_handle.clone()
+    }
 }
 
 impl Render for InputStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
+            .key_context("InputStory")
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::tab))
+            .on_action(cx.listener(Self::tab_prev))
             .size_full()
             .p_4()
             .justify_start()
@@ -101,6 +148,24 @@ impl Render for InputStory {
                     .child(self.prefix_input1.clone())
                     .child(self.both_input1.clone())
                     .child(self.suffix_input1.clone()),
+            )
+            .child(
+                h_flex()
+                    .items_center()
+                    .w_full()
+                    .gap_3()
+                    .child(
+                        Button::new("btn-submit", cx)
+                            .w_full()
+                            .style(ui::button::ButtonStyle::Primary)
+                            .label("Submit"),
+                    )
+                    .child(
+                        Button::new("btn-cancel", cx)
+                            .w_full()
+                            .label("Cancel")
+                            .into_element(),
+                    ),
             )
     }
 }

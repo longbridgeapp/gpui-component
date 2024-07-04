@@ -23,7 +23,7 @@ use crate::{
     list::ListItem,
     picker::{self, Picker, PickerDelegate},
     theme::ActiveTheme,
-    Icon, IconName,
+    Icon, IconName, StyledExt,
 };
 
 /// A trait for items that can be displayed in a dropdown.
@@ -221,13 +221,12 @@ where
     D: DropdownDelegate + 'static,
 {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let group_id = format!("dropdown-group:{}", self.id);
         let title = self.title.clone().unwrap_or_else(|| "Select...".into());
         let focused = self.focus_handle.is_focused(cx);
 
         div()
             .key_context("Dropdown")
-            .group(group_id.clone())
+            .group(format!("dropdown-group:{}", self.id))
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::up))
             .on_action(cx.listener(Self::down))
@@ -248,9 +247,9 @@ where
                     .border_color(cx.theme().input)
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
+                    .when(focused, |this| this.outline(cx))
                     .px_3()
                     .py_2()
-                    .when(focused, |this| this.border_color(cx.theme().ring))
                     .on_click(cx.listener(|this, _, cx| {
                         this.open = !this.open;
                         cx.notify();
@@ -280,18 +279,10 @@ struct DropdownMenuElement<D: DropdownDelegate + 'static> {
     dropdown: View<Dropdown<D>>,
 }
 
+#[derive(Default)]
 struct DropdownMenuElementState {
     menu_element: Option<AnyElement>,
     layout_id: Option<LayoutId>,
-}
-
-impl Default for DropdownMenuElementState {
-    fn default() -> Self {
-        Self {
-            menu_element: None,
-            layout_id: None,
-        }
-    }
 }
 
 impl<D> IntoElement for DropdownMenuElement<D>

@@ -40,7 +40,7 @@ impl Render for Form {
             .child("This is a form container.")
             .child(self.input1.clone())
             .child(
-                Button::primary("submit", "Submit")
+                Button::primary("submit", "Submit", cx)
                     .on_click(cx.listener(|_, _, cx| cx.emit(DismissEvent))),
             )
     }
@@ -62,7 +62,7 @@ impl PopoverStory {
 }
 
 impl Render for PopoverStory {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
 
         v_flex()
@@ -76,15 +76,15 @@ impl Render for PopoverStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
-                                .trigger(Button::new("info-top-left").label("Top Left"))
+                                .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
-                                    PopoverContent::new(cx, |_| {
+                                    PopoverContent::new(cx, |cx| {
                                         v_flex()
                                             .gap_4()
                                             .child("Hello, this is a Popover.")
                                             .child(Divider::horizontal())
                                             .child(
-                                                Button::new("info1")
+                                                Button::new("info1", cx)
                                                     .label("Yes")
                                                     .width(px(80.))
                                                     .size(ButtonSize::Small),
@@ -97,15 +97,15 @@ impl Render for PopoverStory {
                     .child(
                         Popover::new("info-top-right")
                             .anchor(AnchorCorner::TopRight)
-                            .trigger(Button::new("info-top-right").label("Top Right"))
+                            .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
-                                PopoverContent::new(cx, |_| {
+                                PopoverContent::new(cx, |cx| {
                                     v_flex()
                                         .gap_4()
                                         .child("Hello, this is a Popover on the Top Right.")
                                         .child(Divider::horizontal())
                                         .child(
-                                            Button::new("info1")
+                                            Button::new("info1", cx)
                                                 .label("Yes")
                                                 .width(px(80.))
                                                 .size(ButtonSize::Small),
@@ -124,7 +124,9 @@ impl Render for PopoverStory {
                             Popover::new("info-bottom-left")
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
-                                    Button::new("pop").label("Popup with Form").width(px(300.)),
+                                    Button::new("pop", cx)
+                                        .label("Popup with Form")
+                                        .width(px(300.)),
                                 )
                                 .content(move |_| form.clone()),
                         )
@@ -133,18 +135,18 @@ impl Render for PopoverStory {
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(
-                                    Button::new("pop")
+                                    Button::new("pop", cx)
                                         .label("Mouse Right Click")
                                         .width(px(300.)),
                                 )
                                 .content(|cx| {
-                                    PopoverContent::new(cx, |_| {
+                                    PopoverContent::new(cx, |cx| {
                                         v_flex()
                                             .gap_4()
                                             .child("Hello, this is a Popover on the Bottom Right.")
                                             .child(Divider::horizontal())
                                             .child(
-                                                Button::new("info1")
+                                                Button::new("info1", cx)
                                                     .label("Yes")
                                                     .width(px(80.))
                                                     .size(ButtonSize::Small),

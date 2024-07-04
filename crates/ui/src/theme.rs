@@ -167,7 +167,7 @@ impl Colors {
             accent_foreground: hsl(240.0, 5.9, 10.0),
             border: hsl(240.0, 5.9, 90.0),
             input: hsl(240.0, 5.9, 90.0),
-            ring: hsl(240.0, 5.9, 10.0),
+            ring: hsl(240.0, 5.9, 65.0),
             selection: hsl(211.0, 97.0, 85.0),
             scrollbar: Hsla::transparent_black(),
             scrollbar_thumb: hsl(240.0, 5.9, 90.0).opacity(0.7),

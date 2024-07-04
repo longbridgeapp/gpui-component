@@ -34,19 +34,19 @@ impl Render for ButtonStory {
                     .child(
                         section("Normal Button", cx)
                             .child(
-                                Button::new("button-1")
+                                Button::new("button-1", cx)
                                     .label("Primary Button")
                                     .style(ButtonStyle::Primary)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-2")
+                                Button::new("button-2", cx)
                                     .label("Secondary Button")
                                     .style(ButtonStyle::Secondary)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-4")
+                                Button::new("button-4", cx)
                                     .label("Danger Button")
                                     .style(ButtonStyle::Danger)
                                     .on_click(Self::on_click),
@@ -55,21 +55,21 @@ impl Render for ButtonStory {
                     .child(
                         section("Button with Icon", cx)
                             .child(
-                                Button::new("button-icon-1")
+                                Button::new("button-icon-1", cx)
                                     .label("Confirm")
                                     .icon(IconName::Check)
                                     .style(ButtonStyle::Primary)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-2")
+                                Button::new("button-icon-2", cx)
                                     .label("Abort")
                                     .icon(IconName::Close)
                                     .style(ButtonStyle::Secondary)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-3")
+                                Button::new("button-icon-3", cx)
                                     .label("Maximize")
                                     .icon(Icon::new(IconName::Maximize))
                                     .style(ButtonStyle::Secondary)
@@ -83,21 +83,21 @@ impl Render for ButtonStory {
                     .child(
                         section("Small Size", cx)
                             .child(
-                                Button::new("button-6")
+                                Button::new("button-6", cx)
                                     .label("Primary Button")
                                     .style(ButtonStyle::Primary)
                                     .size(ButtonSize::Small)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-7")
+                                Button::new("button-7", cx)
                                     .label("Secondary Button")
                                     .style(ButtonStyle::Secondary)
                                     .size(ButtonSize::Small)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-8")
+                                Button::new("button-8", cx)
                                     .label("Danger Button")
                                     .style(ButtonStyle::Danger)
                                     .size(ButtonSize::Small)
@@ -107,21 +107,21 @@ impl Render for ButtonStory {
                     .child(
                         section("XSmall Size", cx)
                             .child(
-                                Button::new("button-xs-1")
+                                Button::new("button-xs-1", cx)
                                     .label("Primary Button")
                                     .style(ButtonStyle::Primary)
                                     .size(ButtonSize::XSmall)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-2")
+                                Button::new("button-xs-2", cx)
                                     .label("Secondary Button")
                                     .style(ButtonStyle::Secondary)
                                     .size(ButtonSize::XSmall)
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-3")
+                                Button::new("button-xs-3", cx)
                                     .label("Danger Button")
                                     .style(ButtonStyle::Danger)
                                     .size(ButtonSize::XSmall)
@@ -135,21 +135,21 @@ impl Render for ButtonStory {
                     .child(
                         section("Disabled Button", cx)
                             .child(
-                                Button::new("button-disabled1")
+                                Button::new("button-disabled1", cx)
                                     .label("Disabled Button")
                                     .style(ButtonStyle::Primary)
                                     .on_click(Self::on_click)
                                     .disabled(true),
                             )
                             .child(
-                                Button::new("button-disabled1")
+                                Button::new("button-disabled1", cx)
                                     .label("Disabled Button")
                                     .style(ButtonStyle::Secondary)
                                     .on_click(Self::on_click)
                                     .disabled(true),
                             )
                             .child(
-                                Button::new("button-disabled1")
+                                Button::new("button-disabled1", cx)
                                     .label("Disabled Button")
                                     .style(ButtonStyle::Danger)
                                     .on_click(Self::on_click)
@@ -159,19 +159,19 @@ impl Render for ButtonStory {
                     .child(
                         section("Selected Style", cx)
                             .child(
-                                Button::new("button-selected-1")
+                                Button::new("button-selected-1", cx)
                                     .label("Selected Button")
                                     .style(ButtonStyle::Primary)
                                     .selected(true),
                             )
                             .child(
-                                Button::new("button-selected-2")
+                                Button::new("button-selected-2", cx)
                                     .label("Selected Button")
                                     .style(ButtonStyle::Secondary)
                                     .selected(true),
                             )
                             .child(
-                                Button::new("button-selected-3")
+                                Button::new("button-selected-3", cx)
                                     .label("Selected Button")
                                     .style(ButtonStyle::Danger)
                                     .selected(true),
@@ -181,46 +181,46 @@ impl Render for ButtonStory {
             .child(
                 section("Icon Button", cx)
                     .child(
-                        Button::new("icon-button-0")
+                        Button::new("icon-button-0", cx)
                             .icon(IconName::Search)
                             .style(ButtonStyle::Primary),
                     )
-                    .child(Button::new("icon-button-1").icon(IconName::Info))
+                    .child(Button::new("icon-button-1", cx).icon(IconName::Info))
                     .child(
-                        Button::new("icon-button-2")
+                        Button::new("icon-button-2", cx)
                             .icon(IconName::Close)
                             .style(ButtonStyle::Danger),
                     )
                     .child(
-                        Button::new("icon-button-3")
+                        Button::new("icon-button-3", cx)
                             .icon(IconName::Search)
                             .size(ButtonSize::Small)
                             .style(ButtonStyle::Primary),
                     )
                     .child(
-                        Button::new("icon-button-4")
+                        Button::new("icon-button-4", cx)
                             .icon(IconName::Info)
                             .size(ButtonSize::Small),
                     )
                     .child(
-                        Button::new("icon-button-5")
+                        Button::new("icon-button-5", cx)
                             .icon(IconName::Close)
                             .size(ButtonSize::Small)
                             .style(ButtonStyle::Danger),
                     )
                     .child(
-                        Button::new("icon-button-6")
+                        Button::new("icon-button-6", cx)
                             .icon(IconName::Search)
                             .size(ButtonSize::XSmall)
                             .style(ButtonStyle::Primary),
                     )
                     .child(
-                        Button::new("icon-button-7")
+                        Button::new("icon-button-7", cx)
                             .icon(IconName::Info)
                             .size(ButtonSize::XSmall),
                     )
                     .child(
-                        Button::new("icon-button-8")
+                        Button::new("icon-button-8", cx)
                             .icon(IconName::Close)
                             .size(ButtonSize::XSmall)
                             .style(ButtonStyle::Danger),
