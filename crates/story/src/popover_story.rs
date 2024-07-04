@@ -1,7 +1,7 @@
 use gpui::{
     actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, ParentElement as _,
-    Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
+    ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::{
     button::{Button, ButtonSize},
@@ -13,16 +13,7 @@ use ui::{
     v_flex, Clickable, IconName,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-enum MenuItemAction {
-    Copy,
-    Cut,
-    Paste,
-    SelectAll,
-}
-
-actions!(popover_story, [MenuCopy]);
-impl_actions!(popover_story, [MenuItemAction]);
+actions!(popover_story, [Copy, Paste, Cut, SearchAll]);
 
 struct Form {
     input1: View<TextInput>,
@@ -60,6 +51,7 @@ impl Render for Form {
 }
 
 pub struct PopoverStory {
+    focus_handle: FocusHandle,
     form: View<Form>,
 }
 
@@ -70,30 +62,55 @@ impl PopoverStory {
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
         let form = Form::new(cx);
-        Self { form }
+        Self {
+            form,
+            focus_handle: cx.focus_handle(),
+        }
     }
 
-    fn on_menu_action(&mut self, action: &MenuCopy, cx: &mut ViewContext<Self>) {
-        println!("You have clicked: {:?}", action);
+    fn on_copy(&mut self, _: &Copy, _: &mut ViewContext<Self>) {
+        println!("You have clicked copy");
+    }
+    fn on_cut(&mut self, _: &Cut, _: &mut ViewContext<Self>) {
+        println!("You have clicked cut");
+    }
+    fn on_paste(&mut self, _: &Paste, _: &mut ViewContext<Self>) {
+        println!("You have clicked paste");
+    }
+    fn on_search_all(&mut self, _: &SearchAll, _: &mut ViewContext<Self>) {
+        println!("You have clicked SearchAll");
+    }
+}
+
+impl FocusableView for PopoverStory {
+    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
+        self.focus_handle.clone()
     }
 }
 
 impl Render for PopoverStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
+        let _focused = self.focus_handle.is_focused(cx);
+        let focus_handle = self.focus_handle.clone();
 
         v_flex()
-            .id("popover-story")
-            .on_action(cx.listener(Self::on_menu_action))
-            .on_action(cx.listener(|this, _: &MenuCopy, cx| {
-                println!("11111 You have clicked: copy");
-            }))
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::on_copy))
+            .on_action(cx.listener(Self::on_cut))
+            .on_action(cx.listener(Self::on_paste))
+            .on_action(cx.listener(Self::on_search_all))
             .p_4()
             .size_full()
+            .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
+                cx.focus(&this.focus_handle);
+            }))
             .child(
                 Button::new("test1", cx)
                     .label("Hello")
-                    .on_click(|_, cx| cx.dispatch_action(Box::new(MenuCopy))),
+                    .on_click(move |_, cx| {
+                        cx.dispatch_action(Box::new(Copy));
+                    }),
             )
             .gap_6()
             .child(
@@ -146,15 +163,19 @@ impl Render for PopoverStory {
                 h_flex().child(
                     Popover::new("popup-menu")
                         .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
-                        .content(|cx| {
+                        .content(move |cx| {
+                            let focus_handle = focus_handle.clone();
                             PopupMenu::build(cx, |mut this, _| {
-                                this.label("Open...")
+                                this.content(focus_handle)
+                                    .menu("Copy", Box::new(Copy))
+                                    .menu("Cut", Box::new(Cut))
+                                    .menu("Paste", Box::new(Paste))
                                     .separator()
-                                    .menu("Copy", Box::new(MenuCopy))
-                                    .menu("Cut", Box::new(MenuItemAction::Cut))
-                                    .menu("Paste", Box::new(MenuItemAction::Paste))
-                                    .separator()
-                                    .menu("Select All", Box::new(MenuItemAction::SelectAll));
+                                    .menu_with_icon(
+                                        IconName::Search,
+                                        "Search",
+                                        Box::new(SearchAll),
+                                    );
 
                                 this
                             })
