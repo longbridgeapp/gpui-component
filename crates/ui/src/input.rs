@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use crate::event::InterativeElementExt as _;
 use crate::theme::ActiveTheme;
+use crate::StyledExt as _;
 use blink_cursor::BlinkCursor;
 use gpui::*;
 use prelude::FluentBuilder as _;
@@ -679,14 +680,11 @@ impl Render for TextInput {
             .h_10()
             .when(self.appearance, |this| {
                 this.bg(cx.theme().input)
-                    .border_color(if focused {
-                        cx.theme().ring
-                    } else {
-                        cx.theme().input
-                    })
+                    .border_color(cx.theme().input)
                     .border_1()
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
+                    .when(focused, |this| this.outline(cx))
                     .px_3()
                     .bg(if self.disabled {
                         cx.theme().muted

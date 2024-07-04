@@ -4,10 +4,7 @@ use gpui::{
     WindowContext,
 };
 
-use ui::{
-    button::Button, h_flex, input::TextInput, prelude::FluentBuilder as _, v_flex, FocusableCycle,
-    IconName, StyledExt as _,
-};
+use ui::{button::Button, h_flex, input::TextInput, v_flex, FocusableCycle, IconName};
 
 use crate::section;
 
