@@ -279,18 +279,10 @@ struct DropdownMenuElement<D: DropdownDelegate + 'static> {
     dropdown: View<Dropdown<D>>,
 }
 
+#[derive(Default)]
 struct DropdownMenuElementState {
     menu_element: Option<AnyElement>,
     layout_id: Option<LayoutId>,
-}
-
-impl Default for DropdownMenuElementState {
-    fn default() -> Self {
-        Self {
-            menu_element: None,
-            layout_id: None,
-        }
-    }
 }
 
 impl<D> IntoElement for DropdownMenuElement<D>
