@@ -85,6 +85,9 @@ impl Render for PopoverStory {
         v_flex()
             .id("popover-story")
             .on_action(cx.listener(Self::on_menu_action))
+            .on_action(cx.listener(|this, _: &MenuCopy, cx| {
+                println!("11111 You have clicked: copy");
+            }))
             .p_4()
             .size_full()
             .child(
