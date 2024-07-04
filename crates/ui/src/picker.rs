@@ -105,10 +105,6 @@ pub trait PickerDelegate: Sized + 'static {
         cx: &mut ViewContext<Picker<Self>>,
     ) -> Option<Self::ListItem>;
 
-    fn separators_after_indices(&self) -> Vec<usize> {
-        Vec::new()
-    }
-
     fn update_matches(&mut self, _query: &str, _cx: &mut ViewContext<Picker<Self>>) -> Task<()> {
         Task::ready(())
     }
@@ -332,15 +328,6 @@ impl<D: PickerDelegate> Picker<D> {
                 self.delegate
                     .render_item(ix, ix == self.delegate.selected_index(), cx),
             )
-            .when(
-                self.delegate.separators_after_indices().contains(&ix),
-                |picker| {
-                    picker
-                        .border_color(cx.theme().border)
-                        .border_b_1()
-                        .pb(px(-1.0))
-                },
-            )
     }
 
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<Scrollbar> {
@@ -547,8 +534,8 @@ impl<D: PickerDelegate> Render for Picker<D> {
             .id("picker")
             .key_context("Picker")
             .group("picker-group")
-            .size_full()
             .track_focus(&focus_handle)
+            .size_full()
             .when_some(self.width, |el, width| el.w(width))
             .overflow_hidden()
             .when(self.is_modal, |this| this.elevation_3(cx))
@@ -608,8 +595,5 @@ impl<D: PickerDelegate> Render for Picker<D> {
                         .child("No matched."),
                 )
             })
-            .on_mouse_down_out(cx.listener(|_, _, cx| {
-                cx.dispatch_action(Box::new(Cancel));
-            }))
     }
 }
