@@ -123,9 +123,7 @@ impl RenderOnce for TitleBar {
                 |title_bar| title_bar.child(WindowsWindowControls::new(height)),
             )
             .when(
-                self.platform_style == PlatformStyle::Linux
-                    && !cx.is_fullscreen()
-                    && cx.should_render_window_controls(),
+                self.platform_style == PlatformStyle::Linux && !cx.is_fullscreen(),
                 |title_bar| {
                     title_bar
                         .child(LinuxWindowControls::new(height, self.close_window_action))
@@ -134,7 +132,7 @@ impl RenderOnce for TitleBar {
                         })
                         .on_mouse_move(move |ev, cx| {
                             if ev.dragging() {
-                                cx.start_system_move();
+                                cx.start_window_move();
                             }
                         })
                 },
