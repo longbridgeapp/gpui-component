@@ -217,11 +217,16 @@ impl Render for PickerStory {
             .when(self.open, |this| {
                 this.child(deferred(
                     div().absolute().size_full().top_0().left_0().child(
-                        v_flex()
-                            .flex()
-                            .flex_col()
-                            .items_center()
-                            .child(div().w(px(450.)).h(px(350.)).child(self.picker.clone())),
+                        v_flex().flex().flex_col().items_center().child(
+                            div()
+                                .w(px(450.))
+                                .h(px(350.))
+                                .child(self.picker.clone())
+                                .on_mouse_down_out(cx.listener(|this, _, cx| {
+                                    this.open = false;
+                                    cx.notify();
+                                })),
+                        ),
                     ),
                 ))
             })
