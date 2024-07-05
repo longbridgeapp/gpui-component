@@ -737,7 +737,6 @@ impl Pane {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
-            .debug_green()
             .children(
                 self.items
                     .iter()
