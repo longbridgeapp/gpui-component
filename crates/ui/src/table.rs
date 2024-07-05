@@ -13,7 +13,16 @@ use gpui::{
     Styled as _, Task, UniformListScrollHandle, ViewContext, WindowContext,
 };
 
-actions!(table, [Cancel, SelectPrev, SelectNext,]);
+actions!(
+    table,
+    [
+        Cancel,
+        SelectPrev,
+        SelectNext,
+        SelectPrevColumn,
+        SelectNextColumn
+    ]
+);
 
 pub fn init(cx: &mut AppContext) {
     let context = Some("Table");
@@ -21,6 +30,8 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("escape", Cancel, context),
         KeyBinding::new("up", SelectPrev, context),
         KeyBinding::new("down", SelectNext, context),
+        KeyBinding::new("left", SelectPrevColumn, context),
+        KeyBinding::new("right", SelectNextColumn, context),
     ]);
 }
 
@@ -38,7 +49,8 @@ pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
     container_scroll_handle: ScrollHandle,
-    list_scroll_handle: UniformListScrollHandle,
+    vertical_scroll_handle: UniformListScrollHandle,
+    horizontal_scroll_handle: UniformListScrollHandle,
     col_groups: Vec<ColGroup>,
     show_scrollbar: bool,
     hide_scrollbar_task: Option<Task<()>>,
@@ -104,7 +116,8 @@ where
             delegate,
             col_groups: Vec::new(),
             container_scroll_handle: ScrollHandle::new(),
-            list_scroll_handle: UniformListScrollHandle::new(),
+            vertical_scroll_handle: UniformListScrollHandle::new(),
+            horizontal_scroll_handle: UniformListScrollHandle::new(),
             show_scrollbar: false,
             hide_scrollbar_task: None,
             scrollbar_drag_state: Rc::new(Cell::new(None)),
@@ -129,7 +142,7 @@ where
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
         Scrollbar::new(
             cx.view().clone().into(),
-            self.list_scroll_handle.clone(),
+            self.vertical_scroll_handle.clone(),
             self.scrollbar_drag_state.clone(),
             self.delegate.rows_count(),
             true,
@@ -162,9 +175,8 @@ where
 
     fn scroll_to_selected_row(&mut self, cx: &mut ViewContext<Self>) {
         if let Some(row_ix) = self.selected_row {
-            self.list_scroll_handle.scroll_to_item(row_ix);
+            self.vertical_scroll_handle.scroll_to_item(row_ix);
         }
-        cx.notify();
     }
 
     fn on_hover_to_autohide_scrollbar(&mut self, hovered: &bool, cx: &mut ViewContext<Self>) {
@@ -211,6 +223,7 @@ where
 
         self.selection_state = SelectionState::Row;
         self.scroll_to_selected_row(cx);
+        cx.notify();
         self.delegate.set_selected_row(self.selected_row);
     }
 
@@ -224,7 +237,36 @@ where
 
         self.selection_state = SelectionState::Row;
         self.scroll_to_selected_row(cx);
+        cx.notify();
         self.delegate.set_selected_row(self.selected_row);
+    }
+
+    fn action_select_prev_column(&mut self, _: &SelectPrevColumn, cx: &mut ViewContext<Self>) {
+        let selected_col = self.selected_col.unwrap_or(0);
+        let cols_count = self.delegate.cols_count();
+        if selected_col > 0 {
+            self.selected_col = Some(selected_col - 1);
+        } else {
+            self.selected_col = Some(cols_count - 1);
+        }
+
+        self.selection_state = SelectionState::Column;
+        // self.scroll_to_selected_row(cx);
+        cx.notify();
+        self.delegate.set_selected_col(self.selected_col)
+    }
+
+    fn action_select_next_column(&mut self, _: &SelectNextColumn, cx: &mut ViewContext<Self>) {
+        let selected_col = self.selected_col.unwrap_or(0);
+        if selected_col < self.delegate.cols_count() - 1 {
+            self.selected_col = Some(selected_col + 1);
+        } else {
+            self.selected_col = Some(0);
+        }
+
+        self.selection_state = SelectionState::Column;
+        cx.notify();
+        self.delegate.set_selected_col(self.selected_col);
     }
 
     fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
@@ -263,7 +305,7 @@ where
 {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
-        let list_scroll_handle = self.list_scroll_handle.clone();
+        let vertical_scroll_handle = self.vertical_scroll_handle.clone();
         let cols_count = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
@@ -286,6 +328,8 @@ where
                     .on_action(cx.listener(Self::action_cancel))
                     .on_action(cx.listener(Self::action_select_next))
                     .on_action(cx.listener(Self::action_select_prev))
+                    .on_action(cx.listener(Self::action_select_next_column))
+                    .on_action(cx.listener(Self::action_select_prev_column))
                     .size_full()
                     .overflow_y_hidden()
                     .overflow_x_scroll()
@@ -374,7 +418,7 @@ where
                             )
                             .size_full()
                             // .with_sizing_behavior(ListSizingBehavior::Auto)
-                            .track_scroll(list_scroll_handle)
+                            .track_scroll(vertical_scroll_handle)
                             .into_any_element(),
                         ),
                     ),
