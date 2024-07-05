@@ -1,5 +1,5 @@
 use crate::theme::{hsl, ActiveTheme};
-use gpui::{div, hsla, point, px, BoxShadow, FocusHandle, Styled, WindowContext};
+use gpui::{hsla, point, px, BoxShadow, FocusHandle, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {

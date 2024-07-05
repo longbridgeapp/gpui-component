@@ -12,6 +12,3 @@ anyhow = "1"
 workspace.workspace = true
 charts-rs = "0.3"
 image = "0.25.1"
-
-[lints]
-workspace = true

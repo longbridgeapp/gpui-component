@@ -4,7 +4,6 @@ use gpui::{
     WindowContext,
 };
 use ui::table::{Table, TableDelegate};
-use ui::StyledExt;
 
 struct Customer {
     id: usize,
@@ -20,7 +19,6 @@ struct Customer {
     age: usize,
     verified: bool,
     confirmed: bool,
-    twitter: String,
 }
 impl Customer {
     fn col_names() -> Vec<SharedString> {
@@ -45,7 +43,6 @@ impl Customer {
 
 fn randome_customers(size: usize) -> Vec<Customer> {
     (0..size)
-        .into_iter()
         .map(|id| Customer {
             id,
             login: fake::faker::internet::en::Username().fake::<String>(),
@@ -58,21 +55,11 @@ fn randome_customers(size: usize) -> Vec<Customer> {
             phone: fake::faker::phone_number::en::PhoneNumber().fake::<String>(),
             gender: (0..1).fake(),
             age: (18..80).fake(),
-            verified: if (0..1).fake::<u8>() == 1 {
-                true
-            } else {
-                false
-            },
-            confirmed: if (0..1).fake::<u8>() == 1 {
-                true
-            } else {
-                false
-            },
-            twitter: fake::faker::internet::en::Username().fake::<String>(),
+            verified: (0..1).fake::<u8>() == 1,
+            confirmed: (0..1).fake::<u8>() == 1,
         })
         .collect()
 }
-
 struct CustomerTableDelegate {
     customers: Vec<Customer>,
 }
@@ -152,7 +139,7 @@ pub struct TableStory {
 
 impl TableStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {

@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scrollbar::Scrollbar,
     theme::{ActiveTheme, Colorize},
-    v_flex, StyledExt,
+    v_flex,
 };
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div, FocusHandle,

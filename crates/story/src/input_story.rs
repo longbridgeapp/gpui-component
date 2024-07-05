@@ -1,7 +1,6 @@
 use gpui::{
-    actions, AppContext, ClickEvent, FocusHandle, FocusableView, InteractiveElement, IntoElement,
-    KeyBinding, ParentElement as _, Render, Styled, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, AppContext, ClickEvent, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
+    ParentElement as _, Render, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{button::Button, h_flex, input::TextInput, v_flex, Clickable, FocusableCycle, IconName};

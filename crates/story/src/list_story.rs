@@ -24,7 +24,7 @@ struct Company {
     industry: String,
     last_done: f64,
     prev_close: f64,
-    description: String,
+    // description: String,
 }
 
 impl Company {
@@ -244,14 +244,14 @@ fn random_company() -> Company {
     Company {
         name: fake::faker::company::en::CompanyName().fake(),
         industry: fake::faker::company::en::Industry().fake(),
-        description: fake::faker::lorem::en::Paragraph(3..5).fake(),
+        // description: fake::faker::lorem::en::Paragraph(3..5).fake(),
         last_done,
         prev_close,
     }
 }
 
 impl FocusableView for ListStory {
-    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
+    fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
