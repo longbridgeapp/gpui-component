@@ -206,15 +206,15 @@ where
     fn on_row_click(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Row;
         self.selected_row = Some(row_ix);
-        cx.notify();
         self.delegate.set_selected_row(self.selected_row);
+        self.scroll_to_selected_row(cx);
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Column;
         self.selected_col = Some(col_ix);
-        cx.notify();
         self.delegate.set_selected_col(self.selected_col);
+        self.scroll_to_selected_column(cx);
     }
 
     fn action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
