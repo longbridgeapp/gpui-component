@@ -8,9 +8,9 @@ use crate::{
 };
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div, FocusHandle,
-    FocusableView, InteractiveElement as _, IntoElement, KeyBinding, ListSizingBehavior,
+    FocusableView, InteractiveElement as _, IntoElement, KeyBinding, MouseButton,
     ParentElement as _, Render, ScrollHandle, SharedString, StatefulInteractiveElement as _,
-    Styled as _, Task, UniformListScrollHandle, ViewContext, VisualContext, WindowContext,
+    Styled as _, Task, UniformListScrollHandle, ViewContext, WindowContext,
 };
 
 actions!(table, [Cancel, SelectPrev, SelectNext,]);
@@ -18,7 +18,7 @@ actions!(table, [Cancel, SelectPrev, SelectNext,]);
 pub fn init(cx: &mut AppContext) {
     let context = Some("Table");
     cx.bind_keys([
-        KeyBinding::new("esc", Cancel, context),
+        KeyBinding::new("escape", Cancel, context),
         KeyBinding::new("up", SelectPrev, context),
         KeyBinding::new("down", SelectNext, context),
     ]);
@@ -26,6 +26,12 @@ pub fn init(cx: &mut AppContext) {
 
 struct ColGroup {
     width: Option<f32>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum SelectionState {
+    Column,
+    Row,
 }
 
 pub struct Table<D: TableDelegate> {
@@ -37,10 +43,13 @@ pub struct Table<D: TableDelegate> {
     show_scrollbar: bool,
     hide_scrollbar_task: Option<Task<()>>,
     scrollbar_drag_state: Rc<Cell<Option<f32>>>,
+
+    selection_state: SelectionState,
     selected_row: Option<usize>,
     selected_col: Option<usize>,
 }
 
+#[allow(unused)]
 pub trait TableDelegate: Sized + 'static {
     /// Return the number of columns in the table.
     fn cols_count(&self) -> usize;
@@ -99,6 +108,7 @@ where
             show_scrollbar: false,
             hide_scrollbar_task: None,
             scrollbar_drag_state: Rc::new(Cell::new(None)),
+            selection_state: SelectionState::Row,
             selected_row: None,
             selected_col: None,
         };
@@ -160,30 +170,22 @@ where
         }
     }
 
-    fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
-        let col_width = self.col_groups[col_ix].width;
-
-        div()
-            .when_some(col_width, |this, width| this.w(px(width)))
-            .overflow_hidden()
-            .whitespace_nowrap()
-            .py_1()
-            .px_2()
-    }
-
     fn on_row_click(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
+        self.selection_state = SelectionState::Row;
         self.selected_row = Some(row_ix);
         cx.notify();
         self.delegate.set_selected_row(self.selected_row);
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
+        self.selection_state = SelectionState::Column;
         self.selected_col = Some(col_ix);
         cx.notify();
         self.delegate.set_selected_col(self.selected_col);
     }
 
     fn action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
+        self.selection_state = SelectionState::Row;
         self.selected_row = None;
         self.selected_col = None;
         cx.notify();
@@ -207,6 +209,26 @@ where
             self.selected_row = Some(selected_row + 1);
             cx.notify();
             self.delegate.set_selected_row(self.selected_row);
+        }
+    }
+
+    fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
+        let col_width = self.col_groups[col_ix].width;
+
+        div()
+            .when_some(col_width, |this, width| this.w(px(width)))
+            .overflow_hidden()
+            .whitespace_nowrap()
+            .py_1()
+            .px_2()
+    }
+
+    /// Show Column selection style, when the column is selected and the selection state is Column.
+    fn col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
+        if self.selected_col == Some(col_ix) && self.selection_state == SelectionState::Column {
+            div().bg(cx.theme().accent)
+        } else {
+            div()
         }
     }
 }
@@ -234,6 +256,17 @@ where
             h_flex().gap_1().border_color(cx.theme().border)
         }
 
+        fn col_select_wrap<D>(table: &Table<D>, cx: &mut ViewContext<Table<D>>, this: Div) -> Div
+        where
+            D: TableDelegate,
+        {
+            if table.selection_state == SelectionState::Column {
+                this.bg(cx.theme().accent)
+            } else {
+                this
+            }
+        }
+
         div()
             .size_full()
             .rounded_md()
@@ -245,17 +278,11 @@ where
                     .key_context("Tabe")
                     .id("table")
                     .track_focus(&self.focus_handle)
+                    .debug_focused(&self.focus_handle, cx)
                     .on_action(cx.listener(Self::action_cancel))
                     .on_action(cx.listener(Self::action_select_next))
                     .on_action(cx.listener(Self::action_select_prev))
-                    .on_mouse_down(
-                        gpui::MouseButton::Left,
-                        cx.listener(|this, _, cx| {
-                            cx.focus(&this.focus_handle);
-                        }),
-                    )
                     .size_full()
-                    .debug_green()
                     .overflow_y_hidden()
                     .overflow_x_scroll()
                     .track_scroll(&self.container_scroll_handle)
@@ -268,21 +295,25 @@ where
                                 "table-uniform-list-head",
                                 1,
                                 move |table, _, cx| {
-                                    {
-                                        {
-                                            // Columns
-                                            vec![tr(cx)
-                                                .border_b_1()
-                                                .children(table.col_groups.iter().enumerate().map(
-                                                    |(col_ix, _)| {
-                                                        table
-                                                            .render_cell(col_ix, cx)
-                                                            .child(table.delegate.render_th(col_ix))
-                                                    },
-                                                ))
-                                                .flex_1()]
-                                        }
-                                    }
+                                    // Columns
+                                    vec![tr(cx)
+                                        .border_b_1()
+                                        .children(table.col_groups.iter().enumerate().map(
+                                            |(col_ix, _)| {
+                                                table.col_wrap(col_ix, cx).child(
+                                                    table
+                                                        .render_cell(col_ix, cx)
+                                                        .on_mouse_down(
+                                                            MouseButton::Left,
+                                                            cx.listener(move |this, _, cx| {
+                                                                this.on_col_head_click(col_ix, cx);
+                                                            }),
+                                                        )
+                                                        .child(table.delegate.render_th(col_ix)),
+                                                )
+                                            },
+                                        ))
+                                        .flex_1()]
                                 },
                             )
                             .size_full(),
@@ -295,50 +326,46 @@ where
                                 "table-uniform-list",
                                 rows_count,
                                 move |table, visible_range, cx| {
-                                    {
-                                        {
-                                            visible_range
-                                                .map(|row_ix| {
-                                                    tr(cx)
-                                                        .when(row_ix > 0, |this| this.border_t_1())
-                                                        .hover(|this| {
-                                                            if table.selected_row.is_some() {
-                                                                this
-                                                            } else {
-                                                                this.bg(cx
-                                                                    .theme()
-                                                                    .accent
-                                                                    .opacity(0.5))
-                                                            }
-                                                        })
-                                                        .when_some(
-                                                            table.selected_row,
-                                                            |this, selected_row| {
-                                                                this.when(
-                                                                    row_ix == selected_row,
-                                                                    |this| {
-                                                                        this.bg(cx.theme().accent)
-                                                                    },
-                                                                )
-                                                            },
-                                                        )
-                                                        .on_mouse_down(
-                                                            gpui::MouseButton::Left,
-                                                            cx.listener(move |this, _, cx| {
-                                                                this.on_row_click(row_ix, cx);
-                                                            }),
-                                                        )
-                                                        .children((0..cols_count).map(|col_ix| {
-                                                            table.render_cell(col_ix, cx).child(
-                                                                table
-                                                                    .delegate
-                                                                    .render_td(row_ix, col_ix),
-                                                            )
-                                                        }))
+                                    visible_range
+                                        .map(|row_ix| {
+                                            tr(cx)
+                                                .when(row_ix > 0, |this| this.border_t_1())
+                                                .hover(|this| {
+                                                    if table.selected_row.is_some() {
+                                                        this
+                                                    } else {
+                                                        this.bg(cx.theme().accent.opacity(0.5))
+                                                    }
                                                 })
-                                                .collect::<Vec<_>>()
-                                        }
-                                    }
+                                                // Row selected style
+                                                .when_some(
+                                                    table.selected_row,
+                                                    |this, selected_row| {
+                                                        this.when(
+                                                            row_ix == selected_row
+                                                                && table.selection_state
+                                                                    == SelectionState::Row,
+                                                            |this| this.bg(cx.theme().accent),
+                                                        )
+                                                    },
+                                                )
+                                                .on_mouse_down(
+                                                    MouseButton::Left,
+                                                    cx.listener(move |this, _, cx| {
+                                                        this.on_row_click(row_ix, cx);
+                                                    }),
+                                                )
+                                                .children((0..cols_count).map(|col_ix| {
+                                                    table.col_wrap(col_ix, cx).child(
+                                                        table.render_cell(col_ix, cx).child(
+                                                            table
+                                                                .delegate
+                                                                .render_td(row_ix, col_ix),
+                                                        ),
+                                                    )
+                                                }))
+                                        })
+                                        .collect::<Vec<_>>()
                                 },
                             )
                             .size_full()

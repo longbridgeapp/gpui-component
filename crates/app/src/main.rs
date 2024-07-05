@@ -12,6 +12,10 @@ mod story_workspace;
 actions!(main_menu, [Quit, Copy]);
 
 fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
+    if std::env::var("MTL_HUD_ENABLED").is_err() {
+        std::env::set_var("MTL_HUD_ENABLED", "1");
+    }
+
     story_workspace::init(app_state.clone(), cx);
 
     cx.bind_keys([
