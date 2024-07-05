@@ -109,8 +109,6 @@ impl TableDelegate for CustomerTableDelegate {
         }
     }
 
-    fn set_col_width(&mut self, col_ix: usize, width: Option<f32>) {}
-
     fn render_td(&self, row_ix: usize, col_ix: usize) -> impl gpui::IntoElement {
         let customer = self.customers.get(row_ix).unwrap();
         let text = match col_ix {

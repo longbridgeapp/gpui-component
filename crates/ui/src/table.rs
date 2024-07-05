@@ -1,22 +1,24 @@
 use std::{
     borrow::{Borrow, BorrowMut},
-    cell::Cell,
+    cell::{Cell, RefCell},
     rc::Rc,
     time::Duration,
 };
 
 use crate::{
     h_flex,
+    scroll::{ScrollAxis, ScrollableHandleElement},
     scrollbar::Scrollbar,
     theme::{ActiveTheme, Colorize},
     v_flex, StyledExt,
 };
 use gpui::{
-    actions, deferred, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div,
-    FocusHandle, FocusableView, InteractiveElement as _, IntoElement, IsZero, KeyBinding,
-    MouseButton, ParentElement as _, Render, ScrollHandle, ScrollWheelEvent, SharedString,
-    StatefulInteractiveElement as _, Styled as _, Task, UniformListScrollHandle, ViewContext,
-    WindowContext,
+    actions, deferred, div, prelude::FluentBuilder as _, px, relative, uniform_list, AppContext,
+    Bounds, ContentMask, Corners, Div, Edges, Element, Entity as _, FocusHandle, FocusableView,
+    Hitbox, InteractiveElement as _, IntoElement, IsZero, KeyBinding, MouseButton, PaintQuad,
+    ParentElement as _, Pixels, Point, Render, ScrollHandle, ScrollWheelEvent, SharedString,
+    StatefulInteractiveElement as _, Style, Styled, Task, UniformListScrollHandle, View,
+    ViewContext, WindowContext,
 };
 
 actions!(
@@ -54,6 +56,7 @@ enum SelectionState {
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
+    header_row_width: Option<f32>,
     horizontal_scroll_handle: ScrollHandle,
     vertical_scroll_handle: UniformListScrollHandle,
     col_groups: Vec<ColGroup>,
@@ -84,31 +87,26 @@ pub trait TableDelegate: Sized + 'static {
     /// Returns the width of the column at the given index.
     /// Return None, use auto width.
     fn col_width(&self, col_ix: usize) -> Option<f32>;
-    /// Set the width of the column at the given index.
-    fn set_col_width(&mut self, col_ix: usize, width: Option<f32>);
 
-    /// Render cell at the given row and column.
-    fn render_td(&self, row_ix: usize, col_ix: usize) -> impl IntoElement;
+    /// Set the width of the column at the given index.
+    fn on_col_width_changed(&mut self, col_ix: usize, width: Option<f32>) {}
 
     /// Render the header cell at the given column index, default to the column name.
     fn render_th(&self, col_ix: usize) -> impl IntoElement {
         div().size_full().child(self.column_name(col_ix))
     }
 
-    /// Return the index of the selected row.
-    fn selected_row(&self) -> Option<usize> {
-        None
+    /// Render cell at the given row and column.
+    fn render_td(&self, row_ix: usize, col_ix: usize) -> impl IntoElement;
+
+    /// Return true to enable loop selection on the table.
+    ///
+    /// When the prev/next selection is out of the table bounds, the selection will loop to the other side.
+    ///
+    /// Default: true
+    fn can_loop_select(&self) -> bool {
+        true
     }
-
-    /// Set the index of the selected row.
-    fn set_selected_row(&mut self, _row_ix: Option<usize>) {}
-
-    /// Return the index of the selected column.
-    fn selected_col(&self) -> Option<usize> {
-        None
-    }
-
-    fn set_selected_col(&mut self, _col_ix: Option<usize>) {}
 }
 
 impl<D> Table<D>
@@ -128,6 +126,7 @@ where
             selection_state: SelectionState::Row,
             selected_row: None,
             selected_col: None,
+            header_row_width: None,
         };
 
         this.update_col_groups(cx);
@@ -206,14 +205,12 @@ where
     fn on_row_click(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Row;
         self.selected_row = Some(row_ix);
-        self.delegate.set_selected_row(self.selected_row);
         self.scroll_to_selected_row(cx);
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Column;
         self.selected_col = Some(col_ix);
-        self.delegate.set_selected_col(self.selected_col);
         self.scroll_to_selected_column(cx);
     }
 
@@ -222,8 +219,6 @@ where
         self.selected_row = None;
         self.selected_col = None;
         cx.notify();
-        self.delegate.set_selected_row(self.selected_row);
-        self.delegate.set_selected_col(self.selected_col);
     }
 
     fn action_select_prev(&mut self, _: &SelectPrev, cx: &mut ViewContext<Self>) {
@@ -232,13 +227,14 @@ where
         if selected_row > 0 {
             self.selected_row = Some(selected_row - 1);
         } else {
-            self.selected_row = Some(rows_count - 1);
+            if self.delegate.can_loop_select() {
+                self.selected_row = Some(rows_count - 1);
+            }
         }
 
         self.selection_state = SelectionState::Row;
         self.scroll_to_selected_row(cx);
         cx.notify();
-        self.delegate.set_selected_row(self.selected_row);
     }
 
     fn action_select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
@@ -246,13 +242,14 @@ where
         if selected_row < self.delegate.rows_count() - 1 {
             self.selected_row = Some(selected_row + 1);
         } else {
-            self.selected_row = Some(0);
+            if self.delegate.can_loop_select() {
+                self.selected_row = Some(0);
+            }
         }
 
         self.selection_state = SelectionState::Row;
         self.scroll_to_selected_row(cx);
         cx.notify();
-        self.delegate.set_selected_row(self.selected_row);
     }
 
     fn action_select_prev_column(&mut self, _: &SelectPrevColumn, cx: &mut ViewContext<Self>) {
@@ -261,13 +258,14 @@ where
         if selected_col > 0 {
             self.selected_col = Some(selected_col - 1);
         } else {
-            self.selected_col = Some(cols_count - 1);
+            if self.delegate.can_loop_select() {
+                self.selected_col = Some(cols_count - 1);
+            }
         }
 
         self.selection_state = SelectionState::Column;
         self.scroll_to_selected_column(cx);
         cx.notify();
-        self.delegate.set_selected_col(self.selected_col)
     }
 
     fn action_select_next_column(&mut self, _: &SelectNextColumn, cx: &mut ViewContext<Self>) {
@@ -275,13 +273,14 @@ where
         if selected_col < self.delegate.cols_count() - 1 {
             self.selected_col = Some(selected_col + 1);
         } else {
-            self.selected_col = Some(0);
+            if self.delegate.can_loop_select() {
+                self.selected_col = Some(0);
+            }
         }
 
         self.selection_state = SelectionState::Column;
         self.scroll_to_selected_column(cx);
         cx.notify();
-        self.delegate.set_selected_col(self.selected_col);
     }
 
     fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
@@ -301,17 +300,6 @@ where
             div().bg(cx.theme().accent.opacity(0.5))
         } else {
             div()
-        }
-    }
-
-    fn on_scroll_wheel(&mut self, ev: &ScrollWheelEvent, cx: &mut ViewContext<Self>) {
-        let line_height = cx.line_height();
-        let delta = ev.delta.pixel_delta(px(line_height.into()));
-
-        dbg!(delta);
-        if delta.y.is_zero() {
-            self.horizontal_scroll_handle.set_offset(delta);
-            cx.notify();
         }
     }
 }
@@ -342,133 +330,141 @@ where
             h_flex().gap_1().border_color(cx.theme().border)
         }
 
+        let inner_table = v_flex()
+            .key_context("Table")
+            .id("table")
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::action_cancel))
+            .on_action(cx.listener(Self::action_select_next))
+            .on_action(cx.listener(Self::action_select_prev))
+            .on_action(cx.listener(Self::action_select_next_column))
+            .on_action(cx.listener(Self::action_select_prev_column))
+            .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
+            .size_full()
+            .overflow_hidden()
+            .children(self.render_scrollbar(cx))
+            .child(
+                v_flex()
+                    .flex_grow()
+                    .h_10()
+                    .w_full()
+                    .shadow_sm()
+                    .border_b_1()
+                    .border_color(cx.theme().border)
+                    .child(
+                        uniform_list(view.clone(), "table-uniform-list-head", 1, {
+                            let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                            move |table, _, cx| {
+                                // Columns
+                                vec![tr(cx)
+                                    .id("table-head")
+                                    .w_full()
+                                    .overflow_scroll()
+                                    .track_scroll(&horizontal_scroll_handle)
+                                    // The children must be one by one items.
+                                    // Becuase the horizontal scroll handle will use the child_item_bounds to
+                                    // calculate the item position for itself's `scroll_to_item` method.
+                                    .children(table.col_groups.iter().enumerate().map(
+                                        |(col_ix, _)| {
+                                            table.col_wrap(col_ix, cx).child(
+                                                table
+                                                    .render_cell(col_ix, cx)
+                                                    .on_mouse_down(
+                                                        MouseButton::Left,
+                                                        cx.listener(move |this, _, cx| {
+                                                            this.on_col_head_click(col_ix, cx);
+                                                        }),
+                                                    )
+                                                    .child(table.delegate.render_th(col_ix)),
+                                            )
+                                        },
+                                    ))
+                                    .flex_1()]
+                            }
+                        })
+                        .size_full(),
+                    ),
+            )
+            .child(
+                h_flex()
+                    .id("table-body")
+                    .flex_grow()
+                    .size_full()
+                    // .debug_pink()
+                    // .overflow_x_scroll()
+                    // .track_scroll(&horizontal_scroll_handle)
+                    .child(
+                        uniform_list(view, "table-uniform-list", rows_count, {
+                            let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                            move |table, visible_range, cx| {
+                                visible_range
+                                    .map(|row_ix| {
+                                        tr(cx)
+                                            .occlude()
+                                            .id(("table-row", row_ix))
+                                            .w_full()
+                                            .overflow_scroll()
+                                            .track_scroll(&horizontal_scroll_handle)
+                                            .children((0..cols_count).map(|col_ix| {
+                                                table.col_wrap(col_ix, cx).child(
+                                                    table
+                                                        .render_cell(col_ix, cx)
+                                                        .flex_shrink_0()
+                                                        .child(
+                                                            table
+                                                                .delegate
+                                                                .render_td(row_ix, col_ix),
+                                                        ),
+                                                )
+                                            }))
+                                            .when(row_ix > 0, |this| this.border_t_1())
+                                            .hover(|this| {
+                                                if table.selected_row.is_some() {
+                                                    this
+                                                } else {
+                                                    this.bg(hover_bg)
+                                                }
+                                            })
+                                            // Row selected style
+                                            .when_some(table.selected_row, |this, selected_row| {
+                                                this.when(
+                                                    row_ix == selected_row
+                                                        && table.selection_state
+                                                            == SelectionState::Row,
+                                                    |this| this.bg(selected_bg),
+                                                )
+                                            })
+                                            .on_mouse_down(
+                                                MouseButton::Left,
+                                                cx.listener(move |this, _, cx| {
+                                                    this.on_row_click(row_ix, cx);
+                                                }),
+                                            )
+                                    })
+                                    .collect::<Vec<_>>()
+                            }
+                        })
+                        .flex_grow()
+                        .size_full()
+                        .flex_shrink_0()
+                        .debug_green()
+                        .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
+                        .track_scroll(vertical_scroll_handle)
+                        .into_any_element(),
+                    ),
+            );
+
         div()
             .size_full()
             .rounded_md()
             .border_1()
             .border_color(cx.theme().border)
             .bg(cx.theme().card)
-            .child(
-                v_flex()
-                    .key_context("Table")
-                    .id("table")
-                    .track_focus(&self.focus_handle)
-                    .on_action(cx.listener(Self::action_cancel))
-                    .on_action(cx.listener(Self::action_select_next))
-                    .on_action(cx.listener(Self::action_select_prev))
-                    .on_action(cx.listener(Self::action_select_next_column))
-                    .on_action(cx.listener(Self::action_select_prev_column))
-                    .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
-                    .size_full()
-                    .overflow_hidden()
-                    .on_scroll_wheel(cx.listener(Self::on_scroll_wheel))
-                    .children(self.render_scrollbar(cx))
-                    .child(
-                        v_flex()
-                            .flex_grow()
-                            .h_10()
-                            .w_full()
-                            .shadow_sm()
-                            .border_b_1()
-                            .border_color(cx.theme().border)
-                            .child(
-                                uniform_list(view.clone(), "table-uniform-list-head", 1, {
-                                    let horizontal_scroll_handle = horizontal_scroll_handle.clone();
-                                    move |table, _, cx| {
-                                        // Columns
-                                        vec![tr(cx)
-                                            .id("table-head")
-                                            .w_full()
-                                            .overflow_scroll()
-                                            .track_scroll(&horizontal_scroll_handle)
-                                            .on_scroll_wheel(cx.listener(Self::on_scroll_wheel))
-                                            // The children must be one by one items.
-                                            // Becuase the horizontal scroll handle will use the child_item_bounds to
-                                            // calculate the item position for itself's `scroll_to_item` method.
-                                            .children(table.col_groups.iter().enumerate().map(
-                                                |(col_ix, _)| {
-                                                    table.col_wrap(col_ix, cx).child(
-                                                        table
-                                                            .render_cell(col_ix, cx)
-                                                            .on_mouse_down(
-                                                                MouseButton::Left,
-                                                                cx.listener(move |this, _, cx| {
-                                                                    this.on_col_head_click(
-                                                                        col_ix, cx,
-                                                                    );
-                                                                }),
-                                                            )
-                                                            .child(
-                                                                table.delegate.render_th(col_ix),
-                                                            ),
-                                                    )
-                                                },
-                                            ))
-                                            .flex_1()]
-                                    }
-                                })
-                                .size_full(),
-                            ),
-                    )
-                    .child(
-                        v_flex().flex_grow().size_full().child(
-                            uniform_list(
-                                view,
-                                "table-uniform-list",
-                                rows_count,
-                                move |table, visible_range, cx| {
-                                    visible_range
-                                        .map(|row_ix| {
-                                            tr(cx)
-                                                .id(("table-row", row_ix))
-                                                .w_full()
-                                                .overflow_scroll()
-                                                .track_scroll(&horizontal_scroll_handle)
-                                                .children((0..cols_count).map(|col_ix| {
-                                                    table.col_wrap(col_ix, cx).child(
-                                                        table.render_cell(col_ix, cx).child(
-                                                            table
-                                                                .delegate
-                                                                .render_td(row_ix, col_ix),
-                                                        ),
-                                                    )
-                                                }))
-                                                .when(row_ix > 0, |this| this.border_t_1())
-                                                .hover(|this| {
-                                                    if table.selected_row.is_some() {
-                                                        this
-                                                    } else {
-                                                        this.bg(hover_bg)
-                                                    }
-                                                })
-                                                // Row selected style
-                                                .when_some(
-                                                    table.selected_row,
-                                                    |this, selected_row| {
-                                                        this.when(
-                                                            row_ix == selected_row
-                                                                && table.selection_state
-                                                                    == SelectionState::Row,
-                                                            |this| this.bg(selected_bg),
-                                                        )
-                                                    },
-                                                )
-                                                .on_mouse_down(
-                                                    MouseButton::Left,
-                                                    cx.listener(move |this, _, cx| {
-                                                        this.on_row_click(row_ix, cx);
-                                                    }),
-                                                )
-                                        })
-                                        .collect::<Vec<_>>()
-                                },
-                            )
-                            .size_full()
-                            .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
-                            .track_scroll(vertical_scroll_handle)
-                            .into_any_element(),
-                        ),
-                    ),
-            )
+            .child(inner_table)
+            .child(ScrollableHandleElement::new(
+                cx.view().clone(),
+                ScrollAxis::Horizontal,
+                &horizontal_scroll_handle,
+            ))
     }
 }

@@ -3,6 +3,7 @@ mod disableable;
 mod event;
 mod focusable;
 mod icon;
+mod scroll;
 mod scrollbar;
 mod selectable;
 mod stock;

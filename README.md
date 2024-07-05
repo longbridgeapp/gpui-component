@@ -25,10 +25,11 @@ This is an example of build app by using GPUI.
   - [ ] Selection by mouse, drag to select text
   - [x] Cursor blinking
   - [ ] Textarea
-  - [ ] Input icon
+  - [x] Input icon
 - [x] Button
   - [x] Button with Icon
   - [x] IconButton
+  - [x] Glost / Outline Button
 - [x] Label
 - [x] Icon
 - [x] Checkbox
@@ -38,7 +39,6 @@ This is an example of build app by using GPUI.
   - [ ] Toggle Animation
 - [ ] Radio & RadioGroup
 - [x] Dropdown
-  - [ ] Combobox
   - [x] Picker
     - [x] Picker List
     - [x] Use keyword to select next, prev, enter to select, esc to cancel.
@@ -50,9 +50,16 @@ This is an example of build app by using GPUI.
 - [x] Popover
 - [x] Dockpanel
 - [ ] Splitter
-- [ ] List
+- [x] List
   - [x] A complex List example.
-- [ ] Table
+- [x] Table
+  - [x] row, column selection
+  - [x] Left, Right / Up, Down to selection column or row.
+  - [x] Horizontal scroll
+  - [ ] Vertical scroll
+  - [ ] Column resizing
+  - [ ] Column ordering
+  - [ ] Sort event emit
 
 ## How to build
 
@@ -68,4 +75,4 @@ There have a part of UI components from [Zed](https://github.com/zed-industries/
 - scrollbar
 - picker
 
-Other code are under Apache License.
+Other UI components are under Apache License.
