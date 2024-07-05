@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scrollbar::Scrollbar,
     theme::{ActiveTheme, Colorize},
-    v_flex,
+    v_flex, StyledExt,
 };
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div, FocusHandle,
@@ -48,9 +48,8 @@ enum SelectionState {
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
-    container_scroll_handle: ScrollHandle,
+    horizontal_scroll_handle: ScrollHandle,
     vertical_scroll_handle: UniformListScrollHandle,
-    horizontal_scroll_handle: UniformListScrollHandle,
     col_groups: Vec<ColGroup>,
     show_scrollbar: bool,
     hide_scrollbar_task: Option<Task<()>>,
@@ -115,9 +114,8 @@ where
             focus_handle: cx.focus_handle(),
             delegate,
             col_groups: Vec::new(),
-            container_scroll_handle: ScrollHandle::new(),
+            horizontal_scroll_handle: ScrollHandle::new(),
             vertical_scroll_handle: UniformListScrollHandle::new(),
-            horizontal_scroll_handle: UniformListScrollHandle::new(),
             show_scrollbar: false,
             hide_scrollbar_task: None,
             scrollbar_drag_state: Rc::new(Cell::new(None)),
@@ -173,9 +171,20 @@ where
         }))
     }
 
-    fn scroll_to_selected_row(&mut self, cx: &mut ViewContext<Self>) {
+    fn scroll_to_selected_row(&mut self, _cx: &mut ViewContext<Self>) {
         if let Some(row_ix) = self.selected_row {
             self.vertical_scroll_handle.scroll_to_item(row_ix);
+        }
+    }
+
+    fn scroll_to_selected_column(&mut self, _cx: &mut ViewContext<Self>) {
+        if let Some(col_ix) = self.selected_col {
+            // dbg!(
+            //     col_ix,
+            //     self.horizontal_scroll_handle.bounds_for_item(col_ix)
+            // );
+
+            self.horizontal_scroll_handle.scroll_to_item(col_ix);
         }
     }
 
@@ -251,7 +260,7 @@ where
         }
 
         self.selection_state = SelectionState::Column;
-        // self.scroll_to_selected_row(cx);
+        self.scroll_to_selected_column(cx);
         cx.notify();
         self.delegate.set_selected_col(self.selected_col)
     }
@@ -265,6 +274,7 @@ where
         }
 
         self.selection_state = SelectionState::Column;
+        self.scroll_to_selected_column(cx);
         cx.notify();
         self.delegate.set_selected_col(self.selected_col);
     }
@@ -306,6 +316,7 @@ where
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
         let vertical_scroll_handle = self.vertical_scroll_handle.clone();
+        let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
         let cols_count = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
@@ -331,41 +342,53 @@ where
                     .on_action(cx.listener(Self::action_select_next_column))
                     .on_action(cx.listener(Self::action_select_prev_column))
                     .size_full()
-                    .overflow_y_hidden()
-                    .overflow_x_scroll()
-                    .track_scroll(&self.container_scroll_handle)
+                    .overflow_hidden()
                     .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
                     .children(self.render_scrollbar(cx))
                     .child(
-                        v_flex().flex_grow().h_10().w_full().child(
-                            uniform_list(
-                                view.clone(),
-                                "table-uniform-list-head",
-                                1,
-                                move |table, _, cx| {
-                                    // Columns
-                                    vec![tr(cx)
-                                        .border_b_1()
-                                        .children(table.col_groups.iter().enumerate().map(
-                                            |(col_ix, _)| {
-                                                table.col_wrap(col_ix, cx).child(
-                                                    table
-                                                        .render_cell(col_ix, cx)
-                                                        .on_mouse_down(
-                                                            MouseButton::Left,
-                                                            cx.listener(move |this, _, cx| {
-                                                                this.on_col_head_click(col_ix, cx);
-                                                            }),
-                                                        )
-                                                        .child(table.delegate.render_th(col_ix)),
-                                                )
-                                            },
-                                        ))
-                                        .flex_1()]
-                                },
-                            )
-                            .size_full(),
-                        ),
+                        v_flex()
+                            .flex_grow()
+                            .h_10()
+                            .w_full()
+                            .overflow_hidden()
+                            .child(
+                                uniform_list(view.clone(), "table-uniform-list-head", 1, {
+                                    let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                                    move |table, _, cx| {
+                                        // Columns
+                                        vec![tr(cx)
+                                            .id("table-head")
+                                            .overflow_x_scroll()
+                                            .w_full()
+                                            .track_scroll(&horizontal_scroll_handle.clone())
+                                            .border_b_1()
+                                            // The children must be one by one items.
+                                            // Becuase the horizontal scroll handle will use the child_item_bounds to
+                                            // calculate the item position for itself's `scroll_to_item` method.
+                                            .children(table.col_groups.iter().enumerate().map(
+                                                |(col_ix, _)| {
+                                                    table.col_wrap(col_ix, cx).child(
+                                                        table
+                                                            .render_cell(col_ix, cx)
+                                                            .on_mouse_down(
+                                                                MouseButton::Left,
+                                                                cx.listener(move |this, _, cx| {
+                                                                    this.on_col_head_click(
+                                                                        col_ix, cx,
+                                                                    );
+                                                                }),
+                                                            )
+                                                            .child(
+                                                                table.delegate.render_th(col_ix),
+                                                            ),
+                                                    )
+                                                },
+                                            ))
+                                            .flex_1()]
+                                    }
+                                })
+                                .size_full(),
+                            ),
                     )
                     .child(
                         v_flex().flex_grow().size_full().child(
@@ -377,6 +400,11 @@ where
                                     visible_range
                                         .map(|row_ix| {
                                             tr(cx)
+                                                .id(("table-row", row_ix))
+                                                .overflow_x_scroll()
+                                                .overflow_y_hidden()
+                                                .w_full()
+                                                .track_scroll(&horizontal_scroll_handle)
                                                 .when(row_ix > 0, |this| this.border_t_1())
                                                 .hover(|this| {
                                                     if table.selected_row.is_some() {
@@ -417,7 +445,7 @@ where
                                 },
                             )
                             .size_full()
-                            // .with_sizing_behavior(ListSizingBehavior::Auto)
+                            .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
                             .track_scroll(vertical_scroll_handle)
                             .into_any_element(),
                         ),
