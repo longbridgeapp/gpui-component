@@ -35,7 +35,7 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex};
+use ui::{divider::Divider, h_flex, label::Label, v_flex, StyledExt};
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
@@ -68,7 +68,6 @@ pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
 
 pub struct StoryContainer {
     focus_handle: gpui::FocusHandle,
-    scroll_handle: gpui::ScrollHandle,
     name: SharedString,
     description: SharedString,
     position: DockPosition,
@@ -138,7 +137,6 @@ impl StoryContainer {
 
         Self {
             focus_handle,
-            scroll_handle: ScrollHandle::new(),
             name: name.into(),
             description: description.into(),
             width: None,
@@ -206,29 +204,29 @@ impl StoryContainer {
 
 impl Render for StoryContainer {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
-            .id("story-container")
-            .overflow_y_scroll()
-            .track_scroll(&self.scroll_handle)
+        v_flex()
             .size_full()
+            .gap_6()
             .child(
-                v_flex()
-                    .size_full()
-                    .gap_6()
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_4()
                     .p_4()
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap_4()
-                            .child(Label::new(self.name.clone()).text_size(px(24.0)))
-                            .child(Label::new(self.description.clone()).text_size(px(16.0))),
-                    )
-                    .child(Divider::horizontal())
-                    .when_some(self.story.clone(), |this, story| {
-                        this.child(v_flex().size_full().child(story))
-                    }),
+                    .child(Label::new(self.name.clone()).text_size(px(24.0)))
+                    .child(Label::new(self.description.clone()).text_size(px(16.0))),
             )
+            .child(Divider::horizontal())
+            .when_some(self.story.clone(), |this, story| {
+                this.child(
+                    v_flex()
+                        .id("story-children")
+                        .overflow_scroll()
+                        .size_full()
+                        .p_4()
+                        .child(story),
+                )
+            })
     }
 }
 

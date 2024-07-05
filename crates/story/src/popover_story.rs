@@ -10,7 +10,7 @@ use ui::{
     input::TextInput,
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenu,
-    v_flex, Clickable, IconName,
+    v_flex, Clickable, IconName, StyledExt,
 };
 
 actions!(popover_story, [Copy, Paste, Cut, SearchAll]);
@@ -102,6 +102,7 @@ impl Render for PopoverStory {
             .on_action(cx.listener(Self::on_search_all))
             .p_4()
             .size_full()
+            .min_h(px(600.))
             .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
                 cx.focus(&this.focus_handle);
             }))

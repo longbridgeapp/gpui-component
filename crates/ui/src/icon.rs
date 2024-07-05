@@ -1,6 +1,6 @@
 use crate::{button::ButtonSize, theme::ActiveTheme};
 use gpui::{
-    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
+    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Pixels, Render, RenderOnce,
     SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
 };
 
@@ -69,12 +69,36 @@ impl RenderOnce for IconName {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum IconSize {
+    XSmall,
+    Small,
+    Medium,
+    Size(Pixels),
+}
+
+impl From<ButtonSize> for IconSize {
+    fn from(size: ButtonSize) -> Self {
+        match size {
+            ButtonSize::XSmall => IconSize::XSmall,
+            ButtonSize::Small => IconSize::Small,
+            ButtonSize::Medium => IconSize::Medium,
+        }
+    }
+}
+
+impl From<Pixels> for IconSize {
+    fn from(size: Pixels) -> Self {
+        IconSize::Size(size)
+    }
+}
+
 #[derive(IntoElement)]
 pub struct Icon {
     base: Svg,
     path: SharedString,
     text_color: Option<Hsla>,
-    size: ButtonSize,
+    size: IconSize,
 }
 
 impl Default for Icon {
@@ -83,7 +107,7 @@ impl Default for Icon {
             base: svg().flex_none().size_4(),
             path: "".into(),
             text_color: None,
-            size: ButtonSize::Medium,
+            size: IconSize::Medium,
         }
     }
 }
@@ -107,8 +131,12 @@ impl Icon {
         self
     }
 
-    pub fn size(mut self, size: ButtonSize) -> Self {
-        self.size = size;
+    /// Set the size of the icon, default is `IconSize::Medium`
+    ///
+    /// Also can receive a `ButtonSize` to convert to `IconSize`,
+    /// Or a `Pixels` to set a custom size: `px(30.)`
+    pub fn size(mut self, size: impl Into<IconSize>) -> Self {
+        self.size = size.into();
 
         self
     }
@@ -137,9 +165,10 @@ impl RenderOnce for Icon {
         self.base
             .text_color(text_color)
             .map(|this| match self.size {
-                ButtonSize::XSmall => this.size_3(),
-                ButtonSize::Small => this.size_3p5(),
-                ButtonSize::Medium => this.size_4(),
+                IconSize::Size(px) => this.size(px),
+                IconSize::XSmall => this.size_3(),
+                IconSize::Small => this.size_3p5(),
+                IconSize::Medium => this.size_4(),
             })
             .path(self.path)
     }
@@ -160,9 +189,10 @@ impl Render for Icon {
             .size_4()
             .text_color(text_color)
             .map(|this| match self.size {
-                ButtonSize::XSmall => this.size_3(),
-                ButtonSize::Small => this.size_3p5(),
-                ButtonSize::Medium => this.size_4(),
+                IconSize::Size(px) => this.size(px),
+                IconSize::XSmall => this.size_3(),
+                IconSize::Small => this.size_3p5(),
+                IconSize::Medium => this.size_4(),
             })
             .path(self.path.clone())
     }

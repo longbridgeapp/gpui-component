@@ -179,11 +179,6 @@ where
 
     fn scroll_to_selected_column(&mut self, _cx: &mut ViewContext<Self>) {
         if let Some(col_ix) = self.selected_col {
-            // dbg!(
-            //     col_ix,
-            //     self.horizontal_scroll_handle.bounds_for_item(col_ix)
-            // );
-
             self.horizontal_scroll_handle.scroll_to_item(col_ix);
         }
     }
