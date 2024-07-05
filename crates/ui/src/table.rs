@@ -1,4 +1,9 @@
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    cell::Cell,
+    rc::Rc,
+    time::Duration,
+};
 
 use crate::{
     h_flex,
@@ -7,10 +12,11 @@ use crate::{
     v_flex, StyledExt,
 };
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div, FocusHandle,
-    FocusableView, InteractiveElement as _, IntoElement, KeyBinding, MouseButton,
-    ParentElement as _, Render, ScrollHandle, SharedString, StatefulInteractiveElement as _,
-    Styled as _, Task, UniformListScrollHandle, ViewContext, WindowContext,
+    actions, deferred, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div,
+    FocusHandle, FocusableView, InteractiveElement as _, IntoElement, IsZero, KeyBinding,
+    MouseButton, ParentElement as _, Render, ScrollHandle, ScrollWheelEvent, SharedString,
+    StatefulInteractiveElement as _, Styled as _, Task, UniformListScrollHandle, ViewContext,
+    WindowContext,
 };
 
 actions!(
@@ -146,16 +152,19 @@ where
             true,
         )
         .map(|bar| {
-            div()
-                .occlude()
-                .absolute()
-                .h_full()
-                .left_auto()
-                .top_0()
-                .right_0()
-                .w(px(bar.width()))
-                .bottom_0()
-                .child(bar)
+            deferred(
+                div()
+                    .occlude()
+                    .absolute()
+                    .h_full()
+                    .left_auto()
+                    .top_0()
+                    .right_0()
+                    .w(px(bar.width()))
+                    .bottom_0()
+                    .child(bar),
+            )
+            .with_priority(1)
         })
     }
 
@@ -177,9 +186,10 @@ where
         }
     }
 
-    fn scroll_to_selected_column(&mut self, _cx: &mut ViewContext<Self>) {
+    fn scroll_to_selected_column(&mut self, cx: &mut ViewContext<Self>) {
         if let Some(col_ix) = self.selected_col {
             self.horizontal_scroll_handle.scroll_to_item(col_ix);
+            cx.notify();
         }
     }
 
@@ -288,9 +298,20 @@ where
     /// Show Column selection style, when the column is selected and the selection state is Column.
     fn col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
         if self.selected_col == Some(col_ix) && self.selection_state == SelectionState::Column {
-            div().bg(cx.theme().accent)
+            div().bg(cx.theme().accent.opacity(0.5))
         } else {
             div()
+        }
+    }
+
+    fn on_scroll_wheel(&mut self, ev: &ScrollWheelEvent, cx: &mut ViewContext<Self>) {
+        let line_height = cx.line_height();
+        let delta = ev.delta.pixel_delta(px(line_height.into()));
+
+        dbg!(delta);
+        if delta.y.is_zero() {
+            self.horizontal_scroll_handle.set_offset(delta);
+            cx.notify();
         }
     }
 }
@@ -312,8 +333,10 @@ where
         let view = cx.view().clone();
         let vertical_scroll_handle = self.vertical_scroll_handle.clone();
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
-        let cols_count = self.delegate.cols_count();
+        let cols_count: usize = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
+        let selected_bg = cx.theme().accent.opacity(0.8);
+        let hover_bg = cx.theme().accent.opacity(0.5);
 
         fn tr(cx: &mut WindowContext) -> Div {
             h_flex().gap_1().border_color(cx.theme().border)
@@ -330,22 +353,24 @@ where
                     .key_context("Table")
                     .id("table")
                     .track_focus(&self.focus_handle)
-                    // .debug_focused(&self.focus_handle, cx)
                     .on_action(cx.listener(Self::action_cancel))
                     .on_action(cx.listener(Self::action_select_next))
                     .on_action(cx.listener(Self::action_select_prev))
                     .on_action(cx.listener(Self::action_select_next_column))
                     .on_action(cx.listener(Self::action_select_prev_column))
+                    .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
                     .size_full()
                     .overflow_hidden()
-                    .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
+                    .on_scroll_wheel(cx.listener(Self::on_scroll_wheel))
                     .children(self.render_scrollbar(cx))
                     .child(
                         v_flex()
                             .flex_grow()
                             .h_10()
                             .w_full()
-                            .overflow_hidden()
+                            .shadow_sm()
+                            .border_b_1()
+                            .border_color(cx.theme().border)
                             .child(
                                 uniform_list(view.clone(), "table-uniform-list-head", 1, {
                                     let horizontal_scroll_handle = horizontal_scroll_handle.clone();
@@ -353,10 +378,10 @@ where
                                         // Columns
                                         vec![tr(cx)
                                             .id("table-head")
-                                            .overflow_x_scroll()
                                             .w_full()
-                                            .track_scroll(&horizontal_scroll_handle.clone())
-                                            .border_b_1()
+                                            .overflow_scroll()
+                                            .track_scroll(&horizontal_scroll_handle)
+                                            .on_scroll_wheel(cx.listener(Self::on_scroll_wheel))
                                             // The children must be one by one items.
                                             // Becuase the horizontal scroll handle will use the child_item_bounds to
                                             // calculate the item position for itself's `scroll_to_item` method.
@@ -396,16 +421,24 @@ where
                                         .map(|row_ix| {
                                             tr(cx)
                                                 .id(("table-row", row_ix))
-                                                .overflow_x_scroll()
-                                                .overflow_y_hidden()
                                                 .w_full()
+                                                .overflow_scroll()
                                                 .track_scroll(&horizontal_scroll_handle)
+                                                .children((0..cols_count).map(|col_ix| {
+                                                    table.col_wrap(col_ix, cx).child(
+                                                        table.render_cell(col_ix, cx).child(
+                                                            table
+                                                                .delegate
+                                                                .render_td(row_ix, col_ix),
+                                                        ),
+                                                    )
+                                                }))
                                                 .when(row_ix > 0, |this| this.border_t_1())
                                                 .hover(|this| {
                                                     if table.selected_row.is_some() {
                                                         this
                                                     } else {
-                                                        this.bg(cx.theme().accent.opacity(0.5))
+                                                        this.bg(hover_bg)
                                                     }
                                                 })
                                                 // Row selected style
@@ -416,7 +449,7 @@ where
                                                             row_ix == selected_row
                                                                 && table.selection_state
                                                                     == SelectionState::Row,
-                                                            |this| this.bg(cx.theme().accent),
+                                                            |this| this.bg(selected_bg),
                                                         )
                                                     },
                                                 )
@@ -426,15 +459,6 @@ where
                                                         this.on_row_click(row_ix, cx);
                                                     }),
                                                 )
-                                                .children((0..cols_count).map(|col_ix| {
-                                                    table.col_wrap(col_ix, cx).child(
-                                                        table.render_cell(col_ix, cx).child(
-                                                            table
-                                                                .delegate
-                                                                .render_td(row_ix, col_ix),
-                                                        ),
-                                                    )
-                                                }))
                                         })
                                         .collect::<Vec<_>>()
                                 },

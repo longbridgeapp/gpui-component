@@ -79,7 +79,7 @@ pub trait StyledExt: Styled + Sized {
 
     /// Render a border with a width of 1px, color blue
     fn debug_blue(self) -> Self {
-        if cfg!(profile = "dev") {
+        if cfg!(debug_assertions) {
             self.border_1().border_color(gpui::blue())
         } else {
             self
@@ -88,7 +88,7 @@ pub trait StyledExt: Styled + Sized {
 
     /// Render a border with a width of 1px, color yellow
     fn debug_yellow(self) -> Self {
-        if cfg!(profile = "dev") {
+        if cfg!(debug_assertions) {
             self.border_1().border_color(gpui::yellow())
         } else {
             self
@@ -97,7 +97,7 @@ pub trait StyledExt: Styled + Sized {
 
     /// Render a border with a width of 1px, color green
     fn debug_green(self) -> Self {
-        if cfg!(profile = "dev") {
+        if cfg!(debug_assertions) {
             self.border_1().border_color(gpui::green())
         } else {
             self
@@ -106,7 +106,7 @@ pub trait StyledExt: Styled + Sized {
 
     /// Render a border with a width of 1px, color pink
     fn debug_pink(self) -> Self {
-        if cfg!(profile = "dev") {
+        if cfg!(debug_assertions) {
             self.border_1().border_color(hsl(300., 100., 47.))
         } else {
             self
@@ -115,7 +115,7 @@ pub trait StyledExt: Styled + Sized {
 
     /// Render a 1px blue border, when if the element is focused
     fn debug_focused(self, focus_handle: &FocusHandle, cx: &WindowContext) -> Self {
-        if cfg!(profile = "dev") {
+        if cfg!(debug_assertions) {
             if focus_handle.is_focused(cx) {
                 self.debug_blue()
             } else {

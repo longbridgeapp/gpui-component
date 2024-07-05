@@ -104,6 +104,7 @@ impl TableDelegate for CustomerTableDelegate {
             10 => Some(90.0),
             11 => Some(90.0),
             12 => Some(90.0),
+            13 => Some(90.0),
             _ => None,
         }
     }
