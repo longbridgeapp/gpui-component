@@ -47,3 +47,15 @@ non_canonical_partial_ord_impl = "allow"
 reversed_empty_ranges = "allow"
 type_complexity = "allow"
 module_inception = "allow"
+
+[profile.dev]
+split-debuginfo = "unpacked"
+debug = "limited"
+codegen-units = 16
+
+[profile.dev.package]
+taffy = { opt-level = 3 }
+cranelift-codegen = { opt-level = 3 }
+resvg = { opt-level = 3 }
+rustybuzz = { opt-level = 3 }
+ttf-parser = { opt-level = 3 }

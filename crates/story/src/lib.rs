@@ -7,6 +7,7 @@ mod list_story;
 mod picker_story;
 mod popover_story;
 mod switch_story;
+mod table_story;
 mod tooltip_story;
 
 pub use button_story::ButtonStory;
@@ -18,6 +19,7 @@ pub use list_story::ListStory;
 pub use picker_story::PickerStory;
 pub use popover_story::PopoverStory;
 pub use switch_story::SwitchStory;
+pub use table_story::TableStory;
 pub use tooltip_story::TooltipStory;
 
 use gpui::{

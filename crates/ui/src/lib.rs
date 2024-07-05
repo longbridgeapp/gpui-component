@@ -25,6 +25,7 @@ pub mod popover;
 pub mod popup_menu;
 pub mod switch;
 pub mod tab;
+pub mod table;
 pub mod tooltip;
 
 pub use clickable::Clickable;
@@ -44,4 +45,5 @@ pub fn init(cx: &mut gpui::AppContext) {
     dropdown::init(cx);
     popover::init(cx);
     popup_menu::init(cx);
+    table::init(cx);
 }
