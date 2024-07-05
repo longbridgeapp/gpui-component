@@ -160,6 +160,13 @@ where
         }))
     }
 
+    fn scroll_to_selected_row(&mut self, cx: &mut ViewContext<Self>) {
+        if let Some(row_ix) = self.selected_row {
+            self.list_scroll_handle.scroll_to_item(row_ix);
+        }
+        cx.notify();
+    }
+
     fn on_hover_to_autohide_scrollbar(&mut self, hovered: &bool, cx: &mut ViewContext<Self>) {
         if *hovered {
             self.show_scrollbar = true;
@@ -194,22 +201,30 @@ where
     }
 
     fn action_select_prev(&mut self, _: &SelectPrev, cx: &mut ViewContext<Self>) {
-        let selected_row = self.delegate.selected_row().unwrap_or(0);
+        let selected_row = self.selected_row.unwrap_or(0);
+        let rows_count = self.delegate.rows_count();
         if selected_row > 0 {
             self.selected_row = Some(selected_row - 1);
-            cx.notify();
-            self.delegate.set_selected_row(self.selected_row);
+        } else {
+            self.selected_row = Some(rows_count - 1);
         }
+
+        self.selection_state = SelectionState::Row;
+        self.scroll_to_selected_row(cx);
+        self.delegate.set_selected_row(self.selected_row);
     }
 
     fn action_select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
-        dbg!("---------- action_select_next");
-        let selected_row = self.delegate.selected_row().unwrap_or(0);
+        let selected_row = self.selected_row.unwrap_or(0);
         if selected_row < self.delegate.rows_count() - 1 {
             self.selected_row = Some(selected_row + 1);
-            cx.notify();
-            self.delegate.set_selected_row(self.selected_row);
+        } else {
+            self.selected_row = Some(0);
         }
+
+        self.selection_state = SelectionState::Row;
+        self.scroll_to_selected_row(cx);
+        self.delegate.set_selected_row(self.selected_row);
     }
 
     fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
@@ -256,17 +271,6 @@ where
             h_flex().gap_1().border_color(cx.theme().border)
         }
 
-        fn col_select_wrap<D>(table: &Table<D>, cx: &mut ViewContext<Table<D>>, this: Div) -> Div
-        where
-            D: TableDelegate,
-        {
-            if table.selection_state == SelectionState::Column {
-                this.bg(cx.theme().accent)
-            } else {
-                this
-            }
-        }
-
         div()
             .size_full()
             .rounded_md()
@@ -275,10 +279,10 @@ where
             .bg(cx.theme().card)
             .child(
                 v_flex()
-                    .key_context("Tabe")
+                    .key_context("Table")
                     .id("table")
                     .track_focus(&self.focus_handle)
-                    .debug_focused(&self.focus_handle, cx)
+                    // .debug_focused(&self.focus_handle, cx)
                     .on_action(cx.listener(Self::action_cancel))
                     .on_action(cx.listener(Self::action_select_next))
                     .on_action(cx.listener(Self::action_select_prev))
