@@ -237,16 +237,6 @@ impl RenderOnce for Button {
                     .border_color(disabled_style.border)
             })
             .border_1()
-            .map(|this| match theme.mode {
-                ThemeMode::Light => {
-                    if self.disabled {
-                        this
-                    } else {
-                        this.shadow_sm()
-                    }
-                }
-                ThemeMode::Dark => this,
-            })
             .child({
                 let text_color = if self.disabled {
                     normal_style.fg.opacity(0.6)
@@ -323,7 +313,7 @@ impl ButtonStyle {
             ButtonStyle::Secondary => cx.theme().secondary_hover,
             ButtonStyle::Danger => cx.theme().destructive_hover,
             ButtonStyle::Outline => cx.theme().secondary_hover,
-            ButtonStyle::Ghost => cx.theme().secondary_hover,
+            ButtonStyle::Ghost => cx.theme().secondary,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
