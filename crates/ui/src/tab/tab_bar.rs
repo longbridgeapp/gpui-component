@@ -1,7 +1,5 @@
 use crate::stock::h_flex;
 use crate::theme::ActiveTheme;
-use crate::StyledExt;
-use gpui::prelude::FluentBuilder as _;
 use gpui::InteractiveElement;
 use gpui::{
     div, AnyElement, Div, IntoElement, ParentElement, RenderOnce, ScrollHandle, SharedString,

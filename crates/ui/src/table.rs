@@ -1,24 +1,17 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    cell::{Cell, RefCell},
-    rc::Rc,
-    time::Duration,
-};
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use crate::{
     h_flex,
     scroll::{ScrollAxis, ScrollableHandleElement},
     scrollbar::Scrollbar,
     theme::{ActiveTheme, Colorize},
-    v_flex, StyledExt,
+    v_flex,
 };
 use gpui::{
-    actions, deferred, div, prelude::FluentBuilder as _, px, relative, uniform_list, AppContext,
-    Bounds, ContentMask, Corners, Div, Edges, Element, Entity as _, FocusHandle, FocusableView,
-    Hitbox, InteractiveElement as _, IntoElement, IsZero, KeyBinding, MouseButton, PaintQuad,
-    ParentElement as _, Pixels, Point, Render, ScrollHandle, ScrollWheelEvent, SharedString,
-    StatefulInteractiveElement as _, Style, Styled, Task, UniformListScrollHandle, View,
-    ViewContext, WindowContext,
+    actions, deferred, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div,
+    FocusHandle, FocusableView, InteractiveElement as _, IntoElement, KeyBinding, MouseButton,
+    ParentElement as _, Render, ScrollHandle, SharedString, StatefulInteractiveElement as _,
+    Styled, Task, UniformListScrollHandle, ViewContext, WindowContext,
 };
 
 actions!(
@@ -392,69 +385,59 @@ where
                     ),
             )
             .child(
-                h_flex()
-                    .id("table-body")
+                h_flex().id("table-body").flex_grow().size_full().child(
+                    uniform_list(view, "table-uniform-list", rows_count, {
+                        let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                        move |table, visible_range, cx| {
+                            visible_range
+                                .map(|row_ix| {
+                                    tr(cx)
+                                        .id(("table-row", row_ix))
+                                        .w_full()
+                                        .children((0..cols_count).map(|col_ix| {
+                                            table.col_wrap(col_ix, cx).child(
+                                                table
+                                                    .render_cell(col_ix, cx)
+                                                    .flex_shrink_0()
+                                                    // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
+                                                    .left(horizontal_scroll_handle.offset().x)
+                                                    .child(
+                                                        table.delegate.render_td(row_ix, col_ix),
+                                                    ),
+                                            )
+                                        }))
+                                        .when(row_ix > 0, |this| this.border_t_1())
+                                        .hover(|this| {
+                                            if table.selected_row.is_some() {
+                                                this
+                                            } else {
+                                                this.bg(hover_bg)
+                                            }
+                                        })
+                                        // Row selected style
+                                        .when_some(table.selected_row, |this, selected_row| {
+                                            this.when(
+                                                row_ix == selected_row
+                                                    && table.selection_state == SelectionState::Row,
+                                                |this| this.bg(selected_bg),
+                                            )
+                                        })
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(move |this, _, cx| {
+                                                this.on_row_click(row_ix, cx);
+                                            }),
+                                        )
+                                })
+                                .collect::<Vec<_>>()
+                        }
+                    })
                     .flex_grow()
                     .size_full()
-                    // .debug_pink()
-                    // .overflow_x_scroll()
-                    // .track_scroll(&horizontal_scroll_handle)
-                    .child(
-                        uniform_list(view, "table-uniform-list", rows_count, {
-                            let horizontal_scroll_handle = horizontal_scroll_handle.clone();
-                            move |table, visible_range, cx| {
-                                visible_range
-                                    .map(|row_ix| {
-                                        tr(cx)
-                                            .id(("table-row", row_ix))
-                                            .w_full()
-                                            // .track_scroll(&horizontal_scroll_handle)
-                                            .children((0..cols_count).map(|col_ix| {
-                                                table.col_wrap(col_ix, cx).child(
-                                                    table
-                                                        .render_cell(col_ix, cx)
-                                                        .flex_shrink_0()
-                                                        .left(horizontal_scroll_handle.offset().x)
-                                                        .child(
-                                                            table
-                                                                .delegate
-                                                                .render_td(row_ix, col_ix),
-                                                        ),
-                                                )
-                                            }))
-                                            .when(row_ix > 0, |this| this.border_t_1())
-                                            .hover(|this| {
-                                                if table.selected_row.is_some() {
-                                                    this
-                                                } else {
-                                                    this.bg(hover_bg)
-                                                }
-                                            })
-                                            // Row selected style
-                                            .when_some(table.selected_row, |this, selected_row| {
-                                                this.when(
-                                                    row_ix == selected_row
-                                                        && table.selection_state
-                                                            == SelectionState::Row,
-                                                    |this| this.bg(selected_bg),
-                                                )
-                                            })
-                                            .on_mouse_down(
-                                                MouseButton::Left,
-                                                cx.listener(move |this, _, cx| {
-                                                    this.on_row_click(row_ix, cx);
-                                                }),
-                                            )
-                                    })
-                                    .collect::<Vec<_>>()
-                            }
-                        })
-                        .flex_grow()
-                        .size_full()
-                        .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
-                        .track_scroll(vertical_scroll_handle)
-                        .into_any_element(),
-                    ),
+                    .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
+                    .track_scroll(vertical_scroll_handle)
+                    .into_any_element(),
+                ),
             );
 
         div()

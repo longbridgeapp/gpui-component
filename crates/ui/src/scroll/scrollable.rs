@@ -1,6 +1,6 @@
 use gpui::{
     px, relative, AnyView, Bounds, ContentMask, Corners, Edges, Element, Hitbox, Hsla, IntoElement,
-    IsZero as _, PaintQuad, Pixels, Point, ScrollHandle, ScrollWheelEvent, Style, WindowContext,
+    IsZero as _, PaintQuad, ScrollHandle, ScrollWheelEvent, Style, WindowContext,
 };
 
 #[allow(dead_code)]

@@ -1,6 +1,6 @@
 use gpui::{
-    ClickEvent, IntoElement, ParentElement as _, Render,
-    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
+    ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 use ui::{
