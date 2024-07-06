@@ -343,7 +343,7 @@ impl<D: PickerDelegate> Picker<D> {
             ElementContainer::UniformList(scroll_handle) => Some(scroll_handle.clone()),
         } {
             Scrollbar::new(
-                cx.view().clone().into(),
+                cx.view().clone(),
                 scroll_handle,
                 self.scrollbar_drag_state.clone(),
                 self.delegate.match_count(),

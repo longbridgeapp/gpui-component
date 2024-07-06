@@ -1,15 +1,16 @@
 use gpui::{
-    deferred, div, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
-    ParentElement, Render, Styled, Task, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    deferred, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Render, Styled, Task, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
     button::Button,
     h_flex,
-    list::ListItem,
-    picker::{Picker, PickerDelegate},
-    v_flex, Clickable as _, IconName,
+    input::{TextEvent, TextInput},
+    list::{List, ListDelegate, ListItem},
+    theme::ActiveTheme,
+    v_flex, Clickable as _, Icon, IconName, StyledExt,
 };
 
 pub struct ListItemDeletegate {
@@ -18,27 +19,19 @@ pub struct ListItemDeletegate {
     matches: Vec<String>,
 }
 
-impl PickerDelegate for ListItemDeletegate {
-    type ListItem = ListItem;
+impl ListDelegate for ListItemDeletegate {
+    type Item = ListItem;
 
-    fn match_count(&self) -> usize {
+    fn items_count(&self) -> usize {
         self.matches.len()
     }
 
-    fn selected_index(&self) -> usize {
-        self.selected_index
+    fn confirmed_index(&self) -> Option<usize> {
+        Some(self.selected_index)
     }
 
-    fn set_selected_index(&mut self, index: usize, _cx: &mut ViewContext<Picker<Self>>) {
-        self.selected_index = index
-    }
-
-    fn render_item(
-        &self,
-        ix: usize,
-        selected: bool,
-        _cx: &mut ViewContext<Picker<Self>>,
-    ) -> Option<Self::ListItem> {
+    fn render_item(&self, ix: usize, _cx: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
+        let selected = ix == self.selected_index;
         if let Some(item) = self.matches.get(ix) {
             let list_item = ListItem::new(("item", ix))
                 .check_icon(ui::IconName::Check)
@@ -52,28 +45,7 @@ impl PickerDelegate for ListItemDeletegate {
         }
     }
 
-    fn update_matches(
-        &mut self,
-        query: &str,
-        cx: &mut ViewContext<Picker<Self>>,
-    ) -> gpui::Task<()> {
-        if let Some(story) = self.story.upgrade() {
-            let matched_items = story
-                .read(cx)
-                .items
-                .iter()
-                .filter(|item| item.contains(query))
-                .cloned()
-                .collect();
-
-            self.matches = matched_items;
-            cx.notify();
-        }
-
-        Task::ready(())
-    }
-
-    fn dismissed(&mut self, cx: &mut ViewContext<Picker<Self>>) {
+    fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
         if let Some(story) = self.story.upgrade() {
             cx.update_view(&story, |story, cx| {
                 story.open = false;
@@ -82,11 +54,14 @@ impl PickerDelegate for ListItemDeletegate {
         }
     }
 
-    fn confirm(&mut self, _secondary: bool, cx: &mut ViewContext<Picker<Self>>) {
+    fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
         if let Some(story) = self.story.upgrade() {
             cx.update_view(&story, |story, cx| {
-                if let Some(item) = self.matches.get(self.selected_index) {
-                    story.selected_value = Some(item.clone());
+                if let Some(ix) = ix {
+                    self.selected_index = ix;
+                    if let Some(item) = self.matches.get(ix) {
+                        story.selected_value = Some(item.clone());
+                    }
                 }
                 story.open = false;
                 cx.notify();
@@ -96,7 +71,8 @@ impl PickerDelegate for ListItemDeletegate {
 }
 
 pub struct PickerStory {
-    picker: View<Picker<ListItemDeletegate>>,
+    query_input: View<TextInput>,
+    list: View<List<ListItemDeletegate>>,
     open: bool,
     items: Vec<String>,
     selected_value: Option<String>,
@@ -164,28 +140,67 @@ impl PickerStory {
         .collect();
 
         let story = cx.view().downgrade();
-        let picker = cx.new_view(|cx| {
-            let mut picker = Picker::uniform_list(
-                ListItemDeletegate {
-                    story,
-                    selected_index: 0,
-                    matches: items.clone(),
-                },
-                cx,
-            )
-            .modal(true);
-
-            picker.focus(cx);
-            picker.set_query("c", cx);
-            picker
+        let delegate = ListItemDeletegate {
+            story,
+            selected_index: 0,
+            matches: items.clone(),
+        };
+        let list = cx.new_view(|cx| {
+            let mut list = List::new(delegate, cx);
+            list.focus(cx);
+            list
         });
 
+        let query_input = cx.new_view(|cx| {
+            TextInput::new(cx)
+                .appearance(false)
+                .prefix(Icon::new(IconName::Search).view(cx))
+                .placeholder("Search...")
+        });
+
+        cx.subscribe(&query_input, Self::on_query_input_event)
+            .detach();
+
         Self {
+            query_input,
             items,
-            picker,
+            list,
             open: false,
             selected_value: None,
         }
+    }
+
+    fn update_items(&mut self, query: &str, cx: &mut ViewContext<Self>) {
+        self.list.update(cx, |list, cx| {
+            list.delegate_mut().matches = self
+                .items
+                .iter()
+                .filter(|item| item.to_lowercase().contains(&query.to_lowercase()))
+                .map(|s| s.clone())
+                .collect()
+        })
+    }
+
+    fn on_query_input_event(
+        &mut self,
+        _: View<TextInput>,
+        event: &TextEvent,
+        cx: &mut ViewContext<Self>,
+    ) {
+        #[allow(clippy::single_match)]
+        match event {
+            TextEvent::Input { text } => {
+                self.update_items(text, cx);
+                cx.notify()
+            }
+            _ => {}
+        }
+    }
+}
+
+impl FocusableView for PickerStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
+        self.query_input.focus_handle(cx)
     }
 }
 
@@ -200,7 +215,7 @@ impl Render for PickerStory {
                         .icon(IconName::Search)
                         .on_click(cx.listener(|this, _, cx| {
                             this.open = !this.open;
-                            this.picker.focus_handle(cx).focus(cx);
+                            this.list.focus_handle(cx).focus(cx);
                             cx.notify();
                         })),
                 ),
@@ -220,7 +235,15 @@ impl Render for PickerStory {
                             div()
                                 .w(px(450.))
                                 .h(px(350.))
-                                .child(self.picker.clone())
+                                .elevation_3(cx)
+                                .child(
+                                    div()
+                                        .px_2()
+                                        .border_b_1()
+                                        .border_color(cx.theme().border)
+                                        .child(self.query_input.clone()),
+                                )
+                                .child(self.list.clone())
                                 .on_mouse_down_out(cx.listener(|this, _, cx| {
                                     this.open = false;
                                     cx.notify();

@@ -42,7 +42,7 @@ pub use svg_img::*;
 /// Initialize the UI module.
 pub fn init(cx: &mut gpui::AppContext) {
     input::init(cx);
-    picker::init(cx);
+    list::init(cx);
     dropdown::init(cx);
     popover::init(cx);
     popup_menu::init(cx);
