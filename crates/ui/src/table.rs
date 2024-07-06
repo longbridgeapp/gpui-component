@@ -56,7 +56,6 @@ enum SelectionState {
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
-    header_row_width: Option<f32>,
     horizontal_scroll_handle: ScrollHandle,
     vertical_scroll_handle: UniformListScrollHandle,
     col_groups: Vec<ColGroup>,
@@ -126,7 +125,6 @@ where
             selection_state: SelectionState::Row,
             selected_row: None,
             selected_col: None,
-            header_row_width: None,
         };
 
         this.update_col_groups(cx);
@@ -408,16 +406,15 @@ where
                                 visible_range
                                     .map(|row_ix| {
                                         tr(cx)
-                                            .occlude()
                                             .id(("table-row", row_ix))
                                             .w_full()
-                                            .overflow_scroll()
-                                            .track_scroll(&horizontal_scroll_handle)
+                                            // .track_scroll(&horizontal_scroll_handle)
                                             .children((0..cols_count).map(|col_ix| {
                                                 table.col_wrap(col_ix, cx).child(
                                                     table
                                                         .render_cell(col_ix, cx)
                                                         .flex_shrink_0()
+                                                        .left(horizontal_scroll_handle.offset().x)
                                                         .child(
                                                             table
                                                                 .delegate
@@ -454,8 +451,6 @@ where
                         })
                         .flex_grow()
                         .size_full()
-                        .flex_shrink_0()
-                        .debug_green()
                         .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
                         .track_scroll(vertical_scroll_handle)
                         .into_any_element(),

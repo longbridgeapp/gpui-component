@@ -1,6 +1,6 @@
 use gpui::{
     px, relative, AnyView, Bounds, ContentMask, Corners, Edges, Element, Hitbox, Hsla, IntoElement,
-    IsZero as _, PaintQuad, ScrollHandle, ScrollWheelEvent, Style, WindowContext,
+    IsZero as _, PaintQuad, Pixels, Point, ScrollHandle, ScrollWheelEvent, Style, WindowContext,
 };
 
 #[allow(dead_code)]
@@ -57,7 +57,7 @@ impl Element for ScrollableHandleElement {
 
     fn request_layout(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let mut style = Style::default();
@@ -117,6 +117,7 @@ impl Element for ScrollableHandleElement {
                 let scroll_handle = self.scroll_handle.clone();
                 let view_id = self.view.entity_id();
                 let is_horizontal = self.axis == ScrollAxis::Horizontal;
+                // let callback = self.on_scroll_offset_changed.as_mut();
 
                 move |event: &ScrollWheelEvent, _, cx| {
                     if bounds.contains(&mouse_position) {

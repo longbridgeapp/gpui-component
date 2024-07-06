@@ -56,10 +56,11 @@ This is an example of build app by using GPUI.
   - [x] row, column selection
   - [x] Left, Right / Up, Down to selection column or row.
   - [x] Horizontal scroll
-  - [ ] Vertical scroll
+  - [x] Vertical scroll
   - [ ] Column resizing
   - [ ] Column ordering
   - [ ] Sort event emit
+  - [ ] SimpleTable
 
 ## How to build
 
