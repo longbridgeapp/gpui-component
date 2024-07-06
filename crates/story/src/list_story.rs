@@ -196,6 +196,7 @@ impl ListStory {
                 },
                 cx,
             )
+            .no_query()
         });
 
         // Spawn a background to random refresh the list

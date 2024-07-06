@@ -134,7 +134,7 @@ where
             selected_index: 0,
         };
 
-        let list = cx.new_view(|cx| List::new(delegate, cx).max_h(rems(20.)));
+        let list = cx.new_view(|cx| List::new(delegate, cx).no_query().max_h(rems(20.)));
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),

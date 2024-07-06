@@ -1,21 +1,20 @@
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, ParentElement, Render, Styled, Task, View, ViewContext,
+    InteractiveElement as _, IntoElement, ParentElement, Render, Styled, View, ViewContext,
     VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
     button::Button,
     h_flex,
-    input::{TextEvent, TextInput},
     list::{List, ListDelegate, ListItem},
-    theme::ActiveTheme,
-    v_flex, Clickable as _, Icon, IconName, StyledExt,
+    v_flex, Clickable as _, IconName, StyledExt,
 };
 
 pub struct ListItemDeletegate {
     story: WeakView<PickerStory>,
     selected_index: usize,
+    items: Vec<String>,
     matches: Vec<String>,
 }
 
@@ -28,6 +27,16 @@ impl ListDelegate for ListItemDeletegate {
 
     fn confirmed_index(&self) -> Option<usize> {
         Some(self.selected_index)
+    }
+
+    fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) {
+        self.matches = self
+            .items
+            .iter()
+            .filter(|item| item.to_lowercase().contains(&query.to_lowercase()))
+            .map(|s| s.clone())
+            .collect();
+        cx.notify();
     }
 
     fn render_item(&self, ix: usize, _cx: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
@@ -71,10 +80,8 @@ impl ListDelegate for ListItemDeletegate {
 }
 
 pub struct PickerStory {
-    query_input: View<TextInput>,
     list: View<List<ListItemDeletegate>>,
     open: bool,
-    items: Vec<String>,
     selected_value: Option<String>,
 }
 
@@ -143,6 +150,7 @@ impl PickerStory {
         let delegate = ListItemDeletegate {
             story,
             selected_index: 0,
+            items: items.clone(),
             matches: items.clone(),
         };
         let list = cx.new_view(|cx| {
@@ -151,56 +159,17 @@ impl PickerStory {
             list
         });
 
-        let query_input = cx.new_view(|cx| {
-            TextInput::new(cx)
-                .appearance(false)
-                .prefix(Icon::new(IconName::Search).view(cx))
-                .placeholder("Search...")
-        });
-
-        cx.subscribe(&query_input, Self::on_query_input_event)
-            .detach();
-
         Self {
-            query_input,
-            items,
             list,
             open: false,
             selected_value: None,
-        }
-    }
-
-    fn update_items(&mut self, query: &str, cx: &mut ViewContext<Self>) {
-        self.list.update(cx, |list, cx| {
-            list.delegate_mut().matches = self
-                .items
-                .iter()
-                .filter(|item| item.to_lowercase().contains(&query.to_lowercase()))
-                .map(|s| s.clone())
-                .collect()
-        })
-    }
-
-    fn on_query_input_event(
-        &mut self,
-        _: View<TextInput>,
-        event: &TextEvent,
-        cx: &mut ViewContext<Self>,
-    ) {
-        #[allow(clippy::single_match)]
-        match event {
-            TextEvent::Input { text } => {
-                self.update_items(text, cx);
-                cx.notify()
-            }
-            _ => {}
         }
     }
 }
 
 impl FocusableView for PickerStory {
     fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
-        self.query_input.focus_handle(cx)
+        self.list.focus_handle(cx)
     }
 }
 
@@ -232,17 +201,10 @@ impl Render for PickerStory {
                 this.child(deferred(
                     div().absolute().size_full().top_0().left_0().child(
                         v_flex().flex().flex_col().items_center().child(
-                            div()
+                            v_flex()
                                 .w(px(450.))
                                 .h(px(350.))
                                 .elevation_3(cx)
-                                .child(
-                                    div()
-                                        .px_2()
-                                        .border_b_1()
-                                        .border_color(cx.theme().border)
-                                        .child(self.query_input.clone()),
-                                )
                                 .child(self.list.clone())
                                 .on_mouse_down_out(cx.listener(|this, _, cx| {
                                     this.open = false;

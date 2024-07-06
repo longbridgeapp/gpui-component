@@ -2,14 +2,15 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::prelude::FluentBuilder as _;
 
+use crate::input::{TextEvent, TextInput};
 use crate::theme::{ActiveTheme, Colorize as _};
-use crate::StyledExt;
 use crate::{scrollbar::Scrollbar, v_flex};
+use crate::{Icon, IconName};
 use gpui::{
-    actions, deferred, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
+    actions, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
     ParentElement as _, Render, StatefulInteractiveElement as _, Styled as _, Task,
-    UniformListScrollHandle, ViewContext,
+    UniformListScrollHandle, View, ViewContext, VisualContext as _,
 };
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -24,8 +25,11 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
+#[allow(unused)]
 pub trait ListDelegate: Sized + 'static {
     type Item: IntoElement;
+
+    fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) {}
 
     /// Return the number of items in the list.
     fn items_count(&self) -> usize;
@@ -45,6 +49,7 @@ pub struct List<D: ListDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
     max_height: Option<Length>,
+    query_input: Option<View<TextInput>>,
 
     enable_scrollbar: bool,
     vertical_scroll_handle: UniformListScrollHandle,
@@ -60,9 +65,20 @@ where
     D: ListDelegate,
 {
     pub fn new(delegate: D, cx: &mut ViewContext<Self>) -> Self {
+        let query_input = cx.new_view(|cx| {
+            TextInput::new(cx)
+                .appearance(false)
+                .prefix(Icon::new(IconName::Search).view(cx))
+                .placeholder("Search...")
+        });
+
+        cx.subscribe(&query_input, Self::on_query_input_event)
+            .detach();
+
         Self {
             focus_handle: cx.focus_handle(),
             delegate,
+            query_input: Some(query_input),
             selected_index: None,
             vertical_scroll_handle: UniformListScrollHandle::new(),
             scrollbar_drag_state: Rc::new(Cell::new(None)),
@@ -80,6 +96,11 @@ where
 
     pub fn no_scrollbar(mut self) -> Self {
         self.enable_scrollbar = false;
+        self
+    }
+
+    pub fn no_query(mut self) -> Self {
+        self.query_input = None;
         self
     }
 
@@ -156,6 +177,22 @@ where
         }
     }
 
+    fn on_query_input_event(
+        &mut self,
+        _: View<TextInput>,
+        event: &TextEvent,
+        cx: &mut ViewContext<Self>,
+    ) {
+        #[allow(clippy::single_match)]
+        match event {
+            TextEvent::Input { text } => {
+                self.delegate.perform_search(&text.trim(), cx);
+                cx.notify()
+            }
+            TextEvent::PressEnter => self.action_confirm(&Confirm, cx),
+        }
+    }
+
     fn action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
         self.delegate.cancel(cx);
         cx.notify();
@@ -195,8 +232,12 @@ impl<D> FocusableView for List<D>
 where
     D: ListDelegate,
 {
-    fn focus_handle(&self, _: &AppContext) -> FocusHandle {
-        self.focus_handle.clone()
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        if let Some(query_input) = &self.query_input {
+            query_input.focus_handle(cx)
+        } else {
+            self.focus_handle.clone()
+        }
     }
 }
 
@@ -227,6 +268,15 @@ where
             .on_action(cx.listener(Self::action_select_next))
             .on_action(cx.listener(Self::action_select_prev))
             .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
+            .when_some(self.query_input.clone(), |this, input| {
+                this.child(
+                    div()
+                        .px_2()
+                        .border_b_1()
+                        .border_color(cx.theme().border)
+                        .child(input),
+                )
+            })
             .child(
                 v_flex()
                     .flex_grow()
@@ -261,7 +311,7 @@ where
                                     .collect::<Vec<_>>()
                             }
                         })
-                        .size_full()
+                        .flex_grow()
                         .with_sizing_behavior(sizing_behavior)
                         .track_scroll(vertical_scroll_handle)
                         .into_any_element(),
