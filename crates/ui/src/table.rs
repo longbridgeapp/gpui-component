@@ -133,6 +133,14 @@ where
         this
     }
 
+    pub fn delegate(&self) -> &D {
+        &self.delegate
+    }
+
+    pub fn delegate_mut(&mut self) -> &mut D {
+        &mut self.delegate
+    }
+
     fn update_col_groups(&mut self, cx: &mut ViewContext<Self>) {
         self.col_groups = (0..self.delegate.cols_count())
             .map(|col_ix| ColGroup {

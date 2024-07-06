@@ -40,4 +40,8 @@ impl Selection {
             Self::Selected => Self::Unselected,
         }
     }
+
+    pub fn is_selected(&self) -> bool {
+        matches!(self, Self::Selected)
+    }
 }

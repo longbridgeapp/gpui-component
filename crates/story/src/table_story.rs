@@ -1,9 +1,16 @@
+use std::rc::Rc;
+
 use fake::Fake;
 use gpui::{
-    div, ParentElement, Render, SharedString, Styled, View, ViewContext, VisualContext as _,
-    WindowContext,
+    div, ClickEvent, ParentElement, Render, SharedString, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
-use ui::table::{Table, TableDelegate};
+use ui::{
+    checkbox::Checkbox,
+    h_flex,
+    table::{Table, TableDelegate},
+    v_flex, Selectable, Selection,
+};
 
 struct Customer {
     id: usize,
@@ -62,12 +69,14 @@ fn randome_customers(size: usize) -> Vec<Customer> {
 }
 struct CustomerTableDelegate {
     customers: Vec<Customer>,
+    loop_selection: bool,
 }
 
 impl CustomerTableDelegate {
     fn new(size: usize) -> Self {
         Self {
             customers: randome_customers(size),
+            loop_selection: true,
         }
     }
 }
@@ -130,6 +139,10 @@ impl TableDelegate for CustomerTableDelegate {
 
         SharedString::from(text)
     }
+
+    fn can_loop_select(&self) -> bool {
+        self.loop_selection
+    }
 }
 
 pub struct TableStory {
@@ -146,10 +159,31 @@ impl TableStory {
         let table = cx.new_view(|cx| Table::new(delegate, cx));
         Self { table }
     }
+
+    fn toggle_loop_selection(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+        let table = self.table.clone();
+        table.update(cx, |table, cx| {
+            table.delegate_mut().loop_selection = s.is_selected();
+            cx.notify();
+        });
+    }
 }
 
 impl Render for TableStory {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
-        div().size_full().child(self.table.clone())
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
+        let delegate = self.table.read(cx).delegate();
+
+        v_flex()
+            .size_full()
+            .gap_2()
+            .child(
+                h_flex().items_center().child(
+                    Checkbox::new("loop-selection")
+                        .label("Loop Selection")
+                        .selected(delegate.loop_selection)
+                        .on_click(cx.listener(Self::toggle_loop_selection)),
+                ),
+            )
+            .child(self.table.clone())
     }
 }

@@ -206,7 +206,6 @@ impl Render for StoryContainer {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .size_full()
-            .gap_6()
             .child(
                 div()
                     .flex()
@@ -214,9 +213,9 @@ impl Render for StoryContainer {
                     .gap_4()
                     .p_4()
                     .child(Label::new(self.name.clone()).text_size(px(24.0)))
-                    .child(Label::new(self.description.clone()).text_size(px(16.0))),
+                    .child(Label::new(self.description.clone()).text_size(px(16.0)))
+                    .child(Divider::horizontal()),
             )
-            .child(Divider::horizontal())
             .when_some(self.story.clone(), |this, story| {
                 this.child(
                     v_flex()
