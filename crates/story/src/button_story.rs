@@ -25,8 +25,6 @@ impl ButtonStory {
 impl Render for ButtonStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
-            .w_full()
-            .justify_start()
             .gap_6()
             .child(
                 h_flex()
@@ -58,7 +56,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-6", cx)
+                                Button::new("button-5-ghost", cx)
                                     .label("Ghost Button")
                                     .style(ButtonStyle::Ghost)
                                     .on_click(Self::on_click),

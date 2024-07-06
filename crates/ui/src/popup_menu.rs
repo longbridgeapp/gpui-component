@@ -6,7 +6,7 @@ use gpui::{
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, StyledExt as _};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -25,7 +25,6 @@ enum PopupMenuItem {
     Item {
         icon: Option<Icon>,
         label: SharedString,
-        action: Option<Box<dyn Action>>,
         handler: Rc<dyn Fn(Option<&FocusHandle>, &mut WindowContext)>,
     },
 }
@@ -98,7 +97,6 @@ impl PopupMenu {
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
-            action: Some(action.boxed_clone()),
             handler: Rc::new(move |content, cx| {
                 if let Some(content) = &content {
                     cx.focus(content);

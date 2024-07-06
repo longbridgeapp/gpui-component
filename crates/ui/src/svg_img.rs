@@ -24,7 +24,7 @@ impl Clone for SvgImg {
     fn clone(&self) -> Self {
         Self {
             interactivity: Interactivity::default(),
-            size: self.size.clone(),
+            size: self.size,
             data: self.data.clone(),
         }
     }

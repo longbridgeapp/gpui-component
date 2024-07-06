@@ -40,6 +40,7 @@ pub enum PanelEvent {
     Close,
 }
 
+#[allow(unused)]
 pub trait Panel: FocusableView + EventEmitter<PanelEvent> {
     fn persistent_name() -> &'static str;
     /// Return the position of the panel.

@@ -7,9 +7,15 @@ use gpui::{
     UniformListScrollHandle,
 };
 
-const MIN_THUMB_PERCENTAGE_HEIGHT: f64 = 0.03;
+const MIN_THUMB_PERCENTAGE_HEIGHT: f64 = 0.05;
 const THUMB_RADIUS: Pixels = Pixels(5.0);
 const THUMB_INSET: Pixels = Pixels(0.8);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MouseState {
+    Normal,
+    Down,
+}
 
 pub struct Scrollbar {
     width: f32,
@@ -18,6 +24,7 @@ pub struct Scrollbar {
     /// This is the state of the scrollbar thumb when it is being dragged.
     /// It must ref from the parent view.
     drag_state: Rc<Cell<Option<f32>>>,
+    mouse_state: Rc<Cell<MouseState>>,
     items_count: usize,
     thumb: Range<f32>,
 }
@@ -64,6 +71,7 @@ impl Scrollbar {
             thumb,
             handle: cloned_handle,
             drag_state,
+            mouse_state: Rc::new(Cell::new(MouseState::Normal)),
         })
     }
 
@@ -126,10 +134,12 @@ impl Element for Scrollbar {
     ) {
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             let is_draging = self.drag_state.get().is_some();
+            let is_active = self.mouse_state.get() == MouseState::Down;
+
             let bar_bg = cx.theme().scrollbar;
             let thumb_bg = cx.theme().scrollbar_thumb;
-            let thumb_bg = if is_draging {
-                thumb_bg.darken(0.1)
+            let thumb_bg = if is_draging || is_active {
+                thumb_bg.darken(0.3)
             } else {
                 thumb_bg
             };
@@ -154,12 +164,21 @@ impl Element for Scrollbar {
             let handle = self.handle.clone();
             let items_count = self.items_count;
 
-            let drag_state = self.drag_state.clone();
             cx.on_mouse_event({
                 let scroll = self.handle.clone();
-                move |event: &MouseDownEvent, phase, _cx| {
+                let drag_state = self.drag_state.clone();
+                let mouse_state = self.mouse_state.clone();
+                let view_id = self.view.entity_id();
+
+                move |event: &MouseDownEvent, phase, cx| {
                     if phase.bubble() && bounds.contains(&event.position) {
-                        if !thumb_bounds.contains(&event.position) {
+                        if thumb_bounds.contains(&event.position) {
+                            let thumb_top_offset =
+                                (event.position.y - thumb_bounds.origin.y) / bounds.size.height;
+                            drag_state.set(Some(thumb_top_offset));
+                            mouse_state.set(MouseState::Down);
+                            cx.notify(view_id);
+                        } else {
                             let scroll = scroll.0.borrow();
                             if let Some(last_height) = scroll.last_item_height {
                                 let max_offset = items_count as f32 * last_height;
@@ -171,16 +190,14 @@ impl Element for Scrollbar {
                                     .base_handle
                                     .set_offset(point(px(0.), -max_offset * percentage));
                             }
-                        } else {
-                            let thumb_top_offset =
-                                (event.position.y - thumb_bounds.origin.y) / bounds.size.height;
-                            drag_state.set(Some(thumb_top_offset));
                         }
                     }
                 }
             });
+
             cx.on_mouse_event({
                 let scroll = self.handle.clone();
+
                 move |event: &ScrollWheelEvent, phase, cx| {
                     if phase.bubble() && bounds.contains(&event.position) {
                         let scroll = scroll.0.borrow_mut();
@@ -192,32 +209,42 @@ impl Element for Scrollbar {
                 }
             });
 
-            let view_id = self.view.entity_id();
-            let drag_state = self.drag_state.clone();
-            cx.on_mouse_event(move |event: &MouseMoveEvent, _, cx| {
-                if let Some(drag_state) = drag_state.get().filter(|_| event.dragging()) {
-                    let scroll = handle.0.borrow();
-                    if let Some(last_height) = scroll.last_item_height {
-                        let max_offset = items_count as f32 * last_height;
-                        let percentage =
-                            (event.position.y - bounds.origin.y) / bounds.size.height - drag_state;
+            cx.on_mouse_event({
+                let drag_state = self.drag_state.clone();
+                let view_id = self.view.entity_id();
 
-                        let percentage = percentage.min(1. - thumb_percentage_size);
-                        scroll
-                            .base_handle
-                            .set_offset(point(px(0.), -max_offset * percentage));
-                        cx.notify(view_id);
+                move |event: &MouseMoveEvent, _, cx| {
+                    if let Some(drag_state) = drag_state.get().filter(|_| event.dragging()) {
+                        let scroll = handle.0.borrow();
+                        if let Some(last_height) = scroll.last_item_height {
+                            let max_offset = items_count as f32 * last_height;
+                            let percentage = (event.position.y - bounds.origin.y)
+                                / bounds.size.height
+                                - drag_state;
+
+                            let percentage = percentage.min(1. - thumb_percentage_size);
+                            scroll
+                                .base_handle
+                                .set_offset(point(px(0.), -max_offset * percentage));
+                            cx.notify(view_id);
+                        }
+                    } else {
+                        drag_state.set(None);
                     }
-                } else {
-                    drag_state.set(None);
                 }
             });
 
-            let drag_state = self.drag_state.clone();
-            cx.on_mouse_event(move |_event: &MouseUpEvent, phase, cx| {
-                if phase.bubble() {
-                    drag_state.set(None);
-                    cx.notify(view_id);
+            cx.on_mouse_event({
+                let view_id = self.view.entity_id();
+                let mouse_state = self.mouse_state.clone();
+                let drag_state = self.drag_state.clone();
+
+                move |_event: &MouseUpEvent, phase, cx| {
+                    if phase.bubble() {
+                        drag_state.set(None);
+                        mouse_state.set(MouseState::Normal);
+                        cx.notify(view_id);
+                    }
                 }
             });
         })

@@ -1,6 +1,5 @@
 use crate::stock::h_flex;
 use crate::theme::ActiveTheme;
-use gpui::prelude::FluentBuilder as _;
 use gpui::InteractiveElement;
 use gpui::{
     div, AnyElement, Div, IntoElement, ParentElement, RenderOnce, ScrollHandle, SharedString,
@@ -12,7 +11,7 @@ use smallvec::SmallVec;
 pub struct TabBar {
     base: Div,
     id: SharedString,
-    scroll_handle: Option<ScrollHandle>,
+    scroll_handle: ScrollHandle,
     children: SmallVec<[AnyElement; 2]>,
 }
 
@@ -22,13 +21,13 @@ impl TabBar {
             base: div().h_10().p_1(),
             id: id.into(),
             children: SmallVec::new(),
-            scroll_handle: None,
+            scroll_handle: ScrollHandle::new(),
         }
     }
 
     #[allow(unused)]
     pub fn track_scroll(mut self, scroll_handle: ScrollHandle) -> Self {
-        self.scroll_handle = Some(scroll_handle);
+        self.scroll_handle = scroll_handle;
         self
     }
 }
@@ -51,23 +50,20 @@ impl RenderOnce for TabBar {
 
         self.base
             .id(self.id)
-            .group("tab_bar")
+            .group("tab-bar")
             .flex()
             .flex_none()
             .items_center()
-            .w_full()
             .bg(theme.muted)
             .text_color(theme.muted_foreground)
-            .relative()
-            .overflow_x_hidden()
+            // The child will append to this level
             .child(
                 h_flex()
                     .id("tabs")
                     .flex_grow()
                     .overflow_x_scroll()
-                    .when_some(self.scroll_handle, |cx, scroll_handle| {
-                        cx.track_scroll(&scroll_handle)
-                    })
+                    .track_scroll(&self.scroll_handle)
+                    // The children will append to this level
                     .children(self.children),
             )
     }

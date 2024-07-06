@@ -1,6 +1,6 @@
 use gpui::{
-    actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
+    actions, div, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter, FocusHandle,
+    FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
     ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::{
@@ -22,7 +22,7 @@ struct Form {
 impl Form {
     fn new(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| Self {
-            input1: cx.new_view(|cx| TextInput::new(cx)),
+            input1: cx.new_view(TextInput::new),
         })
     }
 }
@@ -57,7 +57,7 @@ pub struct PopoverStory {
 
 impl PopoverStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
@@ -102,6 +102,7 @@ impl Render for PopoverStory {
             .on_action(cx.listener(Self::on_search_all))
             .p_4()
             .size_full()
+            .min_h(px(600.))
             .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
                 cx.focus(&this.focus_handle);
             }))

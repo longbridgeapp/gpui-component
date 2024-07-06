@@ -2,7 +2,7 @@ use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, StoryContainer, SwitchStory, TooltipStory,
+    PopoverStory, StoryContainer, SwitchStory, TableStory, TooltipStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -123,6 +123,15 @@ impl StoryWorkspace {
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::add_pane(
+            "Table",
+            "Powerful table and datagrids built using TanStack Table.",
+            TableStory::view(cx).into(),
             workspace.clone(),
             cx,
         )

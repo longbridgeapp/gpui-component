@@ -1,16 +1,15 @@
 use gpui::{
-    deferred, div, hsla, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
+    deferred, div, prelude::FluentBuilder as _, px, InteractiveElement as _, IntoElement,
     ParentElement, Render, Styled, Task, View, ViewContext, VisualContext as _, WeakView,
     WindowContext,
 };
 
 use ui::{
-    button::{Button, ButtonStyle},
+    button::Button,
     h_flex,
     list::ListItem,
     picker::{Picker, PickerDelegate},
-    theme::hsl,
-    v_flex, Clickable as _, IconName, StyledExt,
+    v_flex, Clickable as _, IconName,
 };
 
 pub struct ListItemDeletegate {
@@ -105,7 +104,7 @@ pub struct PickerStory {
 
 impl PickerStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {

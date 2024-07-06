@@ -10,12 +10,11 @@ use std::{
 
 use anyhow::Result;
 use gpui::{
-    actions, div, impl_actions, prelude::FluentBuilder as _, px, AnyElement, AppContext,
-    DefiniteLength, DragMoveEvent, Element as _, EntityId, EventEmitter, FocusHandle,
-    FocusOutEvent, FocusableView, InteractiveElement as _, IntoElement, KeyContext, ParentElement,
-    Pixels, Point, Render, RenderOnce as _, ScrollHandle, StatefulInteractiveElement, Styled,
-    Subscription, Task, View, ViewContext, VisualContext as _, WeakFocusHandle, WeakView,
-    WindowContext,
+    actions, div, impl_actions, prelude::FluentBuilder as _, px, AppContext, DefiniteLength,
+    DragMoveEvent, Element as _, EntityId, EventEmitter, FocusHandle, FocusOutEvent, FocusableView,
+    InteractiveElement as _, IntoElement, KeyContext, ParentElement, Pixels, Point, Render,
+    RenderOnce as _, ScrollHandle, StatefulInteractiveElement, Styled, Subscription, Task, View,
+    ViewContext, VisualContext as _, WeakFocusHandle, WeakView, WindowContext,
 };
 use serde::Deserialize;
 
@@ -25,7 +24,7 @@ use ui::{
     tab::{Tab, TabBar},
     theme::{ActiveTheme, Colorize as _},
     tooltip::Tooltip,
-    v_flex, Icon, IconName, Selectable, StyledExt as _,
+    v_flex, Icon, IconName, Selectable, StyledExt,
 };
 
 use super::{
@@ -137,7 +136,6 @@ pub struct Pane {
         Option<Arc<dyn Fn(&mut Pane, &dyn Any, &mut ViewContext<Pane>) -> ControlFlow<(), ()>>>,
     can_split: bool,
     should_display_tab_bar: Rc<dyn Fn(&ViewContext<Pane>) -> bool>,
-    render_tab_bar_buttons: Rc<dyn Fn(&mut Pane, &mut ViewContext<Pane>) -> AnyElement>,
     tab_bar_scroll_handle: ScrollHandle,
     _subscriptions: Vec<Subscription>,
 }
@@ -172,7 +170,6 @@ impl Pane {
             custom_drop_handle: None,
             can_split: true,
             should_display_tab_bar: Rc::new(|_| true),
-            render_tab_bar_buttons: Rc::new(|_, _| gpui::Empty.into_any()),
             tab_bar_scroll_handle: ScrollHandle::new(),
             _subscriptions: subscriptions,
         }
@@ -667,15 +664,15 @@ impl Pane {
         Tab::new(ix, label)
             .group("tab")
             .px(px(5.))
-            .prefix(div().size_2().into_any_element())
-            .gap_0p5()
+            .prefix(div().size(px(13.)).into_any_element())
+            .gap_1p5()
             .suffix(
                 div()
                     .id("close-tab")
                     .p(px(0.5))
                     .rounded_lg()
                     .invisible()
-                    .child(Icon::new(IconName::Close).size_2())
+                    .child(Icon::new(IconName::Close).size(px(12.)))
                     .hover(|this| this.bg(cx.theme().accent.darken(0.1)))
                     .active(|this| this.bg(cx.theme().accent.darken(0.2)))
                     .on_click(cx.listener(move |pane, _, cx| {
@@ -739,13 +736,6 @@ impl Pane {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
-            .gap(px(2.))
-            .when(self.has_focus(cx), |tab_bar| {
-                tab_bar.child({
-                    let render_tab_buttons = self.render_tab_bar_buttons.clone();
-                    render_tab_buttons(self, cx)
-                })
-            })
             .children(
                 self.items
                     .iter()
@@ -917,11 +907,15 @@ impl Render for Pane {
                     .map(|div| {
                         if let Some(item) = self.active_item() {
                             div.v_flex()
-                                // .child(self.toolbar.clone())
+                                .id("pane-item-container")
+                                .size_full()
                                 .child(item.to_any())
                         } else {
-                            let placeholder = div.h_flex().size_full().justify_center();
-                            placeholder.child(Label::new("No panel."))
+                            div.id("pane-item-container")
+                                .h_flex()
+                                .size_full()
+                                .justify_center()
+                                .child(Label::new("No panel."))
                         }
                     })
                     .child(

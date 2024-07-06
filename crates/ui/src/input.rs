@@ -1,8 +1,6 @@
 use std::ops::Range;
 
 use crate::event::InterativeElementExt as _;
-use crate::popover::Popover;
-use crate::popup_menu::PopupMenu;
 use crate::theme::ActiveTheme;
 use crate::StyledExt as _;
 use blink_cursor::BlinkCursor;
@@ -370,20 +368,6 @@ impl TextInput {
         self.blink_cursor.update(cx, |blink_cursor, cx| {
             blink_cursor.pause(cx);
         });
-    }
-
-    fn render_content_menu(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let focus_handle = self.focus_handle.clone();
-
-        PopupMenu::build(cx, |mut this, _| {
-            this.content(focus_handle)
-                .menu("Copy", Box::new(Copy))
-                .menu("Cut", Box::new(Cut))
-                .menu("Paste", Box::new(Paste))
-                .separator()
-                .menu("Search", Box::new(SelectAll));
-            this
-        })
     }
 }
 

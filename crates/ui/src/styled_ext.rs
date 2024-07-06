@@ -1,5 +1,5 @@
 use crate::theme::{hsl, ActiveTheme};
-use gpui::{div, hsla, point, px, BoxShadow, Styled, WindowContext};
+use gpui::{hsla, point, px, BoxShadow, FocusHandle, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
@@ -79,22 +79,51 @@ pub trait StyledExt: Styled + Sized {
 
     /// Render a border with a width of 1px, color blue
     fn debug_blue(self) -> Self {
-        self.border_1().border_color(gpui::blue())
+        if cfg!(debug_assertions) {
+            self.border_1().border_color(gpui::blue())
+        } else {
+            self
+        }
     }
 
     /// Render a border with a width of 1px, color yellow
     fn debug_yellow(self) -> Self {
-        self.border_1().border_color(gpui::yellow())
+        if cfg!(debug_assertions) {
+            self.border_1().border_color(gpui::yellow())
+        } else {
+            self
+        }
     }
 
     /// Render a border with a width of 1px, color green
     fn debug_green(self) -> Self {
-        self.border_1().border_color(gpui::green())
+        if cfg!(debug_assertions) {
+            self.border_1().border_color(gpui::green())
+        } else {
+            self
+        }
     }
 
     /// Render a border with a width of 1px, color pink
     fn debug_pink(self) -> Self {
-        self.border_1().border_color(hsl(300., 100., 47.))
+        if cfg!(debug_assertions) {
+            self.border_1().border_color(hsl(300., 100., 47.))
+        } else {
+            self
+        }
+    }
+
+    /// Render a 1px blue border, when if the element is focused
+    fn debug_focused(self, focus_handle: &FocusHandle, cx: &WindowContext) -> Self {
+        if cfg!(debug_assertions) {
+            if focus_handle.is_focused(cx) {
+                self.debug_blue()
+            } else {
+                self
+            }
+        } else {
+            self
+        }
     }
 
     /// Render a border with a width of 1px, color ring color

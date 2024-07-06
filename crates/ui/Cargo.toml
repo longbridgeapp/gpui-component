@@ -16,6 +16,7 @@ unicode-segmentation = "1.11.0"
 image = "0.25.1"
 resvg = { version = "0.41.0", default-features = false }
 usvg = { version = "0.41.0", default-features = false }
+taffy = "0.4.3"
 
 [lints]
 workspace = true

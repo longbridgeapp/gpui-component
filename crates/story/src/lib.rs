@@ -7,6 +7,7 @@ mod list_story;
 mod picker_story;
 mod popover_story;
 mod switch_story;
+mod table_story;
 mod tooltip_story;
 
 pub use button_story::ButtonStory;
@@ -18,11 +19,12 @@ pub use list_story::ListStory;
 pub use picker_story::PickerStory;
 pub use popover_story::PopoverStory;
 pub use switch_story::SwitchStory;
+pub use table_story::TableStory;
 pub use tooltip_story::TooltipStory;
 
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
     SharedString, StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext,
     WindowContext,
 };
@@ -66,7 +68,6 @@ pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
 
 pub struct StoryContainer {
     focus_handle: gpui::FocusHandle,
-    scroll_handle: gpui::ScrollHandle,
     name: SharedString,
     description: SharedString,
     position: DockPosition,
@@ -136,7 +137,6 @@ impl StoryContainer {
 
         Self {
             focus_handle,
-            scroll_handle: ScrollHandle::new(),
             name: name.into(),
             description: description.into(),
             width: None,
@@ -203,30 +203,29 @@ impl StoryContainer {
 }
 
 impl Render for StoryContainer {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
-            .id("story-container")
-            .overflow_y_scroll()
-            .track_scroll(&self.scroll_handle)
+    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+        v_flex()
             .size_full()
             .child(
-                v_flex()
-                    .size_full()
-                    .gap_6()
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_4()
                     .p_4()
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap_4()
-                            .child(Label::new(self.name.clone()).text_size(px(24.0)))
-                            .child(Label::new(self.description.clone()).text_size(px(16.0))),
-                    )
-                    .child(Divider::horizontal())
-                    .when_some(self.story.clone(), |this, story| {
-                        this.child(v_flex().size_full().child(story))
-                    }),
+                    .child(Label::new(self.name.clone()).text_size(px(24.0)))
+                    .child(Label::new(self.description.clone()).text_size(px(16.0)))
+                    .child(Divider::horizontal()),
             )
+            .when_some(self.story.clone(), |this, story| {
+                this.child(
+                    v_flex()
+                        .id("story-children")
+                        .overflow_scroll()
+                        .size_full()
+                        .p_4()
+                        .child(story),
+                )
+            })
     }
 }
 

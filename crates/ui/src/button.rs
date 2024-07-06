@@ -1,13 +1,12 @@
 use crate::{
     h_flex,
-    theme::{ActiveTheme, Colorize as _, ThemeMode},
+    theme::{ActiveTheme, Colorize as _},
     Clickable, Disableable, Icon, Selectable, StyledExt,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, FocusHandle,
-    Focusable, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Render,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, View, ViewContext,
-    VisualContext, WindowContext,
+    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -166,7 +165,6 @@ impl Styled for Button {
 
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.theme();
         let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
         let focused = self.focus_handle.is_focused(cx);
