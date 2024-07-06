@@ -1,11 +1,11 @@
 use gpui::{
-    ClickEvent, InteractiveElement, IntoElement, ParentElement as _, Render,
+    ClickEvent, IntoElement, ParentElement as _, Render,
     StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
 use ui::{
     button::{Button, ButtonSize, ButtonStyle},
-    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable, StyledExt,
+    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable,
 };
 
 use crate::section;

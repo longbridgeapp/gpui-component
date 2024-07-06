@@ -10,7 +10,7 @@ use ui::{
     input::TextInput,
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenu,
-    v_flex, Clickable, IconName, StyledExt,
+    v_flex, Clickable, IconName,
 };
 
 actions!(popover_story, [Copy, Paste, Cut, SearchAll]);

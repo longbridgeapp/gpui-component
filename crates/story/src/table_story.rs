@@ -1,8 +1,7 @@
-use std::rc::Rc;
 
 use fake::Fake;
 use gpui::{
-    div, ClickEvent, ParentElement, Render, SharedString, Styled, View, ViewContext,
+    ParentElement, Render, SharedString, Styled, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 use ui::{

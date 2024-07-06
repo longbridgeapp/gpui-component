@@ -24,7 +24,7 @@ pub use tooltip_story::TooltipStory;
 
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
     SharedString, StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext,
     WindowContext,
 };
@@ -35,7 +35,7 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex, StyledExt};
+use ui::{divider::Divider, h_flex, label::Label, v_flex};
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
