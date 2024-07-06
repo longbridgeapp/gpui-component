@@ -2,7 +2,7 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 
 use crate::{
     h_flex,
-    scroll::{ScrollAxis, ScrollableHandleElement},
+    scroll::{ScrollAxis, ScrollableMask},
     scrollbar::Scrollbar,
     theme::{ActiveTheme, Colorize},
     v_flex,
@@ -447,7 +447,7 @@ where
             .border_color(cx.theme().border)
             .bg(cx.theme().card)
             .child(inner_table)
-            .child(ScrollableHandleElement::new(
+            .child(ScrollableMask::new(
                 cx.view().clone(),
                 ScrollAxis::Horizontal,
                 &horizontal_scroll_handle,

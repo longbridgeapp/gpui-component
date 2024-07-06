@@ -1,7 +1,12 @@
 [package]
 name = "ui"
+description = "UI components for the GPUI"
 version = "0.1.0"
 edition = "2021"
+publish = false
+
+[lib]
+doctest = false
 
 [dependencies]
 gpui = { git = "https://github.com/zed-industries/zed.git" }
