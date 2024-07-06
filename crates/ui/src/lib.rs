@@ -12,7 +12,6 @@ mod svg_img;
 
 pub mod button;
 pub mod checkbox;
-pub mod empty;
 pub mod label;
 pub mod prelude;
 pub mod theme;
@@ -21,7 +20,6 @@ pub mod divider;
 pub mod dropdown;
 pub mod input;
 pub mod list;
-pub mod picker;
 pub mod popover;
 pub mod popup_menu;
 pub mod switch;
@@ -42,7 +40,7 @@ pub use svg_img::*;
 /// Initialize the UI module.
 pub fn init(cx: &mut gpui::AppContext) {
     input::init(cx);
-    picker::init(cx);
+    list::init(cx);
     dropdown::init(cx);
     popover::init(cx);
     popup_menu::init(cx);

@@ -20,8 +20,7 @@ pub fn init(cx: &mut AppContext) {
 
 use crate::{
     h_flex,
-    list::ListItem,
-    picker::{self, Picker, PickerDelegate},
+    list::{self, List, ListDelegate, ListItem},
     theme::ActiveTheme,
     Icon, IconName, StyledExt,
 };
@@ -50,36 +49,32 @@ pub trait DropdownDelegate {
     fn get(&self, ix: usize) -> Option<&dyn DropdownItem>;
 }
 
-struct DropdownPickerDelegate<D: DropdownDelegate + 'static> {
+struct DropdownListDelegate<D: DropdownDelegate + 'static> {
     delegate: D,
     dropdown: WeakView<Dropdown<D>>,
     selected_index: usize,
 }
 
-impl<D> PickerDelegate for DropdownPickerDelegate<D>
+impl<D> ListDelegate for DropdownListDelegate<D>
 where
     D: DropdownDelegate + 'static,
 {
-    type ListItem = ListItem;
+    type Item = ListItem;
 
-    fn match_count(&self) -> usize {
+    fn items_count(&self) -> usize {
         self.delegate.len()
     }
 
-    fn selected_index(&self) -> usize {
-        self.selected_index
-    }
-
-    fn set_selected_index(&mut self, index: usize, _cx: &mut gpui::ViewContext<Picker<Self>>) {
-        self.selected_index = index;
+    fn confirmed_index(&self) -> Option<usize> {
+        Some(self.selected_index)
     }
 
     fn render_item(
         &self,
         ix: usize,
-        selected: bool,
-        _cx: &mut gpui::ViewContext<Picker<Self>>,
-    ) -> Option<Self::ListItem> {
+        _cx: &mut gpui::ViewContext<List<Self>>,
+    ) -> Option<Self::Item> {
+        let selected = ix == self.selected_index;
         if let Some(item) = self.delegate.get(ix) {
             let list_item = ListItem::new(("list-item", ix))
                 .check_icon(IconName::Check)
@@ -93,7 +88,7 @@ where
         }
     }
 
-    fn dismissed(&mut self, cx: &mut ViewContext<Picker<Self>>) {
+    fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
         if let Some(view) = self.dropdown.upgrade() {
             cx.update_view(&view, |view, _| {
                 view.open = false;
@@ -101,13 +96,16 @@ where
         }
     }
 
-    fn confirm(&mut self, _secondary: bool, cx: &mut ViewContext<Picker<Self>>) {
+    fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
+        self.selected_index = ix.unwrap_or(0);
+
         if let Some(view) = self.dropdown.upgrade() {
             cx.update_view(&view, |view, cx| {
                 if let Some(item) = self.delegate.get(self.selected_index) {
                     view.title = Some(item.title().to_string().into());
                     view.value = Some(item.value().to_string().into());
                 }
+
                 view.open = false;
                 view.focus_handle.focus(cx);
             });
@@ -118,7 +116,7 @@ where
 pub struct Dropdown<D: DropdownDelegate + 'static> {
     id: ElementId,
     focus_handle: FocusHandle,
-    picker: View<Picker<DropdownPickerDelegate<D>>>,
+    list: View<List<DropdownListDelegate<D>>>,
     open: bool,
     /// The value of the selected item.
     value: Option<SharedString>,
@@ -130,22 +128,17 @@ where
     D: DropdownDelegate + 'static,
 {
     pub fn new(id: impl Into<ElementId>, delegate: D, cx: &mut ViewContext<Self>) -> Self {
-        let picker_delegate = DropdownPickerDelegate {
+        let delegate = DropdownListDelegate {
             delegate,
             dropdown: cx.view().downgrade(),
             selected_index: 0,
         };
 
-        let picker = cx.new_view(|cx| {
-            Picker::uniform_list(picker_delegate, cx)
-                .no_query()
-                .scrollbar_enable(false)
-                .max_height(Some(rems(20.).into()))
-        });
+        let list = cx.new_view(|cx| List::new(delegate, cx).no_query().max_h(rems(20.)));
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
-            picker,
+            list,
             open: false,
             title: None,
             value: None,
@@ -161,8 +154,8 @@ where
         if !self.open {
             return;
         }
-        self.picker.focus_handle(cx).focus(cx);
-        cx.dispatch_action(Box::new(picker::SelectPrev));
+        self.list.focus_handle(cx).focus(cx);
+        cx.dispatch_action(Box::new(list::SelectPrev));
     }
 
     fn down(&mut self, _: &Down, cx: &mut ViewContext<Self>) {
@@ -170,8 +163,8 @@ where
             self.open = true;
         }
 
-        self.picker.focus_handle(cx).focus(cx);
-        cx.dispatch_action(Box::new(picker::SelectNext));
+        self.list.focus_handle(cx).focus(cx);
+        cx.dispatch_action(Box::new(list::SelectNext));
     }
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
@@ -179,8 +172,8 @@ where
             self.open = true;
             cx.notify();
         } else {
-            self.picker.focus_handle(cx).focus(cx);
-            cx.dispatch_action(Box::new(picker::Confirm));
+            self.list.focus_handle(cx).focus(cx);
+            cx.dispatch_action(Box::new(list::Confirm));
         }
     }
 
@@ -198,8 +191,8 @@ where
             .border_color(cx.theme().input)
             .rounded(px(cx.theme().radius))
             .shadow_md()
-            .track_focus(&self.picker.focus_handle(cx))
-            .child(self.picker.clone())
+            .track_focus(&self.list.focus_handle(cx))
+            .child(self.list.clone())
             .on_mouse_down_out(|_, cx| {
                 cx.dispatch_action(Box::new(Escape));
             })

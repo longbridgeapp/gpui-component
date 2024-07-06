@@ -143,7 +143,7 @@ where
 
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
         Scrollbar::new(
-            cx.view().clone().into(),
+            cx.view().clone(),
             self.vertical_scroll_handle.clone(),
             self.scrollbar_drag_state.clone(),
             self.delegate.rows_count(),

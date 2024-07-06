@@ -31,7 +31,7 @@ pub struct Scrollbar {
 
 impl Scrollbar {
     pub fn new(
-        view: AnyView,
+        view: impl Into<AnyView>,
         handle: UniformListScrollHandle,
         drag_state: Rc<Cell<Option<f32>>>,
         items_count: usize,
@@ -65,7 +65,7 @@ impl Scrollbar {
         let thumb = percentage as f32..end_offset as f32;
 
         Some(Self {
-            view,
+            view: view.into(),
             items_count,
             width: 12.0,
             thumb,

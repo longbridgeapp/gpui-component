@@ -39,9 +39,6 @@ This is an example of build app by using GPUI.
   - [ ] Toggle Animation
 - [ ] Radio & RadioGroup
 - [x] Dropdown
-  - [x] Picker
-    - [x] Picker List
-    - [x] Use keyword to select next, prev, enter to select, esc to cancel.
 - [x] Tabs
   - [x] Tab
   - [x] TabBar
@@ -74,6 +71,5 @@ There have a part of UI components from [Zed](https://github.com/zed-industries/
 
 - workspace
 - scrollbar
-- picker
 
 Other UI components are under Apache License.
