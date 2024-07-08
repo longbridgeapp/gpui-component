@@ -12,7 +12,7 @@ use ui::{theme::ActiveTheme, IconName, StyledExt as _};
 
 const RESIZE_HANDLE_SIZE: Pixels = Pixels(6.);
 
-use crate::Event;
+use crate::{DraggedDock, Event};
 
 use super::workspace::Workspace;
 
@@ -393,10 +393,6 @@ impl Dock {
         }
     }
 }
-
-#[allow(unused)]
-#[derive(Clone, Render)]
-struct DraggedDock(DockPosition);
 
 impl Render for Dock {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {

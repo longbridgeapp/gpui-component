@@ -109,7 +109,7 @@ impl FocusableView for Workspace {
 }
 
 #[derive(Clone, Render)]
-struct DraggedDock(DockPosition);
+pub struct DraggedDock(pub DockPosition);
 
 impl Render for Workspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
