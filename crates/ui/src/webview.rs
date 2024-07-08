@@ -1,18 +1,16 @@
-use std::rc::Rc;
+use std::{ops::Deref, rc::Rc};
 
 use wry::{
-    dpi::{self, LogicalPosition, LogicalSize},
+    dpi::{self, LogicalSize},
     Rect,
 };
 
 use gpui::{
     div, AppContext, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter,
     FocusHandle, FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
-    MouseDownEvent, MouseEvent, ParentElement as _, Pixels, Point, Render, Size, Style,
-    Styled as _, View, WindowContext,
+    MouseDownEvent, ParentElement as _, Pixels, Render, Size, Style, Styled as _, View,
+    WindowContext,
 };
-
-use crate::event;
 
 pub fn init(_cx: &AppContext) {}
 
@@ -29,11 +27,12 @@ impl WebView {
 
         let webview = wry::WebView::new_as_child(&window_handle)
             .expect("failed to create webview to child window");
+        let _ = webview.set_bounds(Rect::default());
 
         Self {
             focus_handle,
             visable: true,
-            webview,
+            webview: Rc::new(webview),
         }
     }
 
@@ -54,6 +53,14 @@ impl WebView {
     }
 }
 
+impl Deref for WebView {
+    type Target = wry::WebView;
+
+    fn deref(&self) -> &Self::Target {
+        &self.webview
+    }
+}
+
 impl FocusableView for WebView {
     fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
         self.focus_handle.clone()
@@ -69,7 +76,6 @@ impl Render for WebView {
         div()
             .track_focus(&self.focus_handle)
             .size_full()
-            .debug()
             .child(WebViewElement::new(self.webview.clone(), view, cx))
     }
 }
@@ -129,24 +135,18 @@ impl Element for WebViewElement {
             return None;
         }
 
-        if bounds.top() > cx.viewport_size().height || bounds.bottom() < Pixels::ZERO {
-            // self.view.set_visible(false).unwrap();
-        } else {
-            // self.view.set_visible(true).unwrap();
-
-            self.view
-                .set_bounds(Rect {
-                    size: dpi::Size::Logical(LogicalSize {
-                        width: (bounds.size.width.0).into(),
-                        height: (bounds.size.height.0).into(),
-                    }),
-                    position: dpi::Position::Logical(dpi::LogicalPosition::new(
-                        bounds.origin.x.into(),
-                        bounds.origin.y.into(),
-                    )),
-                })
-                .unwrap();
-        };
+        self.view
+            .set_bounds(Rect {
+                size: dpi::Size::Logical(LogicalSize {
+                    width: (bounds.size.width.0).into(),
+                    height: (bounds.size.height.0).into(),
+                }),
+                position: dpi::Position::Logical(dpi::LogicalPosition::new(
+                    bounds.origin.x.into(),
+                    bounds.origin.y.into(),
+                )),
+            })
+            .unwrap();
 
         // Create a hitbox to handle mouse event
         Some(cx.insert_hitbox(bounds, false))
@@ -155,27 +155,25 @@ impl Element for WebViewElement {
     fn paint(
         &mut self,
         _: Option<&GlobalElementId>,
-        _: Bounds<Pixels>,
+        bounds: Bounds<Pixels>,
         _: &mut Self::RequestLayoutState,
-        _: &mut Self::PrepaintState,
-        _: &mut WindowContext,
+        hitbox: &mut Self::PrepaintState,
+        cx: &mut WindowContext,
     ) {
         let bounds = hitbox.clone().map(|h| h.bounds).unwrap_or(bounds);
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             let webview = self.view.clone();
             cx.on_mouse_event(move |event: &MouseDownEvent, _, cx| {
                 if !bounds.contains(&event.position) {
-                    println!("Click outside the WebView.");
                     // Click white space to blur the input focus
                     webview
                         .evaluate_script(
                             r#"
-                        document.querySelectorAll("input").forEach(input => input.blur());
+                        document.querySelectorAll("input,textarea").forEach(input => input.blur());
                         "#,
                         )
-                        .expect("Failed to click");
+                        .expect("failed to evaluate_script to blur input");
                 } else {
-                    println!("Click inside the WebView.");
                     cx.blur();
                 }
             });
