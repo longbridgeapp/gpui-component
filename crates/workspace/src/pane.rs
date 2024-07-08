@@ -117,7 +117,7 @@ impl Render for DraggedTab {
             },
             cx,
         );
-        Tab::new("", label).selected(self.is_active).render(cx)
+        Tab::new("", label).selected(self.is_active).into_element()
     }
 }
 

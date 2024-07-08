@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, ParentElement, Render, Styled, View, ViewContext,
@@ -14,8 +16,8 @@ use ui::{
 pub struct ListItemDeletegate {
     story: WeakView<PickerStory>,
     selected_index: usize,
-    items: Vec<String>,
-    matches: Vec<String>,
+    items: Vec<Arc<String>>,
+    matches: Vec<Arc<String>>,
 }
 
 impl ListDelegate for ListItemDeletegate {
@@ -47,7 +49,7 @@ impl ListDelegate for ListItemDeletegate {
                 .selected(selected)
                 .py_1()
                 .px_3()
-                .child(item.clone());
+                .child(item.to_string());
             Some(list_item)
         } else {
             None
@@ -82,7 +84,7 @@ impl ListDelegate for ListItemDeletegate {
 pub struct PickerStory {
     list: View<List<ListItemDeletegate>>,
     open: bool,
-    selected_value: Option<String>,
+    selected_value: Option<Arc<String>>,
 }
 
 impl PickerStory {
@@ -91,7 +93,7 @@ impl PickerStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
-        let items: Vec<String> = [
+        let items: Vec<Arc<String>> = [
             "Baguette (France)",
             "Baklava (Turkey)",
             "Beef Wellington (UK)",
@@ -143,7 +145,7 @@ impl PickerStory {
             "Wiener Schnitzel (Austria)",
         ]
         .iter()
-        .map(|s| s.to_string())
+        .map(|s| Arc::new(s.to_string()))
         .collect();
 
         let story = cx.view().downgrade();
@@ -191,10 +193,11 @@ impl Render for PickerStory {
             )
             .when_some(self.selected_value.clone(), |this, selected_value| {
                 this.child(
-                    h_flex()
-                        .gap_1()
-                        .child("You have selected:")
-                        .child(div().child(selected_value).text_color(gpui::red())),
+                    h_flex().gap_1().child("You have selected:").child(
+                        div()
+                            .child(selected_value.to_string())
+                            .text_color(gpui::red()),
+                    ),
                 )
             })
             .when(self.open, |this| {
