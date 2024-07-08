@@ -544,7 +544,7 @@ impl Pane {
         }
 
         let rect = event.bounds.size;
-        let size = event.bounds.size.width.min(event.bounds.size.height) * 0.2;
+        let size = event.bounds.size.width.min(event.bounds.size.height) * 0.33;
         let relative_cursor = Point::new(
             event.event.position.x - event.bounds.left(),
             event.event.position.y - event.bounds.top(),
