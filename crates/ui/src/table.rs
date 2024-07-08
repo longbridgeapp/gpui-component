@@ -395,16 +395,19 @@ where
                                         .id(("table-row", row_ix))
                                         .w_full()
                                         .children((0..cols_count).map(|col_ix| {
-                                            table.col_wrap(col_ix, cx).child(
-                                                table
-                                                    .render_cell(col_ix, cx)
-                                                    .flex_shrink_0()
-                                                    // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
-                                                    .left(horizontal_scroll_handle.offset().x)
-                                                    .child(
-                                                        table.delegate.render_td(row_ix, col_ix),
-                                                    ),
-                                            )
+                                            table
+                                                .col_wrap(col_ix, cx) // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
+                                                .left(horizontal_scroll_handle.offset().x)
+                                                .child(
+                                                    table
+                                                        .render_cell(col_ix, cx)
+                                                        .flex_shrink_0()
+                                                        .child(
+                                                            table
+                                                                .delegate
+                                                                .render_td(row_ix, col_ix),
+                                                        ),
+                                                )
                                         }))
                                         .when(row_ix > 0, |this| this.border_t_1())
                                         .hover(|this| {
