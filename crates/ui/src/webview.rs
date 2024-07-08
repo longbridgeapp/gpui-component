@@ -1,15 +1,18 @@
 use std::rc::Rc;
 
 use wry::{
-    dpi::{self, LogicalSize},
+    dpi::{self, LogicalPosition, LogicalSize},
     Rect,
 };
 
 use gpui::{
-    div, AppContext, Bounds, DismissEvent, Element, ElementId, EventEmitter, FocusHandle,
-    FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
-    ParentElement as _, Pixels, Render, Size, Style, Styled as _, View, WindowContext,
+    div, AppContext, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter,
+    FocusHandle, FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
+    MouseDownEvent, MouseEvent, ParentElement as _, Pixels, Point, Render, Size, Style,
+    Styled as _, View, WindowContext,
 };
+
+use crate::event;
 
 pub fn init(_cx: &AppContext) {}
 
@@ -30,7 +33,7 @@ impl WebView {
         Self {
             focus_handle,
             visable: true,
-            webview: Rc::new(webview),
+            webview,
         }
     }
 
@@ -127,9 +130,9 @@ impl Element for WebViewElement {
         }
 
         if bounds.top() > cx.viewport_size().height || bounds.bottom() < Pixels::ZERO {
-            self.view.set_visible(false).unwrap();
+            // self.view.set_visible(false).unwrap();
         } else {
-            self.view.set_visible(true).unwrap();
+            // self.view.set_visible(true).unwrap();
 
             self.view
                 .set_bounds(Rect {
@@ -145,7 +148,8 @@ impl Element for WebViewElement {
                 .unwrap();
         };
 
-        None
+        // Create a hitbox to handle mouse event
+        Some(cx.insert_hitbox(bounds, false))
     }
 
     fn paint(
@@ -156,5 +160,25 @@ impl Element for WebViewElement {
         _: &mut Self::PrepaintState,
         _: &mut WindowContext,
     ) {
+        let bounds = hitbox.clone().map(|h| h.bounds).unwrap_or(bounds);
+        cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+            let webview = self.view.clone();
+            cx.on_mouse_event(move |event: &MouseDownEvent, _, cx| {
+                if !bounds.contains(&event.position) {
+                    println!("Click outside the WebView.");
+                    // Click white space to blur the input focus
+                    webview
+                        .evaluate_script(
+                            r#"
+                        document.querySelectorAll("input").forEach(input => input.blur());
+                        "#,
+                        )
+                        .expect("Failed to click");
+                } else {
+                    println!("Click inside the WebView.");
+                    cx.blur();
+                }
+            });
+        });
     }
 }
