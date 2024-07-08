@@ -23,16 +23,7 @@ impl WebView {
     pub fn new(cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
         let window_handle = cx.raw_window_handle();
-        // window_handle.on_active_status_change(Box::new(|active| {
-        //     dbg!("active", active);
-        // }));
-        // window_handle.on_input(Box::new(|input| {
-        //     dbg!("input", input);
-        //     DispatchEventResult {
-        //         default_prevented: false,
-        //         propagate: false,
-        //     }
-        // }));
+
         let webview = wry::WebView::new_as_child(&window_handle)
             .expect("failed to create webview to child window");
 
