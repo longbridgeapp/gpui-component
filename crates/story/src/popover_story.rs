@@ -101,18 +101,12 @@ impl Render for PopoverStory {
             .on_action(cx.listener(Self::on_paste))
             .on_action(cx.listener(Self::on_search_all))
             .p_4()
+            .mb_5()
             .size_full()
-            .min_h(px(600.))
+            .min_h(px(400.))
             .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
                 cx.focus(&this.focus_handle);
             }))
-            .child(
-                Button::new("test1", cx)
-                    .label("Hello")
-                    .on_click(move |_, cx| {
-                        cx.dispatch_action(Box::new(Copy));
-                    }),
-            )
             .gap_6()
             .child(
                 h_flex()

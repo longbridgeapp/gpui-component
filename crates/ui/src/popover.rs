@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::StyledExt as _;
 use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
 use anyhow::Result;
+use gpui::PlatformDisplay;
 use gpui::{
     actions, anchored, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner, AnyElement,
     AnyWindowHandle, AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId,
@@ -205,7 +206,6 @@ impl<M: ManagedView> Element for Popover<M> {
             let mut popover_element = None;
 
             if let Some(content_view) = element_state.content_view.borrow_mut().as_mut() {
-                let content_view_mut = element_state.content_view.clone();
                 let mut anchored = anchored().snap_to_window().anchor(this.anchor);
                 if let Some(trigger_bounds) = element_state.trigger_bounds {
                     anchored = anchored.position(this.resolved_corner(trigger_bounds));
@@ -214,7 +214,6 @@ impl<M: ManagedView> Element for Popover<M> {
                 let mut element = anchored
                     .child(
                         div()
-                            .occlude()
                             .elevation_2(cx)
                             .bg(cx.theme().popover)
                             .border_1()
@@ -222,12 +221,6 @@ impl<M: ManagedView> Element for Popover<M> {
                             .map(|d| match this.anchor {
                                 AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_2(),
                                 AnchorCorner::BottomLeft | AnchorCorner::BottomRight => d.mb_2(),
-                            })
-                            .on_mouse_down_out(move |_, cx| {
-                                // Update the element_state.content_view to `None`,
-                                // so that the `paint`` method will not paint it.
-                                *content_view_mut.borrow_mut() = None;
-                                cx.refresh();
                             })
                             .child(content_view.clone()),
                     )
@@ -305,8 +298,16 @@ impl<M: ManagedView> Element for Popover<M> {
             if let Some(content_view) = element_state.content_view.take() {
                 if let Some(bounds) = prepaint.popover_bounds {
                     let window_bounds = cx.window_bounds();
-                    PopoverWindow::open_popover(content_view, window_bounds, bounds, anchor, cx)
-                        .expect("failed to open popover window.");
+                    let display = cx.display();
+                    PopoverWindow::open_popover(
+                        content_view,
+                        display,
+                        window_bounds,
+                        bounds,
+                        anchor,
+                        cx,
+                    )
+                    .expect("failed to open popover window.");
                 }
 
                 return;
@@ -411,6 +412,7 @@ where
 
     pub fn open_popover(
         view: View<M>,
+        display: Option<Rc<dyn PlatformDisplay>>,
         parent_window_bounds: WindowBounds,
         bounds: Bounds<Pixels>,
         anchor: AnchorCorner,
@@ -444,9 +446,11 @@ where
                             titlebar: None,
                             window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
                             window_background: gpui::WindowBackgroundAppearance::Transparent,
+                            kind: gpui::WindowKind::PopUp,
                             is_movable: false,
                             focus: true,
                             show: true,
+                            display_id: display.map(|d| d.id()),
                             ..Default::default()
                         },
                         |cx| cx.new_view(|_| PopoverWindow { view: view, anchor }),
@@ -478,7 +482,7 @@ where
             .bg(cx.theme().popover)
             .border_1()
             .border_color(cx.theme().border)
-            .p_4()
+            // .p_4()
             .child(self.view.clone())
             .on_mouse_down(
                 gpui::MouseButton::Left,
