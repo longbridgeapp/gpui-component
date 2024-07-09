@@ -11,7 +11,7 @@ use gpui::{
     ParentElement as _, ParentElement, Pixels, Point, Render, Style, Styled, View, ViewContext,
     VisualContext, WindowBounds, WindowContext, WindowId, WindowOptions,
 };
-use gpui::{PlatformDisplay, TitlebarOptions};
+use gpui::{Context, PlatformDisplay, TitlebarOptions};
 
 actions!(popover, [Open, Dismiss]);
 
@@ -214,8 +214,6 @@ impl<M: ManagedView> Element for Popover<M> {
                 let mut element = anchored
                     .child(
                         div()
-                            .elevation_2(cx)
-                            .bg(cx.theme().popover)
                             .border_1()
                             .border_color(cx.theme().border)
                             .child(content_view.clone()),
@@ -292,20 +290,17 @@ impl<M: ManagedView> Element for Popover<M> {
             }
 
             if let Some(content_view) = element_state.content_view.take() {
-                if let Some(bounds) = prepaint.popover_bounds {
-                    let window_bounds = cx.bounds();
-                    let display = cx.display();
+                let popover_bounds = prepaint.popover_bounds.unwrap();
+                let trigger_bounds = prepaint.trigger_bounds.unwrap();
 
-                    PopoverWindow::open_popover(
-                        content_view,
-                        display,
-                        window_bounds,
-                        bounds,
-                        anchor,
-                        cx,
-                    )
-                    .expect("failed to open popover window.");
-                }
+                PopoverWindow::open_popover(
+                    content_view,
+                    trigger_bounds,
+                    popover_bounds,
+                    anchor,
+                    cx,
+                )
+                .expect("failed to open popover window.");
 
                 return;
             }
@@ -370,7 +365,7 @@ impl PopoverWindowState {
         cx.try_global::<Self>().and_then(|state| state.window_id)
     }
 
-    fn set_window_id(window_id: WindowId, cx: &mut AppContext) {
+    fn set_window_id(window_id: WindowId, cx: &mut WindowContext) {
         cx.set_global(PopoverWindowState {
             window_id: Some(window_id),
         });
@@ -410,19 +405,37 @@ where
 {
     pub fn open_popover(
         view: View<M>,
-        display: Option<Rc<dyn PlatformDisplay>>,
-        parent_window_bounds: Bounds<Pixels>,
+        trigger_bounds: Bounds<Pixels>,
         bounds: Bounds<Pixels>,
         anchor: AnchorCorner,
-        cx: &mut AppContext,
+        cx: &mut WindowContext,
     ) -> Result<()> {
         // Every open_popover will close the existing one
         PopoverWindowState::close_window(cx);
 
-        let window_x = parent_window_bounds.origin.x;
-        let window_y = parent_window_bounds.origin.y;
+        let display = cx.display();
+        let window_bounds = cx.window_bounds().get_bounds();
 
-        println!("------------ window_y: {}", window_y);
+        // cx.displays().iter().for_each(|d| {
+        //     println!("display: {:?}", d.bounds());
+        // });
+
+        let window_x = window_bounds.origin.x;
+        let window_y = window_bounds.origin.y;
+
+        // println!(
+        //     "------------ window_y: {} {}",
+        //     window_y, trigger_bounds.origin.y
+        // );
+        // println!("--------- cx.bounds: {:?}", cx.bounds());
+        // println!(
+        //     "--------- cx.window_bounds: {:?}",
+        //     cx.window_bounds().get_bounds()
+        // );
+        // println!(
+        //     "--------- cx.display bounds: {:?}",
+        //     display.clone().unwrap().bounds()
+        // );
 
         // TODO: avoid out of the screen bounds
 
@@ -450,50 +463,87 @@ where
             )
         };
 
-        let bounds = Bounds::<Pixels> {
-            origin: point(
-                window_x + bounds.origin.x + border_bounds.origin.x,
-                window_y + bounds.origin.y + border_bounds.origin.y,
+        let trigger_screen_origin = point(
+            window_x + trigger_bounds.origin.x + border_bounds.origin.x,
+            window_y + trigger_bounds.origin.y + border_bounds.origin.y,
+        );
+
+        println!(
+            "------------ trigger_screen_origin_y: {} {}= {}",
+            trigger_screen_origin.y,
+            bounds.size.height,
+            trigger_screen_origin.y - bounds.size.height
+        );
+
+        let popover_offset = px(5.);
+        let popover_origin = match anchor {
+            AnchorCorner::TopLeft => point(
+                trigger_screen_origin.x,
+                trigger_screen_origin.y - bounds.size.height / 2.0 - popover_offset,
             ),
+            AnchorCorner::TopRight => point(
+                trigger_screen_origin.x,
+                trigger_screen_origin.y - bounds.size.height / 2.0 - popover_offset,
+            ),
+            AnchorCorner::BottomLeft => point(
+                trigger_screen_origin.x,
+                trigger_screen_origin.y + bounds.size.height / 2.0 + popover_offset,
+            ),
+            AnchorCorner::BottomRight => point(
+                trigger_screen_origin.x,
+                trigger_screen_origin.y + bounds.size.height / 2.0 + popover_offset,
+            ),
+        };
+
+        let bounds = Bounds::<Pixels> {
+            origin: popover_origin,
             size: size(
                 bounds.size.width + border_bounds.size.width,
                 bounds.size.height + border_bounds.size.height,
             ),
         };
 
+        println!(
+            "------- popover_origin: {:?} {:?}",
+            popover_origin, bounds.origin
+        );
+
         let view = view.clone();
-        cx.spawn(|cx| async move {
+        cx.spawn(|mut cx| async move {
+            // cx.update(|cx| {
+            let window = cx
+                .open_window(
+                    WindowOptions {
+                        titlebar,
+                        window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
+                        window_background,
+                        kind: gpui::WindowKind::PopUp,
+                        is_movable: false,
+                        focus: true,
+                        show: true,
+                        display_id: display.map(|d| d.id()),
+                        ..Default::default()
+                    },
+                    |cx| {
+                        let focus_handle = cx.focus_handle();
+
+                        let view = cx.new_view(|_| PopoverWindow {
+                            focus_handle: focus_handle.clone(),
+                            view,
+                            anchor,
+                        });
+                        focus_handle.focus(cx);
+
+                        view
+                    },
+                )
+                .expect("faild to create a new window.");
+
             cx.update(|cx| {
-                let window = cx
-                    .open_window(
-                        WindowOptions {
-                            titlebar,
-                            window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
-                            window_background,
-                            kind: gpui::WindowKind::PopUp,
-                            is_movable: false,
-                            focus: true,
-                            show: true,
-                            display_id: display.map(|d| d.id()),
-                            ..Default::default()
-                        },
-                        |cx| {
-                            let focus_handle = cx.focus_handle();
-
-                            let view = cx.new_view(|_| PopoverWindow {
-                                focus_handle: focus_handle.clone(),
-                                view: view,
-                                anchor,
-                            });
-                            focus_handle.focus(cx);
-
-                            view
-                        },
-                    )
-                    .expect("faild to create a new window.");
-
                 PopoverWindowState::set_window_id(window.window_id(), cx);
             })
+            .unwrap();
+            // })
         })
         .detach();
 
@@ -513,6 +563,7 @@ where
             .track_focus(&self.focus_handle)
             .size_full()
             .p_2()
+            .text_color(cx.theme().foreground)
             // Leave margin for show window shadow
             .map(|d| match self.anchor {
                 AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_8(),
