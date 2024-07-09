@@ -1,15 +1,22 @@
 use std::{cell::RefCell, rc::Rc};
 
+use crate::StyledExt as _;
 use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
+use anyhow::Result;
 use gpui::{
-    anchored, deferred, div, prelude::FluentBuilder, AnchorCorner, AnyElement, AppContext, Bounds,
-    DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle, FocusableView,
-    GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId, ManagedView, MouseButton,
-    MouseDownEvent, ParentElement as _, Pixels, Point, Render, Style, Styled as _, View,
-    ViewContext, VisualContext, WindowContext,
+    actions, anchored, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner, AnyElement,
+    AnyWindowHandle, AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId,
+    EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox, InteractiveElement,
+    InteractiveElement as _, IntoElement, LayoutId, ManagedView, MouseButton, MouseDownEvent,
+    ParentElement as _, ParentElement, Pixels, Point, Render, Style, Styled, View, ViewContext,
+    VisualContext, WindowBounds, WindowContext, WindowId, WindowOptions,
 };
 
-pub fn init(_cx: &AppContext) {}
+actions!(popover, [Open, Dismiss]);
+
+pub fn init(cx: &mut AppContext) {
+    cx.set_global(PopoverWindowState { window_id: None });
+}
 
 pub struct PopoverContent {
     focus_handle: FocusHandle,
@@ -149,6 +156,7 @@ where
 
 pub struct PopoverElementState<M> {
     trigger_layout_id: Option<LayoutId>,
+    popover_layout_id: Option<LayoutId>,
     popover_element: Option<AnyElement>,
     trigger_element: Option<AnyElement>,
     content_view: Rc<RefCell<Option<View<M>>>>,
@@ -160,6 +168,7 @@ impl<M> Default for PopoverElementState<M> {
     fn default() -> Self {
         Self {
             trigger_layout_id: None,
+            popover_layout_id: None,
             popover_element: None,
             trigger_element: None,
             content_view: Rc::new(RefCell::new(None)),
@@ -172,11 +181,11 @@ pub struct PrepaintState {
     hitbox: Hitbox,
     /// Trigger bounds for limit a rect to handle mouse click.
     trigger_bounds: Option<Bounds<Pixels>>,
+    popover_bounds: Option<Bounds<Pixels>>,
 }
 
 impl<M: ManagedView> Element for Popover<M> {
     type RequestLayoutState = PopoverElementState<M>;
-
     type PrepaintState = PrepaintState;
 
     fn id(&self) -> Option<ElementId> {
@@ -197,14 +206,13 @@ impl<M: ManagedView> Element for Popover<M> {
 
             if let Some(content_view) = element_state.content_view.borrow_mut().as_mut() {
                 let content_view_mut = element_state.content_view.clone();
-
                 let mut anchored = anchored().snap_to_window().anchor(this.anchor);
                 if let Some(trigger_bounds) = element_state.trigger_bounds {
                     anchored = anchored.position(this.resolved_corner(trigger_bounds));
                 }
 
-                let mut element = deferred(
-                    anchored.child(
+                let mut element = anchored
+                    .child(
                         div()
                             .occlude()
                             .elevation_2(cx)
@@ -222,10 +230,8 @@ impl<M: ManagedView> Element for Popover<M> {
                                 cx.refresh();
                             })
                             .child(content_view.clone()),
-                    ),
-                )
-                .with_priority(1)
-                .into_any();
+                    )
+                    .into_any();
 
                 popover_layout_id = Some(element.request_layout(cx));
                 popover_element = Some(element);
@@ -240,7 +246,8 @@ impl<M: ManagedView> Element for Popover<M> {
                 layout_id,
                 PopoverElementState {
                     trigger_layout_id: Some(trigger_layout_id),
-                    popover_element: popover_element,
+                    popover_layout_id,
+                    popover_element,
                     trigger_element: Some(trigger_element),
                     ..Default::default()
                 },
@@ -265,10 +272,16 @@ impl<M: ManagedView> Element for Popover<M> {
         let trigger_bounds = request_layout
             .trigger_layout_id
             .map(|id| cx.layout_bounds(id));
+
+        let popover_bounds = request_layout
+            .popover_layout_id
+            .map(|id| cx.layout_bounds(id));
+
         let hitbox = cx.insert_hitbox(trigger_bounds.unwrap_or_default(), false);
 
         PrepaintState {
             trigger_bounds,
+            popover_bounds,
             hitbox,
         }
     }
@@ -281,6 +294,7 @@ impl<M: ManagedView> Element for Popover<M> {
         prepaint: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
+        let anchor = self.anchor;
         self.with_element_state(id.unwrap(), cx, |this, element_state, cx| {
             element_state.trigger_bounds = prepaint.trigger_bounds;
 
@@ -288,8 +302,13 @@ impl<M: ManagedView> Element for Popover<M> {
                 element.paint(cx);
             }
 
-            if let Some(mut element) = request_layout.popover_element.take() {
-                element.paint(cx);
+            if let Some(content_view) = element_state.content_view.take() {
+                if let Some(bounds) = prepaint.popover_bounds {
+                    let window_bounds = cx.window_bounds();
+                    PopoverWindow::open_popover(content_view, window_bounds, bounds, anchor, cx)
+                        .expect("failed to open popover window.");
+                }
+
                 return;
             }
 
@@ -297,15 +316,18 @@ impl<M: ManagedView> Element for Popover<M> {
                 return;
             };
 
+            // When mouse click down in the trigger bounds, open the popover.
             let old_content_view = element_state.content_view.clone();
             let hitbox_id = prepaint.hitbox.id;
             let mouse_button = this.mouse_button;
-            // When mouse click down in the trigger bounds, open the popover.
             cx.on_mouse_event(move |event: &MouseDownEvent, phase, cx| {
                 if phase == DispatchPhase::Bubble
                     && event.button == mouse_button
                     && hitbox_id.is_hovered(cx)
                 {
+                    cx.stop_propagation();
+                    cx.prevent_default();
+
                     let new_content_view = (content_build)(cx);
                     let old_content_view1 = old_content_view.clone();
 
@@ -317,6 +339,8 @@ impl<M: ManagedView> Element for Popover<M> {
                             }
                         }
                         *old_content_view1.borrow_mut() = None;
+                        PopoverWindow::<M>::close_popover(cx);
+
                         cx.refresh();
                     })
                     .detach();
@@ -326,6 +350,141 @@ impl<M: ManagedView> Element for Popover<M> {
                     cx.refresh();
                 }
             });
+
+            // // Click parent window to dimiss popover
+            let content_view = element_state.content_view.clone();
+            cx.on_mouse_event(move |_: &MouseDownEvent, _, cx| {
+                *content_view.borrow_mut() = None;
+                PopoverWindow::<M>::close_popover(cx);
+            });
         });
+    }
+}
+
+struct PopoverWindowState {
+    window_id: Option<WindowId>,
+}
+
+impl Global for PopoverWindowState {}
+
+impl PopoverWindowState {
+    fn window_id(cx: &AppContext) -> Option<WindowId> {
+        cx.try_global::<Self>().and_then(|state| state.window_id)
+    }
+
+    fn set_window_id(window_id: WindowId, cx: &mut AppContext) {
+        cx.set_global(PopoverWindowState {
+            window_id: Some(window_id),
+        });
+    }
+
+    fn existing_window(cx: &AppContext) -> Option<AnyWindowHandle> {
+        cx.windows()
+            .into_iter()
+            .find(|window| Some(window.window_id()) == PopoverWindowState::window_id(cx))
+    }
+
+    fn close_window(cx: &mut AppContext) {
+        if let Some(window) = Self::existing_window(cx) {
+            window
+                .update(cx, |_, cx| {
+                    cx.remove_window();
+                    cx.set_global(PopoverWindowState { window_id: None });
+                })
+                .ok();
+        }
+    }
+}
+
+pub struct PopoverWindow<M: ManagedView> {
+    view: View<M>,
+    anchor: AnchorCorner,
+}
+
+impl<M> PopoverWindow<M>
+where
+    M: ManagedView,
+{
+    pub fn close_popover(cx: &mut AppContext) {
+        PopoverWindowState::close_window(cx);
+    }
+
+    pub fn open_popover(
+        view: View<M>,
+        parent_window_bounds: WindowBounds,
+        bounds: Bounds<Pixels>,
+        anchor: AnchorCorner,
+        cx: &mut AppContext,
+    ) -> Result<()> {
+        // Every open_popover will close the existing one
+        PopoverWindowState::close_window(cx);
+
+        let window_x = match parent_window_bounds {
+            WindowBounds::Windowed(bounds) => bounds.origin.x,
+            _ => px(0.),
+        };
+        let window_y = match parent_window_bounds {
+            WindowBounds::Windowed(bounds) => bounds.origin.y,
+            _ => px(0.),
+        };
+
+        // TODO: avoid out of the screen bounds
+
+        let bounds = Bounds::<Pixels> {
+            origin: point(window_x + bounds.origin.x, window_y + bounds.origin.y),
+            size: size(bounds.size.width, bounds.size.height + px(80.)),
+        };
+
+        let view = view.clone();
+        cx.spawn(|cx| async move {
+            cx.update(|cx| {
+                let window = cx
+                    .open_window(
+                        WindowOptions {
+                            titlebar: None,
+                            window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
+                            window_background: gpui::WindowBackgroundAppearance::Transparent,
+                            is_movable: false,
+                            focus: true,
+                            show: true,
+                            ..Default::default()
+                        },
+                        |cx| cx.new_view(|_| PopoverWindow { view: view, anchor }),
+                    )
+                    .expect("faild to create a new window.");
+
+                PopoverWindowState::set_window_id(window.window_id(), cx);
+            })
+        })
+        .detach();
+
+        Ok(())
+    }
+}
+
+impl<M> Render for PopoverWindow<M>
+where
+    M: ManagedView,
+{
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
+        div()
+            // Leave margin for show window shadow
+            .m_4()
+            .map(|d| match self.anchor {
+                AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_8(),
+                AnchorCorner::BottomLeft | AnchorCorner::BottomRight => d.mb_8(),
+            })
+            .elevation_2(cx)
+            .bg(cx.theme().popover)
+            .border_1()
+            .border_color(cx.theme().border)
+            .p_4()
+            .child(self.view.clone())
+            .on_mouse_down(
+                gpui::MouseButton::Left,
+                cx.listener(|_, _, cx| {
+                    PopoverWindowState::close_window(cx);
+                }),
+            )
     }
 }
