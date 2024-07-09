@@ -6,7 +6,7 @@ mod icon;
 mod scroll;
 mod scrollbar;
 mod selectable;
-mod stock;
+mod stack;
 mod styled_ext;
 mod svg_img;
 
@@ -34,7 +34,7 @@ pub use focusable::FocusableCycle;
 pub use selectable::{Selectable, Selection};
 
 pub use icon::*;
-pub use stock::*;
+pub use stack::*;
 pub use svg_img::*;
 
 /// Initialize the UI module.

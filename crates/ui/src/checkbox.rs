@@ -6,7 +6,7 @@ use gpui::{
 use crate::{
     disableable::Disableable,
     selectable::{Selectable, Selection},
-    stock::{h_flex, v_flex},
+    stack::{h_flex, v_flex},
     theme::{ActiveTheme, Colorize as _},
     IconName,
 };

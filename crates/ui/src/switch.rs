@@ -1,6 +1,6 @@
 use crate::{
     button::ButtonSize,
-    stock::h_flex,
+    stack::h_flex,
     theme::{ActiveTheme, Colorize},
     Disableable,
 };

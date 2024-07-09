@@ -1,4 +1,4 @@
-use crate::stock::h_flex;
+use crate::stack::h_flex;
 use crate::theme::ActiveTheme;
 use gpui::InteractiveElement;
 use gpui::{
