@@ -6,7 +6,13 @@ use gpui::{
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
+use crate::{
+    h_flex,
+    list::ListItem,
+    popover::{self, Popover, PopoverWindow},
+    theme::ActiveTheme,
+    v_flex, Icon,
+};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -136,6 +142,7 @@ impl PopupMenu {
                 match item {
                     Some(PopupMenuItem::Item { handler, .. }) => {
                         handler(content, cx);
+                        self.dismiss(&Dismiss, cx)
                     }
                     _ => {}
                 }
@@ -171,6 +178,7 @@ impl PopupMenu {
 
     fn dismiss(&mut self, _: &Dismiss, cx: &mut ViewContext<Self>) {
         cx.emit(DismissEvent);
+        popover::close_popover(cx);
     }
 }
 

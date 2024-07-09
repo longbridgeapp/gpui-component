@@ -53,6 +53,7 @@ impl Render for Form {
 pub struct PopoverStory {
     focus_handle: FocusHandle,
     form: View<Form>,
+    message: String,
 }
 
 impl PopoverStory {
@@ -65,20 +66,21 @@ impl PopoverStory {
         Self {
             form,
             focus_handle: cx.focus_handle(),
+            message: "".to_string(),
         }
     }
 
-    fn on_copy(&mut self, _: &Copy, _: &mut ViewContext<Self>) {
-        println!("You have clicked copy");
+    fn on_copy(&mut self, _: &Copy, cx: &mut ViewContext<Self>) {
+        self.message = "You have clicked copy".to_string();
     }
     fn on_cut(&mut self, _: &Cut, _: &mut ViewContext<Self>) {
-        println!("You have clicked cut");
+        self.message = "You have clicked cut".to_string();
     }
     fn on_paste(&mut self, _: &Paste, _: &mut ViewContext<Self>) {
-        println!("You have clicked paste");
+        self.message = "You have clicked paste".to_string();
     }
     fn on_search_all(&mut self, _: &SearchAll, _: &mut ViewContext<Self>) {
-        println!("You have clicked SearchAll");
+        self.message = "You have clicked search all".to_string();
     }
 }
 
@@ -155,27 +157,29 @@ impl Render for PopoverStory {
                     ),
             )
             .child(
-                h_flex().child(
-                    Popover::new("popup-menu")
-                        .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
-                        .content(move |cx| {
-                            let focus_handle = focus_handle.clone();
-                            PopupMenu::build(cx, |mut this, _| {
-                                this.content(focus_handle)
-                                    .menu("Copy", Box::new(Copy))
-                                    .menu("Cut", Box::new(Cut))
-                                    .menu("Paste", Box::new(Paste))
-                                    .separator()
-                                    .menu_with_icon(
-                                        IconName::Search,
-                                        "Search",
-                                        Box::new(SearchAll),
-                                    );
+                h_flex()
+                    .child(
+                        Popover::new("popup-menu")
+                            .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
+                            .content(move |cx| {
+                                let focus_handle = focus_handle.clone();
+                                PopupMenu::build(cx, |mut this, _| {
+                                    this.content(focus_handle)
+                                        .menu("Copy", Box::new(Copy))
+                                        .menu("Cut", Box::new(Cut))
+                                        .menu("Paste", Box::new(Paste))
+                                        .separator()
+                                        .menu_with_icon(
+                                            IconName::Search,
+                                            "Search",
+                                            Box::new(SearchAll),
+                                        );
 
-                                this
-                            })
-                        }),
-                ),
+                                    this
+                                })
+                            }),
+                    )
+                    .child(self.message.clone()),
             )
             .child(
                 div().absolute().bottom_4().left_0().w_full().h_10().child(
