@@ -468,30 +468,30 @@ where
             window_y + trigger_bounds.origin.y + border_bounds.origin.y,
         );
 
-        println!(
-            "------------ trigger_screen_origin_y: {} {}= {}",
-            trigger_screen_origin.y,
-            bounds.size.height,
-            trigger_screen_origin.y - bounds.size.height
-        );
+        // println!(
+        //     "------------ trigger_screen_origin_y: {} {}= {}",
+        //     trigger_screen_origin.y,
+        //     bounds.size.height,
+        //     trigger_screen_origin.y - bounds.size.height
+        // );
 
         let popover_offset = px(5.);
         let popover_origin = match anchor {
             AnchorCorner::TopLeft => point(
                 trigger_screen_origin.x,
-                trigger_screen_origin.y - bounds.size.height / 2.0 - popover_offset,
+                trigger_screen_origin.y - bounds.size.height - popover_offset,
             ),
             AnchorCorner::TopRight => point(
                 trigger_screen_origin.x,
-                trigger_screen_origin.y - bounds.size.height / 2.0 - popover_offset,
+                trigger_screen_origin.y - bounds.size.height - popover_offset,
             ),
             AnchorCorner::BottomLeft => point(
                 trigger_screen_origin.x,
-                trigger_screen_origin.y + bounds.size.height / 2.0 + popover_offset,
+                trigger_screen_origin.y + trigger_bounds.size.height + popover_offset,
             ),
             AnchorCorner::BottomRight => point(
                 trigger_screen_origin.x,
-                trigger_screen_origin.y + bounds.size.height / 2.0 + popover_offset,
+                trigger_screen_origin.y + trigger_bounds.size.height + popover_offset,
             ),
         };
 
@@ -563,7 +563,8 @@ where
             .track_focus(&self.focus_handle)
             .size_full()
             .p_2()
-            .text_color(cx.theme().foreground)
+            .bg(cx.theme().popover)
+            .text_color(cx.theme().popover_foreground)
             // Leave margin for show window shadow
             .map(|d| match self.anchor {
                 AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_8(),
