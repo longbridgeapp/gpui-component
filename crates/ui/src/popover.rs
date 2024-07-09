@@ -11,7 +11,7 @@ use gpui::{
     ParentElement as _, ParentElement, Pixels, Point, Render, Style, Styled, View, ViewContext,
     VisualContext, WindowBounds, WindowContext, WindowId, WindowOptions,
 };
-use gpui::{Context, PlatformDisplay, TitlebarOptions};
+use gpui::{Context, PlatformDisplay, TitlebarOptions, WindowBackgroundAppearance};
 
 actions!(popover, [Open, Dismiss]);
 
@@ -423,39 +423,23 @@ where
         let window_x = window_bounds.origin.x;
         let window_y = window_bounds.origin.y;
 
-        // println!(
-        //     "------------ window_y: {} {}",
-        //     window_y, trigger_bounds.origin.y
-        // );
-        // println!("--------- cx.bounds: {:?}", cx.bounds());
-        // println!(
-        //     "--------- cx.window_bounds: {:?}",
-        //     cx.window_bounds().get_bounds()
-        // );
-        // println!(
-        //     "--------- cx.display bounds: {:?}",
-        //     display.clone().unwrap().bounds()
-        // );
-
         // TODO: avoid out of the screen bounds
 
-        let (titlebar, window_background, border_bounds) = if cfg!(target_os = "windows") {
+        let (titlebar, border_bounds) = if cfg!(target_os = "windows") {
             (
                 Some(TitlebarOptions {
                     title: None,
                     appears_transparent: true,
                     traffic_light_position: None,
                 }),
-                gpui::WindowBackgroundAppearance::Opaque,
                 Bounds {
                     origin: point(px(0.0), px(0.0)),
-                    size: size(px(0.0), px(0.0)),
+                    size: size(px(16.0), px(8.0)),
                 },
             )
         } else {
             (
                 None,
-                gpui::WindowBackgroundAppearance::Transparent,
                 Bounds {
                     origin: point(px(-8.0), px(0.0)),
                     size: size(px(20.0), px(20.0)),
@@ -467,13 +451,6 @@ where
             window_x + trigger_bounds.origin.x + border_bounds.origin.x,
             window_y + trigger_bounds.origin.y + border_bounds.origin.y,
         );
-
-        // println!(
-        //     "------------ trigger_screen_origin_y: {} {}= {}",
-        //     trigger_screen_origin.y,
-        //     bounds.size.height,
-        //     trigger_screen_origin.y - bounds.size.height
-        // );
 
         let popover_offset = px(5.);
         let popover_origin = match anchor {
@@ -503,11 +480,6 @@ where
             ),
         };
 
-        println!(
-            "------- popover_origin: {:?} {:?}",
-            popover_origin, bounds.origin
-        );
-
         let view = view.clone();
         cx.spawn(|mut cx| async move {
             // cx.update(|cx| {
@@ -516,7 +488,7 @@ where
                     WindowOptions {
                         titlebar,
                         window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
-                        window_background,
+                        window_background: WindowBackgroundAppearance::Transparent,
                         kind: gpui::WindowKind::PopUp,
                         is_movable: false,
                         focus: true,
@@ -562,8 +534,8 @@ where
             .id("PopoverWindow")
             .track_focus(&self.focus_handle)
             .size_full()
-            .p_2()
-            .bg(cx.theme().popover)
+            .when(!is_windows, |this| this.p_2())
+            .when(is_windows, |this| this.bg(cx.theme().popover))
             .text_color(cx.theme().popover_foreground)
             // Leave margin for show window shadow
             .map(|d| match self.anchor {
@@ -574,7 +546,7 @@ where
                 div()
                     .when(!is_windows, |this| {
                         this.bg(cx.theme().popover)
-                            .border_3()
+                            .border_1()
                             .border_color(cx.theme().border)
                             .elevation_2(cx)
                     })
