@@ -54,7 +54,7 @@ impl Render for PopoverContent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PopupMode {
+enum PopupMode {
     View,
     Window,
 }
@@ -84,11 +84,10 @@ where
         }
     }
 
-    /// Create a new Popover with `window` mode.
-    pub fn new_window(id: impl Into<ElementId>) -> Self {
-        let mut this = Self::new(id);
-        this.mode = PopupMode::Window;
-        this
+    /// Set Popover to use Window mode
+    pub fn window_mode(mut self) -> Self {
+        self.mode = PopupMode::Window;
+        self
     }
 
     pub fn anchor(mut self, anchor: AnchorCorner) -> Self {

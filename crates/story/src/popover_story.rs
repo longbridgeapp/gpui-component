@@ -10,6 +10,8 @@ use ui::{
     input::TextInput,
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenu,
+    prelude::FluentBuilder,
+    switch::Switch,
     v_flex, Clickable, IconName,
 };
 
@@ -54,6 +56,7 @@ pub struct PopoverStory {
     focus_handle: FocusHandle,
     form: View<Form>,
     message: String,
+    window_mode: bool,
 }
 
 impl PopoverStory {
@@ -67,6 +70,7 @@ impl PopoverStory {
             form,
             focus_handle: cx.focus_handle(),
             message: "".to_string(),
+            window_mode: false,
         }
     }
 
@@ -111,12 +115,21 @@ impl Render for PopoverStory {
             }))
             .gap_6()
             .child(
+                Switch::new("switch-window-mode")
+                    .checked(self.window_mode)
+                    .label("Use Window Popover")
+                    .on_click(cx.listener(|this, _, cx| {
+                        this.window_mode = !this.window_mode;
+                    })),
+            )
+            .child(
                 h_flex()
                     .items_center()
                     .justify_between()
                     .child(
                         v_flex().gap_4().child(
-                            Popover::new_window("info-top-left")
+                            Popover::new("info-top-left")
+                                .when(self.window_mode, |this| this.window_mode())
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -137,6 +150,7 @@ impl Render for PopoverStory {
                     )
                     .child(
                         Popover::new("info-top-right")
+                            .when(self.window_mode, |this| this.window_mode())
                             .anchor(AnchorCorner::TopRight)
                             .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
@@ -144,7 +158,7 @@ impl Render for PopoverStory {
                                     v_flex()
                                         .gap_4()
                                         .w_96()
-                                        .child("Hello, this is a Popover on the Top Right, this Popover is not window.")
+                                        .child("Hello, this is a Popover on the Top Right.")
                                         .child(Divider::horizontal())
                                         .child(
                                             Button::new("info1", cx)
@@ -160,7 +174,8 @@ impl Render for PopoverStory {
             .child(
                 h_flex()
                     .child(
-                        Popover::new_window("popup-menu")
+                        Popover::new("popup-menu")
+                            .when(self.window_mode, |this| this.window_mode())
                             .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
                             .content(move |cx| {
                                 let focus_handle = focus_handle.clone();
@@ -188,7 +203,8 @@ impl Render for PopoverStory {
                         .items_center()
                         .justify_between()
                         .child(
-                            Popover::new_window("info-bottom-left")
+                            Popover::new("info-bottom-left")
+                                .when(self.window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
                                     Button::new("pop", cx)
@@ -198,7 +214,8 @@ impl Render for PopoverStory {
                                 .content(move |_| form.clone()),
                         )
                         .child(
-                            Popover::new_window("info-bottom-right")
+                            Popover::new("info-bottom-right")
+                                .when(self.window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(
