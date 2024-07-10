@@ -116,7 +116,7 @@ impl Render for PopoverStory {
                     .justify_between()
                     .child(
                         v_flex().gap_4().child(
-                            Popover::new("info-top-left")
+                            Popover::new_window("info-top-left")
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -143,7 +143,8 @@ impl Render for PopoverStory {
                                 PopoverContent::new(cx, |cx| {
                                     v_flex()
                                         .gap_4()
-                                        .child("Hello, this is a Popover on the Top Right.")
+                                        .w_96()
+                                        .child("Hello, this is a Popover on the Top Right, this Popover is not window.")
                                         .child(Divider::horizontal())
                                         .child(
                                             Button::new("info1", cx)
@@ -159,7 +160,7 @@ impl Render for PopoverStory {
             .child(
                 h_flex()
                     .child(
-                        Popover::new("popup-menu")
+                        Popover::new_window("popup-menu")
                             .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
                             .content(move |cx| {
                                 let focus_handle = focus_handle.clone();
@@ -187,7 +188,7 @@ impl Render for PopoverStory {
                         .items_center()
                         .justify_between()
                         .child(
-                            Popover::new("info-bottom-left")
+                            Popover::new_window("info-bottom-left")
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
                                     Button::new("pop", cx)
@@ -197,7 +198,7 @@ impl Render for PopoverStory {
                                 .content(move |_| form.clone()),
                         )
                         .child(
-                            Popover::new("info-bottom-right")
+                            Popover::new_window("info-bottom-right")
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(
