@@ -414,14 +414,11 @@ where
         PopoverWindowState::close_window(cx);
 
         let display = cx.display();
-        let window_bounds = cx.window_bounds().get_bounds();
+        let window_bounds = cx.bounds();
 
         // cx.displays().iter().for_each(|d| {
         //     println!("display: {:?}", d.bounds());
         // });
-
-        let window_x = window_bounds.origin.x;
-        let window_y = window_bounds.origin.y;
 
         // TODO: avoid out of the screen bounds
 
@@ -447,32 +444,36 @@ where
             )
         };
 
-        let trigger_screen_origin = point(
-            window_x + trigger_bounds.origin.x + border_bounds.origin.x,
-            window_y + trigger_bounds.origin.y + border_bounds.origin.y,
-        );
-
-        let popover_offset = px(5.);
-        let popover_origin = match anchor {
-            AnchorCorner::TopLeft => point(
-                trigger_screen_origin.x,
-                trigger_screen_origin.y - bounds.size.height - popover_offset,
-            ),
-            AnchorCorner::TopRight => point(
-                trigger_screen_origin.x,
-                trigger_screen_origin.y - bounds.size.height - popover_offset,
-            ),
-            AnchorCorner::BottomLeft => point(
-                trigger_screen_origin.x,
-                trigger_screen_origin.y + trigger_bounds.size.height + popover_offset,
-            ),
-            AnchorCorner::BottomRight => point(
-                trigger_screen_origin.x,
-                trigger_screen_origin.y + trigger_bounds.size.height + popover_offset,
-            ),
+        let trigger_screen_bounds = Bounds {
+            origin: window_bounds.origin + trigger_bounds.origin + border_bounds.origin,
+            size: trigger_bounds.size,
         };
 
-        let bounds = Bounds::<Pixels> {
+        let popover_offset = px(2.);
+        let popover_origin = match anchor {
+            AnchorCorner::TopLeft => {
+                trigger_screen_bounds.lower_left() + point(px(0.), popover_offset)
+            }
+            AnchorCorner::TopRight => {
+                trigger_screen_bounds.lower_right() + point(-bounds.size.width, popover_offset)
+            }
+            AnchorCorner::BottomLeft => {
+                trigger_screen_bounds.origin
+                    - point(
+                        px(0.0),
+                        bounds.size.height + border_bounds.size.height + popover_offset,
+                    )
+            }
+            AnchorCorner::BottomRight => {
+                trigger_screen_bounds.upper_right()
+                    - point(
+                        bounds.size.width,
+                        bounds.size.height + border_bounds.size.height + popover_offset,
+                    )
+            }
+        };
+
+        let bounds = Bounds {
             origin: popover_origin,
             size: size(
                 bounds.size.width + border_bounds.size.width,
