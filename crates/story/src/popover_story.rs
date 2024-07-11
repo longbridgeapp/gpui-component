@@ -74,7 +74,7 @@ impl PopoverStory {
         }
     }
 
-    fn on_copy(&mut self, _: &Copy, cx: &mut ViewContext<Self>) {
+    fn on_copy(&mut self, _: &Copy, _: &mut ViewContext<Self>) {
         self.message = "You have clicked copy".to_string();
     }
     fn on_cut(&mut self, _: &Cut, _: &mut ViewContext<Self>) {
@@ -118,7 +118,7 @@ impl Render for PopoverStory {
                 Switch::new("switch-window-mode")
                     .checked(self.window_mode)
                     .label("Use Window Popover")
-                    .on_click(cx.listener(|this, _, cx| {
+                    .on_click(cx.listener(|this, _, _| {
                         this.window_mode = !this.window_mode;
                     })),
             )
@@ -173,6 +173,7 @@ impl Render for PopoverStory {
             )
             .child(
                 h_flex()
+                    .gap_3()
                     .child(
                         Popover::new("popup-menu")
                             .when(self.window_mode, |this| this.window_mode())

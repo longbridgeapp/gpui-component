@@ -6,13 +6,7 @@ use gpui::{
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{
-    h_flex,
-    list::ListItem,
-    popover::{self},
-    theme::ActiveTheme,
-    v_flex, Icon,
-};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 

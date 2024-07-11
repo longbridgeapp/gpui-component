@@ -213,17 +213,17 @@ impl<M: ManagedView> Element for Popover<M> {
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let mode = self.mode;
 
-        self.with_element_state(id.unwrap(), cx, |this, element_state, cx| {
-            let mut trigger_element = this.render_trigger(cx).into_any_element();
+        self.with_element_state(id.unwrap(), cx, |view, element_state, cx| {
+            let mut trigger_element = view.render_trigger(cx).into_any_element();
             let trigger_layout_id = trigger_element.request_layout(cx);
 
             let mut popover_layout_id = None;
             let mut popover_element = None;
 
             if let Some(content_view) = element_state.content_view.borrow_mut().as_mut() {
-                let mut anchored = anchored().snap_to_window().anchor(this.anchor);
+                let mut anchored = anchored().snap_to_window().anchor(view.anchor);
                 if let Some(trigger_bounds) = element_state.trigger_bounds {
-                    anchored = anchored.position(this.resolved_corner(trigger_bounds));
+                    anchored = anchored.position(view.resolved_corner(trigger_bounds));
                 }
 
                 let mut element = if mode == PopupMode::Window {
@@ -241,24 +241,25 @@ impl<M: ManagedView> Element for Popover<M> {
                     deferred(
                         anchored.child(
                             div()
+                                .size_full()
                                 .occlude()
                                 .elevation_2(cx)
                                 .bg(cx.theme().popover)
                                 .border_1()
                                 .border_color(cx.theme().border)
-                                .map(|d| match this.anchor {
-                                    AnchorCorner::TopLeft | AnchorCorner::TopRight => d.mt_2(),
+                                .map(|this| match view.anchor {
+                                    AnchorCorner::TopLeft | AnchorCorner::TopRight => this.top_2(),
                                     AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
-                                        d.mb_2()
+                                        this.bottom_2()
                                     }
                                 })
+                                .child(content_view.clone())
                                 .on_mouse_down_out(move |_, cx| {
                                     // Update the element_state.content_view to `None`,
                                     // so that the `paint`` method will not paint it.
                                     *content_view_mut.borrow_mut() = None;
                                     cx.refresh();
-                                })
-                                .child(content_view.clone()),
+                                }),
                         ),
                     )
                     .with_priority(1)
@@ -336,8 +337,8 @@ impl<M: ManagedView> Element for Popover<M> {
                 element.paint(cx);
             }
 
-            if let Some(content_view) = element_state.content_view.take() {
-                if mode == PopupMode::Window {
+            if mode == PopupMode::Window {
+                if let Some(content_view) = element_state.content_view.take() {
                     let popover_bounds = prepaint.popover_bounds.unwrap();
                     let trigger_bounds = prepaint.trigger_bounds.unwrap();
 
@@ -349,13 +350,14 @@ impl<M: ManagedView> Element for Popover<M> {
                         cx,
                     )
                     .expect("BUG: failed to open popover window.");
-                } else {
-                    if let Some(mut element) = request_layout.popover_element.take() {
-                        element.paint(cx);
-                    }
-                }
 
-                return;
+                    return;
+                }
+            } else {
+                if let Some(mut element) = request_layout.popover_element.take() {
+                    element.paint(cx);
+                    return;
+                }
             }
 
             // When mouse click down in the trigger bounds, open the popover.
