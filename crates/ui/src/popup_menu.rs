@@ -7,7 +7,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, StyledExt};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 

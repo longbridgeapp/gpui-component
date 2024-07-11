@@ -20,7 +20,7 @@ pub enum IconName {
     EllipsisVertical,
     Search,
     Delete,
-    CicleX,
+    CircleX,
 }
 
 impl IconName {
@@ -40,7 +40,7 @@ impl IconName {
             IconName::EllipsisVertical => "icons/ellipsis-vertical.svg",
             IconName::Search => "icons/search.svg",
             IconName::Delete => "icons/delete.svg",
-            IconName::CicleX => "icons/circle-x.svg",
+            IconName::CircleX => "icons/circle-x.svg",
         }
         .into()
     }

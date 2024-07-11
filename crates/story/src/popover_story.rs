@@ -180,7 +180,7 @@ impl Render for PopoverStory {
                             .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
                             .content(move |cx| {
                                 let focus_handle = focus_handle.clone();
-                                PopupMenu::build(cx, |mut this, cx| {
+                                PopupMenu::build(cx, |mut this, _cx| {
                                     this.content(focus_handle)
                                         .menu("Copy", Box::new(Copy))
                                         .menu("Cut", Box::new(Cut))

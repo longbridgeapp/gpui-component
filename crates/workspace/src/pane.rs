@@ -13,8 +13,8 @@ use gpui::{
     actions, div, impl_actions, prelude::FluentBuilder as _, px, AppContext, DefiniteLength,
     DragMoveEvent, Element as _, EntityId, EventEmitter, FocusHandle, FocusOutEvent, FocusableView,
     InteractiveElement as _, IntoElement, KeyContext, ParentElement, Pixels, Point, Render,
-    RenderOnce as _, ScrollHandle, StatefulInteractiveElement, Styled, Subscription, Task, View,
-    ViewContext, VisualContext as _, WeakFocusHandle, WeakView, WindowContext,
+    ScrollHandle, StatefulInteractiveElement, Styled, Subscription, Task, View, ViewContext,
+    VisualContext as _, WeakFocusHandle, WeakView, WindowContext,
 };
 use serde::Deserialize;
 

@@ -6,6 +6,7 @@ mod input_story;
 mod list_story;
 mod picker_story;
 mod popover_story;
+mod progress_story;
 mod switch_story;
 mod table_story;
 mod tooltip_story;
@@ -18,15 +19,15 @@ pub use input_story::InputStory;
 pub use list_story::ListStory;
 pub use picker_story::PickerStory;
 pub use popover_story::PopoverStory;
+pub use progress_story::ProgressStory;
 pub use switch_story::SwitchStory;
 pub use table_story::TableStory;
 pub use tooltip_story::TooltipStory;
 
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
-    SharedString, StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext,
-    WindowContext,
+    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
+    StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 use workspace::{
     dock::{DockPosition, Panel, PanelEvent},

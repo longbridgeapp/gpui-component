@@ -12,19 +12,19 @@ mod svg_img;
 
 pub mod button;
 pub mod checkbox;
-pub mod label;
-pub mod prelude;
-pub mod theme;
-pub use styled_ext::StyledExt;
 pub mod divider;
 pub mod dropdown;
 pub mod input;
+pub mod label;
 pub mod list;
 pub mod popover;
 pub mod popup_menu;
+pub mod prelude;
+pub mod progress;
 pub mod switch;
 pub mod tab;
 pub mod table;
+pub mod theme;
 pub mod tooltip;
 
 pub use clickable::Clickable;
@@ -32,6 +32,7 @@ pub use disableable::Disableable;
 pub use event::InterativeElementExt;
 pub use focusable::FocusableCycle;
 pub use selectable::{Selectable, Selection};
+pub use styled_ext::StyledExt;
 
 pub use icon::*;
 pub use stack::*;
