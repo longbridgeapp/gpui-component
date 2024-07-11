@@ -1,20 +1,25 @@
 use gpui::{
-    ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
+    px, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
 use ui::{
     button::{Button, ButtonSize, ButtonStyle},
-    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable,
+    h_flex,
+    resizable::ResizablePanel,
+    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable,
 };
 
 use crate::section;
 
-pub struct ButtonStory {}
+pub struct ButtonStory {
+    panel1: View<ResizablePanel>,
+}
 
 impl ButtonStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|_| Self {})
+        let panel1 = cx.new_view(|_| ResizablePanel::new("panel-input1", px(400.)));
+        cx.new_view(|_| Self { panel1 })
     }
 
     fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
@@ -29,6 +34,7 @@ impl Render for ButtonStory {
             .child(
                 h_flex()
                     .gap_6()
+                    .child(self.panel1.clone())
                     .child(
                         section("Normal Button", cx)
                             .child(

@@ -22,6 +22,7 @@ pub mod popover;
 pub mod popup_menu;
 pub mod prelude;
 pub mod progress;
+pub mod resizable;
 pub mod switch;
 pub mod tab;
 pub mod table;
