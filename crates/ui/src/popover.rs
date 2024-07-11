@@ -1,11 +1,11 @@
 use anyhow::Result;
 use gpui::{
     actions, anchored, deferred, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner,
-    AnyElement, AnyWindowHandle, AppContext, Bounds, DismissEvent, DispatchPhase, Element,
-    ElementId, EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
+    AnyElement, AppContext, Bounds, Context, DismissEvent, DispatchPhase, Element, ElementId,
+    EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
     InteractiveElement as _, IntoElement, LayoutId, ManagedView, MouseButton, MouseDownEvent,
-    ParentElement, Pixels, Point, Render, Style, Styled, View, ViewContext, VisualContext,
-    WindowBackgroundAppearance, WindowContext, WindowId, WindowOptions,
+    ParentElement, Pixels, Point, Render, Style, Styled, Subscription, View, ViewContext,
+    VisualContext, WindowBackgroundAppearance, WindowContext, WindowId, WindowOptions,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -427,20 +427,16 @@ impl PopoverWindowState {
         });
     }
 
-    fn existing_window(cx: &AppContext) -> Option<AnyWindowHandle> {
-        cx.windows()
+    fn close_window(cx: &mut AppContext) {
+        if let Some(window) = cx
+            .windows()
             .into_iter()
             .find(|window| Some(window.window_id()) == PopoverWindowState::window_id(cx))
-    }
-
-    fn close_window(cx: &mut AppContext) {
-        if let Some(window) = Self::existing_window(cx) {
-            window
-                .update(cx, |_, cx| {
-                    cx.remove_window();
-                    cx.set_global(PopoverWindowState { window_id: None });
-                })
-                .ok();
+        {
+            cx.update_window(window, |_, cx| {
+                cx.remove_window();
+            })
+            .ok();
         }
     }
 }
@@ -449,6 +445,8 @@ pub struct PopoverWindow<M: ManagedView> {
     focus_handle: FocusHandle,
     view: View<M>,
     anchor: AnchorCorner,
+    close_when_deactivate: bool,
+    _subscriptions: Vec<Subscription>,
 }
 
 pub fn close_popover(cx: &mut AppContext) {
@@ -531,7 +529,7 @@ where
                         titlebar: None,
                         window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
                         window_background: WindowBackgroundAppearance::Transparent,
-                        kind: gpui::WindowKind::PopUp,
+                        kind: gpui::WindowKind::Normal,
                         is_movable: false,
                         focus: true,
                         show: true,
@@ -540,11 +538,21 @@ where
                     },
                     |cx| {
                         let focus_handle = cx.focus_handle();
+                        let mut _subscriptions = Vec::new();
 
-                        let view = cx.new_view(|_| PopoverWindow {
-                            focus_handle: focus_handle.clone(),
-                            view,
-                            anchor,
+                        let view = cx.new_view(|cx| {
+                            // Listen to window diactivation to close window
+                            _subscriptions.push(
+                                cx.observe_window_activation(Self::window_activation_changed),
+                            );
+
+                            PopoverWindow {
+                                focus_handle: focus_handle.clone(),
+                                view,
+                                anchor,
+                                close_when_deactivate: false,
+                                _subscriptions,
+                            }
                         });
                         focus_handle.focus(cx);
 
@@ -561,6 +569,23 @@ where
         .detach();
 
         Ok(())
+    }
+}
+
+impl<M> PopoverWindow<M>
+where
+    M: ManagedView,
+{
+    fn window_activation_changed(&mut self, cx: &mut ViewContext<Self>) {
+        if self.close_when_deactivate {
+            if !cx.is_window_active() {
+                self.dismiss(cx);
+            }
+        }
+    }
+
+    fn dismiss(&mut self, cx: &mut ViewContext<Self>) {
+        cx.remove_window();
     }
 }
 
