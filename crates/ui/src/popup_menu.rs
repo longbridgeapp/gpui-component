@@ -9,7 +9,7 @@ use gpui::{
 use crate::{
     h_flex,
     list::ListItem,
-    popover::{self, Popover, PopoverWindow},
+    popover::{self},
     theme::ActiveTheme,
     v_flex, Icon,
 };
@@ -178,7 +178,6 @@ impl PopupMenu {
 
     fn dismiss(&mut self, _: &Dismiss, cx: &mut ViewContext<Self>) {
         cx.emit(DismissEvent);
-        popover::close_popover(cx);
     }
 }
 

@@ -1,17 +1,15 @@
-use std::{cell::RefCell, rc::Rc};
-
-use crate::StyledExt as _;
-use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
 use anyhow::Result;
 use gpui::{
-    actions, anchored, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner, AnyElement,
-    AnyWindowHandle, AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId,
-    EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox, InteractiveElement,
+    actions, anchored, deferred, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner,
+    AnyElement, AnyWindowHandle, AppContext, Bounds, DismissEvent, DispatchPhase, Element,
+    ElementId, EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
     InteractiveElement as _, IntoElement, LayoutId, ManagedView, MouseButton, MouseDownEvent,
-    ParentElement as _, ParentElement, Pixels, Point, Render, Style, Styled, View, ViewContext,
-    VisualContext, WindowBounds, WindowContext, WindowId, WindowOptions,
+    ParentElement, Pixels, Point, Render, Style, Styled, View, ViewContext, VisualContext,
+    WindowBackgroundAppearance, WindowContext, WindowId, WindowOptions,
 };
-use gpui::{deferred, Context, PlatformDisplay, TitlebarOptions, WindowBackgroundAppearance};
+use std::{cell::RefCell, rc::Rc};
+
+use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
 
 actions!(popover, [Open, Dismiss]);
 
@@ -229,6 +227,7 @@ impl<M: ManagedView> Element for Popover<M> {
                 }
 
                 let mut element = if mode == PopupMode::Window {
+                    // layout the content view, to let the popover know the size of the content for window size.
                     anchored
                         .child(
                             div()
@@ -306,6 +305,7 @@ impl<M: ManagedView> Element for Popover<M> {
             .trigger_layout_id
             .map(|id| cx.layout_bounds(id));
 
+        // Prepare the popover, for get the bounds of it for open window size.
         let popover_bounds = request_layout
             .popover_layout_id
             .map(|id| cx.layout_bounds(id));
@@ -348,7 +348,7 @@ impl<M: ManagedView> Element for Popover<M> {
                         anchor,
                         cx,
                     )
-                    .expect("failed to open popover window.");
+                    .expect("BUG: failed to open popover window.");
                 } else {
                     if let Some(mut element) = request_layout.popover_element.take() {
                         element.paint(cx);
@@ -358,11 +358,10 @@ impl<M: ManagedView> Element for Popover<M> {
                 return;
             }
 
+            // When mouse click down in the trigger bounds, open the popover.
             let Some(content_build) = this.content.take() else {
                 return;
             };
-
-            // When mouse click down in the trigger bounds, open the popover.
             let old_content_view = element_state.content_view.clone();
             let hitbox_id = prepaint.hitbox.id;
             let mouse_button = this.mouse_button;
@@ -471,32 +470,18 @@ where
         let display = cx.display();
         let window_bounds = cx.bounds();
 
-        // cx.displays().iter().for_each(|d| {
-        //     println!("display: {:?}", d.bounds());
-        // });
-
         // TODO: avoid out of the screen bounds
 
-        let (titlebar, border_bounds) = if cfg!(target_os = "windows") {
-            (
-                Some(TitlebarOptions {
-                    title: None,
-                    appears_transparent: true,
-                    traffic_light_position: None,
-                }),
-                Bounds {
-                    origin: point(px(0.0), px(0.0)),
-                    size: size(px(16.0), px(8.0)),
-                },
-            )
+        let border_bounds = if cfg!(target_os = "windows") {
+            Bounds {
+                origin: point(px(0.0), px(0.0)),
+                size: size(px(16.0), px(8.0)),
+            }
         } else {
-            (
-                None,
-                Bounds {
-                    origin: point(px(-8.0), px(0.0)),
-                    size: size(px(20.0), px(20.0)),
-                },
-            )
+            Bounds {
+                origin: point(px(-8.0), px(0.0)),
+                size: size(px(20.0), px(20.0)),
+            }
         };
 
         let trigger_screen_bounds = Bounds {
@@ -538,11 +523,10 @@ where
 
         let view = view.clone();
         cx.spawn(|mut cx| async move {
-            // cx.update(|cx| {
             let window = cx
                 .open_window(
                     WindowOptions {
-                        titlebar,
+                        titlebar: None,
                         window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
                         window_background: WindowBackgroundAppearance::Transparent,
                         kind: gpui::WindowKind::PopUp,
@@ -565,13 +549,12 @@ where
                         view
                     },
                 )
-                .expect("faild to create a new window.");
+                .expect("BUG: faild to create a new window.");
 
             cx.update(|cx| {
                 PopoverWindowState::set_window_id(window.window_id(), cx);
             })
-            .unwrap();
-            // })
+            .expect("BUG: failed to set window id.")
         })
         .detach();
 
