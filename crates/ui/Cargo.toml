@@ -9,8 +9,7 @@ publish = false
 doctest = false
 
 [dependencies]
-# gpui = { path = "/Users/jason/github/zed/crates/gpui" }
-gpui = { git = "https://github.com/zed-industries/zed.git" }
+gpui.workspace = true
 anyhow = "1"
 log = "0.4"
 serde = "1.0.203"
