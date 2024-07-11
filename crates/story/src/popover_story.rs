@@ -118,8 +118,8 @@ impl Render for PopoverStory {
                 Switch::new("switch-window-mode")
                     .checked(self.window_mode)
                     .label("Use Window Popover")
-                    .on_click(cx.listener(|this, _, _| {
-                        this.window_mode = !this.window_mode;
+                    .on_click(cx.listener(|this, checked, _| {
+                        this.window_mode = *checked;
                     })),
             )
             .child(

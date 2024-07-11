@@ -5,12 +5,11 @@ use crate::{
     Disableable,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, Div, InteractiveElement, IntoElement,
-    ParentElement as _, RenderOnce, SharedString, Stateful, StatefulInteractiveElement,
-    Styled as _, WindowContext,
+    div, prelude::FluentBuilder as _, Div, InteractiveElement, IntoElement, ParentElement as _,
+    RenderOnce, SharedString, Stateful, Styled as _, WindowContext,
 };
 
-type OnClick = Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>;
+type OnClick = Box<dyn Fn(&bool, &mut WindowContext) + 'static>;
 
 pub enum LabelSide {
     Left,
@@ -66,7 +65,7 @@ impl Switch {
         self
     }
 
-    pub fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
+    pub fn on_click(mut self, handler: impl Fn(&bool, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
         self
     }
@@ -140,9 +139,8 @@ impl RenderOnce for Switch {
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
-                    this.on_click(move |ev, cx| {
-                        cx.stop_propagation();
-                        on_click(ev, cx);
+                    this.on_mouse_down(gpui::MouseButton::Left, move |_, cx| {
+                        on_click(&!self.checked, cx);
                     })
                 },
             )

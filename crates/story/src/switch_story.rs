@@ -72,8 +72,8 @@ impl Render for SwitchStory {
                                 .checked(self.switch1)
                                 .label_side(LabelSide::Left)
                                 .label("Subscribe")
-                                .on_click(cx.listener(move |view, _, cx| {
-                                    view.switch1 = !view.switch1;
+                                .on_click(cx.listener(move |view, checked, cx| {
+                                    view.switch1 = *checked;
                                     cx.notify();
                                 })),
                         ),
@@ -88,18 +88,19 @@ impl Render for SwitchStory {
                         .child(
                             Switch::new("switch2")
                                 .checked(self.switch2)
-                                .on_click(cx.listener(move |view, _, cx| {
-                                    view.switch2 = !view.switch2;
+                                .on_click(cx.listener(move |view, checked, cx| {
+                                    view.switch2 = *checked;
                                     cx.notify();
                                 })),
                         ),
                 )
                 .child(
-                    card(cx).v_flex()         .items_start().child(title("Disabled Switchs")).child(
+                    card(cx).v_flex()
+                        .items_start().child(title("Disabled Switchs")).child(
                         h_flex().items_center()
                         .gap_6()
-                        .child(Switch::new("switch3").disabled(true).on_click(|ev, _| {
-                            println!("Switch value changed: {:?}", ev);
+                        .child(Switch::new("switch3").disabled(true).on_click(|v, _| {
+                            println!("Switch value changed: {:?}", v);
                         }))
                         .child(
                             Switch::new("switch3_1").label("Airplane Mode")
@@ -111,11 +112,12 @@ impl Render for SwitchStory {
                         ))
                 )
                 .child(
-                    card(cx).v_flex()         .items_start().child(title("Disabled Switchs")).child(
+                    card(cx).v_flex()
+                        .items_start().child(title("Disabled Switchs")).child(
                         h_flex().items_center()
                         .gap_6()
-                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").size(ButtonSize::Small).on_click(cx.listener(move |view, _, cx| {
-                            view.switch3 = !view.switch3;
+                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").size(ButtonSize::Small).on_click(cx.listener(move |view, checked, cx| {
+                            view.switch3 = *checked;
                             cx.notify();
                         })),
                     )

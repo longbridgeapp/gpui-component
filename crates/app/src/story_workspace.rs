@@ -249,10 +249,10 @@ impl Render for StoryWorkspace {
                                     .checked(cx.theme().mode.is_dark())
                                     .label_side(LabelSide::Left)
                                     .label("Dark Mode")
-                                    .on_click(move |_, cx| {
-                                        let mode = match cx.theme().mode.is_dark() {
-                                            false => ui::theme::ThemeMode::Dark,
-                                            true => ui::theme::ThemeMode::Light,
+                                    .on_click(move |checked, cx| {
+                                        let mode = match checked {
+                                            true => ui::theme::ThemeMode::Dark,
+                                            false => ui::theme::ThemeMode::Light,
                                         };
 
                                         Theme::change(mode, cx);
