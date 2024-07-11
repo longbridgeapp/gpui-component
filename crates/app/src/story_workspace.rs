@@ -2,7 +2,7 @@ use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, StoryContainer, SwitchStory, TableStory, TooltipStory,
+    PopoverStory, ProgressStory, StoryContainer, SwitchStory, TableStory, TooltipStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -132,6 +132,15 @@ impl StoryWorkspace {
             "Table",
             "Powerful table and datagrids built using TanStack Table.",
             TableStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::add_pane(
+            "Progress",
+            "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
+            ProgressStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
