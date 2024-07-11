@@ -12,14 +12,11 @@ use ui::{
 
 use crate::section;
 
-pub struct ButtonStory {
-    panel1: View<ResizablePanel>,
-}
+pub struct ButtonStory {}
 
 impl ButtonStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        let panel1 = cx.new_view(|_| ResizablePanel::new("panel-input1", px(400.)));
-        cx.new_view(|_| Self { panel1 })
+        cx.new_view(|_| Self {})
     }
 
     fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
@@ -34,7 +31,6 @@ impl Render for ButtonStory {
             .child(
                 h_flex()
                     .gap_6()
-                    .child(self.panel1.clone())
                     .child(
                         section("Normal Button", cx)
                             .child(

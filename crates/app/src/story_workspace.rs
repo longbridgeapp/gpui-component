@@ -2,7 +2,8 @@ use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, ProgressStory, StoryContainer, SwitchStory, TableStory, TooltipStory,
+    PopoverStory, ProgressStory, ResizableStory, StoryContainer, SwitchStory, TableStory,
+    TooltipStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -54,7 +55,7 @@ impl StoryWorkspace {
             InputStory::view(cx).into(),
             workspace.clone(),
             DockPosition::Right,
-            px(500.0),
+            px(350.0),
             cx,
         );
 
@@ -62,7 +63,7 @@ impl StoryWorkspace {
             CheckboxStory::view(cx).into(),
             workspace.clone(),
             DockPosition::Bottom,
-            px(300.),
+            px(200.),
             cx,
         );
 
@@ -115,7 +116,7 @@ impl StoryWorkspace {
             ListStory::view(cx).into(),
             workspace.clone(),
             DockPosition::Left,
-            px(360.),
+            px(300.),
             cx,
         );
 
@@ -141,6 +142,15 @@ impl StoryWorkspace {
             "Progress",
             "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
             ProgressStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::add_pane(
+            "Resizable",
+            "Accessible resizable panel groups and layouts with keyboard support.",
+            ResizableStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
