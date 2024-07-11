@@ -112,7 +112,6 @@ struct Colors {
     pub scrollbar: Hsla,
     pub scrollbar_thumb: Hsla,
     pub panel: Hsla,
-    pub drop_target: Hsla,
 }
 
 impl Colors {
@@ -172,7 +171,6 @@ impl Colors {
             scrollbar: Hsla::transparent_black(),
             scrollbar_thumb: hsl(240.0, 5.9, 85.0).opacity(0.7),
             panel: hsl(0.0, 0.0, 100.0),
-            drop_target: hsl(240.0, 65., 44.0).opacity(0.15),
         }
     }
 
@@ -231,7 +229,6 @@ impl Colors {
             scrollbar: Hsla::transparent_black(),
             scrollbar_thumb: hsl(240.0, 3.7, 15.9).opacity(0.7),
             panel: hsl(299.0, 2., 9.),
-            drop_target: hsl(240.0, 89., 67.0).opacity(0.8),
         }
     }
 }
@@ -272,6 +269,7 @@ pub struct Theme {
     pub scrollbar: Hsla,
     pub scrollbar_thumb: Hsla,
     pub panel: Hsla,
+    pub drag_border: Hsla,
     pub drop_target: Hsla,
     pub radius: f32,
 }
@@ -321,7 +319,8 @@ impl From<Colors> for Theme {
             scrollbar_thumb: colors.scrollbar_thumb,
             panel: colors.panel,
             selection: colors.selection,
-            drop_target: colors.drop_target,
+            drag_border: crate::blue_500(),
+            drop_target: hsl(240.0, 65., 44.0).opacity(0.15),
         }
     }
 }

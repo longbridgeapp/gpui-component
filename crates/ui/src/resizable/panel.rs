@@ -49,7 +49,7 @@ impl ResizablePanel {
                 .occlude()
                 .absolute()
                 .flex_none()
-                .hover(|this| this.bg(cx.theme().drop_target))
+                .hover(|this| this.bg(cx.theme().drag_border))
                 .on_drag_move(cx.listener(
                     |panel, e: &DragMoveEvent<DragPanel>, cx| match e.drag(cx) {
                         DragPanel(axis) => match axis {
@@ -95,7 +95,6 @@ impl Render for ResizablePanel {
             .id(self.id.clone())
             .size_full()
             .relative()
-            .bg(crate::blue_50())
             .when(axis == Axis::Vertical, |this| this.h(size))
             .when(axis == Axis::Horizontal, |this| this.w(size))
             .child({
