@@ -6,7 +6,7 @@ use gpui::{
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, StyledExt};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -68,8 +68,8 @@ impl PopupMenu {
 
     /// You must set content (FocusHandle) with the parent view, if the menu action is listening on the parent view.
     /// When the Menu Item confirmed, the parent view will be focused again to ensure to receive the action.
-    pub fn content(&mut self, content: FocusHandle) -> &mut Self {
-        self.action_context = Some(content);
+    pub fn content(&mut self, focus_handle: FocusHandle) -> &mut Self {
+        self.action_context = Some(focus_handle);
         self
     }
 
@@ -97,9 +97,9 @@ impl PopupMenu {
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
-            handler: Rc::new(move |content, cx| {
-                if let Some(content) = &content {
-                    cx.focus(content);
+            handler: Rc::new(move |handle, cx| {
+                if let Some(handle) = handle {
+                    cx.focus(handle);
                 }
                 cx.dispatch_action(action.boxed_clone());
             }),
@@ -129,13 +129,13 @@ impl PopupMenu {
     }
 
     fn confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
-        let content = self.action_context.as_ref();
+        let handle = self.action_context.as_ref();
         match self.selected_index {
             Some(index) => {
                 let item = self.menu_items.get(index);
                 match item {
                     Some(PopupMenuItem::Item { handler, .. }) => {
-                        handler(content, cx);
+                        handler(handle, cx);
                         self.dismiss(&Dismiss, cx)
                     }
                     _ => {}
@@ -188,6 +188,7 @@ impl Render for PopupMenu {
         v_flex()
             .key_context("PopupMenu")
             .track_focus(&self.focus_handle)
+            .debug_focused(&self.focus_handle, cx)
             .on_action(cx.listener(Self::select_next))
             .on_action(cx.listener(Self::select_prev))
             .on_action(cx.listener(Self::confirm))

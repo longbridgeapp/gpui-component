@@ -442,7 +442,6 @@ impl PopoverWindowState {
 }
 
 pub struct PopoverWindow<M: ManagedView> {
-    focus_handle: FocusHandle,
     view: View<M>,
     anchor: AnchorCorner,
     close_when_deactivate: bool,
@@ -474,7 +473,7 @@ where
 
         let border_bounds = if cfg!(target_os = "windows") {
             Bounds {
-                origin: point(px(0.0), px(0.0)),
+                origin: point(px(-8.0), px(5.0)),
                 size: size(px(16.0), px(8.0)),
             }
         } else {
@@ -529,7 +528,9 @@ where
                         titlebar: None,
                         window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
                         window_background: WindowBackgroundAppearance::Transparent,
-                        kind: gpui::WindowKind::Normal,
+                        // NOTE: on Windows in currently must use PopUp kind, otherwise the window will be sizeable.
+                        // And the PopUp kind can fast open.
+                        kind: gpui::WindowKind::PopUp,
                         is_movable: false,
                         focus: true,
                         show: true,
@@ -537,7 +538,6 @@ where
                         ..Default::default()
                     },
                     |cx| {
-                        let focus_handle = cx.focus_handle();
                         let mut _subscriptions = Vec::new();
 
                         let view = cx.new_view(|cx| {
@@ -547,14 +547,12 @@ where
                             );
 
                             PopoverWindow {
-                                focus_handle: focus_handle.clone(),
                                 view,
                                 anchor,
-                                close_when_deactivate: false,
+                                close_when_deactivate: true,
                                 _subscriptions,
                             }
                         });
-                        focus_handle.focus(cx);
 
                         view
                     },
@@ -589,6 +587,15 @@ where
     }
 }
 
+impl<M> FocusableView for PopoverWindow<M>
+where
+    M: ManagedView,
+{
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        self.view.focus_handle(cx)
+    }
+}
+
 impl<M> Render for PopoverWindow<M>
 where
     M: ManagedView,
@@ -598,7 +605,6 @@ where
 
         div()
             .id("PopoverWindow")
-            .track_focus(&self.focus_handle)
             .size_full()
             .when(!is_windows, |this| this.p_2())
             .when(is_windows, |this| this.bg(cx.theme().popover))
