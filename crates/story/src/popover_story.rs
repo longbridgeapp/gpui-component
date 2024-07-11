@@ -10,6 +10,8 @@ use ui::{
     input::TextInput,
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenu,
+    prelude::FluentBuilder,
+    switch::Switch,
     v_flex, Clickable, IconName,
 };
 
@@ -53,6 +55,8 @@ impl Render for Form {
 pub struct PopoverStory {
     focus_handle: FocusHandle,
     form: View<Form>,
+    message: String,
+    window_mode: bool,
 }
 
 impl PopoverStory {
@@ -65,20 +69,22 @@ impl PopoverStory {
         Self {
             form,
             focus_handle: cx.focus_handle(),
+            message: "".to_string(),
+            window_mode: false,
         }
     }
 
     fn on_copy(&mut self, _: &Copy, _: &mut ViewContext<Self>) {
-        println!("You have clicked copy");
+        self.message = "You have clicked copy".to_string();
     }
     fn on_cut(&mut self, _: &Cut, _: &mut ViewContext<Self>) {
-        println!("You have clicked cut");
+        self.message = "You have clicked cut".to_string();
     }
     fn on_paste(&mut self, _: &Paste, _: &mut ViewContext<Self>) {
-        println!("You have clicked paste");
+        self.message = "You have clicked paste".to_string();
     }
     fn on_search_all(&mut self, _: &SearchAll, _: &mut ViewContext<Self>) {
-        println!("You have clicked SearchAll");
+        self.message = "You have clicked search all".to_string();
     }
 }
 
@@ -101,19 +107,21 @@ impl Render for PopoverStory {
             .on_action(cx.listener(Self::on_paste))
             .on_action(cx.listener(Self::on_search_all))
             .p_4()
+            .mb_5()
             .size_full()
-            .min_h(px(600.))
+            .min_h(px(400.))
             .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
                 cx.focus(&this.focus_handle);
             }))
-            .child(
-                Button::new("test1", cx)
-                    .label("Hello")
-                    .on_click(move |_, cx| {
-                        cx.dispatch_action(Box::new(Copy));
-                    }),
-            )
             .gap_6()
+            .child(
+                Switch::new("switch-window-mode")
+                    .checked(self.window_mode)
+                    .label("Use Window Popover")
+                    .on_click(cx.listener(|this, _, _| {
+                        this.window_mode = !this.window_mode;
+                    })),
+            )
             .child(
                 h_flex()
                     .items_center()
@@ -121,6 +129,7 @@ impl Render for PopoverStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
+                                .when(self.window_mode, |this| this.window_mode())
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -141,12 +150,14 @@ impl Render for PopoverStory {
                     )
                     .child(
                         Popover::new("info-top-right")
+                            .when(self.window_mode, |this| this.window_mode())
                             .anchor(AnchorCorner::TopRight)
                             .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
                                 PopoverContent::new(cx, |cx| {
                                     v_flex()
                                         .gap_4()
+                                        .w_96()
                                         .child("Hello, this is a Popover on the Top Right.")
                                         .child(Divider::horizontal())
                                         .child(
@@ -161,27 +172,31 @@ impl Render for PopoverStory {
                     ),
             )
             .child(
-                h_flex().child(
-                    Popover::new("popup-menu")
-                        .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
-                        .content(move |cx| {
-                            let focus_handle = focus_handle.clone();
-                            PopupMenu::build(cx, |mut this, _| {
-                                this.content(focus_handle)
-                                    .menu("Copy", Box::new(Copy))
-                                    .menu("Cut", Box::new(Cut))
-                                    .menu("Paste", Box::new(Paste))
-                                    .separator()
-                                    .menu_with_icon(
-                                        IconName::Search,
-                                        "Search",
-                                        Box::new(SearchAll),
-                                    );
+                h_flex()
+                    .gap_3()
+                    .child(
+                        Popover::new("popup-menu")
+                            .when(self.window_mode, |this| this.window_mode())
+                            .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
+                            .content(move |cx| {
+                                let focus_handle = focus_handle.clone();
+                                PopupMenu::build(cx, |mut this, cx| {
+                                    this.content(focus_handle)
+                                        .menu("Copy", Box::new(Copy))
+                                        .menu("Cut", Box::new(Cut))
+                                        .menu("Paste", Box::new(Paste))
+                                        .separator()
+                                        .menu_with_icon(
+                                            IconName::Search,
+                                            "Search",
+                                            Box::new(SearchAll),
+                                        );
 
-                                this
-                            })
-                        }),
-                ),
+                                    this
+                                })
+                            }),
+                    )
+                    .child(self.message.clone()),
             )
             .child(
                 div().absolute().bottom_4().left_0().w_full().h_10().child(
@@ -190,6 +205,7 @@ impl Render for PopoverStory {
                         .justify_between()
                         .child(
                             Popover::new("info-bottom-left")
+                                .when(self.window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
                                     Button::new("pop", cx)
@@ -200,6 +216,7 @@ impl Render for PopoverStory {
                         )
                         .child(
                             Popover::new("info-bottom-right")
+                                .when(self.window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(

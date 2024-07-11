@@ -1,12 +1,13 @@
 use std::rc::Rc;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, px, Action, AppContext, DismissEvent, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, KeyBinding, ParentElement, Render,
-    SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
+    actions, div, prelude::FluentBuilder, px, Action, AnyWindowHandle, AppContext, Context,
+    DismissEvent, EventEmitter, FocusHandle, FocusableView, InteractiveElement, KeyBinding,
+    ParentElement, Render, SharedString, Styled as _, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, StyledExt};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -37,6 +38,8 @@ impl PopupMenuItem {
 
 pub struct PopupMenu {
     focus_handle: FocusHandle,
+    /// The parent window handle
+    window_handle: AnyWindowHandle,
     action_context: Option<FocusHandle>,
     menu_items: Vec<PopupMenuItem>,
     selected_index: Option<usize>,
@@ -57,6 +60,7 @@ impl PopupMenu {
             let menu = Self {
                 focus_handle,
                 action_context: None,
+                window_handle: cx.window_handle(),
                 menu_items: Vec::new(),
                 selected_index: None,
                 _subscriptions: [_on_blur_subscription],
@@ -68,8 +72,8 @@ impl PopupMenu {
 
     /// You must set content (FocusHandle) with the parent view, if the menu action is listening on the parent view.
     /// When the Menu Item confirmed, the parent view will be focused again to ensure to receive the action.
-    pub fn content(&mut self, content: FocusHandle) -> &mut Self {
-        self.action_context = Some(content);
+    pub fn content(&mut self, focus_handle: FocusHandle) -> &mut Self {
+        self.action_context = Some(focus_handle);
         self
     }
 
@@ -94,14 +98,19 @@ impl PopupMenu {
         label: impl Into<SharedString>,
         action: Box<dyn Action>,
     ) -> &mut Self {
+        let window_handle = self.window_handle;
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
-            handler: Rc::new(move |content, cx| {
-                if let Some(content) = &content {
-                    cx.focus(content);
+            handler: Rc::new(move |handle, cx| {
+                if let Some(handle) = handle {
+                    cx.update_window(window_handle, |_, cx| {
+                        cx.activate_window();
+                        cx.focus(handle);
+                        cx.dispatch_action(action.boxed_clone());
+                    })
+                    .unwrap();
                 }
-                cx.dispatch_action(action.boxed_clone());
             }),
         });
         self
@@ -129,13 +138,14 @@ impl PopupMenu {
     }
 
     fn confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
-        let content = self.action_context.as_ref();
+        let handle = self.action_context.as_ref();
         match self.selected_index {
             Some(index) => {
                 let item = self.menu_items.get(index);
                 match item {
                     Some(PopupMenuItem::Item { handler, .. }) => {
-                        handler(content, cx);
+                        handler(handle, cx);
+                        self.dismiss(&Dismiss, cx)
                     }
                     _ => {}
                 }
