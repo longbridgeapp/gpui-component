@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, px, Action, AppContext, DismissEvent, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, KeyBinding, ParentElement, Render,
-    SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
+    actions, div, prelude::FluentBuilder, px, Action, AnyWindowHandle, AppContext, Context,
+    DismissEvent, EventEmitter, FocusHandle, FocusableView, InteractiveElement, KeyBinding,
+    ParentElement, Render, SharedString, Styled as _, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
 
 use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, StyledExt};
@@ -37,6 +38,8 @@ impl PopupMenuItem {
 
 pub struct PopupMenu {
     focus_handle: FocusHandle,
+    /// The parent window handle
+    window_handle: AnyWindowHandle,
     action_context: Option<FocusHandle>,
     menu_items: Vec<PopupMenuItem>,
     selected_index: Option<usize>,
@@ -57,6 +60,7 @@ impl PopupMenu {
             let menu = Self {
                 focus_handle,
                 action_context: None,
+                window_handle: cx.window_handle(),
                 menu_items: Vec::new(),
                 selected_index: None,
                 _subscriptions: [_on_blur_subscription],
@@ -94,14 +98,19 @@ impl PopupMenu {
         label: impl Into<SharedString>,
         action: Box<dyn Action>,
     ) -> &mut Self {
+        let window_handle = self.window_handle;
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
             handler: Rc::new(move |handle, cx| {
                 if let Some(handle) = handle {
-                    cx.focus(handle);
+                    cx.update_window(window_handle, |_, cx| {
+                        cx.activate_window();
+                        cx.focus(handle);
+                        cx.dispatch_action(action.boxed_clone());
+                    })
+                    .unwrap();
                 }
-                cx.dispatch_action(action.boxed_clone());
             }),
         });
         self
@@ -188,7 +197,6 @@ impl Render for PopupMenu {
         v_flex()
             .key_context("PopupMenu")
             .track_focus(&self.focus_handle)
-            .debug_focused(&self.focus_handle, cx)
             .on_action(cx.listener(Self::select_next))
             .on_action(cx.listener(Self::select_prev))
             .on_action(cx.listener(Self::confirm))
