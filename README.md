@@ -1,5 +1,11 @@
 # GPUI Compoment
 
+A UI component library for building desktop application by using GPUI.
+
+The goal of this project is to provide a set of UI components for building desktop applications, and it is based on [GPUI](https://gpui.rs).
+
+## Showcase
+
 This is an example of build app by using GPUI.
 
 <https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e4242a72>
@@ -26,6 +32,7 @@ This is an example of build app by using GPUI.
   - [x] Cursor blinking
   - [ ] Textarea
   - [x] Input icon
+- [ ] InputOTP
 - [x] Button
   - [x] Button with Icon
   - [x] IconButton
@@ -34,6 +41,7 @@ This is an example of build app by using GPUI.
 - [x] Icon
 - [x] Checkbox
   - [x] With label
+- [ ] Radio & RadioGroup
 - [x] Switch
   - [x] With Label (Left, Right side)
   - [ ] Toggle Animation
@@ -45,8 +53,19 @@ This is an example of build app by using GPUI.
 - [x] Notification
 - [x] Tooltip
 - [x] Popover
+  - [x] Floating Popover
+  - [x] Child window Popover
 - [x] Dockpanel
 - [ ] Splitter
+- [ ] Progress
+  - [ ] ProgressBar
+  - [ ] Loading
+- [ ] Skeleton
+- [ ] DatePicker
+  - [ ] DateTimePicker
+  - [ ] TimePicker
+  - [ ] DateRangePicker
+- [ ] ColorPicker
 - [x] List
   - [x] A complex List example.
 - [x] Table
@@ -57,7 +76,8 @@ This is an example of build app by using GPUI.
   - [ ] Column resizing
   - [ ] Column ordering
   - [ ] Sort event emit
-  - [ ] SimpleTable
+- [ ] Drawer
+- [ ] Modal
 
 ## How to build
 
@@ -73,3 +93,6 @@ There have a part of UI components from [Zed](https://github.com/zed-industries/
 - scrollbar
 
 Other UI components are under Apache License.
+
+- UI design based on [shadcn/ui](https://ui.shadcn.com).
+- Icon from [Lucide](https://lucide.dev).
