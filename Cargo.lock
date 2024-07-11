@@ -5418,6 +5418,8 @@ dependencies = [
  "gpui",
  "image",
  "log",
+ "once_cell",
+ "paste",
  "resvg",
  "serde",
  "serde_json",

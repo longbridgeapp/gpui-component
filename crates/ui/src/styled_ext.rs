@@ -1,4 +1,4 @@
-use crate::theme::{hsl, ActiveTheme};
+use crate::theme::ActiveTheme;
 use gpui::{hsla, point, px, BoxShadow, FocusHandle, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
@@ -80,7 +80,7 @@ pub trait StyledExt: Styled + Sized {
     /// Render a border with a width of 1px, color blue
     fn debug_blue(self) -> Self {
         if cfg!(debug_assertions) {
-            self.border_1().border_color(gpui::blue())
+            self.border_1().border_color(crate::blue_500())
         } else {
             self
         }
@@ -89,7 +89,7 @@ pub trait StyledExt: Styled + Sized {
     /// Render a border with a width of 1px, color yellow
     fn debug_yellow(self) -> Self {
         if cfg!(debug_assertions) {
-            self.border_1().border_color(gpui::yellow())
+            self.border_1().border_color(crate::yellow_500())
         } else {
             self
         }
@@ -98,7 +98,7 @@ pub trait StyledExt: Styled + Sized {
     /// Render a border with a width of 1px, color green
     fn debug_green(self) -> Self {
         if cfg!(debug_assertions) {
-            self.border_1().border_color(gpui::green())
+            self.border_1().border_color(crate::green_500())
         } else {
             self
         }
@@ -107,7 +107,7 @@ pub trait StyledExt: Styled + Sized {
     /// Render a border with a width of 1px, color pink
     fn debug_pink(self) -> Self {
         if cfg!(debug_assertions) {
-            self.border_1().border_color(hsl(300., 100., 47.))
+            self.border_1().border_color(crate::pink_500())
         } else {
             self
         }
