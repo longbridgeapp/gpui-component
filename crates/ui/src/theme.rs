@@ -1,4 +1,6 @@
-use gpui::{hsla, point, AppContext, BoxShadow, Global, Hsla, Pixels, WindowAppearance};
+use gpui::{
+    hsla, point, AppContext, BoxShadow, Global, Hsla, Pixels, SharedString, WindowAppearance,
+};
 
 pub trait ActiveTheme {
     fn theme(&self) -> &Theme;
@@ -264,6 +266,7 @@ pub struct Theme {
     pub title_bar_background: Hsla,
     /// Basic font size
     pub font_size: f32,
+    pub font_family: SharedString,
     pub background: Hsla,
     pub foreground: Hsla,
     pub card: Hsla,
@@ -319,6 +322,13 @@ impl From<Colors> for Theme {
             mode: ThemeMode::Dark,
             transparent: Hsla::transparent_black(),
             font_size: 14.0,
+            font_family: if cfg!(target_os = "macos") {
+                ".SystemUIFont".into()
+            } else if cfg!(target_os = "windows") {
+                "Segoe UI".into()
+            } else {
+                "FreeMono".into()
+            },
             radius: 4.0,
             title_bar_background: colors.title_bar_background,
             background: colors.background,
