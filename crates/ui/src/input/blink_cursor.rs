@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use gpui::{ModelContext, Timer};
+use gpui::{ModelContext, Timer, WeakView};
+
+use super::TextInput;
 
 /// To manage the Input cursor blinking.
 ///
@@ -34,8 +36,12 @@ impl BlinkCursor {
         }
 
         self.started = true;
-        self.paused = false;
         self.blink(self.blink_epoch, cx);
+    }
+
+    pub fn stop(&mut self, cx: &mut ModelContext<Self>) {
+        self.started = false;
+        cx.notify();
     }
 
     fn next_epoch(&mut self) -> usize {
@@ -44,7 +50,7 @@ impl BlinkCursor {
     }
 
     fn blink(&mut self, epoch: usize, cx: &mut ModelContext<Self>) {
-        if self.paused {
+        if self.paused || !self.started {
             return;
         }
 
@@ -69,12 +75,35 @@ impl BlinkCursor {
     }
 
     pub fn visible(&self) -> bool {
+        // Keep showing the cursor if paused
+        if self.paused {
+            return true;
+        }
         self.visible
     }
 
+    /// Pause the blinking, and delay 500ms to resume the blinking.
     pub fn pause(&mut self, cx: &mut ModelContext<Self>) {
         self.paused = true;
-        self.started = false;
+        self.next_epoch();
         cx.notify();
+
+        let epoch = self.next_epoch();
+        // delay 500ms to start the blinking
+        cx.spawn(|this, mut cx| async move {
+            Timer::after(Duration::from_secs_f64(0.5)).await;
+
+            if let Some(this) = this.upgrade() {
+                this.update(&mut cx, |this, cx| {
+                    if epoch != this.blink_epoch {
+                        return;
+                    }
+                    this.paused = false;
+                    this.blink(epoch, cx);
+                })
+                .ok();
+            }
+        })
+        .detach();
     }
 }

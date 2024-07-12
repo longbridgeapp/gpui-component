@@ -118,9 +118,12 @@ impl TextInput {
         // Blink the cursor when the window is active, pause when it's not.
         cx.observe_window_activation(|input, cx| {
             if cx.is_window_active() {
-                input.blink_cursor.update(cx, |blink_cursor, cx| {
-                    blink_cursor.start(cx);
-                });
+                let focus_handle = input.focus_handle.clone();
+                if focus_handle.is_focused(cx) {
+                    input.blink_cursor.update(cx, |blink_cursor, cx| {
+                        blink_cursor.start(cx);
+                    });
+                }
             }
         })
         .detach();
@@ -230,7 +233,8 @@ impl TextInput {
         if self.selected_range.is_empty() {
             self.select_to(self.previous_boundary(self.cursor_offset()), cx)
         }
-        self.replace_text_in_range(None, "", cx)
+        self.replace_text_in_range(None, "", cx);
+        self.pause_blink_cursor(cx);
     }
 
     fn delete(&mut self, _: &Delete, cx: &mut ViewContext<Self>) {
@@ -267,7 +271,7 @@ impl TextInput {
         self.replace_text_in_range(Some(self.selected_range.clone()), "", cx);
     }
 
-    pub fn paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
+    fn paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
         if let Some(clipboard) = cx.read_from_clipboard() {
             let new_text = clipboard.text().replace('\n', "");
             self.replace_text_in_range(Some(self.selected_range.clone()), &new_text, cx);
@@ -364,22 +368,32 @@ impl TextInput {
     }
 
     fn on_focus(&mut self, cx: &mut ViewContext<Self>) {
-        self.blink_cursor.update(cx, |blink_cursor, cx| {
-            blink_cursor.start(cx);
+        self.blink_cursor.update(cx, |cursor, cx| {
+            cursor.start(cx);
         });
     }
 
     fn on_blur(&mut self, cx: &mut ViewContext<Self>) {
         self.unselect(cx);
-        self.blink_cursor.update(cx, |blink_cursor, cx| {
-            blink_cursor.pause(cx);
+        self.blink_cursor.update(cx, |cursor, cx| {
+            cursor.stop(cx);
         });
+    }
+
+    fn pause_blink_cursor(&mut self, cx: &mut ViewContext<Self>) {
+        self.blink_cursor.update(cx, |cursor, cx| {
+            cursor.pause(cx);
+        });
+    }
+
+    fn on_key_down_for_blink_cursor(&mut self, _: &KeyDownEvent, cx: &mut ViewContext<Self>) {
+        self.pause_blink_cursor(cx)
     }
 
     fn on_mouse_left_down(
         &mut self,
         event: &MouseDownEvent,
-        text_hitbox: Hitbox,
+        hitbox: Hitbox,
         cx: &mut ViewContext<TextInput>,
     ) {
         // Ignore if text is empty
@@ -387,11 +401,11 @@ impl TextInput {
             return;
         }
 
-        if !text_hitbox.contains(&event.position) {
+        if !hitbox.contains(&event.position) {
             return;
         }
 
-        let offset = self.offset_of_position(event.position, &text_hitbox);
+        let offset = self.offset_of_position(event.position, &hitbox);
         if event.modifiers.shift {
             self.select_to(offset, cx);
         } else {
@@ -399,12 +413,7 @@ impl TextInput {
         }
     }
 
-    fn on_drag_move(
-        &mut self,
-        event: &MouseMoveEvent,
-        text_hitbox: Hitbox,
-        cx: &mut ViewContext<Self>,
-    ) {
+    fn on_drag_move(&mut self, event: &MouseMoveEvent, hitbox: Hitbox, cx: &mut ViewContext<Self>) {
         // Ignore if text is empty
         if self.text.is_empty() {
             return;
@@ -414,11 +423,11 @@ impl TextInput {
             return;
         }
 
-        if !text_hitbox.contains(&event.position) {
+        if !self.focus_handle.is_focused(cx) {
             return;
         }
 
-        let offset = self.offset_of_position(event.position, &text_hitbox);
+        let offset = self.offset_of_position(event.position, &hitbox);
         if offset == self.cursor_offset() {
             return;
         }
@@ -696,7 +705,7 @@ impl Element for TextElement {
                         point(bounds.left() + cursor_pos, bounds.top()),
                         size(px(1.5), bounds.bottom() - bounds.top()),
                     ),
-                    gpui::blue(),
+                    crate::blue_500(),
                 )),
             )
         } else {
@@ -789,6 +798,7 @@ impl Render for TextInput {
             .on_double_click(cx.listener(|view, _, cx| {
                 view.select_all(&SelectAll, cx);
             }))
+            .on_key_down(cx.listener(Self::on_key_down_for_blink_cursor))
             .size_full()
             .line_height(rems(1.25))
             .text_size(rems(0.875))
