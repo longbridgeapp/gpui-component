@@ -250,7 +250,7 @@ impl Colors {
             border: hsl(240.0, 3.7, 15.9),
             input: hsl(240.0, 3.7, 15.9),
             ring: hsl(240.0, 4.9, 83.9),
-            selection: hsl(211.0, 97.0, 85.0),
+            selection: hsl(211.0, 97.0, 22.0),
             scrollbar: Hsla::transparent_black(),
             scrollbar_thumb: hsl(240.0, 3.7, 15.9).opacity(0.7),
             panel: hsl(299.0, 2., 9.),
