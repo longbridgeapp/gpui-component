@@ -3,10 +3,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::{
-    h_flex,
-    theme::{ActiveTheme, Colorize},
-};
+use crate::theme::{ActiveTheme, Colorize};
 
 #[derive(IntoElement)]
 pub struct Progress {
@@ -37,27 +34,23 @@ impl RenderOnce for Progress {
             v => v / 100.,
         });
 
-        h_flex()
+        div()
+            .relative()
             .h(px(self.height))
+            .rounded(rounded)
+            .bg(cx.theme().progress_bar.opacity(0.2))
             .child(
                 div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .h_full()
+                    .w(relative_w)
+                    .bg(cx.theme().progress_bar)
                     .map(|this| match self.value {
                         v if v >= 100. => this.rounded(rounded),
                         _ => this.rounded_l(rounded),
-                    })
-                    .h_full()
-                    .w(relative_w)
-                    .bg(cx.theme().progress_bar),
-            )
-            .child(
-                div()
-                    .map(|this| match self.value {
-                        v if v <= 0. => this.rounded(rounded),
-                        _ => this.rounded_r(rounded),
-                    })
-                    .h_full()
-                    .flex_1()
-                    .bg(cx.theme().progress_bar.opacity(0.2)),
+                    }),
             )
     }
 }

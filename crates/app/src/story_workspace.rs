@@ -131,7 +131,7 @@ impl StoryWorkspace {
 
         StoryContainer::add_pane(
             "Table",
-            "Powerful table and datagrids built using TanStack Table.",
+            "Powerful table and datagrids built.",
             TableStory::view(cx).into(),
             workspace.clone(),
             cx,
