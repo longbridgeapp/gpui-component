@@ -18,8 +18,9 @@ This is an example of build app by using GPUI.
 
 ## Demo
 
-[main-app-windows.zip](https://github.com/user-attachments/files/16049565/main-app.zip) - Updated at 2024/07/01
-[main-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
+- [main-app-windows.zip](https://github.com/user-attachments/files/16195804/main-app.zip) - Updated at 2024/07/12
+- [main-app-windows.zip](https://github.com/user-attachments/files/16049565/main-app.zip) - Updated at 2024/07/01
+- [main-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
 
 ## TODO
 
@@ -28,7 +29,7 @@ This is an example of build app by using GPUI.
   - [x] Ctrl+a, e to move cursor to start/end
   - [x] Copy, Cut, Paste by keyboard
   - [ ] ContextMenu to let user copy, cut, paste
-  - [ ] Selection by mouse, drag to select text
+  - [x] Selection by mouse, drag to select text
   - [x] Cursor blinking
   - [ ] Textarea
   - [x] Input icon
