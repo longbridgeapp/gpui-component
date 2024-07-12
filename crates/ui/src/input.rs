@@ -379,7 +379,7 @@ impl TextInput {
     fn on_mouse_left_down(
         &mut self,
         event: &MouseDownEvent,
-        text_hitbox: Hitbox,
+        hitbox: Hitbox,
         cx: &mut ViewContext<TextInput>,
     ) {
         // Ignore if text is empty
@@ -387,11 +387,11 @@ impl TextInput {
             return;
         }
 
-        if !text_hitbox.contains(&event.position) {
+        if !hitbox.contains(&event.position) {
             return;
         }
 
-        let offset = self.offset_of_position(event.position, &text_hitbox);
+        let offset = self.offset_of_position(event.position, &hitbox);
         if event.modifiers.shift {
             self.select_to(offset, cx);
         } else {
@@ -399,12 +399,7 @@ impl TextInput {
         }
     }
 
-    fn on_drag_move(
-        &mut self,
-        event: &MouseMoveEvent,
-        text_hitbox: Hitbox,
-        cx: &mut ViewContext<Self>,
-    ) {
+    fn on_drag_move(&mut self, event: &MouseMoveEvent, hitbox: Hitbox, cx: &mut ViewContext<Self>) {
         // Ignore if text is empty
         if self.text.is_empty() {
             return;
@@ -414,11 +409,11 @@ impl TextInput {
             return;
         }
 
-        if !text_hitbox.contains(&event.position) {
+        if !self.focus_handle.is_focused(cx) {
             return;
         }
 
-        let offset = self.offset_of_position(event.position, &text_hitbox);
+        let offset = self.offset_of_position(event.position, &hitbox);
         if offset == self.cursor_offset() {
             return;
         }
