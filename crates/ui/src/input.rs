@@ -369,6 +369,37 @@ impl TextInput {
             blink_cursor.pause(cx);
         });
     }
+
+    fn on_mouse_left_down(
+        &mut self,
+        event: &MouseDownEvent,
+        text_hitbox: Hitbox,
+        cx: &mut ViewContext<TextInput>,
+    ) {
+        if !text_hitbox.contains(&event.position) {
+            return;
+        }
+
+        let position = event.position - text_hitbox.origin;
+        let offset = self
+            .last_layout
+            .as_ref()
+            .and_then(|layout| layout.index_for_x(position.x));
+        if offset.is_none() {
+            return;
+        }
+
+        let offset = offset.unwrap();
+
+        // If shift present
+        if event.modifiers.shift {
+            // Select to
+            self.select_to(offset, cx);
+        } else {
+            // Move to
+            self.move_to(offset, cx);
+        }
+    }
 }
 
 impl ViewInputHandler for TextInput {
@@ -475,10 +506,32 @@ struct TextElement {
     input: View<TextInput>,
 }
 
+impl TextElement {
+    fn paint_mouse_listeners(&mut self, hitbox: &Hitbox, cx: &mut WindowContext) {
+        let input = self.input.clone();
+        let hitbox = hitbox.clone();
+
+        cx.on_mouse_event(move |event: &MouseDownEvent, phase, cx| {
+            if phase == DispatchPhase::Bubble {
+                match event.button {
+                    MouseButton::Left => {
+                        let hitbox = hitbox.clone();
+                        input.update(cx, |input, cx| {
+                            input.on_mouse_left_down(event, hitbox, cx);
+                        });
+                    }
+                    _ => {}
+                }
+            }
+        });
+    }
+}
+
 struct PrepaintState {
     line: Option<ShapedLine>,
     cursor: Option<PaintQuad>,
     selection: Option<PaintQuad>,
+    hitbox: Hitbox,
 }
 
 impl IntoElement for TextElement {
@@ -606,10 +659,14 @@ impl Element for TextElement {
                 None,
             )
         };
+
+        let hitbox = cx.insert_hitbox(bounds, false);
+
         PrepaintState {
             line: Some(line),
             cursor,
             selection,
+            hitbox,
         }
     }
 
@@ -642,6 +699,7 @@ impl Element for TextElement {
         self.input.update(cx, |input, _cx| {
             input.last_layout = Some(line);
         });
+        self.paint_mouse_listeners(&prepaint.hitbox, cx);
     }
 }
 
