@@ -380,11 +380,27 @@ impl TextInput {
             return;
         }
 
+        // Ignore if text is empty
+        if self.text.is_empty() {
+            return;
+        }
+
         let position = event.position - text_hitbox.origin;
         let offset = self
             .last_layout
             .as_ref()
-            .and_then(|layout| layout.index_for_x(position.x));
+            .map(|layout| match layout.index_for_x(position.x) {
+                Some(index) => index,
+                None => {
+                    let last_index = layout.len();
+                    if position.x > layout.x_for_index(last_index) {
+                        last_index
+                    } else {
+                        0
+                    }
+                }
+            });
+
         if offset.is_none() {
             return;
         }
@@ -544,7 +560,6 @@ impl IntoElement for TextElement {
 
 impl Element for TextElement {
     type RequestLayoutState = ();
-
     type PrepaintState = PrepaintState;
 
     fn id(&self) -> Option<ElementId> {
@@ -753,9 +768,15 @@ impl Render for TextInput {
             .when_some(self.prefix.clone(), |this, prefix| this.child(prefix))
             .gap_1()
             .items_center()
-            .child(div().flex_grow().overflow_x_hidden().child(TextElement {
-                input: cx.view().clone(),
-            }))
+            .child(
+                div()
+                    .flex_grow()
+                    .overflow_x_hidden()
+                    .cursor_text()
+                    .child(TextElement {
+                        input: cx.view().clone(),
+                    }),
+            )
             .when_some(self.suffix.clone(), |this, suffix| this.child(suffix))
     }
 }
