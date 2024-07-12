@@ -127,15 +127,8 @@ pub trait StyledExt: Styled + Sized {
     }
 
     /// Render a border with a width of 1px, color ring color
-    ///
-    /// Please ensure this after the shadow
     fn outline(self, cx: &WindowContext) -> Self {
-        self.shadow(smallvec![BoxShadow {
-            color: cx.theme().ring,
-            offset: point(px(0.), px(0.)),
-            blur_radius: px(0.1),
-            spread_radius: px(1.),
-        }])
+        self.border_color(cx.theme().ring)
     }
 }
 

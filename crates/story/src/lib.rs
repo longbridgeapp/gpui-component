@@ -7,6 +7,7 @@ mod list_story;
 mod picker_story;
 mod popover_story;
 mod progress_story;
+mod resizable_story;
 mod switch_story;
 mod table_story;
 mod tooltip_story;
@@ -20,6 +21,7 @@ pub use list_story::ListStory;
 pub use picker_story::PickerStory;
 pub use popover_story::PopoverStory;
 pub use progress_story::ProgressStory;
+pub use resizable_story::ResizableStory;
 pub use switch_story::SwitchStory;
 pub use table_story::TableStory;
 pub use tooltip_story::TooltipStory;
@@ -206,7 +208,9 @@ impl StoryContainer {
 impl Render for StoryContainer {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
+            .id("story-container")
             .size_full()
+            .overflow_scroll()
             .child(
                 div()
                     .flex()

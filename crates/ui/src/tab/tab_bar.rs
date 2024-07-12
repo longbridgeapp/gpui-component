@@ -1,10 +1,10 @@
 use crate::stack::h_flex;
 use crate::theme::ActiveTheme;
-use gpui::InteractiveElement;
 use gpui::{
     div, AnyElement, Div, IntoElement, ParentElement, RenderOnce, ScrollHandle, SharedString,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
+use gpui::{px, InteractiveElement};
 use smallvec::SmallVec;
 
 #[derive(IntoElement)]
@@ -18,7 +18,7 @@ pub struct TabBar {
 impl TabBar {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
-            base: div().h_10().p_1(),
+            base: div().h_8().px(px(-1.)),
             id: id.into(),
             children: SmallVec::new(),
             scroll_handle: ScrollHandle::new(),
@@ -54,8 +54,10 @@ impl RenderOnce for TabBar {
             .flex()
             .flex_none()
             .items_center()
-            .bg(theme.muted)
-            .text_color(theme.muted_foreground)
+            .bg(theme.tab_bar)
+            .border_b_1()
+            .border_color(cx.theme().border)
+            .text_color(theme.tab_foreground)
             // The child will append to this level
             .child(
                 h_flex()
