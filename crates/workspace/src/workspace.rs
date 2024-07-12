@@ -132,7 +132,7 @@ impl Render for Workspace {
             .size_full()
             .flex()
             .flex_col()
-            // .font(cx.theme.font_size)
+            .font_family(cx.theme().font_family.clone())
             .gap_0()
             .justify_start()
             .items_start()
