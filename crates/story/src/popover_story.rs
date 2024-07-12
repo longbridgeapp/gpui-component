@@ -4,7 +4,7 @@ use gpui::{
     ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::{
-    button::{Button, ButtonSize},
+    button::Button,
     divider::Divider,
     h_flex,
     input::TextInput,
@@ -12,7 +12,7 @@ use ui::{
     popup_menu::PopupMenu,
     prelude::FluentBuilder,
     switch::Switch,
-    v_flex, Clickable, IconName,
+    v_flex, Clickable, IconName, Size,
 };
 
 actions!(popover_story, [Copy, Paste, Cut, SearchAll]);
@@ -141,7 +141,7 @@ impl Render for PopoverStory {
                                                 Button::new("info1", cx)
                                                     .label("Yes")
                                                     .width(px(80.))
-                                                    .size(ButtonSize::Small),
+                                                    .size(Size::Small),
                                             )
                                             .into_any()
                                     })
@@ -164,7 +164,7 @@ impl Render for PopoverStory {
                                             Button::new("info1", cx)
                                                 .label("Yes")
                                                 .width(px(80.))
-                                                .size(ButtonSize::Small),
+                                                .size(Size::Small),
                                         )
                                         .into_any()
                                 })
@@ -234,7 +234,7 @@ impl Render for PopoverStory {
                                                 Button::new("info1", cx)
                                                     .label("Yes")
                                                     .width(px(80.))
-                                                    .size(ButtonSize::Small),
+                                                    .size(Size::Small),
                                             )
                                             .into_any()
                                     })

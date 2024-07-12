@@ -301,6 +301,8 @@ pub struct Theme {
     pub tab_active: Hsla,
     pub tab_foreground: Hsla,
     pub tab_active_foreground: Hsla,
+    pub indicator: Hsla,
+    pub progress_bar: Hsla,
 }
 
 impl Global for Theme {}
@@ -355,6 +357,8 @@ impl From<Colors> for Theme {
             tab_active: colors.background,
             tab_foreground: colors.foreground,
             tab_active_foreground: colors.foreground,
+            indicator: colors.secondary_foreground,
+            progress_bar: colors.primary,
         }
     }
 }

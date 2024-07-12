@@ -4,6 +4,7 @@ mod disableable;
 mod event;
 mod focusable;
 mod icon;
+
 mod scroll;
 mod scrollbar;
 mod selectable;
@@ -15,6 +16,7 @@ pub mod button;
 pub mod checkbox;
 pub mod divider;
 pub mod dropdown;
+pub mod indicator;
 pub mod input;
 pub mod label;
 pub mod list;
@@ -35,7 +37,7 @@ pub use disableable::Disableable;
 pub use event::InterativeElementExt;
 pub use focusable::FocusableCycle;
 pub use selectable::{Selectable, Selection};
-pub use styled_ext::StyledExt;
+pub use styled_ext::{Size, StyledExt};
 
 pub use colors::*;
 pub use icon::*;

@@ -47,7 +47,7 @@ impl RenderOnce for Progress {
                     })
                     .h_full()
                     .w(relative_w)
-                    .bg(cx.theme().primary),
+                    .bg(cx.theme().progress_bar),
             )
             .child(
                 div()
@@ -57,7 +57,7 @@ impl RenderOnce for Progress {
                     })
                     .h_full()
                     .flex_1()
-                    .bg(cx.theme().primary.opacity(0.2)),
+                    .bg(cx.theme().progress_bar.opacity(0.2)),
             )
     }
 }

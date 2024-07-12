@@ -4,12 +4,11 @@ use gpui::{
 };
 
 use ui::{
-    button::ButtonSize,
     h_flex,
     label::Label,
     switch::{LabelSide, Switch},
     theme::ActiveTheme,
-    v_flex, Disableable as _, StyledExt,
+    v_flex, Disableable as _, Size, StyledExt,
 };
 
 #[derive(Default)]
@@ -116,7 +115,7 @@ impl Render for SwitchStory {
                         .items_start().child(title("Disabled Switchs")).child(
                         h_flex().items_center()
                         .gap_6()
-                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").size(ButtonSize::Small).on_click(cx.listener(move |view, checked, cx| {
+                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").size(Size::Small).on_click(cx.listener(move |view, checked, cx| {
                             view.switch3 = *checked;
                             cx.notify();
                         })),

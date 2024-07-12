@@ -1,6 +1,6 @@
-use crate::{button::ButtonSize, theme::ActiveTheme};
+use crate::{theme::ActiveTheme, Size};
 use gpui::{
-    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Pixels, Render, RenderOnce,
+    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
     SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
 };
 
@@ -21,6 +21,8 @@ pub enum IconName {
     Search,
     Delete,
     CircleX,
+    Loader,
+    LoaderCircle,
 }
 
 impl IconName {
@@ -41,6 +43,8 @@ impl IconName {
             IconName::Search => "icons/search.svg",
             IconName::Delete => "icons/delete.svg",
             IconName::CircleX => "icons/circle-x.svg",
+            IconName::Loader => "icons/loader.svg",
+            IconName::LoaderCircle => "icons/loader-circle.svg",
         }
         .into()
     }
@@ -69,36 +73,12 @@ impl RenderOnce for IconName {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum IconSize {
-    XSmall,
-    Small,
-    Medium,
-    Size(Pixels),
-}
-
-impl From<ButtonSize> for IconSize {
-    fn from(size: ButtonSize) -> Self {
-        match size {
-            ButtonSize::XSmall => IconSize::XSmall,
-            ButtonSize::Small => IconSize::Small,
-            ButtonSize::Medium => IconSize::Medium,
-        }
-    }
-}
-
-impl From<Pixels> for IconSize {
-    fn from(size: Pixels) -> Self {
-        IconSize::Size(size)
-    }
-}
-
 #[derive(IntoElement)]
 pub struct Icon {
     base: Svg,
     path: SharedString,
     text_color: Option<Hsla>,
-    size: IconSize,
+    size: Size,
 }
 
 impl Default for Icon {
@@ -107,7 +87,7 @@ impl Default for Icon {
             base: svg().flex_none().size_4(),
             path: "".into(),
             text_color: None,
-            size: IconSize::Medium,
+            size: Size::Medium,
         }
     }
 }
@@ -135,7 +115,7 @@ impl Icon {
     ///
     /// Also can receive a `ButtonSize` to convert to `IconSize`,
     /// Or a `Pixels` to set a custom size: `px(30.)`
-    pub fn size(mut self, size: impl Into<IconSize>) -> Self {
+    pub fn size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
 
         self
@@ -144,6 +124,11 @@ impl Icon {
     /// Create a new view for the icon
     pub fn view(self, cx: &mut WindowContext) -> View<Icon> {
         cx.new_view(|_| self)
+    }
+
+    pub fn transform(mut self, transformation: gpui::Transformation) -> Self {
+        self.base = self.base.with_transformation(transformation);
+        self
     }
 }
 
@@ -165,10 +150,11 @@ impl RenderOnce for Icon {
         self.base
             .text_color(text_color)
             .map(|this| match self.size {
-                IconSize::Size(px) => this.size(px),
-                IconSize::XSmall => this.size_3(),
-                IconSize::Small => this.size_3p5(),
-                IconSize::Medium => this.size_4(),
+                Size::Size(px) => this.size(px),
+                Size::XSmall => this.size_3(),
+                Size::Small => this.size_3p5(),
+                Size::Medium => this.size_4(),
+                Size::Large => this.size_6(),
             })
             .path(self.path)
     }
@@ -189,10 +175,11 @@ impl Render for Icon {
             .size_4()
             .text_color(text_color)
             .map(|this| match self.size {
-                IconSize::Size(px) => this.size(px),
-                IconSize::XSmall => this.size_3(),
-                IconSize::Small => this.size_3p5(),
-                IconSize::Medium => this.size_4(),
+                Size::Size(px) => this.size(px),
+                Size::XSmall => this.size_3(),
+                Size::Small => this.size_3p5(),
+                Size::Medium => this.size_4(),
+                Size::Large => this.size_6(),
             })
             .path(self.path.clone())
     }

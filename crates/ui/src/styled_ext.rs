@@ -1,5 +1,5 @@
 use crate::theme::ActiveTheme;
-use gpui::{hsla, point, px, BoxShadow, FocusHandle, Styled, WindowContext};
+use gpui::{hsla, point, px, BoxShadow, FocusHandle, Pixels, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
@@ -133,3 +133,19 @@ pub trait StyledExt: Styled + Sized {
 }
 
 impl<E: Styled> StyledExt for E {}
+
+/// A size for elements.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Size {
+    Size(Pixels),
+    XSmall,
+    Small,
+    Medium,
+    Large,
+}
+
+impl From<Pixels> for Size {
+    fn from(size: Pixels) -> Self {
+        Size::Size(size)
+    }
+}

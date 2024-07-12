@@ -1,7 +1,8 @@
 use crate::{
     h_flex,
+    indicator::Indicator,
     theme::{ActiveTheme, Colorize as _},
-    Clickable, Disableable, Icon, Selectable, StyledExt,
+    Clickable, Disableable, Icon, Selectable, Size, StyledExt,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, FocusHandle,
@@ -14,13 +15,6 @@ pub enum ButtonRounded {
     Small,
     Medium,
     Large,
-}
-
-#[derive(Clone, Copy)]
-pub enum ButtonSize {
-    XSmall,
-    Small,
-    Medium,
 }
 
 #[derive(Clone, Copy)]
@@ -45,9 +39,10 @@ pub struct Button {
     height: Option<DefiniteLength>,
     style: ButtonStyle,
     rounded: ButtonRounded,
-    size: ButtonSize,
+    size: Size,
     tooltip: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
+    loading: bool,
 }
 
 impl Button {
@@ -64,9 +59,10 @@ impl Button {
             width: None,
             height: None,
             rounded: ButtonRounded::Medium,
-            size: ButtonSize::Medium,
+            size: Size::Medium,
             tooltip: None,
             on_click: None,
+            loading: false,
         }
     }
 
@@ -91,7 +87,7 @@ impl Button {
         label: impl Into<SharedString>,
         cx: &mut WindowContext,
     ) -> Self {
-        Self::new(id, cx).label(label).size(ButtonSize::Small)
+        Self::new(id, cx).label(label).size(Size::Small)
     }
 
     pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
@@ -109,8 +105,8 @@ impl Button {
         self
     }
 
-    pub fn size(mut self, size: ButtonSize) -> Self {
-        self.size = size;
+    pub fn size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
         self
     }
 
@@ -132,6 +128,11 @@ impl Button {
 
     pub fn style(mut self, style: ButtonStyle) -> Self {
         self.style = style;
+        self
+    }
+
+    pub fn loading(mut self, loading: bool) -> Self {
+        self.loading = loading;
         self
     }
 }
@@ -180,15 +181,16 @@ impl RenderOnce for Button {
             .map(|this| {
                 if self.label.is_none() {
                     match self.size {
-                        ButtonSize::XSmall => this.size_5(),
-                        ButtonSize::Small => this.size_6(),
-                        ButtonSize::Medium => this.size_8(),
+                        Size::Size(px) => this.size(px),
+                        Size::XSmall => this.size_5(),
+                        Size::Small => this.size_6(),
+                        Size::Large | Size::Medium => this.size_8(),
                     }
                 } else {
                     match self.size {
-                        ButtonSize::XSmall => this.px_1().py_1().h_5(),
-                        ButtonSize::Small => this.px_3().py_2().h_6(),
-                        ButtonSize::Medium => this.px_4().py_2().h_8(),
+                        Size::XSmall => this.px_1().py_1().h_5(),
+                        Size::Small => this.px_3().py_2().h_6(),
+                        _ => this.px_4().py_2().h_8(),
                     }
                 }
             })
@@ -247,14 +249,19 @@ impl RenderOnce for Button {
                     .justify_center()
                     .gap_2()
                     .text_color(text_color)
-                    .when_some(self.icon, |this, icon| {
-                        this.child(icon.size(self.size).text_color(text_color))
+                    .when(!self.loading, |this| {
+                        this.when_some(self.icon, |this, icon| {
+                            this.child(icon.size(self.size).text_color(text_color))
+                        })
+                    })
+                    .when(self.loading, |this| {
+                        this.child(Indicator::new().size(self.size).color(text_color))
                     })
                     .when_some(self.label, |this, label| this.child(label))
                     .map(|this| match self.size {
-                        ButtonSize::XSmall => this.text_xs(),
-                        ButtonSize::Small => this.text_sm(),
-                        ButtonSize::Medium => this.text_base(),
+                        Size::XSmall => this.text_xs(),
+                        Size::Small => this.text_sm(),
+                        _ => this.text_base(),
                     })
             })
     }

@@ -1,8 +1,7 @@
 use crate::{
-    button::ButtonSize,
     stack::h_flex,
     theme::{ActiveTheme, Colorize},
-    Disableable,
+    Disableable, Size,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, Div, InteractiveElement, IntoElement, ParentElement as _,
@@ -31,7 +30,7 @@ pub struct Switch {
     label: Option<SharedString>,
     label_side: LabelSide,
     on_click: Option<OnClick>,
-    size: ButtonSize,
+    size: Size,
 }
 
 impl Switch {
@@ -46,7 +45,7 @@ impl Switch {
             label: None,
             on_click: None,
             label_side: LabelSide::Right,
-            size: ButtonSize::Medium,
+            size: Size::Medium,
         }
     }
 
@@ -60,7 +59,8 @@ impl Switch {
         self
     }
 
-    pub fn size(mut self, size: ButtonSize) -> Self {
+    /// Only supported XSmall, Small, Medium
+    pub fn size(mut self, size: Size) -> Self {
         self.size = size;
         self
     }
@@ -107,8 +107,8 @@ impl RenderOnce for Switch {
             .child(
                 self.base
                     .map(|this| match self.size {
-                        ButtonSize::Medium => this.w_11().h_6().rounded_xl(),
-                        ButtonSize::XSmall | ButtonSize::Small => this.w_8().h_4().rounded_lg(),
+                        Size::XSmall | Size::Small => this.w_8().h_4().rounded_lg(),
+                        _ => this.w_11().h_6().rounded_xl(),
                     })
                     .flex()
                     .items_center()
@@ -125,15 +125,15 @@ impl RenderOnce for Switch {
                             .rounded_full()
                             .bg(toggle_bg)
                             .map(|this| match self.size {
-                                ButtonSize::Medium => this.w_5().h_5(),
-                                ButtonSize::XSmall | ButtonSize::Small => this.w_3().h_3(),
+                                Size::XSmall | Size::Small => this.w_3().h_3(),
+                                _ => this.w_5().h_5(),
                             }),
                     ),
             )
             .when_some(self.label, |this, label| {
                 this.child(div().child(label).map(|this| match self.size {
-                    ButtonSize::Medium => this.text_base(),
-                    ButtonSize::XSmall | ButtonSize::Small => this.text_sm(),
+                    Size::XSmall | Size::Small => this.text_sm(),
+                    _ => this.text_base(),
                 }))
             })
             .when_some(
