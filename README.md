@@ -56,7 +56,7 @@ This is an example of build app by using GPUI.
   - [x] Floating Popover
   - [x] Child window Popover
 - [x] Dockpanel
-- [ ] Splitter
+- [x] Resizable
 - [ ] Progress
   - [ ] ProgressBar
   - [ ] Loading
