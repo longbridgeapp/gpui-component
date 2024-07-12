@@ -41,11 +41,11 @@ This is an example of build app by using GPUI.
 - [x] Icon
 - [x] Checkbox
   - [x] With label
-- [ ] Radio & RadioGroup
+- [x] Radio
+  - [ ] RadioGroup
 - [x] Switch
   - [x] With Label (Left, Right side)
   - [ ] Toggle Animation
-- [ ] Radio & RadioGroup
 - [x] Dropdown
 - [x] Tabs
   - [x] Tab
@@ -57,7 +57,7 @@ This is an example of build app by using GPUI.
   - [x] Child window Popover
 - [x] Dockpanel
 - [x] Resizable
-- [ ] Progress
+- [x] Progress
   - [ ] ProgressBar
   - [ ] Loading
 - [ ] Skeleton
