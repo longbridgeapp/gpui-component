@@ -3,12 +3,14 @@ use gpui::{
     WindowContext,
 };
 
-use ui::{checkbox::Checkbox, h_flex, v_flex, Disableable as _, Selection};
+use ui::{checkbox::Checkbox, h_flex, radio::Radio, v_flex, Disableable as _, Selection};
 
 pub struct CheckboxStory {
     check1: Selection,
     check2: Selection,
     check3: Selection,
+    select1: bool,
+    select2: bool,
 }
 
 impl CheckboxStory {
@@ -17,6 +19,8 @@ impl CheckboxStory {
             check1: Selection::Unselected,
             check2: Selection::Indeterminate,
             check3: Selection::Selected,
+            select1: false,
+            select2: true,
         }
     }
 
@@ -89,6 +93,31 @@ impl Render for CheckboxStory {
                                 .disabled(true),
                         ),
                 ),
+            )
+            .child(
+                h_flex()
+                    .gap_4()
+                    .child(
+                        Radio::new("radio1")
+                            .selected(self.select1)
+                            .on_click(cx.listener(|this, v, _cx| {
+                                this.select1 = *v;
+                            })),
+                    )
+                    .child(
+                        Radio::new("radio2")
+                            .label("Radio")
+                            .selected(self.select2)
+                            .on_click(cx.listener(|this, v, _cx| {
+                                this.select2 = *v;
+                            })),
+                    )
+                    .child(
+                        Radio::new("radio3")
+                            .label("Disabled Radio")
+                            .selected(true)
+                            .disabled(true),
+                    ),
             )
     }
 }
