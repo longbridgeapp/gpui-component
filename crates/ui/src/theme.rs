@@ -1,4 +1,4 @@
-use gpui::{hsla, AppContext, Global, Hsla, WindowAppearance};
+use gpui::{hsla, point, AppContext, BoxShadow, Global, Hsla, Pixels, WindowAppearance};
 
 pub trait ActiveTheme {
     fn theme(&self) -> &Theme;
@@ -19,6 +19,27 @@ pub fn hsl(h: f32, s: f32, l: f32) -> Hsla {
     hsla(h / 360., s / 100.0, l / 100.0, 1.0)
 }
 
+/// Make a BoxShadow like CSS
+///
+/// e.g:
+///
+/// If CSS is `box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);`
+///
+/// Then the equivalent in Rust is `box_shadow(0., 0., 10., 0., hsla(0., 0., 0., 0.1))`
+pub fn box_shadow(
+    x: impl Into<Pixels>,
+    y: impl Into<Pixels>,
+    blur: impl Into<Pixels>,
+    spread: impl Into<Pixels>,
+    color: Hsla,
+) -> BoxShadow {
+    BoxShadow {
+        offset: point(x.into(), y.into()),
+        blur_radius: blur.into(),
+        spread_radius: spread.into(),
+        color,
+    }
+}
 pub trait Colorize {
     fn opacity(&self, opacity: f32) -> Hsla;
     fn divide(&self, divisor: f32) -> Hsla;
@@ -112,6 +133,7 @@ struct Colors {
     pub scrollbar: Hsla,
     pub scrollbar_thumb: Hsla,
     pub panel: Hsla,
+    pub tab_bar: Hsla,
 }
 
 impl Colors {
@@ -171,6 +193,7 @@ impl Colors {
             scrollbar: Hsla::transparent_black(),
             scrollbar_thumb: hsl(240.0, 5.9, 85.0).opacity(0.7),
             panel: hsl(0.0, 0.0, 100.0),
+            tab_bar: hsl(240.0, 4.8, 95.9),
         }
     }
 
@@ -229,6 +252,7 @@ impl Colors {
             scrollbar: Hsla::transparent_black(),
             scrollbar_thumb: hsl(240.0, 3.7, 15.9).opacity(0.7),
             panel: hsl(299.0, 2., 9.),
+            tab_bar: hsl(299.0, 2., 9.),
         }
     }
 }
@@ -272,6 +296,11 @@ pub struct Theme {
     pub drag_border: Hsla,
     pub drop_target: Hsla,
     pub radius: f32,
+    pub tab_bar: Hsla,
+    pub tab: Hsla,
+    pub tab_active: Hsla,
+    pub tab_foreground: Hsla,
+    pub tab_active_foreground: Hsla,
 }
 
 impl Global for Theme {}
@@ -321,6 +350,11 @@ impl From<Colors> for Theme {
             selection: colors.selection,
             drag_border: crate::blue_500(),
             drop_target: hsl(240.0, 65., 44.0).opacity(0.15),
+            tab_bar: colors.tab_bar,
+            tab: gpui::transparent_black(),
+            tab_active: colors.background,
+            tab_foreground: colors.foreground,
+            tab_active_foreground: colors.foreground,
         }
     }
 }

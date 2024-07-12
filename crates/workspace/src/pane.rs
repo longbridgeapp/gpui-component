@@ -696,8 +696,9 @@ impl Pane {
                 |tab, cx| cx.new_view(|_| tab.clone()),
             )
             .drag_over::<DraggedTab>(|tab, _, cx| {
-                tab.border_l_3()
-                    .rounded_l_none()
+                tab.rounded_l_none()
+                    .border_l_2()
+                    .border_r_0()
                     .border_color(cx.theme().drag_border)
             })
             .drag_over::<DraggedSelection>(|tab, _, cx| tab.bg(cx.theme().drop_target))

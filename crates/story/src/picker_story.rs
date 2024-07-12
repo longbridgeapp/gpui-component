@@ -36,7 +36,7 @@ impl ListDelegate for ListItemDeletegate {
             .items
             .iter()
             .filter(|item| item.to_lowercase().contains(&query.to_lowercase()))
-            .map(|s| s.clone())
+            .cloned()
             .collect();
         cx.notify();
     }

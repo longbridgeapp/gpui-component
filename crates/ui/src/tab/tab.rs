@@ -1,10 +1,9 @@
 use crate::selectable::Selectable;
 use crate::theme::{ActiveTheme, Colorize};
 use gpui::prelude::FluentBuilder as _;
-use gpui::InteractiveElement;
 use gpui::{
-    div, px, AnyElement, Div, ElementId, IntoElement, ParentElement as _, RenderOnce, Stateful,
-    StatefulInteractiveElement, Styled, WindowContext,
+    div, AnyElement, Div, ElementId, InteractiveElement, IntoElement, ParentElement as _,
+    RenderOnce, Stateful, StatefulInteractiveElement, Styled, WindowContext,
 };
 
 #[derive(IntoElement)]
@@ -20,7 +19,7 @@ pub struct Tab {
 impl Tab {
     pub fn new(id: impl Into<ElementId>, label: impl Into<AnyElement>) -> Self {
         Self {
-            base: div().id(id.into()).gap_1().py_1().px_3(),
+            base: div().id(id.into()).gap_1().py_1p5().px_3().h_8(),
             label: label.into(),
             disabled: false,
             selected: false,
@@ -66,20 +65,23 @@ impl Styled for Tab {
 impl RenderOnce for Tab {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let (text_color, bg_color) = match (self.selected, self.disabled) {
-            (true, _) => (cx.theme().foreground, cx.theme().background),
-            (false, true) => (cx.theme().foreground.opacity(0.5), cx.theme().muted),
-            (false, false) => (cx.theme().muted_foreground, cx.theme().muted),
+            (true, _) => (cx.theme().tab_active_foreground, cx.theme().tab_active),
+            (false, true) => (cx.theme().tab_foreground.opacity(0.5), cx.theme().tab),
+            (false, false) => (cx.theme().muted_foreground, cx.theme().tab),
         };
 
         self.base
             .flex()
             .items_center()
-            .h_full()
             .flex_shrink_0()
             .cursor_pointer()
             .text_color(text_color)
             .bg(bg_color)
-            .when(self.selected, |this| this.rounded(px(6.)))
+            .border_x_1()
+            .border_color(bg_color)
+            .border_color(cx.theme().transparent)
+            .when(self.selected, |this| this.border_color(cx.theme().border))
+            .text_sm()
             .when(self.disabled, |this| this)
             .when_some(self.prefix, |this, prefix| {
                 this.child(prefix).text_color(text_color)
