@@ -37,6 +37,7 @@ This is an example of build app by using GPUI.
   - [x] Button with Icon
   - [x] IconButton
   - [x] Glost / Outline Button
+  - [x] Loading
 - [x] Label
 - [x] Icon
 - [x] Checkbox
@@ -59,7 +60,7 @@ This is an example of build app by using GPUI.
 - [x] Resizable
 - [ ] Progress
   - [x] ProgressBar
-  - [ ] Indicator
+  - [x] Indicator
 - [ ] Skeleton
 - [ ] DatePicker
   - [ ] DateTimePicker
