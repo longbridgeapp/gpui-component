@@ -66,14 +66,14 @@ impl Render for ProgressStory {
                         Button::new("button-5", cx)
                             .icon(IconName::Minus)
                             .on_click(cx.listener(|this, _, _| {
-                                this.set_value(this.value - 1.);
+                                this.set_value((this.value - 1.).max(0.));
                             })),
                     )
                     .child(
                         Button::new("button-6", cx)
                             .icon(IconName::Plus)
                             .on_click(cx.listener(|this, _, _| {
-                                this.set_value(this.value + 1.);
+                                this.set_value((this.value + 1.).min(100.));
                             })),
                     ),
             )
