@@ -5427,7 +5427,6 @@ dependencies = [
  "taffy",
  "unicode-segmentation",
  "usvg",
- "uuid",
  "windows",
  "wry",
 ]

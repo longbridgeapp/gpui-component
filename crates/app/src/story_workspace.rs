@@ -9,9 +9,9 @@ use workspace::{dock::DockPosition, TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
-    button::ButtonSize,
     switch::{LabelSide, Switch},
     theme::{ActiveTheme, Theme},
+    Size,
 };
 
 use crate::app_state::AppState;
@@ -173,7 +173,7 @@ impl StoryWorkspace {
                     appears_transparent: true,
                     traffic_light_position: Some(point(px(9.0), px(9.0))),
                 }),
-                window_min_size: Some(Size {
+                window_min_size: Some(gpui::Size {
                     width: px(640.),
                     height: px(480.),
                 }),
@@ -255,7 +255,7 @@ impl Render for StoryWorkspace {
                             .mr_3()
                             .child(
                                 Switch::new("theme-mode")
-                                    .size(ButtonSize::Small)
+                                    .size(Size::Small)
                                     .checked(cx.theme().mode.is_dark())
                                     .label_side(LabelSide::Left)
                                     .label("Dark Mode")

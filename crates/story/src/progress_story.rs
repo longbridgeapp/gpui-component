@@ -1,8 +1,11 @@
 use gpui::{
-    div, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext,
+    div, px, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
-use ui::{button::Button, h_flex, progress::Progress, v_flex, Clickable, IconName};
+use ui::{
+    button::Button, h_flex, indicator::Indicator, progress::Progress, v_flex, Clickable, IconName,
+    Size,
+};
 
 pub struct ProgressStory {
     value: f32,
@@ -73,6 +76,20 @@ impl Render for ProgressStory {
                                 this.set_value(this.value + 1.);
                             })),
                     ),
+            )
+            .child(
+                h_flex()
+                    .gap_x_2()
+                    .child(Indicator::new().size(Size::XSmall))
+                    .child(Indicator::new().size(Size::Small))
+                    .child(Indicator::new())
+                    .child(
+                        Indicator::new()
+                            .size(Size::Large)
+                            .icon(IconName::LoaderCircle)
+                            .color(ui::blue_500()),
+                    )
+                    .child(Indicator::new().size(px(64.))),
             )
     }
 }

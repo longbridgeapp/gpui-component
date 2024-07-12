@@ -58,8 +58,8 @@ This is an example of build app by using GPUI.
 - [x] Dockpanel
 - [x] Resizable
 - [ ] Progress
-  - [ ] ProgressBar
-  - [ ] Loading
+  - [x] ProgressBar
+  - [ ] Indicator
 - [ ] Skeleton
 - [ ] DatePicker
   - [ ] DateTimePicker
