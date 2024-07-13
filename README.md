@@ -1,28 +1,11 @@
 # GPUI Compoment
 
-A UI component library for building desktop application by using GPUI.
+> This is still an early stage of development, we may change API frequently.
+> But the features is ok to use, you must keep tracking our changes.
 
-The goal of this project is to provide a set of UI components for building desktop applications, and it is based on [GPUI](https://gpui.rs).
+A UI components for building desktop application by using [GPUI](https://gpui.rs).
 
-## Showcase
-
-This is an example of build app by using GPUI.
-
-<https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e4242a72>
-
-<https://github.com/huacnlee/gpui-app/assets/5518/5316f9f0-58c8-4b99-bd79-eafffb38c3fc>
-
-<https://github.com/huacnlee/gpui-app/assets/5518/0273e031-4426-4ab5-a41c-f7cbbb0e55bc>
-
-<https://github.com/huacnlee/gpui-component/assets/5518/51622a5e-f51d-4ede-8cae-04cae703f8aa>
-
-## Demo
-
-- [main-app-windows.zip](https://github.com/user-attachments/files/16195804/main-app.zip) - Updated at 2024/07/12
-- [main-app-windows.zip](https://github.com/user-attachments/files/16049565/main-app.zip) - Updated at 2024/07/01
-- [main-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
-
-## TODO
+## Features
 
 - [x] Theming
 - [ ] TextField
@@ -80,6 +63,22 @@ This is an example of build app by using GPUI.
   - [ ] Sort event emit
 - [ ] Drawer
 - [ ] Modal
+
+## Showcase
+
+<https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e4242a72>
+
+<https://github.com/huacnlee/gpui-app/assets/5518/5316f9f0-58c8-4b99-bd79-eafffb38c3fc>
+
+<https://github.com/huacnlee/gpui-app/assets/5518/0273e031-4426-4ab5-a41c-f7cbbb0e55bc>
+
+<https://github.com/huacnlee/gpui-component/assets/5518/51622a5e-f51d-4ede-8cae-04cae703f8aa>
+
+## Demo
+
+- [main-app-windows.zip](https://github.com/user-attachments/files/16195804/main-app.zip) - Updated at 2024/07/12
+- [main-app-windows.zip](https://github.com/user-attachments/files/16049565/main-app.zip) - Updated at 2024/07/01
+- [main-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
 
 ## How to build
 
