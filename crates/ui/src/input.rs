@@ -150,16 +150,6 @@ impl TextInput {
         cx.notify();
     }
 
-    /// Set the placeholder text of the input field.
-    pub fn set_placeholder(
-        &mut self,
-        placeholder: impl Into<SharedString>,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.placeholder = placeholder.into();
-        cx.notify();
-    }
-
     /// Set the disabled state of the input field.
     pub fn set_disabled(&mut self, disabled: bool, cx: &mut ViewContext<Self>) {
         self.disabled = disabled;
