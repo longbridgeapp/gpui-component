@@ -591,7 +591,7 @@ impl Element for TextElement {
         };
 
         let run = TextRun {
-            len: input.text.len(),
+            len: disaplay_text.len(),
             font: style.font(),
             color: text_color,
             background_color: None,
