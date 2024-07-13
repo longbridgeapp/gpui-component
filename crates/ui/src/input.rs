@@ -1,3 +1,8 @@
+//! A text input field that allows the user to enter text.
+//!
+//! Based on the `Input` example from the `gpui` crate.
+//! https://github.com/zed-industries/zed/blob/main/crates/gpui/examples/input.rs
+
 use std::ops::Range;
 
 use crate::event::InterativeElementExt as _;
@@ -85,6 +90,8 @@ pub struct TextInput {
     selection_reversed: bool,
     marked_range: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
+    last_bounds: Option<Bounds<Pixels>>,
+    is_selecting: bool,
     disabled: bool,
     masked: bool,
     appearance: bool,
@@ -105,6 +112,8 @@ impl TextInput {
             selection_reversed: false,
             marked_range: None,
             last_layout: None,
+            last_bounds: None,
+            is_selecting: false,
             disabled: false,
             masked: false,
             appearance: true,
@@ -248,6 +257,26 @@ impl TextInput {
         cx.emit(TextEvent::PressEnter);
     }
 
+    fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {
+        self.is_selecting = true;
+
+        if event.modifiers.shift {
+            self.select_to(self.index_for_mouse_position(event.position), cx);
+        } else {
+            self.move_to(self.index_for_mouse_position(event.position), cx)
+        }
+    }
+
+    fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut ViewContext<Self>) {
+        self.is_selecting = false;
+    }
+
+    fn on_mouse_move(&mut self, event: &MouseMoveEvent, cx: &mut ViewContext<Self>) {
+        if self.is_selecting {
+            self.select_to(self.index_for_mouse_position(event.position), cx);
+        }
+    }
+
     fn show_character_palette(&mut self, _: &ShowCharacterPalette, cx: &mut ViewContext<Self>) {
         cx.show_character_palette();
     }
@@ -289,6 +318,25 @@ impl TextInput {
         } else {
             self.selected_range.end
         }
+    }
+
+    fn index_for_mouse_position(&self, position: Point<Pixels>) -> usize {
+        // If the text is empty, always return 0
+        if self.text.is_empty() {
+            return 0;
+        }
+
+        let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref())
+        else {
+            return 0;
+        };
+        if position.y < bounds.top() {
+            return 0;
+        }
+        if position.y > bounds.bottom() {
+            return self.text.len();
+        }
+        line.closest_index_for_x(position.x - bounds.left())
     }
 
     fn select_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
@@ -388,70 +436,6 @@ impl TextInput {
 
     fn on_key_down_for_blink_cursor(&mut self, _: &KeyDownEvent, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx)
-    }
-
-    fn on_mouse_left_down(
-        &mut self,
-        event: &MouseDownEvent,
-        hitbox: Hitbox,
-        cx: &mut ViewContext<TextInput>,
-    ) {
-        // Ignore if text is empty
-        if self.text.is_empty() {
-            return;
-        }
-
-        if !hitbox.contains(&event.position) {
-            return;
-        }
-
-        let offset = self.offset_of_position(event.position, &hitbox);
-        if event.modifiers.shift {
-            self.select_to(offset, cx);
-        } else {
-            self.move_to(offset, cx);
-        }
-    }
-
-    fn on_drag_move(&mut self, event: &MouseMoveEvent, hitbox: Hitbox, cx: &mut ViewContext<Self>) {
-        // Ignore if text is empty
-        if self.text.is_empty() {
-            return;
-        }
-
-        if self.last_layout.is_none() {
-            return;
-        }
-
-        if !self.focus_handle.is_focused(cx) {
-            return;
-        }
-
-        let offset = self.offset_of_position(event.position, &hitbox);
-        if offset == self.cursor_offset() {
-            return;
-        }
-        self.select_to(offset, cx);
-    }
-
-    fn offset_of_position(&self, position: Point<Pixels>, hitbox: &Hitbox) -> usize {
-        let position = position - hitbox.origin;
-        self.last_layout
-            .as_ref()
-            .map(|line| match line.index_for_x(position.x) {
-                Some(ix) => ix,
-                None => {
-                    let last_index = line.len();
-                    // If the mouse is on the right side of the last character, move to the end
-                    // Otherwise, move to the start of the line
-                    if position.x > line.x_for_index(last_index) {
-                        last_index
-                    } else {
-                        0
-                    }
-                }
-            })
-            .unwrap_or(0)
     }
 }
 
@@ -558,48 +542,10 @@ impl FocusableView for TextInput {
 struct TextElement {
     input: View<TextInput>,
 }
-
-impl TextElement {
-    fn paint_mouse_listeners(&mut self, hitbox: &Hitbox, cx: &mut WindowContext) {
-        cx.on_mouse_event({
-            let input = self.input.clone();
-            let hitbox = hitbox.clone();
-
-            move |event: &MouseDownEvent, phase, cx| {
-                let hitbox = hitbox.clone();
-                if phase == DispatchPhase::Bubble {
-                    match event.button {
-                        MouseButton::Left => {
-                            input.update(cx, |input, cx| {
-                                input.on_mouse_left_down(event, hitbox, cx);
-                            });
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        });
-
-        cx.on_mouse_event({
-            let input = self.input.clone();
-            let hitbox = hitbox.clone();
-
-            move |event: &MouseMoveEvent, _, cx| {
-                if event.pressed_button == Some(MouseButton::Left) {
-                    input.update(cx, |input, cx| {
-                        input.on_drag_move(event, hitbox.clone(), cx);
-                    });
-                }
-            }
-        });
-    }
-}
-
 struct PrepaintState {
     line: Option<ShapedLine>,
     cursor: Option<PaintQuad>,
     selection: Option<PaintQuad>,
-    hitbox: Hitbox,
 }
 
 impl IntoElement for TextElement {
@@ -727,13 +673,10 @@ impl Element for TextElement {
             )
         };
 
-        let hitbox = cx.insert_hitbox(bounds, false);
-
         PrepaintState {
             line: Some(line),
             cursor,
             selection,
-            hitbox,
         }
     }
 
@@ -765,8 +708,8 @@ impl Element for TextElement {
         }
         self.input.update(cx, |input, _cx| {
             input.last_layout = Some(line);
+            input.last_bounds = Some(bounds);
         });
-        self.paint_mouse_listeners(&prepaint.hitbox, cx);
     }
 }
 
@@ -799,6 +742,10 @@ impl Render for TextInput {
                 view.select_all(&SelectAll, cx);
             }))
             .on_key_down(cx.listener(Self::on_key_down_for_blink_cursor))
+            .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
+            .on_mouse_move(cx.listener(Self::on_mouse_move))
             .size_full()
             .line_height(rems(1.25))
             .text_size(rems(0.875))

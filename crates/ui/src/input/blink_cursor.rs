@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-use gpui::{ModelContext, Timer, WeakView};
-
-use super::TextInput;
+use gpui::{ModelContext, Timer};
 
 /// To manage the Input cursor blinking.
 ///
