@@ -64,11 +64,7 @@ impl InputStory {
 
         Self {
             input1,
-            input2: cx.new_view(|cx| {
-                let mut input = TextInput::new(cx);
-                input.set_placeholder("Enter text here...", cx);
-                input
-            }),
+            input2: cx.new_view(|cx| TextInput::new(cx).placeholder("Enter text here...")),
             mash_input: mask_input,
             disabled_input: cx.new_view(|cx| {
                 let mut input = TextInput::new(cx);

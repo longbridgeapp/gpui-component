@@ -150,16 +150,6 @@ impl TextInput {
         cx.notify();
     }
 
-    /// Set the placeholder text of the input field.
-    pub fn set_placeholder(
-        &mut self,
-        placeholder: impl Into<SharedString>,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.placeholder = placeholder.into();
-        cx.notify();
-    }
-
     /// Set the disabled state of the input field.
     pub fn set_disabled(&mut self, disabled: bool, cx: &mut ViewContext<Self>) {
         self.disabled = disabled;
@@ -601,7 +591,7 @@ impl Element for TextElement {
         };
 
         let run = TextRun {
-            len: input.text.len(),
+            len: disaplay_text.len(),
             font: style.font(),
             color: text_color,
             background_color: None,
