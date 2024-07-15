@@ -3,8 +3,8 @@ use std::rc::Rc;
 use gpui::{
     actions, div, prelude::FluentBuilder, px, Action, AnyWindowHandle, AppContext, Context,
     DismissEvent, EventEmitter, FocusHandle, FocusableView, InteractiveElement, KeyBinding,
-    ParentElement, Render, SharedString, Styled as _, View, ViewContext, VisualContext as _,
-    WindowContext,
+    ParentElement, Pixels, Render, SharedString, Styled as _, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
@@ -43,6 +43,8 @@ pub struct PopupMenu {
     action_context: Option<FocusHandle>,
     menu_items: Vec<PopupMenuItem>,
     selected_index: Option<usize>,
+    min_width: Pixels,
+    max_width: Pixels,
     _subscriptions: [gpui::Subscription; 1],
 }
 
@@ -63,11 +65,25 @@ impl PopupMenu {
                 window_handle: cx.window_handle(),
                 menu_items: Vec::new(),
                 selected_index: None,
+                min_width: px(120.),
+                max_width: px(500.),
                 _subscriptions: [_on_blur_subscription],
             };
             cx.refresh();
             f(menu, cx)
         })
+    }
+
+    /// Set min width of the popup menu, default is 120px
+    pub fn min_w(&mut self, width: impl Into<Pixels>) -> &mut Self {
+        self.min_width = width.into();
+        self
+    }
+
+    /// Set max width of the popup menu, default is 500px
+    pub fn max_w(&mut self, height: impl Into<Pixels>) -> &mut Self {
+        self.max_width = height.into();
+        self
     }
 
     /// You must set content (FocusHandle) with the parent view, if the menu action is listening on the parent view.
@@ -202,10 +218,9 @@ impl Render for PopupMenu {
             .on_action(cx.listener(Self::confirm))
             .on_action(cx.listener(Self::dismiss))
             .on_mouse_down_out(cx.listener(|this, _, cx| this.dismiss(&Dismiss, cx)))
-            .max_h(px(550.))
-            .min_w(px(230.))
+            .max_h(self.max_width)
+            .min_w(self.min_width)
             .p_1p5()
-            .max_w_128()
             .gap_y_0p5()
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
                 let this = ListItem::new(("menu-item", ix))
