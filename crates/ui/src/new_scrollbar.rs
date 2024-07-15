@@ -1,18 +1,19 @@
 use core::arch;
-use std::{borrow::BorrowMut, cell::Cell, ops::Range, rc::Rc};
+use std::{borrow::BorrowMut, cell::Cell, ops::Range, rc::Rc, time::Duration};
 
 use crate::{
-    red_200,
+    green_100, red_200,
     theme::{ActiveTheme, Colorize},
 };
 use gpui::{
     fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
     MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, ScrollHandle, Style,
+    Task, Timer, WindowContext,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
-const THUMB_RADIUS: Pixels = Pixels(5.0);
-const THUMB_INSET: Pixels = Pixels(0.8);
+const THUMB_RADIUS: Pixels = Pixels(0.0);
+const THUMB_INSET: Pixels = Pixels(0.);
 
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
@@ -238,7 +239,7 @@ impl Element for Scrollbar {
                         width: if axis.is_vertical() {
                             self.width
                         } else {
-                            bounds.size.width
+                            bounds.size.width - self.width
                         },
                         height: if axis.is_vertical() {
                             bounds.size.height
@@ -273,7 +274,7 @@ impl Element for Scrollbar {
                 } else {
                     Bounds::from_corners(
                         point(
-                            bounds.origin.x + thumb_start * inset,
+                            bounds.origin.x + thumb_start + inset,
                             bounds.origin.y + inset,
                         ),
                         point(
@@ -285,7 +286,6 @@ impl Element for Scrollbar {
 
                 cx.paint_quad(fill(bounds, bar_bg));
                 cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
-
                 cx.on_mouse_event({
                     let state = self.state.clone();
                     let view_id = self.view.entity_id();
@@ -320,6 +320,8 @@ impl Element for Scrollbar {
                                 if state.get().hovered_axis.is_some() {
                                     state.set(state.get().set_hovered(None));
                                     cx.notify(view_id);
+
+                                    // TODO: Start delay 2s to hide the scrollbar.
                                 }
                             }
                         }
@@ -336,17 +338,9 @@ impl Element for Scrollbar {
                             .min(1.);
 
                             let offset = if axis.is_vertical() {
-                                point(
-                                    thumb_bounds.origin.x,
-                                    -percentage * scroll_area_size, // - bounds.origin.y
-                                )
+                                point(thumb_bounds.origin.x, -percentage * scroll_area_size)
                             } else {
-                                point(
-                                    -percentage * scroll_area_size
-                                        // - bounds.origin.x
-                                        + thumb_bounds.origin.x,
-                                    thumb_bounds.origin.y,
-                                )
+                                point(-percentage * scroll_area_size, thumb_bounds.origin.y)
                             };
 
                             scroll_handle.set_offset(offset);

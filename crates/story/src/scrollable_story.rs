@@ -44,12 +44,11 @@ impl Render for ScrollableStory {
             .mb_10()
             .border_1()
             .border_color(cx.theme().border)
-            .p_1()
-            .rounded_lg()
             .child(
                 div()
                     .id("scroll-story")
                     .overflow_scroll()
+                    .p_1()
                     .size_full()
                     .track_scroll(&self.scroll_handle)
                     .child(
