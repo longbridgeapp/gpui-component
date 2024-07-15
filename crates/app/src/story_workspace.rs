@@ -2,8 +2,8 @@ use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, ProgressStory, ResizableStory, StoryContainer, SwitchStory, TableStory,
-    TooltipStory,
+    PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
+    TableStory, TooltipStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -151,6 +151,15 @@ impl StoryWorkspace {
             "Resizable",
             "Accessible resizable panel groups and layouts with keyboard support.",
             ResizableStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        StoryContainer::add_pane(
+            "Scrollable",
+            "A scrollable area with scroll bar",
+            ScrollableStory::view(cx).into(),
             workspace.clone(),
             cx,
         )

@@ -20,6 +20,7 @@ pub mod indicator;
 pub mod input;
 pub mod label;
 pub mod list;
+pub mod new_scrollbar;
 pub mod popover;
 pub mod popup_menu;
 pub mod prelude;
