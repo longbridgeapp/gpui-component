@@ -12,17 +12,17 @@ use ui::{v_flex, StyledExt};
 pub struct ScrollableStory {
     scroll_handle: ScrollHandle,
     scroll_size: gpui::Size<Pixels>,
-    scrollbar_state: Rc<Cell<ScrollbarState>>,
+    scroll_state: Rc<Cell<ScrollbarState>>,
     items: Vec<String>,
 }
 
 impl ScrollableStory {
     fn new() -> Self {
         let items = (0..500).map(|i| format!("Item {}", i)).collect();
-
+        println!("ScrollableStory");
         Self {
             scroll_handle: ScrollHandle::new(),
-            scrollbar_state: Rc::new(Cell::new(ScrollbarState::default())),
+            scroll_state: Rc::new(Cell::new(ScrollbarState::default())),
             scroll_size: gpui::Size::default(),
             items,
         }
@@ -36,10 +36,11 @@ impl ScrollableStory {
 impl Render for ScrollableStory {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         let view = cx.view().clone();
+
         div()
             .relative()
             .w_full()
-            .h(px(500.))
+            .h(px(400.))
             .mb_10()
             .border_1()
             .border_color(cx.theme().border)
@@ -75,7 +76,7 @@ impl Render for ScrollableStory {
             )
             .child(Scrollbar::both(
                 view,
-                self.scrollbar_state.clone(),
+                self.scroll_state.clone(),
                 self.scroll_handle.clone(),
                 self.scroll_size,
             ))

@@ -1,20 +1,33 @@
-use std::{cell::Cell, ops::Range, rc::Rc};
+use std::{borrow::BorrowMut, cell::Cell, ops::Range, rc::Rc};
 
-use crate::{
-    blue_100, red_200,
-    theme::{ActiveTheme, Colorize},
-    StyledExt,
-};
+use crate::{red_200, theme::ActiveTheme};
 use gpui::{
-    deferred, div, fill, point, prelude::FluentBuilder as _, px, relative, AnyElement, AnyView,
-    Axis, Bounds, ContentMask, Element, Hitbox, InteractiveElement as _, IntoElement, LayoutId,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, ScrollHandle,
-    ScrollWheelEvent, Style, Styled as _, Task,
+    fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
+    MouseDownEvent, MouseMoveEvent, Pixels, Point, Position, ScrollHandle, Style,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
 const THUMB_RADIUS: Pixels = Pixels(5.0);
 const THUMB_INSET: Pixels = Pixels(0.8);
+
+#[derive(Debug, Clone, Copy)]
+pub struct ScrollbarState {
+    hovered: bool,
+    drag_pos: Option<Point<Pixels>>,
+    current_axis: ScrollbarAxis,
+    visible: bool,
+}
+
+impl Default for ScrollbarState {
+    fn default() -> Self {
+        Self {
+            hovered: false,
+            current_axis: ScrollbarAxis::Vertical,
+            drag_pos: None,
+            visible: true,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollbarAxis {
@@ -23,26 +36,13 @@ pub enum ScrollbarAxis {
     Both,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ScrollbarState {
-    hovered: bool,
-    mouse_down: bool,
-    visible: bool,
-}
-
-impl Default for ScrollbarState {
-    fn default() -> Self {
-        Self {
-            hovered: false,
-            mouse_down: false,
-            visible: true,
-        }
-    }
-}
-
 impl ScrollbarAxis {
     fn is_vertical(&self) -> bool {
         matches!(self, Self::Vertical)
+    }
+
+    fn is_both(&self) -> bool {
+        matches!(self, Self::Both)
     }
 
     pub fn has_vertical(&self) -> bool {
@@ -165,59 +165,63 @@ impl Element for Scrollbar {
         cx: &mut gpui::WindowContext,
     ) {
         let bounds = hitbox.bounds;
-
-        for axis in self.axis.all().into_iter() {
-            let (scroll_area_size, container_size, current_offset) = if axis.is_vertical() {
-                (
-                    self.scroll_size.height,
-                    bounds.size.height,
-                    self.scroll_handle.offset().y,
-                )
-            } else {
-                (
-                    self.scroll_size.width,
-                    bounds.size.width,
-                    self.scroll_handle.offset().x,
-                )
-            };
-
-            let thumb_size_ratio = (container_size / scroll_area_size).clamp(0.0, 1.0);
-
-            let thumb_size = (container_size.0 * thumb_size_ratio).max(MIN_THUMB_SIZE);
-            let thumb_start = px(current_offset / (-scroll_area_size)) * container_size;
-            let thumb_end = thumb_start + px(thumb_size);
-
-            let bounds = Bounds {
-                origin: if axis.is_vertical() {
-                    point(
-                        bounds.origin.x + bounds.size.width - self.width,
-                        bounds.origin.y,
+        cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+            for axis in self.axis.all().into_iter() {
+                let (scroll_area_size, container_size, current_offset) = if axis.is_vertical() {
+                    (
+                        self.scroll_size.height,
+                        bounds.size.height,
+                        self.scroll_handle.offset().y,
                     )
                 } else {
-                    point(
-                        bounds.origin.x,
-                        bounds.origin.y + bounds.size.height - self.width,
-                    )
-                },
-                size: gpui::Size {
-                    width: if axis.is_vertical() {
-                        self.width
-                    } else {
+                    (
+                        self.scroll_size.width,
                         bounds.size.width
-                    },
-                    height: if axis.is_vertical() {
-                        bounds.size.height
-                    } else {
-                        self.width
-                    },
-                },
-            };
+                            - if self.axis.is_both() {
+                                self.width
+                            } else {
+                                px(0.)
+                            },
+                        self.scroll_handle.offset().x,
+                    )
+                };
 
-            cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+                let thumb_size_ratio = (container_size / scroll_area_size).clamp(0.0, 1.0);
+
+                let thumb_size = (container_size.0 * thumb_size_ratio).max(MIN_THUMB_SIZE);
+                let thumb_start = px(current_offset / (-scroll_area_size)) * container_size;
+                let thumb_end = thumb_start + px(thumb_size);
+
+                let bounds = Bounds {
+                    origin: if axis.is_vertical() {
+                        point(
+                            bounds.origin.x + bounds.size.width - self.width,
+                            bounds.origin.y,
+                        )
+                    } else {
+                        point(
+                            bounds.origin.x,
+                            bounds.origin.y + bounds.size.height - self.width,
+                        )
+                    },
+                    size: gpui::Size {
+                        width: if axis.is_vertical() {
+                            self.width
+                        } else {
+                            bounds.size.width
+                        },
+                        height: if axis.is_vertical() {
+                            bounds.size.height
+                        } else {
+                            self.width
+                        },
+                    },
+                };
+
                 let bar_bg = cx.theme().scrollbar;
                 let thumb_bg = cx.theme().scrollbar_thumb;
                 let state = self.state.clone();
-                let thumb_bg = if state.take().hovered {
+                let thumb_bg = if state.get().hovered {
                     red_200()
                 } else {
                     thumb_bg
@@ -250,7 +254,7 @@ impl Element for Scrollbar {
                     )
                 };
 
-                cx.paint_quad(fill(bounds, blue_100()));
+                cx.paint_quad(fill(bounds, bar_bg));
                 cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
 
                 cx.on_mouse_event({
@@ -259,17 +263,13 @@ impl Element for Scrollbar {
                     let view_id = self.view.entity_id();
 
                     move |event: &MouseDownEvent, phase, cx| {
-                        if phase.bubble() && bounds.contains(&event.position) {
-                            if thumb_bounds.contains(&event.position) {
-                                println!("-------- thumb_bounds MouseState::Down");
-                                state.set(ScrollbarState {
-                                    mouse_down: true,
-                                    ..state.take()
-                                });
-                                // cx.notify(view_id);
-                            } else {
-                                // TODO, click bar to scroll
-                            }
+                        if phase.bubble() && thumb_bounds.contains(&event.position) {
+                            state.set(ScrollbarState {
+                                drag_pos: Some(event.position),
+                                current_axis: axis,
+                                ..state.get()
+                            });
+                            cx.notify(view_id);
                         }
                     }
                 });
@@ -280,35 +280,47 @@ impl Element for Scrollbar {
                     let view_id = self.view.entity_id();
 
                     move |event: &MouseMoveEvent, _, cx| {
-                        if state.take().mouse_down && event.dragging() {
-                            let offset = if axis.is_vertical() {
-                                point(scroll_handle.offset().x, event.position.y)
-                            } else {
-                                point(event.position.x, scroll_handle.offset().y)
-                            };
+                        if event.dragging() && state.get().current_axis == axis {
+                            if let Some(drag_pos) = state.get().drag_pos {
+                                let percentage = if axis.is_vertical() {
+                                    (event.position.y - bounds.origin.y) / bounds.size.height
+                                        - drag_pos.y.0
+                                } else {
+                                    (event.position.x - bounds.origin.x) / bounds.size.width
+                                        - drag_pos.x.0
+                                };
 
-                            println!("-------- dragging scrollbar: {:?}", offset);
+                                println!("percentage: {}", percentage);
 
-                            scroll_handle.set_offset(offset);
+                                let offset = if axis.is_vertical() {
+                                    point(thumb_bounds.origin.x, px(percentage))
+                                } else {
+                                    point(-scroll_area_size * percentage, thumb_bounds.origin.y)
+                                };
+                                println!("offset: {:?}", offset);
+
+                                scroll_handle.set_offset(offset);
+                                cx.notify(view_id);
+                            }
                         }
                     }
                 });
 
-                cx.on_mouse_event({
-                    let view_id = self.view.entity_id();
-                    let state = self.state.clone();
+                // cx.on_mouse_event({
+                //     let view_id = self.view.entity_id();
+                //     let state = self.state.clone();
 
-                    move |_event: &MouseUpEvent, phase, cx| {
-                        if phase.bubble() {
-                            state.set(ScrollbarState {
-                                mouse_down: false,
-                                ..state.take()
-                            });
-                            // cx.notify(view_id);
-                        }
-                    }
-                });
-            });
-        }
+                //     move |_event: &MouseUpEvent, phase, cx| {
+                //         if phase.bubble() {
+                //             state.set(ScrollbarState {
+                //                 mouse_down: false,
+                //                 ..state.take()
+                //             });
+                //             cx.notify(view_id);
+                //         }
+                //     }
+                // });
+            }
+        });
     }
 }
