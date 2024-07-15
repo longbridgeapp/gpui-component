@@ -1,19 +1,14 @@
-use core::arch;
-use std::{borrow::BorrowMut, cell::Cell, ops::Range, rc::Rc, time::Duration};
+use std::{cell::Cell, rc::Rc};
 
-use crate::{
-    green_100, red_200,
-    theme::{ActiveTheme, Colorize},
-};
+use crate::theme::{ActiveTheme, Colorize};
 use gpui::{
     fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
     MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, ScrollHandle, Style,
-    Task, Timer, WindowContext,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
-const THUMB_RADIUS: Pixels = Pixels(0.0);
-const THUMB_INSET: Pixels = Pixels(0.);
+const THUMB_RADIUS: Pixels = Pixels(5.0);
+const THUMB_INSET: Pixels = Pixels(0.8);
 
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
@@ -35,7 +30,7 @@ impl Default for ScrollbarState {
 }
 
 impl ScrollbarState {
-    fn set_drag_pos(&self, axis: ScrollbarAxis, pos: Point<Pixels>) -> Self {
+    fn with_drag_pos(&self, axis: ScrollbarAxis, pos: Point<Pixels>) -> Self {
         let mut state = *self;
         if axis.is_vertical() {
             state.drag_pos.y = pos.y;
@@ -47,13 +42,13 @@ impl ScrollbarState {
         state
     }
 
-    fn unset_drag_pos(&self) -> Self {
+    fn with_unset_drag_pos(&self) -> Self {
         let mut state = *self;
         state.draged_axis = None;
         state
     }
 
-    fn set_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
+    fn with_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
         let mut state = *self;
         state.hovered_axis = axis;
         state
@@ -196,6 +191,14 @@ impl Element for Scrollbar {
         cx: &mut gpui::WindowContext,
     ) {
         let bounds = hitbox.bounds;
+        let is_both = self.axis.is_both();
+
+        // cx.paint_quad(
+        //     fill(bounds, gpui::transparent_black())
+        //         .border_color(pink_500())
+        //         .border_widths(1.0),
+        // );
+
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             for axis in self.axis.all().into_iter() {
                 let (scroll_area_size, container_size, current_offset) = if axis.is_vertical() {
@@ -207,21 +210,22 @@ impl Element for Scrollbar {
                 } else {
                     (
                         self.scroll_size.width,
-                        bounds.size.width
-                            - if self.axis.is_both() {
-                                self.width
-                            } else {
-                                px(0.)
-                            },
+                        // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
+                        bounds.size.width - if is_both { self.width } else { px(0.) },
                         self.scroll_handle.offset().x,
                     )
                 };
 
                 let thumb_size_ratio = (container_size / scroll_area_size).clamp(0.0, 1.0);
+                let thumb_size = (container_size * thumb_size_ratio).max(px(MIN_THUMB_SIZE));
+                let container_size = if axis.is_vertical() {
+                    container_size - thumb_size
+                } else {
+                    container_size
+                };
 
-                let thumb_size = (container_size.0 * thumb_size_ratio).max(MIN_THUMB_SIZE);
                 let thumb_start = px(current_offset / (-scroll_area_size)) * container_size;
-                let thumb_end = thumb_start + px(thumb_size);
+                let thumb_end = thumb_start + thumb_size;
 
                 let bounds = Bounds {
                     origin: if axis.is_vertical() {
@@ -239,7 +243,7 @@ impl Element for Scrollbar {
                         width: if axis.is_vertical() {
                             self.width
                         } else {
-                            bounds.size.width - self.width
+                            bounds.size.width
                         },
                         height: if axis.is_vertical() {
                             bounds.size.height
@@ -286,6 +290,7 @@ impl Element for Scrollbar {
 
                 cx.paint_quad(fill(bounds, bar_bg));
                 cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
+
                 cx.on_mouse_event({
                     let state = self.state.clone();
                     let view_id = self.view.entity_id();
@@ -293,12 +298,18 @@ impl Element for Scrollbar {
                     move |event: &MouseDownEvent, phase, cx| {
                         if phase.bubble() && thumb_bounds.contains(&event.position) {
                             let drag_pos = if axis.is_vertical() {
-                                point(event.position.x, event.position.y - thumb_bounds.origin.y)
+                                point(
+                                    state.get().drag_pos.x,
+                                    event.position.y - thumb_bounds.origin.y,
+                                )
                             } else {
-                                point(event.position.x - thumb_bounds.origin.x, event.position.y)
+                                point(
+                                    event.position.x - thumb_bounds.origin.x,
+                                    state.get().drag_pos.y,
+                                )
                             };
 
-                            state.set(state.get().set_drag_pos(axis, drag_pos));
+                            state.set(state.get().with_drag_pos(axis, drag_pos));
                             cx.notify(view_id);
                         }
                     }
@@ -312,13 +323,13 @@ impl Element for Scrollbar {
                     move |event: &MouseMoveEvent, _, cx| {
                         if thumb_bounds.contains(&event.position) {
                             if state.get().hovered_axis != Some(axis) {
-                                state.set(state.get().set_hovered(Some(axis)));
+                                state.set(state.get().with_hovered(Some(axis)));
                                 cx.notify(view_id);
                             }
                         } else {
                             if state.get().hovered_axis == Some(axis) {
                                 if state.get().hovered_axis.is_some() {
-                                    state.set(state.get().set_hovered(None));
+                                    state.set(state.get().with_hovered(None));
                                     cx.notify(view_id);
 
                                     // TODO: Start delay 2s to hide the scrollbar.
@@ -329,18 +340,16 @@ impl Element for Scrollbar {
                         if event.dragging() && state.get().draged_axis == Some(axis) {
                             let drag_pos = state.get().drag_pos;
                             let percentage = if axis.is_vertical() {
-                                (event.position.y - bounds.origin.y - drag_pos.y)
-                                    / bounds.size.height
+                                (event.position.y - bounds.origin.y - drag_pos.y) / container_size
                             } else {
-                                (event.position.x - bounds.origin.x - drag_pos.x)
-                                    / bounds.size.width
+                                (event.position.x - bounds.origin.x - drag_pos.x) / container_size
                             }
                             .min(1.);
 
                             let offset = if axis.is_vertical() {
-                                point(thumb_bounds.origin.x, -percentage * scroll_area_size)
+                                point(scroll_handle.offset().x, -percentage * scroll_area_size)
                             } else {
-                                point(-percentage * scroll_area_size, thumb_bounds.origin.y)
+                                point(-percentage * scroll_area_size, scroll_handle.offset().y)
                             };
 
                             scroll_handle.set_offset(offset);
@@ -355,7 +364,7 @@ impl Element for Scrollbar {
 
                     move |_event: &MouseUpEvent, phase, cx| {
                         if phase.bubble() {
-                            state.set(state.get().unset_drag_pos());
+                            state.set(state.get().with_unset_drag_pos());
                             cx.notify(view_id);
                         }
                     }
