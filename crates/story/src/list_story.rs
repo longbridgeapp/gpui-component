@@ -72,12 +72,10 @@ impl RenderOnce for CompanyListItem {
 
         let bg_color = if self.selected {
             cx.theme().accent
+        } else if self.ix % 2 == 0 {
+            cx.theme().background
         } else {
-            if self.ix % 2 == 0 {
-                cx.theme().background
-            } else {
-                cx.theme().accent.opacity(0.3)
-            }
+            cx.theme().accent.opacity(0.3)
         };
 
         self.base
@@ -180,7 +178,7 @@ pub struct ListStory {
 
 impl ListStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {

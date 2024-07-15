@@ -321,7 +321,7 @@ where
                 let layout_id = element.request_layout(cx);
                 (
                     (
-                        layout_id.clone(),
+                        layout_id,
                         DropdownMenuElementState {
                             layout_id: Some(layout_id),
                             menu_element: Some(element),
