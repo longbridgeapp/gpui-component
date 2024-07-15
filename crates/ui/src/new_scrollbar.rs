@@ -1,9 +1,13 @@
+use core::arch;
 use std::{borrow::BorrowMut, cell::Cell, ops::Range, rc::Rc};
 
-use crate::{red_200, theme::ActiveTheme};
+use crate::{
+    red_200,
+    theme::{ActiveTheme, Colorize},
+};
 use gpui::{
     fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
-    MouseDownEvent, MouseMoveEvent, Pixels, Point, Position, ScrollHandle, Style,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, ScrollHandle, Style,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
@@ -12,20 +16,46 @@ const THUMB_INSET: Pixels = Pixels(0.8);
 
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
-    hovered: bool,
-    drag_pos: Option<Point<Pixels>>,
-    current_axis: ScrollbarAxis,
+    hovered_axis: Option<ScrollbarAxis>,
+    draged_axis: Option<ScrollbarAxis>,
+    drag_pos: Point<Pixels>,
     visible: bool,
 }
 
 impl Default for ScrollbarState {
     fn default() -> Self {
         Self {
-            hovered: false,
-            current_axis: ScrollbarAxis::Vertical,
-            drag_pos: None,
+            hovered_axis: None,
+            draged_axis: None,
+            drag_pos: point(px(0.), px(0.)),
             visible: true,
         }
+    }
+}
+
+impl ScrollbarState {
+    fn set_drag_pos(&self, axis: ScrollbarAxis, pos: Point<Pixels>) -> Self {
+        let mut state = *self;
+        if axis.is_vertical() {
+            state.drag_pos.y = pos.y;
+        } else {
+            state.drag_pos.x = pos.x;
+        }
+
+        state.draged_axis = Some(axis);
+        state
+    }
+
+    fn unset_drag_pos(&self) -> Self {
+        let mut state = *self;
+        state.draged_axis = None;
+        state
+    }
+
+    fn set_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
+        let mut state = *self;
+        state.hovered_axis = axis;
+        state
     }
 }
 
@@ -221,35 +251,34 @@ impl Element for Scrollbar {
                 let bar_bg = cx.theme().scrollbar;
                 let thumb_bg = cx.theme().scrollbar_thumb;
                 let state = self.state.clone();
-                let thumb_bg = if state.get().hovered {
-                    red_200()
+                let (thumb_bg, inset) = if state.get().draged_axis == Some(axis) {
+                    (thumb_bg.darken(0.3), THUMB_INSET)
+                } else if state.get().hovered_axis == Some(axis) {
+                    (thumb_bg.darken(0.15), THUMB_INSET)
                 } else {
-                    thumb_bg
+                    (thumb_bg, THUMB_INSET)
                 };
-
-                // println!("{:?}  thumb_start: {}", axis, thumb_start);
-                // println!("{:?}  thumb_end: {}", axis, thumb_end);
 
                 let thumb_bounds = if axis.is_vertical() {
                     Bounds::from_corners(
                         point(
-                            bounds.origin.x + THUMB_INSET,
-                            bounds.origin.y + thumb_start + THUMB_INSET,
+                            bounds.origin.x + inset,
+                            bounds.origin.y + thumb_start + inset,
                         ),
                         point(
-                            bounds.origin.x + self.width - (THUMB_INSET * 2),
-                            bounds.origin.y + thumb_end - (THUMB_INSET * 2),
+                            bounds.origin.x + self.width - (inset * 2),
+                            bounds.origin.y + thumb_end - (inset * 2),
                         ),
                     )
                 } else {
                     Bounds::from_corners(
                         point(
-                            bounds.origin.x + thumb_start * THUMB_INSET,
-                            bounds.origin.y + THUMB_INSET,
+                            bounds.origin.x + thumb_start * inset,
+                            bounds.origin.y + inset,
                         ),
                         point(
-                            bounds.origin.x + thumb_end - (THUMB_INSET * 2),
-                            bounds.origin.y + self.width - (THUMB_INSET * 2),
+                            bounds.origin.x + thumb_end - (inset * 2),
+                            bounds.origin.y + self.width - (inset * 2),
                         ),
                     )
                 };
@@ -258,17 +287,18 @@ impl Element for Scrollbar {
                 cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
 
                 cx.on_mouse_event({
-                    let scroll = self.scroll_handle.clone();
                     let state = self.state.clone();
                     let view_id = self.view.entity_id();
 
                     move |event: &MouseDownEvent, phase, cx| {
                         if phase.bubble() && thumb_bounds.contains(&event.position) {
-                            state.set(ScrollbarState {
-                                drag_pos: Some(event.position),
-                                current_axis: axis,
-                                ..state.get()
-                            });
+                            let drag_pos = if axis.is_vertical() {
+                                point(event.position.x, event.position.y - thumb_bounds.origin.y)
+                            } else {
+                                point(event.position.x - thumb_bounds.origin.x, event.position.y)
+                            };
+
+                            state.set(state.get().set_drag_pos(axis, drag_pos));
                             cx.notify(view_id);
                         }
                     }
@@ -280,46 +310,62 @@ impl Element for Scrollbar {
                     let view_id = self.view.entity_id();
 
                     move |event: &MouseMoveEvent, _, cx| {
-                        if event.dragging() && state.get().current_axis == axis {
-                            if let Some(drag_pos) = state.get().drag_pos {
-                                let percentage = if axis.is_vertical() {
-                                    (event.position.y - bounds.origin.y) / bounds.size.height
-                                        - drag_pos.y.0
-                                } else {
-                                    (event.position.x - bounds.origin.x) / bounds.size.width
-                                        - drag_pos.x.0
-                                };
-
-                                println!("percentage: {}", percentage);
-
-                                let offset = if axis.is_vertical() {
-                                    point(thumb_bounds.origin.x, px(percentage))
-                                } else {
-                                    point(-scroll_area_size * percentage, thumb_bounds.origin.y)
-                                };
-                                println!("offset: {:?}", offset);
-
-                                scroll_handle.set_offset(offset);
+                        if thumb_bounds.contains(&event.position) {
+                            if state.get().hovered_axis != Some(axis) {
+                                state.set(state.get().set_hovered(Some(axis)));
                                 cx.notify(view_id);
                             }
+                        } else {
+                            if state.get().hovered_axis == Some(axis) {
+                                if state.get().hovered_axis.is_some() {
+                                    state.set(state.get().set_hovered(None));
+                                    cx.notify(view_id);
+                                }
+                            }
+                        }
+
+                        if event.dragging() && state.get().draged_axis == Some(axis) {
+                            let drag_pos = state.get().drag_pos;
+                            let percentage = if axis.is_vertical() {
+                                (event.position.y - bounds.origin.y - drag_pos.y)
+                                    / bounds.size.height
+                            } else {
+                                (event.position.x - bounds.origin.x - drag_pos.x)
+                                    / bounds.size.width
+                            }
+                            .min(1.);
+
+                            let offset = if axis.is_vertical() {
+                                point(
+                                    thumb_bounds.origin.x,
+                                    -percentage * scroll_area_size, // - bounds.origin.y
+                                )
+                            } else {
+                                point(
+                                    -percentage * scroll_area_size
+                                        // - bounds.origin.x
+                                        + thumb_bounds.origin.x,
+                                    thumb_bounds.origin.y,
+                                )
+                            };
+
+                            scroll_handle.set_offset(offset);
+                            cx.notify(view_id);
                         }
                     }
                 });
 
-                // cx.on_mouse_event({
-                //     let view_id = self.view.entity_id();
-                //     let state = self.state.clone();
+                cx.on_mouse_event({
+                    let view_id = self.view.entity_id();
+                    let state = self.state.clone();
 
-                //     move |_event: &MouseUpEvent, phase, cx| {
-                //         if phase.bubble() {
-                //             state.set(ScrollbarState {
-                //                 mouse_down: false,
-                //                 ..state.take()
-                //             });
-                //             cx.notify(view_id);
-                //         }
-                //     }
-                // });
+                    move |_event: &MouseUpEvent, phase, cx| {
+                        if phase.bubble() {
+                            state.set(state.get().unset_drag_pos());
+                            cx.notify(view_id);
+                        }
+                    }
+                });
             }
         });
     }
