@@ -117,14 +117,17 @@ where
         self.selected_index = ix;
 
         if let Some(view) = self.dropdown.upgrade() {
-            cx.update_view(&view, |view, cx| {
+            cx.update_view(&view, |view, _| {
+                view.selected_value = self
+                    .selected_index
+                    .and_then(|ix| self.delegate.get(ix))
+                    .map(|item| item.value().to_string().into());
                 view.open = false;
-                view.focus_handle.focus(cx);
             });
         }
     }
 
-    fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
+    fn set_selected_index(&mut self, ix: Option<usize>, _: &mut ViewContext<List<Self>>) {
         self.selected_index = ix;
     }
 }
@@ -152,6 +155,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     cleanable: bool,
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
+    selected_value: Option<SharedString>,
 }
 
 impl<D> Dropdown<D>
@@ -171,16 +175,19 @@ where
         };
 
         let list = cx.new_view(|cx| List::new(delegate, cx).no_query().max_h(rems(20.)));
-        Self {
+        let mut this = Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
             placeholder: "Select...".into(),
             list,
             size: Size::Medium,
+            selected_value: None,
             open: false,
             cleanable: true,
             title_prefix: None,
-        }
+        };
+        this.update_selected_value(cx);
+        this
     }
 
     pub fn size(mut self, size: Size) -> Self {
@@ -218,10 +225,22 @@ where
         self.list.update(cx, |list, cx| {
             list.set_selected_index(selected_index, cx);
         });
+        self.update_selected_value(cx);
     }
 
     pub fn selected_index(&self, cx: &WindowContext) -> Option<usize> {
         self.list.read(cx).selected_index()
+    }
+
+    fn update_selected_value(&mut self, cx: &WindowContext) {
+        self.selected_value = self
+            .selected_index(cx)
+            .and_then(|ix| self.list.read(cx).delegate().delegate.get(ix))
+            .map(|item| item.value().to_string().into());
+    }
+
+    pub fn selected_value(&self) -> Option<SharedString> {
+        self.selected_value.clone()
     }
 
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
@@ -394,7 +413,7 @@ where
                     ),
             )
             .child(DropdownMenuElement {
-                id: "dropdown-menu".into(),
+                id: ElementId::Name(format!("dropdown-menu:{}", self.id).into()),
                 dropdown: cx.view().clone(),
             })
     }

@@ -26,14 +26,21 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
+/// A delegate for the List.
 #[allow(unused)]
 pub trait ListDelegate: Sized + 'static {
     type Item: IntoElement;
 
+    /// When Query Input change, this method will be called.
+    /// You can perform search here.
     fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) {}
 
     /// Return the number of items in the list.
     fn items_count(&self) -> usize;
+
+    /// Render the item at the given index.
+    ///
+    /// Return None will skip the item.
     fn render_item(&self, ix: usize, cx: &mut ViewContext<List<Self>>) -> Option<Self::Item>;
 
     /// Return the confirmed index of the selected item.
@@ -41,11 +48,13 @@ pub trait ListDelegate: Sized + 'static {
         None
     }
 
-    /// Set the selected index.
+    /// Set the selected index, just store the ix, don't confirm.
     fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>);
 
-    /// Set the confirm and give the selected index.
+    /// Set the confirm and give the selected index, this is means user have clicked the item or pressed Enter.
     fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {}
+
+    /// Cancel the selection, e.g.: Pressed ESC.
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {}
 }
 
