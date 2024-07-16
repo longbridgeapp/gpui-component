@@ -6,9 +6,10 @@ use gpui::{
     StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::button::Button;
-use ui::new_scrollbar::{Scrollbar, ScrollbarState};
+use ui::divider::Divider;
+use ui::new_scrollbar::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
-use ui::{h_flex, v_flex, Clickable, StyledExt};
+use ui::{h_flex, v_flex, Clickable};
 
 pub struct ScrollableStory {
     scroll_handle: ScrollHandle,
@@ -16,6 +17,7 @@ pub struct ScrollableStory {
     scroll_state: Rc<Cell<ScrollbarState>>,
     items: Vec<String>,
     test_width: Pixels,
+    axis: ScrollbarAxis,
 }
 
 impl ScrollableStory {
@@ -26,6 +28,7 @@ impl ScrollableStory {
             scroll_size: gpui::Size::default(),
             items: (0..500).map(|i| format!("Item {}", i)).collect::<Vec<_>>(),
             test_width: px(3000.),
+            axis: ScrollbarAxis::Both,
         }
     }
 
@@ -45,6 +48,11 @@ impl ScrollableStory {
             self.test_width = px(10000.);
         }
         self.scroll_state.set(ScrollbarState::default());
+        cx.notify();
+    }
+
+    pub fn change_axis(&mut self, axis: ScrollbarAxis, cx: &mut ViewContext<Self>) {
+        self.axis = axis;
         cx.notify();
     }
 }
@@ -78,6 +86,30 @@ impl Render for ScrollableStory {
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_test_cases(2, cx);
                             })),
+                    )
+                    .child(Divider::vertical())
+                    .child(
+                        Button::new("test-axis-both", cx)
+                            .label("Both Scrollbar")
+                            .on_click(
+                                cx.listener(|view, _, cx| {
+                                    view.change_axis(ScrollbarAxis::Both, cx)
+                                }),
+                            ),
+                    )
+                    .child(
+                        Button::new("test-axis-vertical", cx)
+                            .label("Vertical")
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.change_axis(ScrollbarAxis::Vertical, cx)
+                            })),
+                    )
+                    .child(
+                        Button::new("test-axis-both", cx)
+                            .label("Horizontal")
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.change_axis(ScrollbarAxis::Horizontal, cx)
+                            })),
                     ),
             )
             .child(
@@ -102,9 +134,9 @@ impl Render for ScrollableStory {
                                             .gap_1()
                                             .w(self.test_width)
                                             .children(
-                                                self.items
-                                                    .iter()
-                                                    .map(|s| div().debug_green().child(s.clone())),
+                                                self.items.iter().map(|s| {
+                                                    div().bg(ui::green_50()).child(s.clone())
+                                                }),
                                             )
                                             .child({
                                                 let view = cx.view().clone();
@@ -121,12 +153,15 @@ impl Render for ScrollableStory {
                                             }),
                                     ),
                             )
-                            .child(Scrollbar::both(
-                                view,
-                                self.scroll_state.clone(),
-                                self.scroll_handle.clone(),
-                                self.scroll_size,
-                            )),
+                            .child(
+                                Scrollbar::both(
+                                    view,
+                                    self.scroll_state.clone(),
+                                    self.scroll_handle.clone(),
+                                    self.scroll_size,
+                                )
+                                .axis(self.axis),
+                            ),
                     ),
             )
     }

@@ -135,6 +135,42 @@ impl Scrollbar {
             scroll_size,
         )
     }
+
+    pub fn horizontal(
+        view: impl Into<AnyView>,
+        state: Rc<Cell<ScrollbarState>>,
+        scroll_handle: ScrollHandle,
+        scroll_size: gpui::Size<Pixels>,
+    ) -> Self {
+        Self::new(
+            view.into(),
+            state,
+            ScrollbarAxis::Horizontal,
+            scroll_handle,
+            scroll_size,
+        )
+    }
+
+    pub fn vertical(
+        view: impl Into<AnyView>,
+        state: Rc<Cell<ScrollbarState>>,
+        scroll_handle: ScrollHandle,
+        scroll_size: gpui::Size<Pixels>,
+    ) -> Self {
+        Self::new(
+            view.into(),
+            state,
+            ScrollbarAxis::Vertical,
+            scroll_handle,
+            scroll_size,
+        )
+    }
+
+    /// Set axis
+    pub fn axis(mut self, axis: ScrollbarAxis) -> Self {
+        self.axis = axis;
+        self
+    }
 }
 
 impl IntoElement for Scrollbar {
