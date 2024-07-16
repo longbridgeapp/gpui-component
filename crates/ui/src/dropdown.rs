@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder as _, px, rems, AnyElement, AppContext,
     DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
@@ -21,8 +23,9 @@ pub fn init(cx: &mut AppContext) {
 use crate::{
     h_flex,
     list::{self, List, ListDelegate, ListItem},
+    styled_ext::Sizeful,
     theme::ActiveTheme,
-    Icon, IconName, StyledExt,
+    Icon, IconName, Size, StyledExt,
 };
 
 /// A trait for items that can be displayed in a dropdown.
@@ -31,7 +34,7 @@ pub trait DropdownItem {
     fn value(&self) -> &str;
 }
 
-impl DropdownItem for String {
+impl DropdownItem for &String {
     fn title(&self) -> &str {
         self
     }
@@ -41,18 +44,28 @@ impl DropdownItem for String {
     }
 }
 
+impl DropdownItem for &SharedString {
+    fn title(&self) -> &str {
+        self.as_ref()
+    }
+
+    fn value(&self) -> &str {
+        self.as_ref()
+    }
+}
+
 pub trait DropdownDelegate {
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    fn get(&self, ix: usize) -> Option<&dyn DropdownItem>;
+    fn get(&self, ix: usize) -> Option<impl DropdownItem>;
 }
 
 struct DropdownListDelegate<D: DropdownDelegate + 'static> {
     delegate: D,
     dropdown: WeakView<Dropdown<D>>,
-    selected_index: usize,
+    selected_index: Option<usize>,
 }
 
 impl<D> ListDelegate for DropdownListDelegate<D>
@@ -66,7 +79,7 @@ where
     }
 
     fn confirmed_index(&self) -> Option<usize> {
-        Some(self.selected_index)
+        self.selected_index
     }
 
     fn render_item(
@@ -74,7 +87,10 @@ where
         ix: usize,
         _cx: &mut gpui::ViewContext<List<Self>>,
     ) -> Option<Self::Item> {
-        let selected = ix == self.selected_index;
+        let selected = self
+            .selected_index
+            .map_or(false, |selected_index| selected_index == ix);
+
         if let Some(item) = self.delegate.get(ix) {
             let list_item = ListItem::new(("list-item", ix))
                 .check_icon(IconName::Check)
@@ -97,13 +113,15 @@ where
     }
 
     fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
-        self.selected_index = ix.unwrap_or(0);
+        self.selected_index = ix;
 
         if let Some(view) = self.dropdown.upgrade() {
             cx.update_view(&view, |view, cx| {
-                if let Some(item) = self.delegate.get(self.selected_index) {
-                    view.title = Some(item.title().to_string().into());
-                    view.value = Some(item.value().to_string().into());
+                if let Some(ix) = self.selected_index {
+                    if let Some(item) = self.delegate.get(ix) {
+                        view.title = Some(item.title().to_string().into());
+                        view.value = Some(item.value().to_string().into());
+                    }
                 }
 
                 view.open = false;
@@ -113,10 +131,25 @@ where
     }
 }
 
+pub struct StringDropdownDelegate {
+    items: Rc<Vec<SharedString>>,
+}
+
+impl DropdownDelegate for StringDropdownDelegate {
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    fn get(&self, ix: usize) -> Option<impl DropdownItem> {
+        self.items.get(ix)
+    }
+}
+
 pub struct Dropdown<D: DropdownDelegate + 'static> {
     id: ElementId,
     focus_handle: FocusHandle,
     list: View<List<DropdownListDelegate<D>>>,
+    size: Size,
     open: bool,
     /// The value of the selected item.
     value: Option<SharedString>,
@@ -127,11 +160,30 @@ impl<D> Dropdown<D>
 where
     D: DropdownDelegate + 'static,
 {
-    pub fn new(id: impl Into<ElementId>, delegate: D, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        delegate: D,
+        selected_index: Option<usize>,
+        cx: &mut ViewContext<Self>,
+    ) -> Self {
         let delegate = DropdownListDelegate {
             delegate,
             dropdown: cx.view().downgrade(),
-            selected_index: 0,
+            selected_index,
+        };
+
+        let (title, value) = if let Some(selected_index) = selected_index {
+            let title: Option<SharedString> = delegate
+                .delegate
+                .get(selected_index)
+                .map(|item| item.title().to_string().into());
+            let value: Option<SharedString> = delegate
+                .delegate
+                .get(selected_index)
+                .map(|item| item.value().to_string().into());
+            (title, value)
+        } else {
+            (None, None)
         };
 
         let list = cx.new_view(|cx| List::new(delegate, cx).no_query().max_h(rems(20.)));
@@ -139,15 +191,25 @@ where
             id: id.into(),
             focus_handle: cx.focus_handle(),
             list,
+            size: Size::Medium,
             open: false,
-            title: None,
-            value: None,
+            title,
+            value,
         }
+    }
+
+    pub fn size(mut self, size: Size) -> Self {
+        self.size = size;
+        self
     }
 
     pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
         self.value = Some(value.into());
         cx.notify();
+    }
+
+    pub fn value(&self) -> Option<SharedString> {
+        self.value.clone()
     }
 
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
@@ -199,6 +261,21 @@ where
     }
 }
 
+impl Dropdown<StringDropdownDelegate> {
+    pub fn string_list(
+        id: impl Into<ElementId>,
+        items: Rc<Vec<SharedString>>,
+        selected_index: Option<usize>,
+        cx: &mut ViewContext<Self>,
+    ) -> Self {
+        let delegate = StringDropdownDelegate {
+            items: items.clone(),
+        };
+
+        Self::new(id, delegate, selected_index, cx)
+    }
+}
+
 impl<D> EventEmitter<DismissEvent> for Dropdown<D> where D: DropdownDelegate + 'static {}
 impl<D> FocusableView for Dropdown<D>
 where
@@ -241,8 +318,9 @@ where
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
                     .when(focused, |this| this.outline(cx))
-                    .px_3()
-                    .py_2()
+                    .input_px(self.size)
+                    .input_py(self.size)
+                    .input_h(self.size)
                     .on_click(cx.listener(|this, _, cx| {
                         this.open = !this.open;
                         cx.notify();
@@ -254,8 +332,7 @@ where
                             .justify_between()
                             .child(div().flex_1().child(title))
                             .child(
-                                Icon::new(IconName::ChevronsUpDown)
-                                    .size_4()
+                                Icon::new(IconName::ChevronDown)
                                     .text_color(cx.theme().muted_foreground),
                             ),
                     ),

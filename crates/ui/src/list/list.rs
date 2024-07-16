@@ -8,7 +8,7 @@ use crate::theme::{ActiveTheme, Colorize as _};
 use crate::{scroll::Scrollbar, v_flex};
 use crate::{Icon, IconName};
 use gpui::{
-    actions, deferred, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
+    actions, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
     ParentElement as _, Render, Styled as _, UniformListScrollHandle, View, ViewContext,
     VisualContext as _,
@@ -118,15 +118,12 @@ where
             return None;
         }
 
-        Some(
-            deferred(Scrollbar::uniform_scroll(
-                cx.view().clone(),
-                self.scrollbar_state.clone(),
-                self.vertical_scroll_handle.clone(),
-                self.delegate.items_count(),
-            ))
-            .with_priority(2),
-        )
+        Some(Scrollbar::uniform_scroll(
+            cx.view().clone(),
+            self.scrollbar_state.clone(),
+            self.vertical_scroll_handle.clone(),
+            self.delegate.items_count(),
+        ))
     }
 
     fn scroll_to_selected_item(&mut self, _cx: &mut ViewContext<Self>) {
@@ -242,7 +239,6 @@ where
                     .min_h(px(100.))
                     .when_some(self.max_height, |this, h| this.max_h(h))
                     .overflow_hidden()
-                    .children(self.render_scrollbar(cx))
                     .child(
                         uniform_list(view, "uniform-list", items_count, {
                             move |list, visible_range, cx| {
@@ -275,7 +271,8 @@ where
                         .with_sizing_behavior(sizing_behavior)
                         .track_scroll(vertical_scroll_handle)
                         .into_any_element(),
-                    ),
+                    )
+                    .children(self.render_scrollbar(cx)),
             )
     }
 }

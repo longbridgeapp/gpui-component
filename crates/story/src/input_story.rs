@@ -3,7 +3,9 @@ use gpui::{
     ParentElement as _, Render, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 
-use ui::{button::Button, h_flex, input::TextInput, v_flex, Clickable, FocusableCycle, IconName};
+use ui::{
+    button::Button, h_flex, input::TextInput, v_flex, Clickable, FocusableCycle, IconName, Size,
+};
 
 use crate::section;
 
@@ -24,6 +26,8 @@ pub struct InputStory {
     prefix_input1: View<TextInput>,
     suffix_input1: View<TextInput>,
     both_input1: View<TextInput>,
+    large_input: View<TextInput>,
+    small_input: View<TextInput>,
 }
 
 impl InputStory {
@@ -71,6 +75,16 @@ impl InputStory {
                 input.set_text("This is disabled input", cx);
                 input.set_disabled(true, cx);
                 input
+            }),
+            large_input: cx.new_view(|cx| {
+                TextInput::new(cx)
+                    .size(Size::Large)
+                    .placeholder("Large input")
+            }),
+            small_input: cx.new_view(|cx| {
+                TextInput::new(cx)
+                    .size(Size::Small)
+                    .placeholder("Small input")
             }),
             prefix_input1,
             suffix_input1,
@@ -134,6 +148,11 @@ impl Render for InputStory {
                     .child(self.prefix_input1.clone())
                     .child(self.both_input1.clone())
                     .child(self.suffix_input1.clone()),
+            )
+            .child(
+                section("Input Size", cx)
+                    .child(self.large_input.clone())
+                    .child(self.small_input.clone()),
             )
             .child(
                 h_flex()
