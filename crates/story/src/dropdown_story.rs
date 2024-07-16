@@ -113,6 +113,8 @@ impl DropdownStory {
                     cx,
                 )
                 .size(ui::Size::Small)
+                .placeholder("UI")
+                .title_prefix("UI: ")
             }),
             simple_dropdown2: cx.new_view(|cx| {
                 Dropdown::string_list(
@@ -127,6 +129,8 @@ impl DropdownStory {
                     cx,
                 )
                 .size(ui::Size::Small)
+                .placeholder("Language")
+                .title_prefix("Language: ")
             }),
         })
     }
@@ -152,7 +156,7 @@ impl Render for DropdownStory {
                     .child(self.furit_dropdown.clone()),
             )
             .child(
-                h_flex()
+                v_flex()
                     .w_full()
                     .items_center()
                     .p_10()
@@ -161,6 +165,22 @@ impl Render for DropdownStory {
                     .border_1()
                     .border_color(cx.theme().border)
                     .gap_4()
+                    .child(format!(
+                        "Country: {:?}",
+                        self.country_dropdown.read(cx).selected_value()
+                    ))
+                    .child(format!(
+                        "Furit: {:?}",
+                        self.furit_dropdown.read(cx).selected_value()
+                    ))
+                    .child(format!(
+                        "UI: {:?}",
+                        self.simple_dropdown1.read(cx).selected_value()
+                    ))
+                    .child(format!(
+                        "Language: {:?}",
+                        self.simple_dropdown2.read(cx).selected_value()
+                    ))
                     .child("This is other text."),
             )
             .child(

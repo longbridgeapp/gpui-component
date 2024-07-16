@@ -182,7 +182,7 @@ impl<T: Styled> Sizeful<T> for T {
     fn input_h(self, size: Size) -> Self {
         match size {
             Size::Large => self.h_11().text_size(rems(1.)),
-            Size::Medium => self.h_8().text_size(rems(0.85)),
+            Size::Medium => self.h_8().text_size(rems(0.875)),
             _ => self.h(px(26.)).text_size(rems(0.8)),
         }
     }

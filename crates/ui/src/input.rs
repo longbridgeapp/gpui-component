@@ -5,14 +5,15 @@
 
 use std::ops::Range;
 
+use crate::button::{Button, ButtonStyle};
 use crate::styled_ext::Sizeful;
 use crate::theme::ActiveTheme;
-use crate::StyledExt as _;
 use crate::{event::InterativeElementExt as _, Size};
+use crate::{Clickable, IconName, StyledExt as _};
 use blink_cursor::BlinkCursor;
 use gpui::{
     actions, div, fill, point, prelude, px, relative, rems, size, AnyView, AppContext, Bounds,
-    ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
+    ClickEvent, ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
     FocusHandle, FocusableView, GlobalElementId, InteractiveElement as _, IntoElement, KeyBinding,
     KeyDownEvent, LayoutId, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
     PaintQuad, ParentElement as _, Pixels, Point, Render, ShapedLine, SharedString, Style,
@@ -103,6 +104,7 @@ pub struct TextInput {
     disabled: bool,
     masked: bool,
     appearance: bool,
+    cleanable: bool,
     size: Size,
 }
 
@@ -126,6 +128,7 @@ impl TextInput {
             disabled: false,
             masked: false,
             appearance: true,
+            cleanable: false,
             prefix: None,
             suffix: None,
             size: Size::Medium,
@@ -202,12 +205,19 @@ impl TextInput {
         self
     }
 
+    /// Set true to show the clear button when the input field is not empty.
+    pub fn cleanable(mut self, cleanable: bool) -> Self {
+        self.cleanable = cleanable;
+        self
+    }
+
     /// Return the text of the input field.
     pub fn text(&self) -> SharedString {
         self.text.clone()
     }
 
     fn left(&mut self, _: &Left, cx: &mut ViewContext<Self>) {
+        self.pause_blink_cursor(cx);
         if self.selected_range.is_empty() {
             self.move_to(self.previous_boundary(self.cursor_offset()), cx);
         } else {
@@ -216,6 +226,7 @@ impl TextInput {
     }
 
     fn right(&mut self, _: &Right, cx: &mut ViewContext<Self>) {
+        self.pause_blink_cursor(cx);
         if self.selected_range.is_empty() {
             self.move_to(self.next_boundary(self.selected_range.end), cx);
         } else {
@@ -237,10 +248,12 @@ impl TextInput {
     }
 
     fn home(&mut self, _: &Home, cx: &mut ViewContext<Self>) {
+        self.pause_blink_cursor(cx);
         self.move_to(0, cx);
     }
 
     fn end(&mut self, _: &End, cx: &mut ViewContext<Self>) {
+        self.pause_blink_cursor(cx);
         self.move_to(self.text.len(), cx);
     }
 
@@ -256,11 +269,16 @@ impl TextInput {
         if self.selected_range.is_empty() {
             self.select_to(self.next_boundary(self.cursor_offset()), cx)
         }
-        self.replace_text_in_range(None, "", cx)
+        self.replace_text_in_range(None, "", cx);
+        self.pause_blink_cursor(cx);
     }
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
         cx.emit(TextEvent::PressEnter);
+    }
+
+    fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        self.set_text("", cx);
     }
 
     fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {
@@ -784,6 +802,16 @@ impl Render for TextInput {
                         input: cx.view().clone(),
                     }),
             )
+            .when(self.cleanable && !self.text.is_empty(), |this| {
+                this.child(
+                    Button::new("clean-text", cx)
+                        .icon(IconName::Close)
+                        .style(ButtonStyle::Ghost)
+                        .size(px(14.))
+                        .cursor_pointer()
+                        .on_click(cx.listener(Self::clean)),
+                )
+            })
             .when_some(self.suffix.clone(), |this, suffix| this.child(suffix))
     }
 }

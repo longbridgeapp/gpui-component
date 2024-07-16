@@ -79,6 +79,13 @@ impl ListDelegate for ListItemDeletegate {
             });
         }
     }
+
+    fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
+        if let Some(ix) = ix {
+            self.selected_index = ix;
+            cx.notify();
+        }
+    }
 }
 
 pub struct PickerStory {
