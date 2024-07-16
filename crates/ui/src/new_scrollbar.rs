@@ -63,22 +63,27 @@ pub enum ScrollbarAxis {
 }
 
 impl ScrollbarAxis {
+    #[inline]
     fn is_vertical(&self) -> bool {
         matches!(self, Self::Vertical)
     }
 
+    #[inline]
     fn is_both(&self) -> bool {
         matches!(self, Self::Both)
     }
 
+    #[inline]
     pub fn has_vertical(&self) -> bool {
         matches!(self, Self::Vertical | Self::Both)
     }
 
+    #[inline]
     pub fn has_horizontal(&self) -> bool {
         matches!(self, Self::Horizontal | Self::Both)
     }
 
+    #[inline]
     fn all(&self) -> Vec<ScrollbarAxis> {
         match self {
             Self::Vertical => vec![Self::Vertical],
@@ -201,7 +206,8 @@ impl Element for Scrollbar {
 
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             for axis in self.axis.all().into_iter() {
-                let (scroll_area_size, container_size, current_offset) = if axis.is_vertical() {
+                let is_vertical = axis.is_vertical();
+                let (scroll_area_size, container_size, scroll_position) = if is_vertical {
                     (
                         self.scroll_size.height,
                         bounds.size.height,
@@ -210,25 +216,26 @@ impl Element for Scrollbar {
                 } else {
                     (
                         self.scroll_size.width,
-                        // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
-                        bounds.size.width - if is_both { self.width } else { px(0.) },
+                        bounds.size.width,
                         self.scroll_handle.offset().x,
                     )
                 };
 
-                let thumb_size_ratio = (container_size / scroll_area_size).clamp(0.0, 1.0);
-                let thumb_size = (container_size * thumb_size_ratio).max(px(MIN_THUMB_SIZE));
-                let container_size = if axis.is_vertical() {
-                    container_size - thumb_size
+                // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
+                let margin_end = if !is_vertical && is_both {
+                    self.width
                 } else {
-                    container_size
+                    px(0.)
                 };
 
-                let thumb_start = px(current_offset / (-scroll_area_size)) * container_size;
-                let thumb_end = thumb_start + thumb_size;
+                let thumb_length =
+                    (container_size / scroll_area_size * container_size).max(px(MIN_THUMB_SIZE));
+                let thumb_start = -(scroll_position / (scroll_area_size - container_size)
+                    * (container_size - margin_end - thumb_length));
+                let thumb_end = (thumb_start + thumb_length).min(container_size - margin_end);
 
                 let bounds = Bounds {
-                    origin: if axis.is_vertical() {
+                    origin: if is_vertical {
                         point(
                             bounds.origin.x + bounds.size.width - self.width,
                             bounds.origin.y,
@@ -240,12 +247,12 @@ impl Element for Scrollbar {
                         )
                     },
                     size: gpui::Size {
-                        width: if axis.is_vertical() {
+                        width: if is_vertical {
                             self.width
                         } else {
                             bounds.size.width
                         },
-                        height: if axis.is_vertical() {
+                        height: if is_vertical {
                             bounds.size.height
                         } else {
                             self.width
@@ -264,7 +271,7 @@ impl Element for Scrollbar {
                     (thumb_bg, THUMB_INSET)
                 };
 
-                let thumb_bounds = if axis.is_vertical() {
+                let thumb_bounds = if is_vertical {
                     Bounds::from_corners(
                         point(
                             bounds.origin.x + inset,
@@ -297,7 +304,7 @@ impl Element for Scrollbar {
 
                     move |event: &MouseDownEvent, phase, cx| {
                         if phase.bubble() && thumb_bounds.contains(&event.position) {
-                            let drag_pos = if axis.is_vertical() {
+                            let drag_pos = if is_vertical {
                                 point(
                                     state.get().drag_pos.x,
                                     event.position.y - thumb_bounds.origin.y,
@@ -339,14 +346,14 @@ impl Element for Scrollbar {
 
                         if event.dragging() && state.get().draged_axis == Some(axis) {
                             let drag_pos = state.get().drag_pos;
-                            let percentage = if axis.is_vertical() {
+                            let percentage = if is_vertical {
                                 (event.position.y - bounds.origin.y - drag_pos.y) / container_size
                             } else {
                                 (event.position.x - bounds.origin.x - drag_pos.x) / container_size
                             }
                             .min(1.);
 
-                            let offset = if axis.is_vertical() {
+                            let offset = if is_vertical {
                                 point(scroll_handle.offset().x, -percentage * scroll_area_size)
                             } else {
                                 point(-percentage * scroll_area_size, scroll_handle.offset().y)

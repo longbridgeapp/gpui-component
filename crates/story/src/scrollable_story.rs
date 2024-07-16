@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, px, Bounds, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
+    canvas, div, px, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
     StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::button::Button;
@@ -20,7 +20,6 @@ pub struct ScrollableStory {
 
 impl ScrollableStory {
     fn new() -> Self {
-        println!("ScrollableStory");
         Self {
             scroll_handle: ScrollHandle::new(),
             scroll_state: Rc::new(Cell::new(ScrollbarState::default())),
