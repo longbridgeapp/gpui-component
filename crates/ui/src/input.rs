@@ -5,11 +5,19 @@
 
 use std::ops::Range;
 
-use crate::event::InterativeElementExt as _;
+use crate::styled_ext::Sizeful;
 use crate::theme::ActiveTheme;
 use crate::StyledExt as _;
+use crate::{event::InterativeElementExt as _, Size};
 use blink_cursor::BlinkCursor;
-use gpui::*;
+use gpui::{
+    actions, div, fill, point, prelude, px, relative, rems, size, AnyView, AppContext, Bounds,
+    ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
+    FocusHandle, FocusableView, GlobalElementId, InteractiveElement as _, IntoElement, KeyBinding,
+    KeyDownEvent, LayoutId, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
+    PaintQuad, ParentElement as _, Pixels, Point, Render, ShapedLine, SharedString, Style,
+    Styled as _, TextRun, UnderlineStyle, View, ViewContext, ViewInputHandler, WindowContext,
+};
 use prelude::FluentBuilder as _;
 use unicode_segmentation::*;
 
@@ -95,6 +103,7 @@ pub struct TextInput {
     disabled: bool,
     masked: bool,
     appearance: bool,
+    size: Size,
 }
 
 impl EventEmitter<TextEvent> for TextInput {}
@@ -119,6 +128,7 @@ impl TextInput {
             appearance: true,
             prefix: None,
             suffix: None,
+            size: Size::Medium,
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -183,6 +193,12 @@ impl TextInput {
     /// Set the suffix element of the input field, for example a clear button.
     pub fn suffix(mut self, suffix: impl Into<AnyView>) -> Self {
         self.suffix = Some(suffix.into());
+        self
+    }
+
+    /// Set the size of the input field.
+    pub fn size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
         self
     }
 
@@ -633,13 +649,14 @@ impl Element for TextElement {
             .unwrap();
 
         let cursor_pos = line.x_for_index(cursor);
+        let inset = px(0.5);
         let (selection, cursor) = if selected_range.is_empty() && input.show_cursor(cx) {
             (
                 None,
                 Some(fill(
                     Bounds::new(
-                        point(bounds.left() + cursor_pos, bounds.top()),
-                        size(px(1.5), bounds.bottom() - bounds.top()),
+                        point(bounds.left() + cursor_pos, bounds.top() + inset),
+                        size(px(1.5), bounds.bottom() - bounds.top() - inset * 2),
                     ),
                     crate::blue_500(),
                 )),
@@ -739,8 +756,8 @@ impl Render for TextInput {
             .size_full()
             .line_height(rems(1.25))
             .text_size(rems(0.875))
-            .py_2()
-            .h_10()
+            .input_py(self.size)
+            .input_h(self.size)
             .when(self.appearance, |this| {
                 this.bg(cx.theme().input)
                     .border_color(cx.theme().input)
@@ -748,7 +765,7 @@ impl Render for TextInput {
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
                     .when(focused, |this| this.outline(cx))
-                    .px_3()
+                    .input_px(self.size)
                     .bg(if self.disabled {
                         cx.theme().muted
                     } else {

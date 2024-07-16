@@ -1,5 +1,5 @@
 use crate::theme::ActiveTheme;
-use gpui::{hsla, point, px, BoxShadow, FocusHandle, Pixels, Styled, WindowContext};
+use gpui::{hsla, point, px, rems, BoxShadow, FocusHandle, Pixels, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
@@ -147,5 +147,43 @@ pub enum Size {
 impl From<Pixels> for Size {
     fn from(size: Pixels) -> Self {
         Size::Size(size)
+    }
+}
+
+#[allow(unused)]
+pub trait Sizeful<T: Styled> {
+    fn input_size(self, size: Size) -> Self;
+    fn input_px(self, size: Size) -> Self;
+    fn input_py(self, size: Size) -> Self;
+    fn input_h(self, size: Size) -> Self;
+}
+
+impl<T: Styled> Sizeful<T> for T {
+    fn input_size(self, size: Size) -> Self {
+        self.input_px(size).input_py(size).input_h(size)
+    }
+
+    fn input_px(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.px_5(),
+            Size::Medium => self.px_3(),
+            _ => self.px_2(),
+        }
+    }
+
+    fn input_py(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.py_5(),
+            Size::Medium => self.py_2(),
+            _ => self.py_1(),
+        }
+    }
+
+    fn input_h(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.h_11().text_size(rems(1.)),
+            Size::Medium => self.h_8().text_size(rems(0.85)),
+            _ => self.h(px(26.)).text_size(rems(0.8)),
+        }
     }
 }
