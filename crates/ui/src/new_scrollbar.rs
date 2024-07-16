@@ -13,7 +13,7 @@ const THUMB_INSET: Pixels = Pixels(0.8);
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
     hovered_axis: Option<ScrollbarAxis>,
-    draged_axis: Option<ScrollbarAxis>,
+    dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
     visible: bool,
 }
@@ -22,7 +22,7 @@ impl Default for ScrollbarState {
     fn default() -> Self {
         Self {
             hovered_axis: None,
-            draged_axis: None,
+            dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
             visible: true,
         }
@@ -38,19 +38,25 @@ impl ScrollbarState {
             state.drag_pos.x = pos.x;
         }
 
-        state.draged_axis = Some(axis);
+        state.dragged_axis = Some(axis);
         state
     }
 
     fn with_unset_drag_pos(&self) -> Self {
         let mut state = *self;
-        state.draged_axis = None;
+        state.dragged_axis = None;
         state
     }
 
     fn with_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
         let mut state = *self;
         state.hovered_axis = axis;
+        state
+    }
+
+    fn with_visiable(&self, visiable: bool) -> Self {
+        let mut state = *self;
+        state.visible = visiable;
         state
     }
 }
@@ -231,188 +237,205 @@ impl Element for Scrollbar {
         hitbox: &mut Self::PrepaintState,
         cx: &mut gpui::WindowContext,
     ) {
-        let bounds = hitbox.bounds;
+        let hitbox_bounds = hitbox.bounds;
         let is_both = self.axis.is_both();
 
-        // cx.paint_quad(
-        //     fill(bounds, gpui::transparent_black())
-        //         .border_color(pink_500())
-        //         .border_widths(1.0),
-        // );
-
-        cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
-            for axis in self.axis.all().into_iter() {
-                let is_vertical = axis.is_vertical();
-                let (scroll_area_size, container_size, scroll_position) = if is_vertical {
-                    (
-                        self.scroll_size.height,
-                        bounds.size.height,
-                        self.scroll_handle.offset().y,
-                    )
-                } else {
-                    (
-                        self.scroll_size.width,
-                        bounds.size.width,
-                        self.scroll_handle.offset().x,
-                    )
-                };
-
-                // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
-                let margin_end = if !is_vertical && is_both {
-                    self.width
-                } else {
-                    px(0.)
-                };
-
-                let thumb_length =
-                    (container_size / scroll_area_size * container_size).max(px(MIN_THUMB_SIZE));
-                let thumb_start = -(scroll_position / (scroll_area_size - container_size)
-                    * (container_size - margin_end - thumb_length));
-                let thumb_end = (thumb_start + thumb_length).min(container_size - margin_end);
-
-                let bounds = Bounds {
-                    origin: if is_vertical {
-                        point(
-                            bounds.origin.x + bounds.size.width - self.width,
-                            bounds.origin.y,
+        cx.with_content_mask(
+            Some(ContentMask {
+                bounds: hitbox_bounds,
+            }),
+            |cx| {
+                for axis in self.axis.all().into_iter() {
+                    let is_vertical = axis.is_vertical();
+                    let (scroll_area_size, container_size, scroll_position) = if is_vertical {
+                        (
+                            self.scroll_size.height,
+                            hitbox_bounds.size.height,
+                            self.scroll_handle.offset().y,
                         )
                     } else {
-                        point(
-                            bounds.origin.x,
-                            bounds.origin.y + bounds.size.height - self.width,
+                        (
+                            self.scroll_size.width,
+                            hitbox_bounds.size.width,
+                            self.scroll_handle.offset().x,
                         )
-                    },
-                    size: gpui::Size {
-                        width: if is_vertical {
-                            self.width
+                    };
+
+                    // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
+                    let margin_end = if !is_vertical && is_both {
+                        self.width
+                    } else {
+                        px(0.)
+                    };
+
+                    let thumb_length = (container_size / scroll_area_size * container_size)
+                        .max(px(MIN_THUMB_SIZE));
+                    let thumb_start = -(scroll_position / (scroll_area_size - container_size)
+                        * (container_size - margin_end - thumb_length));
+                    let thumb_end = (thumb_start + thumb_length).min(container_size - margin_end);
+
+                    let bounds = Bounds {
+                        origin: if is_vertical {
+                            point(
+                                hitbox_bounds.origin.x + hitbox_bounds.size.width - self.width,
+                                hitbox_bounds.origin.y,
+                            )
                         } else {
-                            bounds.size.width
+                            point(
+                                hitbox_bounds.origin.x,
+                                hitbox_bounds.origin.y + hitbox_bounds.size.height - self.width,
+                            )
                         },
-                        height: if is_vertical {
-                            bounds.size.height
-                        } else {
-                            self.width
-                        },
-                    },
-                };
-
-                let bar_bg = cx.theme().scrollbar;
-                let thumb_bg = cx.theme().scrollbar_thumb;
-                let state = self.state.clone();
-                let (thumb_bg, inset) = if state.get().draged_axis == Some(axis) {
-                    (thumb_bg.darken(0.3), THUMB_INSET)
-                } else if state.get().hovered_axis == Some(axis) {
-                    (thumb_bg.darken(0.15), THUMB_INSET)
-                } else {
-                    (thumb_bg, THUMB_INSET)
-                };
-
-                let thumb_bounds = if is_vertical {
-                    Bounds::from_corners(
-                        point(
-                            bounds.origin.x + inset,
-                            bounds.origin.y + thumb_start + inset,
-                        ),
-                        point(
-                            bounds.origin.x + self.width - (inset * 2),
-                            bounds.origin.y + thumb_end - (inset * 2),
-                        ),
-                    )
-                } else {
-                    Bounds::from_corners(
-                        point(
-                            bounds.origin.x + thumb_start + inset,
-                            bounds.origin.y + inset,
-                        ),
-                        point(
-                            bounds.origin.x + thumb_end - (inset * 2),
-                            bounds.origin.y + self.width - (inset * 2),
-                        ),
-                    )
-                };
-
-                cx.paint_quad(fill(bounds, bar_bg));
-                cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
-
-                cx.on_mouse_event({
-                    let state = self.state.clone();
-                    let view_id = self.view.entity_id();
-
-                    move |event: &MouseDownEvent, phase, cx| {
-                        if phase.bubble() && thumb_bounds.contains(&event.position) {
-                            let drag_pos = if is_vertical {
-                                point(
-                                    state.get().drag_pos.x,
-                                    event.position.y - thumb_bounds.origin.y,
-                                )
+                        size: gpui::Size {
+                            width: if is_vertical {
+                                self.width
                             } else {
-                                point(
-                                    event.position.x - thumb_bounds.origin.x,
-                                    state.get().drag_pos.y,
-                                )
-                            };
+                                hitbox_bounds.size.width
+                            },
+                            height: if is_vertical {
+                                hitbox_bounds.size.height
+                            } else {
+                                self.width
+                            },
+                        },
+                    };
 
-                            state.set(state.get().with_drag_pos(axis, drag_pos));
-                            cx.notify(view_id);
-                        }
-                    }
-                });
-
-                cx.on_mouse_event({
-                    let scroll_handle = self.scroll_handle.clone();
+                    let bar_bg = cx.theme().scrollbar;
+                    let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
-                    let view_id = self.view.entity_id();
+                    let (thumb_bg, inset) = if state.get().dragged_axis == Some(axis) {
+                        (thumb_bg.darken(0.3), THUMB_INSET)
+                    } else if state.get().hovered_axis == Some(axis) {
+                        (thumb_bg.darken(0.15), THUMB_INSET)
+                    } else {
+                        (thumb_bg, THUMB_INSET)
+                    };
 
-                    move |event: &MouseMoveEvent, _, cx| {
-                        if thumb_bounds.contains(&event.position) {
-                            if state.get().hovered_axis != Some(axis) {
-                                state.set(state.get().with_hovered(Some(axis)));
+                    let thumb_bounds = if is_vertical {
+                        Bounds::from_corners(
+                            point(
+                                bounds.origin.x + inset,
+                                bounds.origin.y + thumb_start + inset,
+                            ),
+                            point(
+                                bounds.origin.x + self.width - (inset * 2),
+                                bounds.origin.y + thumb_end - (inset * 2),
+                            ),
+                        )
+                    } else {
+                        Bounds::from_corners(
+                            point(
+                                bounds.origin.x + thumb_start + inset,
+                                bounds.origin.y + inset,
+                            ),
+                            point(
+                                bounds.origin.x + thumb_end - (inset * 2),
+                                bounds.origin.y + self.width - (inset * 2),
+                            ),
+                        )
+                    };
+
+                    if state.get().visible {
+                        cx.paint_quad(fill(bounds, bar_bg));
+                        cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
+                    }
+
+                    cx.on_mouse_event({
+                        let state = self.state.clone();
+                        let view_id = self.view.entity_id();
+
+                        move |event: &MouseDownEvent, phase, cx| {
+                            if phase.bubble() && thumb_bounds.contains(&event.position) {
+                                let drag_pos = if is_vertical {
+                                    point(
+                                        state.get().drag_pos.x,
+                                        event.position.y - thumb_bounds.origin.y,
+                                    )
+                                } else {
+                                    point(
+                                        event.position.x - thumb_bounds.origin.x,
+                                        state.get().drag_pos.y,
+                                    )
+                                };
+
+                                state.set(state.get().with_drag_pos(axis, drag_pos));
                                 cx.notify(view_id);
                             }
-                        } else {
-                            if state.get().hovered_axis == Some(axis) {
-                                if state.get().hovered_axis.is_some() {
-                                    state.set(state.get().with_hovered(None));
-                                    cx.notify(view_id);
+                        }
+                    });
 
-                                    // TODO: Start delay 2s to hide the scrollbar.
+                    cx.on_mouse_event({
+                        let scroll_handle = self.scroll_handle.clone();
+                        let state = self.state.clone();
+                        let view_id = self.view.entity_id();
+
+                        move |event: &MouseMoveEvent, _, cx| {
+                            if thumb_bounds.contains(&event.position) {
+                                if state.get().hovered_axis != Some(axis) {
+                                    state.set(state.get().with_hovered(Some(axis)));
+                                    cx.notify(view_id);
+                                }
+                            } else {
+                                if state.get().hovered_axis == Some(axis) {
+                                    if state.get().hovered_axis.is_some() {
+                                        state.set(state.get().with_hovered(None));
+                                        cx.notify(view_id);
+                                    }
                                 }
                             }
-                        }
 
-                        if event.dragging() && state.get().draged_axis == Some(axis) {
-                            let drag_pos = state.get().drag_pos;
-                            let percentage = if is_vertical {
-                                (event.position.y - bounds.origin.y - drag_pos.y) / container_size
+                            // If mouse out of the bounds, hide scrollbar
+                            if hitbox_bounds.contains(&event.position)
+                                || state.get().dragged_axis.is_some()
+                            {
+                                if !state.get().visible {
+                                    state.set(state.get().with_visiable(true));
+                                    cx.notify(view_id);
+                                }
                             } else {
-                                (event.position.x - bounds.origin.x - drag_pos.x) / container_size
+                                if state.get().visible {
+                                    state.set(state.get().with_visiable(false));
+                                    cx.notify(view_id);
+                                }
                             }
-                            .min(1.);
 
-                            let offset = if is_vertical {
-                                point(scroll_handle.offset().x, -percentage * scroll_area_size)
-                            } else {
-                                point(-percentage * scroll_area_size, scroll_handle.offset().y)
-                            };
+                            // Move thumb position on dragging
+                            if state.get().dragged_axis == Some(axis) && event.dragging() {
+                                let drag_pos = state.get().drag_pos;
+                                let percentage = if is_vertical {
+                                    (event.position.y - bounds.origin.y - drag_pos.y)
+                                        / container_size
+                                } else {
+                                    (event.position.x - bounds.origin.x - drag_pos.x)
+                                        / container_size
+                                }
+                                .min(1.);
 
-                            scroll_handle.set_offset(offset);
-                            cx.notify(view_id);
+                                let offset = if is_vertical {
+                                    point(scroll_handle.offset().x, -percentage * scroll_area_size)
+                                } else {
+                                    point(-percentage * scroll_area_size, scroll_handle.offset().y)
+                                };
+
+                                scroll_handle.set_offset(offset);
+                                cx.notify(view_id);
+                            }
                         }
-                    }
-                });
+                    });
 
-                cx.on_mouse_event({
-                    let view_id = self.view.entity_id();
-                    let state = self.state.clone();
+                    cx.on_mouse_event({
+                        let view_id = self.view.entity_id();
+                        let state = self.state.clone();
 
-                    move |_event: &MouseUpEvent, phase, cx| {
-                        if phase.bubble() {
-                            state.set(state.get().with_unset_drag_pos());
-                            cx.notify(view_id);
+                        move |_event: &MouseUpEvent, phase, cx| {
+                            if phase.bubble() {
+                                state.set(state.get().with_unset_drag_pos());
+                                cx.notify(view_id);
+                            }
                         }
-                    }
-                });
-            }
-        });
+                    });
+                }
+            },
+        );
     }
 }
