@@ -192,8 +192,8 @@ impl Colors {
             input: hsl(240.0, 5.9, 90.0),
             ring: hsl(240.0, 5.9, 65.0),
             selection: hsl(211.0, 97.0, 85.0),
-            scrollbar: Hsla::transparent_black(),
-            scrollbar_thumb: hsl(240.0, 5.9, 85.0).opacity(0.98),
+            scrollbar: hsl(0., 0., 98.),
+            scrollbar_thumb: hsl(0., 0., 49.),
             panel: hsl(0.0, 0.0, 100.0),
             tab_bar: hsl(240.0, 4.8, 95.9),
         }
@@ -251,8 +251,8 @@ impl Colors {
             input: hsl(240.0, 3.7, 15.9),
             ring: hsl(240.0, 4.9, 83.9),
             selection: hsl(211.0, 97.0, 22.0),
-            scrollbar: Hsla::transparent_black(),
-            scrollbar_thumb: hsl(240.0, 3.7, 15.9).opacity(0.98),
+            scrollbar: hsl(240., 1., 15.),
+            scrollbar_thumb: hsl(0., 0., 58.),
             panel: hsl(299.0, 2., 9.),
             tab_bar: hsl(299.0, 2., 9.),
         }

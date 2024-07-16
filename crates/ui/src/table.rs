@@ -1,9 +1,8 @@
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{cell::Cell, rc::Rc};
 
 use crate::{
     h_flex,
-    scroll::{ScrollAxis, ScrollableMask},
-    scrollbar::Scrollbar,
+    scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::{ActiveTheme, Colorize},
     v_flex,
 };
@@ -11,7 +10,7 @@ use gpui::{
     actions, deferred, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div,
     FocusHandle, FocusableView, InteractiveElement as _, IntoElement, KeyBinding, MouseButton,
     ParentElement as _, Render, ScrollHandle, SharedString, StatefulInteractiveElement as _,
-    Styled, Task, UniformListScrollHandle, ViewContext, WindowContext,
+    Styled, UniformListScrollHandle, ViewContext, WindowContext,
 };
 
 actions!(
@@ -52,9 +51,8 @@ pub struct Table<D: TableDelegate> {
     horizontal_scroll_handle: ScrollHandle,
     vertical_scroll_handle: UniformListScrollHandle,
     col_groups: Vec<ColGroup>,
-    show_scrollbar: bool,
-    hide_scrollbar_task: Option<Task<()>>,
-    scrollbar_drag_state: Rc<Cell<Option<f32>>>,
+
+    scrollbar_state: Rc<Cell<ScrollbarState>>,
 
     selection_state: SelectionState,
     selected_row: Option<usize>,
@@ -112,9 +110,7 @@ where
             col_groups: Vec::new(),
             horizontal_scroll_handle: ScrollHandle::new(),
             vertical_scroll_handle: UniformListScrollHandle::new(),
-            show_scrollbar: false,
-            hide_scrollbar_task: None,
-            scrollbar_drag_state: Rc::new(Cell::new(None)),
+            scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             selection_state: SelectionState::Row,
             selected_row: None,
             selected_col: None,
@@ -141,43 +137,6 @@ where
         cx.notify();
     }
 
-    fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
-        Scrollbar::new(
-            cx.view().clone(),
-            self.vertical_scroll_handle.clone(),
-            self.scrollbar_drag_state.clone(),
-            self.delegate.rows_count(),
-            true,
-        )
-        .map(|bar| {
-            deferred(
-                div()
-                    .occlude()
-                    .absolute()
-                    .h_full()
-                    .left_auto()
-                    .top_0()
-                    .right_0()
-                    .w(px(bar.width()))
-                    .bottom_0()
-                    .child(bar),
-            )
-            .with_priority(1)
-        })
-    }
-
-    fn hide_scrollbar(&mut self, cx: &mut ViewContext<Self>) {
-        self.show_scrollbar = false;
-        self.hide_scrollbar_task = Some(cx.spawn(|this, mut cx| async move {
-            cx.background_executor().timer(Duration::from_secs(1)).await;
-            this.update(&mut cx, |this, cx| {
-                this.show_scrollbar = false;
-                cx.notify();
-            })
-            .ok();
-        }))
-    }
-
     fn scroll_to_selected_row(&mut self, _cx: &mut ViewContext<Self>) {
         if let Some(row_ix) = self.selected_row {
             self.vertical_scroll_handle.scroll_to_item(row_ix);
@@ -188,16 +147,6 @@ where
         if let Some(col_ix) = self.selected_col {
             self.horizontal_scroll_handle.scroll_to_item(col_ix);
             cx.notify();
-        }
-    }
-
-    fn on_hover_to_autohide_scrollbar(&mut self, hovered: &bool, cx: &mut ViewContext<Self>) {
-        if *hovered {
-            self.show_scrollbar = true;
-            self.hide_scrollbar_task.take();
-            cx.notify();
-        } else if !self.focus_handle.is_focused(cx) {
-            self.hide_scrollbar(cx);
         }
     }
 
@@ -301,6 +250,18 @@ where
             div()
         }
     }
+
+    fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
+        let view = cx.view().clone();
+        let state = self.scrollbar_state.clone();
+
+        Some(deferred(Scrollbar::uniform_scroll(
+            view,
+            state,
+            self.vertical_scroll_handle.clone(),
+            self.delegate.rows_count(),
+        )))
+    }
 }
 
 impl<D> FocusableView for Table<D>
@@ -338,10 +299,8 @@ where
             .on_action(cx.listener(Self::action_select_prev))
             .on_action(cx.listener(Self::action_select_next_column))
             .on_action(cx.listener(Self::action_select_prev_column))
-            .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
             .size_full()
             .overflow_hidden()
-            .children(self.render_scrollbar(cx))
             .child(
                 v_flex()
                     .flex_grow()
@@ -449,10 +408,11 @@ where
             .border_1()
             .border_color(cx.theme().border)
             .bg(cx.theme().card)
+            .children(self.render_scrollbar(cx))
             .child(inner_table)
             .child(ScrollableMask::new(
                 cx.view().clone(),
-                ScrollAxis::Horizontal,
+                ScrollableAxis::Horizontal,
                 &horizontal_scroll_handle,
             ))
     }

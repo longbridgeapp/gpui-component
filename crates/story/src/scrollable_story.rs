@@ -2,12 +2,12 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, px, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
+    canvas, deferred, div, px, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
     StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::button::Button;
 use ui::divider::Divider;
-use ui::new_scrollbar::{Scrollbar, ScrollbarAxis, ScrollbarState};
+use ui::scroll::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
 use ui::{h_flex, v_flex, Clickable};
 
@@ -122,6 +122,15 @@ impl Render for ScrollableStory {
                             .relative()
                             .w_full()
                             .h(px(400.))
+                            .child(deferred(
+                                Scrollbar::both(
+                                    view,
+                                    self.scroll_state.clone(),
+                                    self.scroll_handle.clone(),
+                                    self.scroll_size,
+                                )
+                                .axis(self.axis),
+                            ))
                             .child(
                                 div()
                                     .id("scroll-story")
@@ -133,11 +142,9 @@ impl Render for ScrollableStory {
                                         v_flex()
                                             .gap_1()
                                             .w(self.test_width)
-                                            .children(
-                                                self.items.iter().map(|s| {
-                                                    div().bg(ui::green_50()).child(s.clone())
-                                                }),
-                                            )
+                                            .children(self.items.iter().map(|s| {
+                                                div().bg(cx.theme().card).child(s.clone())
+                                            }))
                                             .child({
                                                 let view = cx.view().clone();
                                                 canvas(
@@ -152,15 +159,6 @@ impl Render for ScrollableStory {
                                                 .size_full()
                                             }),
                                     ),
-                            )
-                            .child(
-                                Scrollbar::both(
-                                    view,
-                                    self.scroll_state.clone(),
-                                    self.scroll_handle.clone(),
-                                    self.scroll_size,
-                                )
-                                .axis(self.axis),
                             ),
                     ),
             )

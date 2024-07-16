@@ -1,14 +1,47 @@
 use std::{cell::Cell, rc::Rc};
 
-use crate::theme::{ActiveTheme, Colorize};
+use crate::theme::ActiveTheme;
 use gpui::{
     fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
     MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, ScrollHandle, Style,
+    UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
 const THUMB_RADIUS: Pixels = Pixels(5.0);
-const THUMB_INSET: Pixels = Pixels(0.8);
+const THUMB_INSET: Pixels = Pixels(2.5);
+
+pub trait ScrollHandleOffsetable {
+    fn offset(&self) -> Point<Pixels>;
+    fn set_offset(&self, offset: Point<Pixels>);
+    fn is_uniform_list(&self) -> bool {
+        false
+    }
+}
+
+impl ScrollHandleOffsetable for ScrollHandle {
+    fn offset(&self) -> Point<Pixels> {
+        self.offset()
+    }
+
+    fn set_offset(&self, offset: Point<Pixels>) {
+        self.set_offset(offset);
+    }
+}
+
+impl ScrollHandleOffsetable for UniformListScrollHandle {
+    fn offset(&self) -> Point<Pixels> {
+        self.0.borrow().base_handle.offset()
+    }
+
+    fn set_offset(&self, offset: Point<Pixels>) {
+        self.0.borrow_mut().base_handle.set_offset(offset)
+    }
+
+    fn is_uniform_list(&self) -> bool {
+        true
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
@@ -30,6 +63,10 @@ impl Default for ScrollbarState {
 }
 
 impl ScrollbarState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     fn with_drag_pos(&self, axis: ScrollbarAxis, pos: Point<Pixels>) -> Self {
         let mut state = *self;
         if axis.is_vertical() {
@@ -99,12 +136,13 @@ impl ScrollbarAxis {
     }
 }
 
+/// Scrollbar control for scroll-area or a uniform-list.
 pub struct Scrollbar {
     view: AnyView,
     axis: ScrollbarAxis,
     /// When is vertical, this is the height of the scrollbar.
     width: Pixels,
-    scroll_handle: ScrollHandle,
+    scroll_handle: Rc<Box<dyn ScrollHandleOffsetable>>,
     scroll_size: gpui::Size<Pixels>,
     state: Rc<Cell<ScrollbarState>>,
 }
@@ -114,7 +152,7 @@ impl Scrollbar {
         view: AnyView,
         state: Rc<Cell<ScrollbarState>>,
         axis: ScrollbarAxis,
-        scroll_handle: ScrollHandle,
+        scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self {
@@ -122,15 +160,16 @@ impl Scrollbar {
             state,
             axis,
             scroll_size,
-            width: px(12.),
-            scroll_handle,
+            width: px(11.),
+            scroll_handle: Rc::new(Box::new(scroll_handle)),
         }
     }
 
+    /// Create with vertical and horizontal scrollbar.
     pub fn both(
         view: impl Into<AnyView>,
         state: Rc<Cell<ScrollbarState>>,
-        scroll_handle: ScrollHandle,
+        scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self::new(
@@ -142,10 +181,11 @@ impl Scrollbar {
         )
     }
 
+    /// Create with horizontal scrollbar.
     pub fn horizontal(
         view: impl Into<AnyView>,
         state: Rc<Cell<ScrollbarState>>,
-        scroll_handle: ScrollHandle,
+        scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self::new(
@@ -157,10 +197,11 @@ impl Scrollbar {
         )
     }
 
+    /// Create with vertical scrollbar.
     pub fn vertical(
         view: impl Into<AnyView>,
         state: Rc<Cell<ScrollbarState>>,
-        scroll_handle: ScrollHandle,
+        scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self::new(
@@ -172,7 +213,27 @@ impl Scrollbar {
         )
     }
 
-    /// Set axis
+    /// Create vertical scrollbar for uniform list.
+    pub fn uniform_scroll(
+        view: impl Into<AnyView>,
+        state: Rc<Cell<ScrollbarState>>,
+        scroll_handle: UniformListScrollHandle,
+        items_count: usize,
+    ) -> Self {
+        let last_item_height = scroll_handle.0.borrow().last_item_height.unwrap_or(px(10.));
+        let max_height = items_count as f32 * last_item_height;
+        let scroll_size = gpui::size(px(0.), max_height);
+
+        Self::new(
+            view.into(),
+            state,
+            ScrollbarAxis::Vertical,
+            scroll_handle,
+            scroll_size,
+        )
+    }
+
+    /// Set scrollbar axis.
     pub fn axis(mut self, axis: ScrollbarAxis) -> Self {
         self.axis = axis;
         self
@@ -218,12 +279,6 @@ impl Element for Scrollbar {
         _: &mut Self::RequestLayoutState,
         cx: &mut gpui::WindowContext,
     ) -> Self::PrepaintState {
-        // Move up to cover the parent bounds.
-        let bounds = Bounds {
-            origin: point(bounds.origin.x, bounds.origin.y - bounds.size.height),
-            size: bounds.size,
-        };
-
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             cx.insert_hitbox(bounds, false)
         })
@@ -300,15 +355,14 @@ impl Element for Scrollbar {
                         },
                     };
 
-                    let bar_bg = cx.theme().scrollbar;
                     let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
-                    let (thumb_bg, inset) = if state.get().dragged_axis == Some(axis) {
-                        (thumb_bg.darken(0.3), THUMB_INSET)
+                    let (thumb_bg, bar_bg, inset) = if state.get().dragged_axis == Some(axis) {
+                        (thumb_bg, cx.theme().scrollbar, px(0.))
                     } else if state.get().hovered_axis == Some(axis) {
-                        (thumb_bg.darken(0.15), THUMB_INSET)
+                        (thumb_bg, cx.theme().scrollbar, px(0.))
                     } else {
-                        (thumb_bg, THUMB_INSET)
+                        (thumb_bg, cx.theme().transparent, THUMB_INSET)
                     };
 
                     let thumb_bounds = if is_vertical {
@@ -318,7 +372,7 @@ impl Element for Scrollbar {
                                 bounds.origin.y + thumb_start + inset,
                             ),
                             point(
-                                bounds.origin.x + self.width - (inset * 2),
+                                bounds.origin.x + self.width - inset,
                                 bounds.origin.y + thumb_end - (inset * 2),
                             ),
                         )
@@ -330,14 +384,16 @@ impl Element for Scrollbar {
                             ),
                             point(
                                 bounds.origin.x + thumb_end - (inset * 2),
-                                bounds.origin.y + self.width - (inset * 2),
+                                bounds.origin.y + self.width - inset,
                             ),
                         )
                     };
 
                     if state.get().visible {
                         cx.paint_quad(fill(bounds, bar_bg));
-                        cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS));
+                        cx.paint_quad(
+                            fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS - inset),
+                        );
                     }
 
                     cx.on_mouse_event({
@@ -358,6 +414,7 @@ impl Element for Scrollbar {
                                     )
                                 };
 
+                                cx.stop_propagation();
                                 state.set(state.get().with_drag_pos(axis, drag_pos));
                                 cx.notify(view_id);
                             }

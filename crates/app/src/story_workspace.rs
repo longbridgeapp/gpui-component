@@ -20,7 +20,6 @@ actions!(workspace, [Open, CloseWindow]);
 
 pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
     cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
-    cx.on_action(|_action: &CloseWindow, _cx| std::process::exit(0));
 
     Theme::init(cx);
     ui::init(cx);
@@ -248,13 +247,7 @@ impl Render for StoryWorkspace {
                         })
                     })
                     // left side
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .on_mouse_move(|_, cx| cx.stop_propagation())
-                            .child("GPUI App"),
-                    )
+                    .child(div().flex().items_center().child("GPUI App"))
                     .child(
                         div()
                             .flex()

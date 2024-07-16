@@ -2264,6 +2264,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-app"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "log",
+ "rust-embed",
+ "story",
+ "ui",
+ "workspace",
+]
+
+[[package]]
 name = "gpui_macros"
 version = "0.1.0"
 source = "git+https://github.com/zed-industries/zed.git#5bc3846d592dc7e9acb81f709cc7257ae594bc77"
@@ -3040,19 +3053,6 @@ name = "mac"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
-
-[[package]]
-name = "main-app"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui",
- "log",
- "rust-embed",
- "story",
- "ui",
- "workspace",
-]
 
 [[package]]
 name = "malloc_buf"

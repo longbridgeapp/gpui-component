@@ -7,7 +7,7 @@ use gpui::{
 /// The scroll axis direction.
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScrollAxis {
+pub enum ScrollableAxis {
     /// Horizontal scroll.
     Horizontal,
     /// Vertical scroll.
@@ -21,14 +21,18 @@ pub enum ScrollAxis {
 /// This is only can handle once axis scrolling.
 pub struct ScrollableMask {
     view: AnyView,
-    axis: ScrollAxis,
+    axis: ScrollableAxis,
     scroll_handle: ScrollHandle,
     debug: Option<Hsla>,
 }
 
 impl ScrollableMask {
     /// Create a new scrollable mask element.
-    pub fn new(view: impl Into<AnyView>, axis: ScrollAxis, scroll_handle: &ScrollHandle) -> Self {
+    pub fn new(
+        view: impl Into<AnyView>,
+        axis: ScrollableAxis,
+        scroll_handle: &ScrollHandle,
+    ) -> Self {
         Self {
             view: view.into(),
             scroll_handle: scroll_handle.clone(),
@@ -123,7 +127,7 @@ impl Element for ScrollableMask {
                 let scroll_handle = self.scroll_handle.clone();
                 let old_offset = scroll_handle.offset();
                 let view_id = self.view.entity_id();
-                let is_horizontal = self.axis == ScrollAxis::Horizontal;
+                let is_horizontal = self.axis == ScrollableAxis::Horizontal;
 
                 move |event: &ScrollWheelEvent, _, cx| {
                     if bounds.contains(&mouse_position) {
