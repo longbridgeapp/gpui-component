@@ -16,8 +16,9 @@ use gpui::{
     ClickEvent, ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
     FocusHandle, FocusableView, GlobalElementId, InteractiveElement as _, IntoElement, KeyBinding,
     KeyDownEvent, LayoutId, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    PaintQuad, ParentElement as _, Pixels, Point, Render, ShapedLine, SharedString, Style,
-    Styled as _, TextRun, UnderlineStyle, View, ViewContext, ViewInputHandler, WindowContext,
+    PaintQuad, ParentElement as _, Pixels, Point, Render, ScrollHandle, ShapedLine, SharedString,
+    StatefulInteractiveElement as _, Style, Styled as _, TextRun, UnderlineStyle, View,
+    ViewContext, ViewInputHandler, WindowContext,
 };
 use prelude::FluentBuilder as _;
 use unicode_segmentation::*;
@@ -100,6 +101,7 @@ pub struct TextInput {
     marked_range: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
+    scroll_offset: Point<Pixels>,
     is_selecting: bool,
     disabled: bool,
     masked: bool,
@@ -124,6 +126,7 @@ impl TextInput {
             marked_range: None,
             last_layout: None,
             last_bounds: None,
+            scroll_offset: point(px(0.), px(0.)),
             is_selecting: false,
             disabled: false,
             masked: false,
@@ -321,13 +324,13 @@ impl TextInput {
 
         let selected_text = self.text[self.selected_range.clone()].to_string();
         cx.write_to_clipboard(ClipboardItem::new(selected_text));
-        self.replace_text_in_range(Some(self.selected_range.clone()), "", cx);
+        self.replace_text_in_range(None, "", cx);
     }
 
     fn paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
         if let Some(clipboard) = cx.read_from_clipboard() {
             let new_text = clipboard.text().replace('\n', "");
-            self.replace_text_in_range(Some(self.selected_range.clone()), &new_text, cx);
+            self.replace_text_in_range(None, &new_text, cx);
         }
     }
 
@@ -567,9 +570,11 @@ struct TextElement {
     input: View<TextInput>,
 }
 struct PrepaintState {
+    scroll_offset: Point<Pixels>,
     line: Option<ShapedLine>,
     cursor: Option<PaintQuad>,
     selection: Option<PaintQuad>,
+    bounds: Bounds<Pixels>,
 }
 
 impl IntoElement for TextElement {
@@ -666,9 +671,47 @@ impl Element for TextElement {
             .shape_line(disaplay_text, font_size, &runs)
             .unwrap();
 
+        // Calculate the scroll offset to keep the cursor in view
+        let mut scroll_offset = input.scroll_offset;
+        let mut bounds = bounds;
+        let right_margin = px(5.);
         let cursor_pos = line.x_for_index(cursor);
+        let cursor_start = line.x_for_index(selected_range.start);
+        let cursor_end = line.x_for_index(selected_range.end);
+
+        scroll_offset.x = if scroll_offset.x + cursor_pos > (bounds.size.width - right_margin) {
+            // cursor is out of right
+            bounds.size.width - right_margin - cursor_pos
+        } else if scroll_offset.x + cursor_pos < px(0.) {
+            // cursor is out of left
+            scroll_offset.x - cursor_pos
+        } else {
+            scroll_offset.x
+        };
+
+        if input.selection_reversed {
+            if scroll_offset.x + cursor_start < px(0.) {
+                // selection start is out of left
+                scroll_offset.x = -cursor_start;
+            } else if scroll_offset.x + cursor_end > bounds.size.width - right_margin {
+                // selection end is out of right
+                scroll_offset.x = bounds.size.width - right_margin - cursor_end;
+            }
+        } else {
+            if scroll_offset.x + cursor_end <= px(0.) {
+                // selection end is out of left
+                scroll_offset.x = -cursor_end;
+            } else if scroll_offset.x + cursor_start > bounds.size.width - right_margin {
+                // selection start is out of right
+                scroll_offset.x = bounds.size.width - right_margin - cursor_start;
+            }
+        }
+
+        bounds.origin = bounds.origin + scroll_offset;
+
         let inset = px(0.5);
         let (selection, cursor) = if selected_range.is_empty() && input.show_cursor(cx) {
+            // cursor blink
             (
                 None,
                 Some(fill(
@@ -680,6 +723,7 @@ impl Element for TextElement {
                 )),
             )
         } else {
+            // selection background
             (
                 Some(fill(
                     Bounds::from_corners(
@@ -699,6 +743,8 @@ impl Element for TextElement {
         };
 
         PrepaintState {
+            scroll_offset,
+            bounds,
             line: Some(line),
             cursor,
             selection,
@@ -708,13 +754,14 @@ impl Element for TextElement {
     fn paint(
         &mut self,
         _id: Option<&GlobalElementId>,
-        bounds: Bounds<Pixels>,
+        _: Bounds<Pixels>,
         _request_layout: &mut Self::RequestLayoutState,
         prepaint: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
         let focus_handle = self.input.read(cx).focus_handle.clone();
         let focused = focus_handle.is_focused(cx);
+        let bounds = prepaint.bounds;
 
         cx.handle_input(
             &focus_handle,
@@ -732,6 +779,7 @@ impl Element for TextElement {
             }
         }
         self.input.update(cx, |input, _cx| {
+            input.scroll_offset = prepaint.scroll_offset;
             input.last_layout = Some(line);
             input.last_bounds = Some(bounds);
         });
@@ -795,6 +843,7 @@ impl Render for TextInput {
             .items_center()
             .child(
                 div()
+                    .id("TextElement")
                     .flex_grow()
                     .overflow_x_hidden()
                     .cursor_text()
