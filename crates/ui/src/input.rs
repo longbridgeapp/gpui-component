@@ -38,6 +38,8 @@ actions!(
         SelectAll,
         Home,
         End,
+        SelectToHome,
+        SelectToEnd,
         ShowCharacterPalette,
         Copy,
         Cut,
@@ -64,6 +66,8 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("shift-right", SelectRight, None),
         KeyBinding::new("home", Home, None),
         KeyBinding::new("end", End, None),
+        KeyBinding::new("shift-home", SelectToHome, None),
+        KeyBinding::new("shift-end", SelectToEnd, None),
         #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, None),
         #[cfg(target_os = "macos")]
@@ -258,6 +262,14 @@ impl TextInput {
     fn end(&mut self, _: &End, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx);
         self.move_to(self.text.len(), cx);
+    }
+
+    fn select_to_home(&mut self, _: &SelectToHome, cx: &mut ViewContext<Self>) {
+        self.select_to(0, cx);
+    }
+
+    fn select_to_end(&mut self, _: &SelectToEnd, cx: &mut ViewContext<Self>) {
+        self.select_to(self.text.len(), cx);
     }
 
     fn backspace(&mut self, _: &Backspace, cx: &mut ViewContext<Self>) {
@@ -804,6 +816,8 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::select_left))
             .on_action(cx.listener(Self::select_right))
             .on_action(cx.listener(Self::select_all))
+            .on_action(cx.listener(Self::select_to_home))
+            .on_action(cx.listener(Self::select_to_end))
             .on_action(cx.listener(Self::home))
             .on_action(cx.listener(Self::end))
             .on_action(cx.listener(Self::show_character_palette))
