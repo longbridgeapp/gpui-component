@@ -118,17 +118,14 @@ where
 
         if let Some(view) = self.dropdown.upgrade() {
             cx.update_view(&view, |view, cx| {
-                if let Some(ix) = self.selected_index {
-                    if let Some(item) = self.delegate.get(ix) {
-                        view.title = Some(item.title().to_string().into());
-                        view.value = Some(item.value().to_string().into());
-                    }
-                }
-
                 view.open = false;
                 view.focus_handle.focus(cx);
             });
         }
+    }
+
+    fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
+        self.selected_index = ix;
     }
 }
 
@@ -153,9 +150,8 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     size: Size,
     open: bool,
     cleanable: bool,
-    /// The value of the selected item.
-    value: Option<SharedString>,
-    title: Option<SharedString>,
+    placeholder: SharedString,
+    title_prefix: Option<SharedString>,
 }
 
 impl<D> Dropdown<D>
@@ -174,35 +170,37 @@ where
             selected_index,
         };
 
-        let (title, value) = if let Some(selected_index) = selected_index {
-            let title: Option<SharedString> = delegate
-                .delegate
-                .get(selected_index)
-                .map(|item| item.title().to_string().into());
-            let value: Option<SharedString> = delegate
-                .delegate
-                .get(selected_index)
-                .map(|item| item.value().to_string().into());
-            (title, value)
-        } else {
-            (None, None)
-        };
-
         let list = cx.new_view(|cx| List::new(delegate, cx).no_query().max_h(rems(20.)));
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
+            placeholder: "Select...".into(),
             list,
             size: Size::Medium,
             open: false,
             cleanable: true,
-            title,
-            value,
+            title_prefix: None,
         }
     }
 
     pub fn size(mut self, size: Size) -> Self {
         self.size = size;
+        self
+    }
+
+    /// Set the placeholder for display when dropdown value is empty.
+    pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Set title prefix for the dropdown.
+    ///
+    /// e.g.: Country: United States
+    ///
+    /// You should set the label is `Country: `
+    pub fn title_prefix(mut self, prefix: impl Into<SharedString>) -> Self {
+        self.title_prefix = Some(prefix.into());
         self
     }
 
@@ -212,13 +210,18 @@ where
         self
     }
 
-    pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
-        self.value = Some(value.into());
-        cx.notify();
+    pub fn set_selected_index(
+        &mut self,
+        selected_index: Option<usize>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.list.update(cx, |list, cx| {
+            list.set_selected_index(selected_index, cx);
+        });
     }
 
-    pub fn value(&self) -> Option<SharedString> {
-        self.value.clone()
+    pub fn selected_index(&self, cx: &WindowContext) -> Option<usize> {
+        self.list.read(cx).selected_index()
     }
 
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
@@ -248,18 +251,18 @@ where
         }
     }
 
+    fn toggle_menu(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        self.open = !self.open;
+        cx.notify();
+    }
+
     fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
         self.open = false;
         cx.notify();
     }
 
     fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
-        self.value = None;
-        self.title = None;
-        self.list.update(cx, |list, _| {
-            list.selected_index = None;
-        });
-        cx.notify();
+        self.set_selected_index(None, cx)
     }
 
     fn render_menu_content(&self, cx: &WindowContext) -> impl IntoElement {
@@ -276,6 +279,31 @@ where
             .on_mouse_down_out(|_, cx| {
                 cx.dispatch_action(Box::new(Escape));
             })
+    }
+
+    fn display_title(&self, cx: &WindowContext) -> impl IntoElement {
+        if let Some(selected_index) = &self.selected_index(cx) {
+            let title = self
+                .list
+                .read(cx)
+                .delegate()
+                .delegate
+                .get(*selected_index)
+                .map(|item| item.title().to_string())
+                .unwrap();
+
+            h_flex()
+                .children(self.title_prefix.clone().map(|prefix| {
+                    div()
+                        .text_color(cx.theme().accent_foreground)
+                        .child(prefix.clone())
+                }))
+                .child(title.clone())
+        } else {
+            div()
+                .text_color(cx.theme().accent_foreground)
+                .child(self.placeholder.clone())
+        }
     }
 }
 
@@ -309,11 +337,11 @@ where
     D: DropdownDelegate + 'static,
 {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let title = self.title.clone().unwrap_or_else(|| "Select...".into());
         let focused = self.focus_handle.is_focused(cx);
-        let show_clean = self.cleanable && self.value.is_some();
+        let show_clean = self.cleanable && self.selected_index(cx).is_some();
 
         div()
+            .id(self.id.clone())
             .key_context("Dropdown")
             .group(format!("dropdown-group:{}", self.id))
             .track_focus(&self.focus_handle)
@@ -340,16 +368,13 @@ where
                     .input_px(self.size)
                     .input_py(self.size)
                     .input_h(self.size)
-                    .on_click(cx.listener(|this, _, cx| {
-                        this.open = !this.open;
-                        cx.notify();
-                    }))
+                    .on_click(cx.listener(Self::toggle_menu))
                     .child(
                         h_flex()
                             .w_full()
                             .items_center()
                             .justify_between()
-                            .child(div().flex_1().child(title))
+                            .child(div().flex_1().child(self.display_title(cx)))
                             .when(show_clean, |this| {
                                 this.child(
                                     Button::new("clean-text", cx)

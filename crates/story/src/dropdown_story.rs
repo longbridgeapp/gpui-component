@@ -113,6 +113,8 @@ impl DropdownStory {
                     cx,
                 )
                 .size(ui::Size::Small)
+                .placeholder("UI")
+                .title_prefix("UI: ")
             }),
             simple_dropdown2: cx.new_view(|cx| {
                 Dropdown::string_list(
@@ -127,6 +129,8 @@ impl DropdownStory {
                     cx,
                 )
                 .size(ui::Size::Small)
+                .placeholder("Language")
+                .title_prefix("Language: ")
             }),
         })
     }

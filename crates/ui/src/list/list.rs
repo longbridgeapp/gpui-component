@@ -41,6 +41,9 @@ pub trait ListDelegate: Sized + 'static {
         None
     }
 
+    /// Set the selected index.
+    fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>);
+
     /// Set the confirm and give the selected index.
     fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {}
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {}
@@ -56,7 +59,7 @@ pub struct List<D: ListDelegate> {
     vertical_scroll_handle: UniformListScrollHandle,
     scrollbar_state: Rc<Cell<ScrollbarState>>,
 
-    pub(crate) selected_index: Option<usize>,
+    selected_index: Option<usize>,
 }
 
 impl<D> List<D>
@@ -111,6 +114,15 @@ where
 
     pub fn focus(&mut self, cx: &mut ViewContext<Self>) {
         cx.focus(&self.focus_handle);
+    }
+
+    pub fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<Self>) {
+        self.selected_index = ix;
+        self.delegate.set_selected_index(ix, cx);
+    }
+
+    pub fn selected_index(&self) -> Option<usize> {
+        self.selected_index
     }
 
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {

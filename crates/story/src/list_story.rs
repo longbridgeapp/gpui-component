@@ -154,6 +154,13 @@ impl ListDelegate for CompanyListDelegate {
         cx.dispatch_action(Box::new(SelectedCompany));
     }
 
+    fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
+        if let Some(ix) = ix {
+            self.selected_index = ix;
+            cx.notify();
+        }
+    }
+
     fn render_item(&self, ix: usize, _cx: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
         let selected = ix == self.selected_index;
         if let Some(company) = self.companies.get(ix) {
