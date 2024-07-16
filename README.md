@@ -91,7 +91,6 @@ cargo run
 There have a part of UI components from [Zed](https://github.com/zed-industries/zed/tree/main/crates/ui), that are under GPL v3.0 license.
 
 - workspace
-- scrollbar
 
 Other UI components are under Apache License.
 

@@ -5,8 +5,6 @@ mod event;
 mod focusable;
 mod icon;
 
-mod scroll;
-mod scrollbar;
 mod selectable;
 mod stack;
 mod styled_ext;
@@ -26,6 +24,7 @@ pub mod prelude;
 pub mod progress;
 pub mod radio;
 pub mod resizable;
+pub mod scroll;
 pub mod switch;
 pub mod tab;
 pub mod table;

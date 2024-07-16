@@ -1,16 +1,17 @@
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{cell::Cell, rc::Rc};
 
 use gpui::prelude::FluentBuilder as _;
 
 use crate::input::{TextEvent, TextInput};
+use crate::scroll::ScrollbarState;
 use crate::theme::{ActiveTheme, Colorize as _};
-use crate::{scrollbar::Scrollbar, v_flex};
+use crate::{scroll::Scrollbar, v_flex};
 use crate::{Icon, IconName};
 use gpui::{
-    actions, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
+    actions, deferred, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
-    ParentElement as _, Render, StatefulInteractiveElement as _, Styled as _, Task,
-    UniformListScrollHandle, View, ViewContext, VisualContext as _,
+    ParentElement as _, Render, Styled as _, UniformListScrollHandle, View, ViewContext,
+    VisualContext as _,
 };
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -53,9 +54,7 @@ pub struct List<D: ListDelegate> {
 
     enable_scrollbar: bool,
     vertical_scroll_handle: UniformListScrollHandle,
-    scrollbar_drag_state: Rc<Cell<Option<f32>>>,
-    show_scrollbar: bool,
-    hide_scrollbar_task: Option<Task<()>>,
+    scrollbar_state: Rc<Cell<ScrollbarState>>,
 
     selected_index: Option<usize>,
 }
@@ -81,9 +80,7 @@ where
             query_input: Some(query_input),
             selected_index: None,
             vertical_scroll_handle: UniformListScrollHandle::new(),
-            scrollbar_drag_state: Rc::new(Cell::new(None)),
-            show_scrollbar: false,
-            hide_scrollbar_task: None,
+            scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             max_height: None,
             enable_scrollbar: true,
         }
@@ -120,55 +117,16 @@ where
         if !self.enable_scrollbar {
             return None;
         }
-        if !self.show_scrollbar {
-            return None;
-        }
 
-        Scrollbar::new(
-            cx.view().clone(),
-            self.vertical_scroll_handle.clone(),
-            self.scrollbar_drag_state.clone(),
-            self.delegate.items_count(),
-            true,
+        Some(
+            deferred(Scrollbar::uniform_scroll(
+                cx.view().clone(),
+                self.scrollbar_state.clone(),
+                self.vertical_scroll_handle.clone(),
+                self.delegate.items_count(),
+            ))
+            .with_priority(2),
         )
-        .map(|bar| {
-            div()
-                .occlude()
-                .absolute()
-                .h_full()
-                .left_auto()
-                .top_0()
-                .right_0()
-                .w(px(bar.width()))
-                .bottom_0()
-                .child(bar)
-        })
-    }
-
-    fn hide_scrollbar(&mut self, cx: &mut ViewContext<Self>) {
-        self.show_scrollbar = false;
-        self.hide_scrollbar_task = Some(cx.spawn(|this, mut cx| async move {
-            cx.background_executor().timer(Duration::from_secs(1)).await;
-            this.update(&mut cx, |this, cx| {
-                this.show_scrollbar = false;
-                cx.notify();
-            })
-            .ok();
-        }))
-    }
-
-    fn on_hover_to_autohide_scrollbar(&mut self, hovered: &bool, cx: &mut ViewContext<Self>) {
-        if !self.enable_scrollbar {
-            return;
-        }
-
-        if *hovered {
-            self.show_scrollbar = true;
-            self.hide_scrollbar_task.take();
-            cx.notify();
-        } else if !self.focus_handle.is_focused(cx) {
-            self.hide_scrollbar(cx);
-        }
     }
 
     fn scroll_to_selected_item(&mut self, _cx: &mut ViewContext<Self>) {
@@ -262,12 +220,12 @@ where
             .id("list")
             .track_focus(&self.focus_handle)
             .size_full()
+            .relative()
             .overflow_hidden()
             .on_action(cx.listener(Self::action_cancel))
             .on_action(cx.listener(Self::action_confirm))
             .on_action(cx.listener(Self::action_select_next))
             .on_action(cx.listener(Self::action_select_prev))
-            .on_hover(cx.listener(Self::on_hover_to_autohide_scrollbar))
             .when_some(self.query_input.clone(), |this, input| {
                 this.child(
                     div()
@@ -280,9 +238,11 @@ where
             .child(
                 v_flex()
                     .flex_grow()
+                    .relative()
                     .min_h(px(100.))
                     .when_some(self.max_height, |this, h| this.max_h(h))
                     .overflow_hidden()
+                    .children(self.render_scrollbar(cx))
                     .child(
                         uniform_list(view, "uniform-list", items_count, {
                             move |list, visible_range, cx| {
@@ -315,8 +275,7 @@ where
                         .with_sizing_behavior(sizing_behavior)
                         .track_scroll(vertical_scroll_handle)
                         .into_any_element(),
-                    )
-                    .children(self.render_scrollbar(cx)),
+                    ),
             )
     }
 }

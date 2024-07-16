@@ -2,8 +2,8 @@ use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, ProgressStory, ResizableStory, StoryContainer, SwitchStory, TableStory,
-    TooltipStory,
+    PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
+    TableStory, TooltipStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -20,7 +20,6 @@ actions!(workspace, [Open, CloseWindow]);
 
 pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
     cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
-    cx.on_action(|_action: &CloseWindow, _cx| std::process::exit(0));
 
     Theme::init(cx);
     ui::init(cx);
@@ -156,6 +155,15 @@ impl StoryWorkspace {
         )
         .detach();
 
+        StoryContainer::add_pane(
+            "Scrollable",
+            "A scrollable area with scroll bar",
+            ScrollableStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
         Self { workspace }
     }
 
@@ -239,13 +247,7 @@ impl Render for StoryWorkspace {
                         })
                     })
                     // left side
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .on_mouse_move(|_, cx| cx.stop_propagation())
-                            .child("GPUI App"),
-                    )
+                    .child(div().flex().items_center().child("GPUI App"))
                     .child(
                         div()
                             .flex()
