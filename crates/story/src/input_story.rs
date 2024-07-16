@@ -37,13 +37,13 @@ impl InputStory {
 
     fn new(cx: &mut WindowContext) -> Self {
         let input1 = cx.new_view(|cx| {
-            let mut input = TextInput::new(cx);
+            let mut input = TextInput::new(cx).cleanable(true);
             input.set_text("Hello 世界", cx);
             input
         });
 
         let mask_input = cx.new_view(|cx| {
-            let mut input = TextInput::new(cx);
+            let mut input = TextInput::new(cx).cleanable(true);
             input.set_masked(true, cx);
             input.set_text("this-is-password", cx);
             input
@@ -53,16 +53,19 @@ impl InputStory {
             TextInput::new(cx)
                 .prefix(IconName::Search.view(cx))
                 .placeholder("Search some thing...")
+                .cleanable(true)
         });
         let suffix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
                 .suffix(IconName::Info.view(cx))
                 .placeholder("Info here...")
+                .cleanable(true)
         });
         let both_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
                 .prefix(IconName::Search.view(cx))
                 .suffix(IconName::Info.view(cx))
+                .cleanable(true)
                 .placeholder("This input have prefix and suffix.")
         });
 

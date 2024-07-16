@@ -2,10 +2,10 @@ use std::rc::Rc;
 
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder as _, px, rems, AnyElement, AppContext,
-    DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
-    IntoElement, KeyBinding, LayoutId, ParentElement as _, Render, SharedString,
-    StatefulInteractiveElement as _, Styled as _, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    ClickEvent, DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, LayoutId, ParentElement as _, Render,
+    SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
@@ -21,11 +21,12 @@ pub fn init(cx: &mut AppContext) {
 }
 
 use crate::{
+    button::{Button, ButtonStyle},
     h_flex,
     list::{self, List, ListDelegate, ListItem},
     styled_ext::Sizeful,
     theme::ActiveTheme,
-    Icon, IconName, Size, StyledExt,
+    Clickable as _, Icon, IconName, Size, StyledExt,
 };
 
 /// A trait for items that can be displayed in a dropdown.
@@ -151,6 +152,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     list: View<List<DropdownListDelegate<D>>>,
     size: Size,
     open: bool,
+    cleanable: bool,
     /// The value of the selected item.
     value: Option<SharedString>,
     title: Option<SharedString>,
@@ -193,6 +195,7 @@ where
             list,
             size: Size::Medium,
             open: false,
+            cleanable: true,
             title,
             value,
         }
@@ -200,6 +203,12 @@ where
 
     pub fn size(mut self, size: Size) -> Self {
         self.size = size;
+        self
+    }
+
+    /// Set true to show the clear button when the input field is not empty.
+    pub fn cleanable(mut self, cleanable: bool) -> Self {
+        self.cleanable = cleanable;
         self
     }
 
@@ -241,6 +250,15 @@ where
 
     fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
         self.open = false;
+        cx.notify();
+    }
+
+    fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        self.value = None;
+        self.title = None;
+        self.list.update(cx, |list, _| {
+            list.selected_index = None;
+        });
         cx.notify();
     }
 
@@ -293,6 +311,7 @@ where
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let title = self.title.clone().unwrap_or_else(|| "Select...".into());
         let focused = self.focus_handle.is_focused(cx);
+        let show_clean = self.cleanable && self.value.is_some();
 
         div()
             .key_context("Dropdown")
@@ -331,10 +350,22 @@ where
                             .items_center()
                             .justify_between()
                             .child(div().flex_1().child(title))
-                            .child(
-                                Icon::new(IconName::ChevronDown)
-                                    .text_color(cx.theme().muted_foreground),
-                            ),
+                            .when(show_clean, |this| {
+                                this.child(
+                                    Button::new("clean-text", cx)
+                                        .icon(IconName::Close)
+                                        .style(ButtonStyle::Ghost)
+                                        .size(px(14.))
+                                        .cursor_pointer()
+                                        .on_click(cx.listener(Self::clean)),
+                                )
+                            })
+                            .when(!show_clean, |this| {
+                                this.child(
+                                    Icon::new(IconName::ChevronDown)
+                                        .text_color(cx.theme().muted_foreground),
+                                )
+                            }),
                     ),
             )
             .child(DropdownMenuElement {

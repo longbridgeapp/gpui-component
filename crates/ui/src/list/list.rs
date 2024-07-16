@@ -56,7 +56,7 @@ pub struct List<D: ListDelegate> {
     vertical_scroll_handle: UniformListScrollHandle,
     scrollbar_state: Rc<Cell<ScrollbarState>>,
 
-    selected_index: Option<usize>,
+    pub(crate) selected_index: Option<usize>,
 }
 
 impl<D> List<D>
