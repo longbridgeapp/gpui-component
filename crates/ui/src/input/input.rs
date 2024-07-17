@@ -5,12 +5,12 @@
 
 use std::ops::Range;
 
+use super::blink_cursor::BlinkCursor;
 use crate::button::{Button, ButtonStyle};
 use crate::styled_ext::Sizeful;
 use crate::theme::ActiveTheme;
 use crate::{event::InterativeElementExt as _, Size};
 use crate::{Clickable, IconName, StyledExt as _};
-use blink_cursor::BlinkCursor;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, fill, point, px, relative, rems, size, AnyView, AppContext, Bounds, ClickEvent,
@@ -21,8 +21,6 @@ use gpui::{
     Styled as _, TextRun, UnderlineStyle, View, ViewContext, ViewInputHandler, WindowContext,
 };
 use unicode_segmentation::*;
-
-mod blink_cursor;
 
 actions!(
     input,
