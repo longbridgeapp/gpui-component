@@ -1,5 +1,5 @@
 use crate::theme::ActiveTheme;
-use gpui::{hsla, point, px, rems, BoxShadow, FocusHandle, Pixels, Styled, WindowContext};
+use gpui::{hsla, point, px, rems, Axis, BoxShadow, FocusHandle, Pixels, Styled, WindowContext};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
@@ -185,5 +185,20 @@ impl<T: Styled> Sizeful<T> for T {
             Size::Medium => self.h_8().text_size(rems(0.875)),
             _ => self.h(px(26.)).text_size(rems(0.8)),
         }
+    }
+}
+
+pub trait AxisExt {
+    fn is_horizontal(self) -> bool;
+    fn is_vertical(self) -> bool;
+}
+
+impl AxisExt for Axis {
+    fn is_horizontal(self) -> bool {
+        self == Axis::Horizontal
+    }
+
+    fn is_vertical(self) -> bool {
+        self == Axis::Vertical
     }
 }
