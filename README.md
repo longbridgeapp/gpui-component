@@ -11,11 +11,11 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [ ] TextField
   - [x] Ctrl+a, e to move cursor to start/end
   - [x] Copy, Cut, Paste by keyboard
-  - [ ] ContextMenu to let user copy, cut, paste
   - [x] Selection by mouse, drag to select text
   - [x] Cursor blinking
-  - [ ] Textarea
   - [x] Input icon
+  - [ ] Textarea
+  - [ ] ContextMenu to let user copy, cut, paste
 - [ ] InputOTP
 - [x] Button
   - [x] Button with Icon
@@ -66,13 +66,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 
 ## Showcase
 
-<https://github.com/huacnlee/gpui-app/assets/5518/ad103f02-697a-40ed-a876-8b13e4242a72>
-
-<https://github.com/huacnlee/gpui-app/assets/5518/5316f9f0-58c8-4b99-bd79-eafffb38c3fc>
-
-<https://github.com/huacnlee/gpui-app/assets/5518/0273e031-4426-4ab5-a41c-f7cbbb0e55bc>
-
-<https://github.com/huacnlee/gpui-component/assets/5518/51622a5e-f51d-4ede-8cae-04cae703f8aa>
+<https://github.com/user-attachments/assets/23766bb2-ffc3-4878-b5ad-7a08a0657f26>
 
 ## Demo
 
