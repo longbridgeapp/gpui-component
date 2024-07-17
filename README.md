@@ -8,7 +8,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 ## Features
 
 - [x] Theming
-- [ ] TextField
+- [ ] TextInput
   - [x] Ctrl+a, e to move cursor to start/end
   - [x] Copy, Cut, Paste by keyboard
   - [x] Selection by mouse, drag to select text
@@ -16,7 +16,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Input icon
   - [ ] Textarea
   - [ ] ContextMenu to let user copy, cut, paste
-- [ ] InputOTP
+- [x] InputOTP
 - [x] Button
   - [x] Button with Icon
   - [x] IconButton
