@@ -11,16 +11,15 @@ use crate::theme::ActiveTheme;
 use crate::{event::InterativeElementExt as _, Size};
 use crate::{Clickable, IconName, StyledExt as _};
 use blink_cursor::BlinkCursor;
+use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    actions, div, fill, point, prelude, px, relative, rems, size, AnyView, AppContext, Bounds,
-    ClickEvent, ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
+    actions, div, fill, point, px, relative, rems, size, AnyView, AppContext, Bounds, ClickEvent,
+    ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
     FocusHandle, FocusableView, GlobalElementId, InteractiveElement as _, IntoElement, KeyBinding,
     KeyDownEvent, LayoutId, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    PaintQuad, ParentElement as _, Pixels, Point, Render, ScrollHandle, ShapedLine, SharedString,
-    StatefulInteractiveElement as _, Style, Styled as _, TextRun, UnderlineStyle, View,
-    ViewContext, ViewInputHandler, WindowContext,
+    PaintQuad, ParentElement as _, Pixels, Point, Render, ShapedLine, SharedString, Style,
+    Styled as _, TextRun, UnderlineStyle, View, ViewContext, ViewInputHandler, WindowContext,
 };
-use prelude::FluentBuilder as _;
 use unicode_segmentation::*;
 
 mod blink_cursor;
@@ -348,6 +347,7 @@ impl TextInput {
 
     fn move_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
         self.selected_range = offset..offset;
+        self.pause_blink_cursor(cx);
         cx.notify()
     }
 
@@ -705,17 +705,11 @@ impl Element for TextElement {
             if scroll_offset.x + cursor_start < px(0.) {
                 // selection start is out of left
                 scroll_offset.x = -cursor_start;
-            } else if scroll_offset.x + cursor_end > bounds.size.width - right_margin {
-                // selection end is out of right
-                scroll_offset.x = bounds.size.width - right_margin - cursor_end;
             }
         } else {
             if scroll_offset.x + cursor_end <= px(0.) {
                 // selection end is out of left
                 scroll_offset.x = -cursor_end;
-            } else if scroll_offset.x + cursor_start > bounds.size.width - right_margin {
-                // selection start is out of right
-                scroll_offset.x = bounds.size.width - right_margin - cursor_start;
             }
         }
 
