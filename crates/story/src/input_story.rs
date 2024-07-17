@@ -38,7 +38,10 @@ impl InputStory {
     fn new(cx: &mut WindowContext) -> Self {
         let input1 = cx.new_view(|cx| {
             let mut input = TextInput::new(cx).cleanable(true);
-            input.set_text("Hello 世界", cx);
+            input.set_text(
+                "Hello 世界，this is GPUI component, this is a long text.",
+                cx,
+            );
             input
         });
 
