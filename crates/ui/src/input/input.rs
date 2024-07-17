@@ -220,6 +220,10 @@ impl TextInput {
         self.text.clone()
     }
 
+    pub fn focus(&self, cx: &mut ViewContext<Self>) {
+        self.focus_handle.focus(cx);
+    }
+
     fn left(&mut self, _: &Left, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx);
         if self.selected_range.is_empty() {

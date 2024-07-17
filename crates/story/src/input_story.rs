@@ -1,10 +1,15 @@
 use gpui::{
     actions, AppContext, ClickEvent, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
-    ParentElement as _, Render, Styled, View, ViewContext, VisualContext, WindowContext,
+    ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
-    button::Button, h_flex, input::TextInput, v_flex, Clickable, FocusableCycle, IconName, Size,
+    button::Button,
+    h_flex,
+    input::{InputOtp, TextInput},
+    prelude::FluentBuilder as _,
+    v_flex, Clickable, FocusableCycle, IconName, Size,
 };
 
 use crate::section;
@@ -28,6 +33,8 @@ pub struct InputStory {
     both_input1: View<TextInput>,
     large_input: View<TextInput>,
     small_input: View<TextInput>,
+    otp_input: View<InputOtp>,
+    otp_value: Option<SharedString>,
 }
 
 impl InputStory {
@@ -35,7 +42,7 @@ impl InputStory {
         cx.new_view(|cx| Self::new(cx))
     }
 
-    fn new(cx: &mut WindowContext) -> Self {
+    fn new(cx: &mut ViewContext<Self>) -> Self {
         let input1 = cx.new_view(|cx| {
             let mut input = TextInput::new(cx).cleanable(true);
             input.set_text(
@@ -72,6 +79,15 @@ impl InputStory {
                 .placeholder("This input have prefix and suffix.")
         });
 
+        let view = cx.view().clone();
+        let otp_input = cx.new_view(|cx| {
+            InputOtp::new(6, cx).on_change(move |value: &SharedString, cx| {
+                view.update(cx, |view, _| {
+                    view.otp_value = Some(value.clone());
+                })
+            })
+        });
+
         Self {
             input1,
             input2: cx.new_view(|cx| TextInput::new(cx).placeholder("Enter text here...")),
@@ -95,6 +111,8 @@ impl InputStory {
             prefix_input1,
             suffix_input1,
             both_input1,
+            otp_input,
+            otp_value: None,
         }
     }
 
@@ -115,17 +133,18 @@ impl InputStory {
 impl FocusableCycle for InputStory {
     fn cycle_focus_handles(&self, cx: &mut ViewContext<Self>) -> Vec<FocusHandle> {
         [
-            &self.input1,
-            &self.input2,
-            &self.disabled_input,
-            &self.mash_input,
-            &self.prefix_input1,
-            &self.both_input1,
-            &self.suffix_input1,
+            self.input1.focus_handle(cx),
+            self.input2.focus_handle(cx),
+            self.disabled_input.focus_handle(cx),
+            self.mash_input.focus_handle(cx),
+            self.prefix_input1.focus_handle(cx),
+            self.both_input1.focus_handle(cx),
+            self.suffix_input1.focus_handle(cx),
+            self.large_input.focus_handle(cx),
+            self.small_input.focus_handle(cx),
+            self.otp_input.focus_handle(cx),
         ]
-        .iter()
-        .map(|v| v.focus_handle(cx))
-        .collect()
+        .to_vec()
     }
 }
 
@@ -159,6 +178,13 @@ impl Render for InputStory {
                 section("Input Size", cx)
                     .child(self.large_input.clone())
                     .child(self.small_input.clone()),
+            )
+            .child(
+                section("Input OTP", cx)
+                    .child(self.otp_input.clone())
+                    .when_some(self.otp_value.clone(), |this, otp| {
+                        this.child(format!("You input OTP: {}", otp))
+                    }),
             )
             .child(
                 h_flex()
