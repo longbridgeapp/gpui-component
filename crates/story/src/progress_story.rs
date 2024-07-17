@@ -3,8 +3,8 @@ use gpui::{
     WindowContext,
 };
 use ui::{
-    button::Button, h_flex, indicator::Indicator, progress::Progress, slider::Slider, v_flex,
-    Clickable, IconName, Size,
+    button::Button, divider::Divider, h_flex, indicator::Indicator, progress::Progress,
+    slider::Slider, v_flex, Clickable, IconName, Size,
 };
 
 pub struct ProgressStory {
@@ -124,6 +124,7 @@ impl Render for ProgressStory {
                     )
                     .child(Indicator::new().size(px(64.))),
             )
+            .child(Divider::horizontal().mt_10().label("Slider"))
             .child(self.slider1.clone())
             .child(format!("Slider 1: {}", self.slider1_value))
             .child(
