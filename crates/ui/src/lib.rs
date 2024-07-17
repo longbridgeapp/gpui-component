@@ -25,6 +25,7 @@ pub mod progress;
 pub mod radio;
 pub mod resizable;
 pub mod scroll;
+pub mod slider;
 pub mod switch;
 pub mod tab;
 pub mod table;
