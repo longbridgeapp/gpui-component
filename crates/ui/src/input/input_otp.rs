@@ -27,7 +27,7 @@ impl InputOtp {
             length,
             number_of_groups: 2,
             value: SharedString::default(),
-            masked: true,
+            masked: false,
             on_change: None,
             blink_cursor: blink_cursor.clone(),
         };
@@ -56,6 +56,12 @@ impl InputOtp {
     /// Set number of groups in the OTP Input.
     pub fn groups(mut self, n: usize) -> Self {
         self.number_of_groups = n;
+        self
+    }
+
+    /// Set masked to true use masked input.
+    pub fn masked(mut self, masked: bool) -> Self {
+        self.masked = masked;
         self
     }
 

@@ -35,11 +35,12 @@ pub struct InputStory {
     small_input: View<TextInput>,
     otp_input: View<InputOtp>,
     otp_value: Option<SharedString>,
+    opt_input2: View<InputOtp>,
 }
 
 impl InputStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
@@ -81,11 +82,13 @@ impl InputStory {
 
         let view = cx.view().clone();
         let otp_input = cx.new_view(|cx| {
-            InputOtp::new(6, cx).on_change(move |value: &SharedString, cx| {
-                view.update(cx, |view, _| {
-                    view.otp_value = Some(value.clone());
+            InputOtp::new(6, cx)
+                .masked(true)
+                .on_change(move |value: &SharedString, cx| {
+                    view.update(cx, |view, _| {
+                        view.otp_value = Some(value.clone());
+                    })
                 })
-            })
         });
 
         Self {
@@ -113,6 +116,7 @@ impl InputStory {
             both_input1,
             otp_input,
             otp_value: None,
+            opt_input2: cx.new_view(|cx| InputOtp::new(6, cx).groups(3)),
         }
     }
 
@@ -180,11 +184,15 @@ impl Render for InputStory {
                     .child(self.small_input.clone()),
             )
             .child(
-                section("Input OTP", cx)
-                    .child(self.otp_input.clone())
-                    .when_some(self.otp_value.clone(), |this, otp| {
-                        this.child(format!("You input OTP: {}", otp))
-                    }),
+                section("Input OTP", cx).child(
+                    v_flex()
+                        .gap_3()
+                        .child(self.otp_input.clone())
+                        .when_some(self.otp_value.clone(), |this, otp| {
+                            this.child(format!("You input OTP: {}", otp))
+                        })
+                        .child(self.opt_input2.clone()),
+                ),
             )
             .child(
                 h_flex()
