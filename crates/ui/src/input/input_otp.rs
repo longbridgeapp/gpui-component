@@ -1,10 +1,10 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AnyElement, Context, Div, FocusHandle, FocusableView,
+    div, prelude::FluentBuilder as _, AnyElement, Context, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton, MouseDownEvent,
-    ParentElement as _, Render, SharedString, Stateful, Styled as _, ViewContext, WindowContext,
+    ParentElement as _, Render, SharedString, Styled as _, ViewContext, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, StyledExt};
+use crate::{h_flex, theme::ActiveTheme, v_flex};
 
 use super::blink_cursor::BlinkCursor;
 

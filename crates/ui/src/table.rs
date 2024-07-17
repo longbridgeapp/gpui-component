@@ -7,8 +7,8 @@ use crate::{
     v_flex,
 };
 use gpui::{
-    actions, deferred, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div,
-    FocusHandle, FocusableView, InteractiveElement as _, IntoElement, KeyBinding, MouseButton,
+    actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Div, FocusHandle,
+    FocusableView, InteractiveElement as _, IntoElement, KeyBinding, MouseButton,
     ParentElement as _, Render, ScrollHandle, SharedString, StatefulInteractiveElement as _,
     Styled, UniformListScrollHandle, ViewContext, WindowContext,
 };
@@ -255,12 +255,20 @@ where
         let view = cx.view().clone();
         let state = self.scrollbar_state.clone();
 
-        Some(deferred(Scrollbar::uniform_scroll(
-            view,
-            state,
-            self.vertical_scroll_handle.clone(),
-            self.delegate.rows_count(),
-        )))
+        Some(
+            div()
+                .absolute()
+                .top_0()
+                .left_0()
+                .right_0()
+                .bottom_0()
+                .child(Scrollbar::uniform_scroll(
+                    view,
+                    state,
+                    self.vertical_scroll_handle.clone(),
+                    self.delegate.rows_count(),
+                )),
+        )
     }
 }
 
@@ -408,8 +416,8 @@ where
             .border_1()
             .border_color(cx.theme().border)
             .bg(cx.theme().card)
-            .children(self.render_scrollbar(cx))
             .child(inner_table)
+            .children(self.render_scrollbar(cx))
             .child(ScrollableMask::new(
                 cx.view().clone(),
                 ScrollableAxis::Horizontal,
