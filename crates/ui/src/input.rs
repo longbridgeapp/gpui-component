@@ -297,11 +297,18 @@ impl TextInput {
 
     fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {
         self.is_selecting = true;
+        let offset = self.index_for_mouse_position(event.position);
+
+        // Double click to select word
+        if event.button == MouseButton::Left && event.click_count == 2 {
+            self.select_word(offset, cx);
+            return;
+        }
 
         if event.modifiers.shift {
-            self.select_to(self.index_for_mouse_position(event.position), cx);
+            self.select_to(offset, cx);
         } else {
-            self.move_to(self.index_for_mouse_position(event.position), cx)
+            self.move_to(offset, cx)
         }
     }
 
@@ -388,6 +395,42 @@ impl TextInput {
             self.selection_reversed = !self.selection_reversed;
             self.selected_range = self.selected_range.end..self.selected_range.start;
         }
+        cx.notify()
+    }
+
+    /// Select the word at the given offset.
+    fn select_word(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
+        fn is_word(c: char) -> bool {
+            c.is_alphanumeric() || matches!(c, '_')
+        }
+
+        let mut start = self.offset_to_utf16(offset);
+        let mut end = start;
+        let prev_text = self.text_for_range(0..start, cx).unwrap_or_default();
+        let next_text = self
+            .text_for_range(end..self.text.len(), cx)
+            .unwrap_or_default();
+
+        let prev_chars = prev_text.chars().rev().peekable();
+        let next_chars = next_text.chars().peekable();
+
+        for (_, c) in prev_chars.enumerate() {
+            if !is_word(c) {
+                break;
+            }
+
+            start -= c.len_utf16();
+        }
+
+        for (_, c) in next_chars.enumerate() {
+            if !is_word(c) {
+                break;
+            }
+
+            end += c.len_utf16();
+        }
+
+        self.selected_range = self.range_from_utf16(&(start..end));
         cx.notify()
     }
 
