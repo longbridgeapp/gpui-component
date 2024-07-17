@@ -45,6 +45,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Progress
   - [x] ProgressBar
   - [x] Indicator
+- [x] Slider
 - [ ] Skeleton
 - [ ] DatePicker
   - [ ] DateTimePicker
