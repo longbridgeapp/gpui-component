@@ -65,7 +65,7 @@ impl Render for ScrollableStory {
             .gap_4()
             .child(
                 h_flex()
-                    .gap_1()
+                    .gap_2()
                     .child(
                         Button::new("test-0", cx)
                             .label("Size 0")
@@ -87,7 +87,7 @@ impl Render for ScrollableStory {
                                 view.change_test_cases(2, cx);
                             })),
                     )
-                    .child(Divider::vertical())
+                    .child(Divider::vertical().px_2())
                     .child(
                         Button::new("test-axis-both", cx)
                             .label("Both Scrollbar")
@@ -105,7 +105,7 @@ impl Render for ScrollableStory {
                             })),
                     )
                     .child(
-                        Button::new("test-axis-both", cx)
+                        Button::new("test-axis-horizontal", cx)
                             .label("Horizontal")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_axis(ScrollbarAxis::Horizontal, cx)
