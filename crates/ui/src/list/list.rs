@@ -81,6 +81,7 @@ where
                 .appearance(false)
                 .prefix(Icon::new(IconName::Search).view(cx))
                 .placeholder("Search...")
+                .cleanable(true)
         });
 
         cx.subscribe(&query_input, Self::on_query_input_event)

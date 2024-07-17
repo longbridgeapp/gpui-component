@@ -6,8 +6,8 @@ use crate::{
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, FocusHandle,
-    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, RenderOnce, SharedString,
-    StatefulInteractiveElement as _, Styled, WindowContext,
+    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce,
+    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -15,6 +15,13 @@ pub enum ButtonRounded {
     Small,
     Medium,
     Large,
+    Size(Pixels),
+}
+
+impl From<Pixels> for ButtonRounded {
+    fn from(px: Pixels) -> Self {
+        ButtonRounded::Size(px)
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -100,8 +107,8 @@ impl Button {
         self
     }
 
-    pub fn rounded(mut self, rounded: ButtonRounded) -> Self {
-        self.rounded = rounded;
+    pub fn rounded(mut self, rounded: impl Into<ButtonRounded>) -> Self {
+        self.rounded = rounded.into();
         self
     }
 
@@ -180,6 +187,7 @@ impl RenderOnce for Button {
             .when_some(self.height, |this, height| this.h(height))
             .map(|this| {
                 if self.label.is_none() {
+                    // Icon Button
                     match self.size {
                         Size::Size(px) => this.size(px),
                         Size::XSmall => this.size_5(),
@@ -187,6 +195,7 @@ impl RenderOnce for Button {
                         Size::Large | Size::Medium => this.size_8(),
                     }
                 } else {
+                    // Normal Button
                     match self.size {
                         Size::XSmall => this.px_1().py_1().h_5(),
                         Size::Small => this.px_3().py_2().h_6(),
@@ -198,6 +207,7 @@ impl RenderOnce for Button {
                 ButtonRounded::Small => this.rounded(px(cx.theme().radius * 0.5)),
                 ButtonRounded::Medium => this.rounded(px(cx.theme().radius)),
                 ButtonRounded::Large => this.rounded(px(cx.theme().radius * 2.0)),
+                ButtonRounded::Size(px) => this.rounded(px),
                 ButtonRounded::None => this.rounded_none(),
             })
             .when(self.selected, |this| {

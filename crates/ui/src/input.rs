@@ -508,6 +508,10 @@ impl ViewInputHandler for TextInput {
         new_text: &str,
         cx: &mut ViewContext<Self>,
     ) {
+        if self.disabled {
+            return;
+        }
+
         let range = range_utf16
             .as_ref()
             .map(|range_utf16| self.range_from_utf16(range_utf16))
@@ -531,6 +535,10 @@ impl ViewInputHandler for TextInput {
         new_selected_range_utf16: Option<Range<usize>>,
         cx: &mut ViewContext<Self>,
     ) {
+        if self.disabled {
+            return;
+        }
+
         let range = range_utf16
             .as_ref()
             .map(|range_utf16| self.range_from_utf16(range_utf16))
@@ -864,7 +872,7 @@ impl Render for TextInput {
                     Button::new("clean-text", cx)
                         .icon(IconName::Close)
                         .style(ButtonStyle::Ghost)
-                        .size(px(14.))
+                        .size(px(15.))
                         .cursor_pointer()
                         .on_click(cx.listener(Self::clean)),
                 )
