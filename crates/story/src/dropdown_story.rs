@@ -33,8 +33,8 @@ impl DropdownItem for Country {
         self.name.as_str().into()
     }
 
-    fn value(&self) -> Self::Value {
-        self.code.clone()
+    fn value(&self) -> &Self::Value {
+        &self.code
     }
 }
 

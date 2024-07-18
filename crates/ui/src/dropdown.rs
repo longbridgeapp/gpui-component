@@ -31,9 +31,9 @@ use crate::{
 
 /// A trait for items that can be displayed in a dropdown.
 pub trait DropdownItem {
-    type Value;
+    type Value: Clone;
     fn title(&self) -> Cow<'_, str>;
-    fn value(&self) -> Self::Value;
+    fn value(&self) -> &Self::Value;
 }
 
 impl DropdownItem for String {
@@ -43,8 +43,8 @@ impl DropdownItem for String {
         self.as_str().into()
     }
 
-    fn value(&self) -> Self::Value {
-        self.clone()
+    fn value(&self) -> &Self::Value {
+        &self
     }
 }
 
@@ -55,18 +55,29 @@ impl DropdownItem for SharedString {
         self.as_ref().into()
     }
 
-    fn value(&self) -> Self::Value {
-        self.clone()
+    fn value(&self) -> &Self::Value {
+        &self
     }
 }
 
 pub trait DropdownDelegate {
     type Item: DropdownItem;
+
     fn len(&self) -> usize;
+
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
     fn get(&self, ix: usize) -> Option<&Self::Item>;
+
+    fn position<V>(&self, value: &V) -> Option<usize>
+    where
+        Self::Item: DropdownItem<Value = V>,
+        V: PartialEq,
+    {
+        (0..self.len()).find(|&i| self.get(i).map_or(false, |item| item.value() == value))
+    }
 }
 
 impl<T: DropdownItem> DropdownDelegate for Vec<T> {
@@ -78,6 +89,14 @@ impl<T: DropdownItem> DropdownDelegate for Vec<T> {
 
     fn get(&self, ix: usize) -> Option<&Self::Item> {
         self.as_slice().get(ix)
+    }
+
+    fn position<V>(&self, value: &V) -> Option<usize>
+    where
+        Self::Item: DropdownItem<Value = V>,
+        V: PartialEq,
+    {
+        self.iter().position(|v| v.value() == value)
     }
 }
 
@@ -139,7 +158,7 @@ where
                 view.selected_value = self
                     .selected_index
                     .and_then(|ix| self.delegate.get(ix))
-                    .map(DropdownItem::value);
+                    .map(|item| item.value().clone());
                 view.open = false;
             });
         }
@@ -232,6 +251,18 @@ where
         self.update_selected_value(cx);
     }
 
+    pub fn set_selected_value(
+        &mut self,
+        selected_value: &<D::Item as DropdownItem>::Value,
+        cx: &mut ViewContext<Self>,
+    ) where
+        <<D as DropdownDelegate>::Item as DropdownItem>::Value: PartialEq,
+    {
+        let delegate = self.list.read(cx).delegate();
+        let selected_index = delegate.delegate.position(selected_value);
+        self.set_selected_index(selected_index, cx);
+    }
+
     pub fn selected_index(&self, cx: &WindowContext) -> Option<usize> {
         self.list.read(cx).selected_index()
     }
@@ -240,7 +271,7 @@ where
         self.selected_value = self
             .selected_index(cx)
             .and_then(|ix| self.list.read(cx).delegate().delegate.get(ix))
-            .map(|item| item.value());
+            .map(|item| item.value().clone());
     }
 
     pub fn selected_value(&self) -> Option<&<D::Item as DropdownItem>::Value> {
