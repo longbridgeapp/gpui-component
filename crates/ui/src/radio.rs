@@ -90,7 +90,7 @@ impl RenderOnce for Radio {
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_click(move |_event, cx| {
-                        (on_click)(&!self.selected, cx);
+                        on_click(&!self.selected, cx);
                     })
                 },
             )

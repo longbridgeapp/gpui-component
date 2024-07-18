@@ -154,11 +154,16 @@ where
         self.selected_index = ix;
 
         if let Some(view) = self.dropdown.upgrade() {
-            cx.update_view(&view, |view, _| {
-                view.selected_value = self
+            cx.update_view(&view, |view, cx| {
+                let selected_value = self
                     .selected_index
                     .and_then(|ix| self.delegate.get(ix))
                     .map(|item| item.value().clone());
+
+                if let Some(on_change) = &view.on_change {
+                    on_change(&selected_value, cx);
+                }
+                view.selected_value = selected_value;
                 view.open = false;
             });
         }
@@ -179,6 +184,9 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
+    on_change: Option<
+        Box<dyn Fn(&Option<<D::Item as DropdownItem>::Value>, &mut WindowContext) + 'static>,
+    >,
 }
 
 impl<D> Dropdown<D>
@@ -208,6 +216,7 @@ where
             open: false,
             cleanable: true,
             title_prefix: None,
+            on_change: None,
         };
         this.update_selected_value(cx);
         this
@@ -237,6 +246,14 @@ where
     /// Set true to show the clear button when the input field is not empty.
     pub fn cleanable(mut self, cleanable: bool) -> Self {
         self.cleanable = cleanable;
+        self
+    }
+
+    pub fn on_change(
+        mut self,
+        on_change: impl Fn(&Option<<D::Item as DropdownItem>::Value>, &mut WindowContext) + 'static,
+    ) -> Self {
+        self.on_change = Some(Box::new(on_change));
         self
     }
 

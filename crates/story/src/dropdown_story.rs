@@ -61,8 +61,11 @@ impl DropdownStory {
             Country::new("Ecuador", "EC"),
         ];
 
-        let country_dropdown =
-            cx.new_view(|cx| Dropdown::new("dropdown-country", countries, Some(6), cx));
+        let country_dropdown = cx.new_view(|cx| {
+            Dropdown::new("dropdown-country", countries, Some(6), cx).on_change(|value, _cx| {
+                println!("Country changed: {:?}", value);
+            })
+        });
 
         let furits = vec![
             "Apple",
@@ -73,8 +76,11 @@ impl DropdownStory {
             "Watermelon",
             "Avocado",
         ];
-        let furit_dropdown =
-            cx.new_view(|cx| Dropdown::string_list("dropdown-furits", furits, None, cx));
+        let furit_dropdown = cx.new_view(|cx| {
+            Dropdown::string_list("dropdown-furits", furits, None, cx).on_change(|value, _cx| {
+                println!("Furit changed: {:?}", value);
+            })
+        });
 
         cx.new_view(|cx| Self {
             country_dropdown,
