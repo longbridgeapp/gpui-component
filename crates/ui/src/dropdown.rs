@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder as _, px, rems, AnyElement, AppContext,
     ClickEvent, DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView,
@@ -35,7 +33,7 @@ pub trait DropdownItem {
     fn value(&self) -> &str;
 }
 
-impl DropdownItem for &String {
+impl DropdownItem for String {
     fn title(&self) -> &str {
         self
     }
@@ -45,7 +43,7 @@ impl DropdownItem for &String {
     }
 }
 
-impl DropdownItem for &SharedString {
+impl DropdownItem for SharedString {
     fn title(&self) -> &str {
         self.as_ref()
     }
@@ -56,11 +54,24 @@ impl DropdownItem for &SharedString {
 }
 
 pub trait DropdownDelegate {
+    type Item: DropdownItem;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    fn get(&self, ix: usize) -> Option<impl DropdownItem>;
+    fn get(&self, ix: usize) -> Option<&Self::Item>;
+}
+
+impl<T: DropdownItem> DropdownDelegate for Vec<T> {
+    type Item = T;
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn get(&self, ix: usize) -> Option<&Self::Item> {
+        self.as_slice().get(ix)
+    }
 }
 
 struct DropdownListDelegate<D: DropdownDelegate + 'static> {
@@ -129,20 +140,6 @@ where
 
     fn set_selected_index(&mut self, ix: Option<usize>, _: &mut ViewContext<List<Self>>) {
         self.selected_index = ix;
-    }
-}
-
-pub struct StringDropdownDelegate {
-    items: Rc<Vec<SharedString>>,
-}
-
-impl DropdownDelegate for StringDropdownDelegate {
-    fn len(&self) -> usize {
-        self.items.len()
-    }
-
-    fn get(&self, ix: usize) -> Option<impl DropdownItem> {
-        self.items.get(ix)
     }
 }
 
@@ -326,18 +323,15 @@ where
     }
 }
 
-impl Dropdown<StringDropdownDelegate> {
+impl Dropdown<Vec<SharedString>> {
     pub fn string_list(
         id: impl Into<ElementId>,
-        items: Rc<Vec<SharedString>>,
+        items: Vec<impl Into<SharedString>>,
         selected_index: Option<usize>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
-        let delegate = StringDropdownDelegate {
-            items: items.clone(),
-        };
-
-        Self::new(id, delegate, selected_index, cx)
+        let items = items.into_iter().map(Into::into).collect();
+        Self::new(id, items, selected_index, cx)
     }
 }
 
