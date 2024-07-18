@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::borrow::Cow;
 
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder as _, px, rems, AnyElement, AppContext,
@@ -31,36 +31,73 @@ use crate::{
 
 /// A trait for items that can be displayed in a dropdown.
 pub trait DropdownItem {
-    fn title(&self) -> &str;
-    fn value(&self) -> &str;
+    type Value: Clone;
+    fn title(&self) -> Cow<'_, str>;
+    fn value(&self) -> &Self::Value;
 }
 
-impl DropdownItem for &String {
-    fn title(&self) -> &str {
-        self
+impl DropdownItem for String {
+    type Value = Self;
+
+    fn title(&self) -> Cow<'_, str> {
+        self.as_str().into()
     }
 
-    fn value(&self) -> &str {
-        self
+    fn value(&self) -> &Self::Value {
+        &self
     }
 }
 
-impl DropdownItem for &SharedString {
-    fn title(&self) -> &str {
-        self.as_ref()
+impl DropdownItem for SharedString {
+    type Value = Self;
+
+    fn title(&self) -> Cow<'_, str> {
+        self.as_ref().into()
     }
 
-    fn value(&self) -> &str {
-        self.as_ref()
+    fn value(&self) -> &Self::Value {
+        &self
     }
 }
 
 pub trait DropdownDelegate {
+    type Item: DropdownItem;
+
     fn len(&self) -> usize;
+
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    fn get(&self, ix: usize) -> Option<impl DropdownItem>;
+
+    fn get(&self, ix: usize) -> Option<&Self::Item>;
+
+    fn position<V>(&self, value: &V) -> Option<usize>
+    where
+        Self::Item: DropdownItem<Value = V>,
+        V: PartialEq,
+    {
+        (0..self.len()).find(|&i| self.get(i).map_or(false, |item| item.value() == value))
+    }
+}
+
+impl<T: DropdownItem> DropdownDelegate for Vec<T> {
+    type Item = T;
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn get(&self, ix: usize) -> Option<&Self::Item> {
+        self.as_slice().get(ix)
+    }
+
+    fn position<V>(&self, value: &V) -> Option<usize>
+    where
+        Self::Item: DropdownItem<Value = V>,
+        V: PartialEq,
+    {
+        self.iter().position(|v| v.value() == value)
+    }
 }
 
 struct DropdownListDelegate<D: DropdownDelegate + 'static> {
@@ -121,7 +158,7 @@ where
                 view.selected_value = self
                     .selected_index
                     .and_then(|ix| self.delegate.get(ix))
-                    .map(|item| item.value().to_string().into());
+                    .map(|item| item.value().clone());
                 view.open = false;
             });
         }
@@ -129,20 +166,6 @@ where
 
     fn set_selected_index(&mut self, ix: Option<usize>, _: &mut ViewContext<List<Self>>) {
         self.selected_index = ix;
-    }
-}
-
-pub struct StringDropdownDelegate {
-    items: Rc<Vec<SharedString>>,
-}
-
-impl DropdownDelegate for StringDropdownDelegate {
-    fn len(&self) -> usize {
-        self.items.len()
-    }
-
-    fn get(&self, ix: usize) -> Option<impl DropdownItem> {
-        self.items.get(ix)
     }
 }
 
@@ -155,7 +178,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     cleanable: bool,
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
-    selected_value: Option<SharedString>,
+    selected_value: Option<<D::Item as DropdownItem>::Value>,
 }
 
 impl<D> Dropdown<D>
@@ -228,6 +251,18 @@ where
         self.update_selected_value(cx);
     }
 
+    pub fn set_selected_value(
+        &mut self,
+        selected_value: &<D::Item as DropdownItem>::Value,
+        cx: &mut ViewContext<Self>,
+    ) where
+        <<D as DropdownDelegate>::Item as DropdownItem>::Value: PartialEq,
+    {
+        let delegate = self.list.read(cx).delegate();
+        let selected_index = delegate.delegate.position(selected_value);
+        self.set_selected_index(selected_index, cx);
+    }
+
     pub fn selected_index(&self, cx: &WindowContext) -> Option<usize> {
         self.list.read(cx).selected_index()
     }
@@ -236,11 +271,11 @@ where
         self.selected_value = self
             .selected_index(cx)
             .and_then(|ix| self.list.read(cx).delegate().delegate.get(ix))
-            .map(|item| item.value().to_string().into());
+            .map(|item| item.value().clone());
     }
 
-    pub fn selected_value(&self) -> Option<SharedString> {
-        self.selected_value.clone()
+    pub fn selected_value(&self) -> Option<&<D::Item as DropdownItem>::Value> {
+        self.selected_value.as_ref()
     }
 
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
@@ -326,18 +361,15 @@ where
     }
 }
 
-impl Dropdown<StringDropdownDelegate> {
+impl Dropdown<Vec<SharedString>> {
     pub fn string_list(
         id: impl Into<ElementId>,
-        items: Rc<Vec<SharedString>>,
+        items: Vec<impl Into<SharedString>>,
         selected_index: Option<usize>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
-        let delegate = StringDropdownDelegate {
-            items: items.clone(),
-        };
-
-        Self::new(id, delegate, selected_index, cx)
+        let items = items.into_iter().map(Into::into).collect();
+        Self::new(id, items, selected_index, cx)
     }
 }
 
