@@ -3,8 +3,13 @@ use gpui::{
     WindowContext,
 };
 use ui::{
-    button::Button, divider::Divider, h_flex, indicator::Indicator, progress::Progress,
-    slider::Slider, v_flex, Clickable, IconName, Size,
+    button::Button,
+    divider::Divider,
+    h_flex,
+    indicator::Indicator,
+    progress::Progress,
+    slider::{Slider, SliderEvent},
+    v_flex, Clickable, IconName, Size,
 };
 
 pub struct ProgressStory {
@@ -21,31 +26,36 @@ impl ProgressStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
-        let slider1 = Slider::horizontal()
-            .min(-255.)
-            .max(255.)
-            .default_value(15.)
-            .step(15.)
-            .on_change(cx.listener(|this, value, cx| {
+        let slider1 = cx.new_view(|_| {
+            Slider::horizontal()
+                .min(-255.)
+                .max(255.)
+                .default_value(15.)
+                .step(15.)
+        });
+        cx.subscribe(&slider1, |this, _, event: &SliderEvent, cx| match event {
+            SliderEvent::Change(value) => {
                 this.slider1_value = *value;
                 cx.notify();
-            }));
+            }
+        })
+        .detach();
 
-        let slider2 = Slider::horizontal()
-            .min(0.)
-            .max(5.)
-            .step(1.0)
-            .on_change(cx.listener(|this, value, cx| {
+        let slider2 = cx.new_view(|_| Slider::horizontal().min(0.).max(5.).step(1.0));
+        cx.subscribe(&slider2, |this, _, event: &SliderEvent, cx| match event {
+            SliderEvent::Change(value) => {
                 this.slider2_value = *value;
                 cx.notify();
-            }));
+            }
+        })
+        .detach();
 
         Self {
             value: 50.,
             slider1_value: 15.,
             slider2_value: 1.,
-            slider1: cx.new_view(|_| slider1),
-            slider2: cx.new_view(|_| slider2),
+            slider1,
+            slider2,
         }
     }
 

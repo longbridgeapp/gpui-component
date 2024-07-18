@@ -1,12 +1,17 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AnyElement, Context, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton, MouseDownEvent,
-    ParentElement as _, Render, SharedString, Styled as _, ViewContext, WindowContext,
+    div, prelude::FluentBuilder as _, AnyElement, Context, EventEmitter, FocusHandle,
+    FocusableView, InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton,
+    MouseDownEvent, ParentElement as _, Render, SharedString, Styled as _, ViewContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, v_flex};
 
-use super::blink_cursor::BlinkCursor;
+use super::{blink_cursor::BlinkCursor, InputEvent};
+
+pub enum InputOptEvent {
+    /// When all OTP input have filled, this event will be triggered.
+    Change(SharedString),
+}
 
 pub struct InputOtp {
     focus_handle: FocusHandle,
@@ -15,7 +20,6 @@ pub struct InputOtp {
     masked: bool,
     value: SharedString,
     blink_cursor: Model<BlinkCursor>,
-    on_change: Option<Box<dyn Fn(&SharedString, &mut WindowContext) + 'static>>,
 }
 
 impl InputOtp {
@@ -28,7 +32,6 @@ impl InputOtp {
             number_of_groups: 2,
             value: SharedString::default(),
             masked: false,
-            on_change: None,
             blink_cursor: blink_cursor.clone(),
         };
 
@@ -62,15 +65,6 @@ impl InputOtp {
     /// Set masked to true use masked input.
     pub fn masked(mut self, masked: bool) -> Self {
         self.masked = masked;
-        self
-    }
-
-    /// Set callback to be called when the value of the OTP Input changes (All OTP input have filled).
-    pub fn on_change<F>(mut self, f: F) -> Self
-    where
-        F: Fn(&SharedString, &mut WindowContext) + 'static,
-    {
-        self.on_change = Some(Box::new(f));
         self
     }
 
@@ -108,9 +102,9 @@ impl InputOtp {
         self.value = SharedString::from(chars.iter().collect::<String>());
 
         if self.value.chars().count() == self.length {
-            if let Some(on_change) = &self.on_change {
-                on_change(&self.value, cx);
-            }
+            cx.emit(InputEvent::Change {
+                text: self.value.clone(),
+            });
         }
         cx.notify()
     }
@@ -119,12 +113,14 @@ impl InputOtp {
         self.blink_cursor.update(cx, |cursor, cx| {
             cursor.start(cx);
         });
+        cx.emit(InputEvent::Focus);
     }
 
     fn on_blur(&mut self, cx: &mut ViewContext<Self>) {
         self.blink_cursor.update(cx, |cursor, cx| {
             cursor.stop(cx);
         });
+        cx.emit(InputEvent::Blur);
     }
 
     fn pause_blink_cursor(&mut self, cx: &mut ViewContext<Self>) {
@@ -139,6 +135,7 @@ impl FocusableView for InputOtp {
         self.focus_handle.clone()
     }
 }
+impl EventEmitter<InputEvent> for InputOtp {}
 
 impl Render for InputOtp {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {

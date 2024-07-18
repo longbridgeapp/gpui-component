@@ -47,8 +47,8 @@ actions!(
     ]
 );
 
-pub enum TextEvent {
-    Input { text: SharedString },
+pub enum InputEvent {
+    Change { text: SharedString },
     PressEnter,
     Focus,
     Blur,
@@ -113,7 +113,7 @@ pub struct TextInput {
     size: Size,
 }
 
-impl EventEmitter<TextEvent> for TextInput {}
+impl EventEmitter<InputEvent> for TextInput {}
 
 impl TextInput {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
@@ -292,7 +292,7 @@ impl TextInput {
     }
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
-        cx.emit(TextEvent::PressEnter);
+        cx.emit(InputEvent::PressEnter);
     }
 
     fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
@@ -505,7 +505,7 @@ impl TextInput {
         self.blink_cursor.update(cx, |cursor, cx| {
             cursor.start(cx);
         });
-        cx.emit(TextEvent::Focus);
+        cx.emit(InputEvent::Focus);
     }
 
     fn on_blur(&mut self, cx: &mut ViewContext<Self>) {
@@ -513,7 +513,7 @@ impl TextInput {
         self.blink_cursor.update(cx, |cursor, cx| {
             cursor.stop(cx);
         });
-        cx.emit(TextEvent::Blur);
+        cx.emit(InputEvent::Blur);
     }
 
     fn pause_blink_cursor(&mut self, cx: &mut ViewContext<Self>) {
@@ -571,7 +571,7 @@ impl ViewInputHandler for TextInput {
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range.take();
-        cx.emit(TextEvent::Input {
+        cx.emit(InputEvent::Change {
             text: self.text.clone(),
         });
         cx.notify();
@@ -602,7 +602,7 @@ impl ViewInputHandler for TextInput {
             .map(|range_utf16| self.range_from_utf16(range_utf16))
             .map(|new_range| new_range.start + range.start..new_range.end + range.end)
             .unwrap_or_else(|| range.start + new_text.len()..range.start + new_text.len());
-        cx.emit(TextEvent::Input {
+        cx.emit(InputEvent::Change {
             text: self.text.clone(),
         });
         cx.notify();
