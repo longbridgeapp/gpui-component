@@ -3,7 +3,7 @@ use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
     PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
-    TableStory, TooltipStory,
+    TableStory, TooltipStory, WebViewStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -50,21 +50,23 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
+        StoryContainer::add_pane(
+            "Input",
+            "A control that allows the user to input text.",
             InputStory::view(cx).into(),
             workspace.clone(),
-            DockPosition::Right,
-            px(350.0),
             cx,
-        );
+        )
+        .detach();
 
-        StoryContainer::add_panel(
+        StoryContainer::add_pane(
+            "Checkbox",
+            "A control that allows the user to toggle between checked and not checked.",
             CheckboxStory::view(cx).into(),
             workspace.clone(),
-            DockPosition::Bottom,
-            px(200.),
             cx,
-        );
+        )
+        .detach();
 
         StoryContainer::add_pane(
             "Switch",
@@ -127,6 +129,14 @@ impl StoryWorkspace {
             cx,
         )
         .detach();
+
+        StoryContainer::add_panel(
+            WebViewStory::view(cx).into(),
+            workspace.clone(),
+            DockPosition::Right,
+            px(450.),
+            cx,
+        );
 
         StoryContainer::add_pane(
             "Table",

@@ -31,6 +31,7 @@ pub mod tab;
 pub mod table;
 pub mod theme;
 pub mod tooltip;
+pub mod webview;
 
 pub use clickable::Clickable;
 pub use disableable::Disableable;
@@ -52,4 +53,5 @@ pub fn init(cx: &mut gpui::AppContext) {
     popover::init(cx);
     popup_menu::init(cx);
     table::init(cx);
+    webview::init(cx)
 }
