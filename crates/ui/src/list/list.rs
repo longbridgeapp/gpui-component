@@ -161,7 +161,7 @@ where
         cx: &mut ViewContext<Self>,
     ) {
         match event {
-            InputEvent::Change { text } => {
+            InputEvent::Change(text) => {
                 self.delegate.perform_search(&text.trim(), cx);
                 cx.notify()
             }

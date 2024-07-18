@@ -48,7 +48,7 @@ actions!(
 );
 
 pub enum InputEvent {
-    Change { text: SharedString },
+    Change(SharedString),
     PressEnter,
     Focus,
     Blur,
@@ -571,9 +571,7 @@ impl ViewInputHandler for TextInput {
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range.take();
-        cx.emit(InputEvent::Change {
-            text: self.text.clone(),
-        });
+        cx.emit(InputEvent::Change(self.text.clone()));
         cx.notify();
     }
 
@@ -602,9 +600,7 @@ impl ViewInputHandler for TextInput {
             .map(|range_utf16| self.range_from_utf16(range_utf16))
             .map(|new_range| new_range.start + range.start..new_range.end + range.end)
             .unwrap_or_else(|| range.start + new_text.len()..range.start + new_text.len());
-        cx.emit(InputEvent::Change {
-            text: self.text.clone(),
-        });
+        cx.emit(InputEvent::Change(self.text.clone()));
         cx.notify();
     }
 

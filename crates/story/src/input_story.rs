@@ -1,5 +1,5 @@
 use gpui::{
-    actions, AppContext, ClickEvent, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
+    actions, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
     ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
@@ -88,7 +88,7 @@ impl InputStory {
 
         let otp_input = cx.new_view(|cx| InputOtp::new(6, cx).masked(true));
         cx.subscribe(&otp_input, |this, _, ev: &InputEvent, cx| match ev {
-            InputEvent::Change { text } => {
+            InputEvent::Change(text) => {
                 this.otp_value = Some(text.clone());
                 cx.notify();
             }
@@ -140,7 +140,7 @@ impl InputStory {
         _cx: &mut ViewContext<Self>,
     ) {
         match event {
-            InputEvent::Change { text } => println!("Change: {}", text),
+            InputEvent::Change(text) => println!("Change: {}", text),
             InputEvent::PressEnter => println!("PressEnter"),
             InputEvent::Focus => println!("Focus"),
             InputEvent::Blur => println!("Blur"),
