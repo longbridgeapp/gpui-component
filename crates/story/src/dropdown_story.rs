@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use ui::{
-    dropdown::{Dropdown, DropdownItem},
+    dropdown::{Dropdown, DropdownEvent, DropdownItem},
     h_flex,
     theme::ActiveTheme,
     v_flex, Selection,
@@ -40,7 +40,7 @@ impl DropdownItem for Country {
 
 pub struct DropdownStory {
     country_dropdown: View<Dropdown<Vec<Country>>>,
-    furit_dropdown: View<Dropdown<Vec<SharedString>>>,
+    fruit_dropdown: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown1: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown2: View<Dropdown<Vec<SharedString>>>,
 }
@@ -61,13 +61,10 @@ impl DropdownStory {
             Country::new("Ecuador", "EC"),
         ];
 
-        let country_dropdown = cx.new_view(|cx| {
-            Dropdown::new("dropdown-country", countries, Some(6), cx).on_change(|value, _cx| {
-                println!("Country changed: {:?}", value);
-            })
-        });
+        let country_dropdown =
+            cx.new_view(|cx| Dropdown::new("dropdown-country", countries, Some(6), cx));
 
-        let furits = vec![
+        let fruits = vec![
             "Apple",
             "Orange",
             "Banana",
@@ -76,43 +73,56 @@ impl DropdownStory {
             "Watermelon",
             "Avocado",
         ];
-        let furit_dropdown = cx.new_view(|cx| {
-            Dropdown::string_list("dropdown-furits", furits, None, cx).on_change(|value, _cx| {
-                println!("Furit changed: {:?}", value);
-            })
-        });
+        let fruit_dropdown =
+            cx.new_view(|cx| Dropdown::string_list("dropdown-fruits", fruits, None, cx));
 
-        cx.new_view(|cx| Self {
-            country_dropdown,
-            furit_dropdown,
-            simple_dropdown1: cx.new_view(|cx| {
-                Dropdown::string_list(
-                    "string-list1",
-                    vec!["QPUI", "Iced", "QT", "Cocoa"],
-                    Some(0),
-                    cx,
-                )
-                .size(ui::Size::Small)
-                .placeholder("UI")
-                .title_prefix("UI: ")
-            }),
-            simple_dropdown2: cx.new_view(|cx| {
-                Dropdown::string_list(
-                    "string-list2",
-                    vec!["Rust", "Go", "C++", "JavaScript"],
-                    None,
-                    cx,
-                )
-                .size(ui::Size::Small)
-                .placeholder("Language")
-                .title_prefix("Language: ")
-            }),
+        cx.new_view(|cx| {
+            cx.subscribe(&country_dropdown, Self::on_dropdown_event)
+                .detach();
+
+            Self {
+                country_dropdown,
+                fruit_dropdown,
+                simple_dropdown1: cx.new_view(|cx| {
+                    Dropdown::string_list(
+                        "string-list1",
+                        vec!["QPUI", "Iced", "QT", "Cocoa"],
+                        Some(0),
+                        cx,
+                    )
+                    .size(ui::Size::Small)
+                    .placeholder("UI")
+                    .title_prefix("UI: ")
+                }),
+                simple_dropdown2: cx.new_view(|cx| {
+                    Dropdown::string_list(
+                        "string-list2",
+                        vec!["Rust", "Go", "C++", "JavaScript"],
+                        None,
+                        cx,
+                    )
+                    .size(ui::Size::Small)
+                    .placeholder("Language")
+                    .title_prefix("Language: ")
+                }),
+            }
         })
     }
 
     #[allow(unused)]
     fn on_click(sel: &Selection, cx: &mut WindowContext) {
         println!("Check value changed: {}", sel);
+    }
+
+    fn on_dropdown_event(
+        &mut self,
+        _: View<Dropdown<Vec<Country>>>,
+        event: &DropdownEvent<Vec<Country>>,
+        _cx: &mut ViewContext<Self>,
+    ) {
+        match event {
+            DropdownEvent::Confirm(value) => println!("Selected country: {:?}", value),
+        }
     }
 }
 
@@ -128,7 +138,7 @@ impl Render for DropdownStory {
                     .items_center()
                     .gap_4()
                     .child(self.country_dropdown.clone())
-                    .child(self.furit_dropdown.clone()),
+                    .child(self.fruit_dropdown.clone()),
             )
             .child(
                 v_flex()
@@ -145,8 +155,8 @@ impl Render for DropdownStory {
                         self.country_dropdown.read(cx).selected_value()
                     ))
                     .child(format!(
-                        "Furit: {:?}",
-                        self.furit_dropdown.read(cx).selected_value()
+                        "fruit: {:?}",
+                        self.fruit_dropdown.read(cx).selected_value()
                     ))
                     .child(format!(
                         "UI: {:?}",

@@ -159,10 +159,7 @@ where
                     .selected_index
                     .and_then(|ix| self.delegate.get(ix))
                     .map(|item| item.value().clone());
-
-                if let Some(on_change) = &view.on_change {
-                    on_change(&selected_value, cx);
-                }
+                cx.emit(DropdownEvent::Confirm(selected_value.clone()));
                 view.selected_value = selected_value;
                 view.open = false;
             });
@@ -172,6 +169,10 @@ where
     fn set_selected_index(&mut self, ix: Option<usize>, _: &mut ViewContext<List<Self>>) {
         self.selected_index = ix;
     }
+}
+
+pub enum DropdownEvent<D: DropdownDelegate + 'static> {
+    Confirm(Option<<D::Item as DropdownItem>::Value>),
 }
 
 pub struct Dropdown<D: DropdownDelegate + 'static> {
@@ -184,9 +185,6 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
-    on_change: Option<
-        Box<dyn Fn(&Option<<D::Item as DropdownItem>::Value>, &mut WindowContext) + 'static>,
-    >,
 }
 
 impl<D> Dropdown<D>
@@ -216,7 +214,6 @@ where
             open: false,
             cleanable: true,
             title_prefix: None,
-            on_change: None,
         };
         this.update_selected_value(cx);
         this
@@ -246,14 +243,6 @@ where
     /// Set true to show the clear button when the input field is not empty.
     pub fn cleanable(mut self, cleanable: bool) -> Self {
         self.cleanable = cleanable;
-        self
-    }
-
-    pub fn on_change(
-        mut self,
-        on_change: impl Fn(&Option<<D::Item as DropdownItem>::Value>, &mut WindowContext) + 'static,
-    ) -> Self {
-        self.on_change = Some(Box::new(on_change));
         self
     }
 
@@ -390,6 +379,7 @@ impl Dropdown<Vec<SharedString>> {
     }
 }
 
+impl<D> EventEmitter<DropdownEvent<D>> for Dropdown<D> where D: DropdownDelegate + 'static {}
 impl<D> EventEmitter<DismissEvent> for Dropdown<D> where D: DropdownDelegate + 'static {}
 impl<D> FocusableView for Dropdown<D>
 where
