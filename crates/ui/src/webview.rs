@@ -9,8 +9,10 @@ use gpui::{
     div, AppContext, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter,
     FocusHandle, FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
     MouseDownEvent, ParentElement as _, Pixels, Render, Size, Style, Styled as _, View,
-    WindowContext,
+    ViewContext, WindowContext,
 };
+
+use crate::input;
 
 pub fn init(_cx: &AppContext) {}
 
@@ -25,7 +27,10 @@ impl WebView {
         let focus_handle = cx.focus_handle();
         let window_handle = cx.raw_window_handle();
 
-        let webview = wry::WebView::new_as_child(&window_handle)
+        let webview = wry::WebViewBuilder::new_as_child(&window_handle)
+            .with_accept_first_mouse(true)
+            .with_clipboard(true)
+            .build()
             .expect("failed to create webview to child window");
         let _ = webview.set_bounds(Rect::default());
 
@@ -56,6 +61,36 @@ impl WebView {
     pub fn load_url(&mut self, url: &str) {
         self.webview.load_url(url).unwrap();
     }
+
+    fn on_copy(&mut self, _: &input::Copy, _: &mut ViewContext<Self>) {
+        self.webview
+            .evaluate_script(
+                r#"
+                document.execCommand("copy");
+                "#,
+            )
+            .expect("failed to evaluate_script to copy");
+    }
+
+    fn on_cut(&mut self, _: &input::Cut, _: &mut ViewContext<Self>) {
+        self.webview
+            .evaluate_script(
+                r#"
+                document.execCommand("cut");
+                "#,
+            )
+            .expect("failed to evaluate_script to cut");
+    }
+
+    fn on_paste(&mut self, _: &input::Paste, _: &mut ViewContext<Self>) {
+        self.webview
+            .evaluate_script(
+                r#"
+                document.execCommand("paste");
+                "#,
+            )
+            .expect("failed to evaluate_script to paste");
+    }
 }
 
 impl Deref for WebView {
@@ -79,7 +114,11 @@ impl Render for WebView {
         let view = cx.view().clone();
 
         div()
+            .id("webview")
             .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::on_copy))
+            .on_action(cx.listener(Self::on_cut))
+            .on_action(cx.listener(Self::on_paste))
             .size_full()
             .child(WebViewElement::new(self.webview.clone(), view, cx))
     }
