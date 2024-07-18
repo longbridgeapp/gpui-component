@@ -5689,12 +5689,9 @@ name = "ui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cocoa",
  "gpui",
  "image",
  "log",
- "objc",
- "objc_id",
  "once_cell",
  "paste",
  "raw-window-handle 0.6.2",
