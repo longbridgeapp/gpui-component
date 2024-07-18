@@ -50,21 +50,23 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
+        StoryContainer::add_pane(
+            "Input",
+            "A control that allows the user to input text.",
             InputStory::view(cx).into(),
             workspace.clone(),
-            DockPosition::Right,
-            px(350.0),
             cx,
-        );
+        )
+        .detach();
 
-        StoryContainer::add_panel(
+        StoryContainer::add_pane(
+            "Checkbox",
+            "A control that allows the user to toggle between checked and not checked.",
             CheckboxStory::view(cx).into(),
             workspace.clone(),
-            DockPosition::Bottom,
-            px(200.),
             cx,
-        );
+        )
+        .detach();
 
         StoryContainer::add_pane(
             "Switch",
@@ -128,14 +130,13 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
-            "WebView",
-            "A webview element can display a wry webview.",
+        StoryContainer::add_panel(
             WebViewStory::view(cx).into(),
             workspace.clone(),
+            DockPosition::Right,
+            px(450.),
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_pane(
             "Table",

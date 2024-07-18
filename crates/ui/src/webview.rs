@@ -48,6 +48,11 @@ impl WebView {
         self.visable
     }
 
+    /// Go back in the webview history.
+    pub fn back(&mut self) -> anyhow::Result<()> {
+        Ok(self.webview.evaluate_script("history.back();")?)
+    }
+
     pub fn load_url(&mut self, url: &str) {
         self.webview.load_url(url).unwrap();
     }

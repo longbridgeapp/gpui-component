@@ -1,12 +1,15 @@
 use gpui::{
-    div, FocusHandle, FocusableView, ParentElement as _, Render, Styled as _, View,
-    VisualContext as _, WindowContext,
+    div, ClickEvent, FocusHandle, FocusableView, ParentElement as _, Render, Styled as _, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
+    button::Button,
+    h_flex,
     input::{TextEvent, TextInput},
     theme::ActiveTheme,
     v_flex,
     webview::WebView,
+    Clickable, IconName,
 };
 
 pub struct WebViewStory {
@@ -23,7 +26,7 @@ impl WebViewStory {
 
         let address_input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx);
-            input.set_text("https://google.com", cx);
+            input.set_text("https://github.com/explore", cx);
             input
         });
 
@@ -56,6 +59,16 @@ impl WebViewStory {
             this
         })
     }
+
+    pub fn hide(&self, cx: &mut WindowContext) {
+        self.webview.update(cx, |webview, _| webview.hide())
+    }
+
+    fn go_back(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        self.webview.update(cx, |webview, _| {
+            webview.back().unwrap();
+        });
+    }
 }
 
 impl FocusableView for WebViewStory {
@@ -70,7 +83,17 @@ impl Render for WebViewStory {
             .p_2()
             .gap_3()
             .size_full()
-            .child(self.address_input.clone())
+            .child(
+                h_flex()
+                    .gap_2()
+                    .items_center()
+                    .child(
+                        Button::new("go-back", cx)
+                            .icon(IconName::ArrowLeft)
+                            .on_click(cx.listener(Self::go_back)),
+                    )
+                    .child(self.address_input.clone()),
+            )
             .child(
                 div()
                     .size_full()

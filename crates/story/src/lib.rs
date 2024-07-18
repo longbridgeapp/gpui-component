@@ -48,14 +48,6 @@ pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
 }
 
-pub fn story_case(
-    name: &'static str,
-    description: &'static str,
-    cx: &mut WindowContext,
-) -> StoryContainer {
-    StoryContainer::new(name, description, cx)
-}
-
 pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
     use ui::theme::ActiveTheme;
     let theme = cx.theme();
@@ -106,7 +98,7 @@ impl Item for StoryContainer {
         Label::new(self.name.clone()).into_any_element()
     }
 
-    fn deactivated(&mut self, _: &mut ViewContext<Self>) {
+    fn deactivated(&mut self, _cx: &mut ViewContext<Self>) {
         self.active = false;
     }
 

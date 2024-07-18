@@ -23,6 +23,10 @@ pub enum IconName {
     CircleX,
     Loader,
     LoaderCircle,
+    ArrowLeft,
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
 }
 
 impl IconName {
@@ -45,6 +49,10 @@ impl IconName {
             IconName::CircleX => "icons/circle-x.svg",
             IconName::Loader => "icons/loader.svg",
             IconName::LoaderCircle => "icons/loader-circle.svg",
+            IconName::ArrowLeft => "icons/arrow-left.svg",
+            IconName::ArrowRight => "icons/arrow-right.svg",
+            IconName::ChevronLeft => "icons/chevron-left.svg",
+            IconName::ChevronRight => "icons/chevron-right.svg",
         }
         .into()
     }
