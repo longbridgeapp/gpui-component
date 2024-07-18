@@ -55,6 +55,6 @@ fn main() {
     });
 }
 
-fn quit(_: &Quit, _cx: &mut AppContext) {
-    std::process::exit(0);
+fn quit(_: &Quit, cx: &mut AppContext) {
+    cx.quit();
 }
