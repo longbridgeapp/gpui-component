@@ -3,13 +3,17 @@ use crate::{
     tooltip::Tooltip,
 };
 use gpui::{
-    canvas, div, px, relative, Axis, Bounds, DragMoveEvent, EntityId, InteractiveElement,
-    IntoElement, MouseButton, MouseDownEvent, ParentElement as _, Pixels, Point, Render,
-    StatefulInteractiveElement as _, Styled, ViewContext, VisualContext as _, WindowContext,
+    canvas, div, px, relative, Axis, Bounds, DragMoveEvent, EntityId, EventEmitter,
+    InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement as _, Pixels,
+    Point, Render, StatefulInteractiveElement as _, Styled, ViewContext, VisualContext as _,
 };
 
 #[derive(Clone, Render)]
 pub struct DragThumb(EntityId);
+
+pub enum SliderEvent {
+    Change(f32),
+}
 
 /// A slider component.
 pub struct Slider {
@@ -18,7 +22,6 @@ pub struct Slider {
     max: f32,
     step: f32,
     value: f32,
-    on_change: Option<Box<dyn Fn(&f32, &mut WindowContext) + 'static>>,
     bounds: Bounds<Pixels>,
 }
 
@@ -30,7 +33,6 @@ impl Slider {
             max: 100.0,
             step: 1.0,
             value: 0.0,
-            on_change: None,
             bounds: Bounds::default(),
         }
     }
@@ -60,12 +62,6 @@ impl Slider {
     /// Set the default value of the slider, default: 0.0
     pub fn default_value(mut self, value: f32) -> Self {
         self.value = value;
-        self
-    }
-
-    /// Set the on_change callback of the slider.
-    pub fn on_change(mut self, on_change: impl Fn(&f32, &mut WindowContext) + 'static) -> Self {
-        self.on_change = Some(Box::new(on_change));
         self
     }
 
@@ -114,9 +110,7 @@ impl Slider {
         let value = (value / step).round() * step;
 
         self.value = value.clamp(self.min, self.max);
-        if let Some(on_change) = &self.on_change {
-            on_change(&self.value, cx);
-        }
+        cx.emit(SliderEvent::Change(self.value));
         cx.notify();
     }
 
@@ -159,6 +153,8 @@ impl Slider {
         self.update_value_by_position(event.position, cx);
     }
 }
+
+impl EventEmitter<SliderEvent> for Slider {}
 
 impl Render for Slider {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {

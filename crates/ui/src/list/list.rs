@@ -2,7 +2,7 @@ use std::{cell::Cell, rc::Rc};
 
 use gpui::prelude::FluentBuilder as _;
 
-use crate::input::{TextEvent, TextInput};
+use crate::input::{InputEvent, TextInput};
 use crate::scroll::ScrollbarState;
 use crate::theme::{ActiveTheme, Colorize as _};
 use crate::{scroll::Scrollbar, v_flex};
@@ -157,15 +157,15 @@ where
     fn on_query_input_event(
         &mut self,
         _: View<TextInput>,
-        event: &TextEvent,
+        event: &InputEvent,
         cx: &mut ViewContext<Self>,
     ) {
         match event {
-            TextEvent::Input { text } => {
+            InputEvent::Change(text) => {
                 self.delegate.perform_search(&text.trim(), cx);
                 cx.notify()
             }
-            TextEvent::PressEnter => self.action_confirm(&Confirm, cx),
+            InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
             _ => {}
         }
     }

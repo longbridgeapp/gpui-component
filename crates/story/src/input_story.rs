@@ -1,5 +1,5 @@
 use gpui::{
-    actions, AppContext, ClickEvent, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
+    actions, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
     ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
@@ -7,7 +7,7 @@ use gpui::{
 use ui::{
     button::Button,
     h_flex,
-    input::{InputOtp, TextEvent, TextInput},
+    input::{InputEvent, InputOtp, TextInput},
     prelude::FluentBuilder as _,
     v_flex, Clickable, FocusableCycle, IconName, Size,
 };
@@ -86,16 +86,15 @@ impl InputStory {
                 .placeholder("This input have prefix and suffix.")
         });
 
-        let view = cx.view().clone();
-        let otp_input = cx.new_view(|cx| {
-            InputOtp::new(6, cx)
-                .masked(true)
-                .on_change(move |value: &SharedString, cx| {
-                    view.update(cx, |view, _| {
-                        view.otp_value = Some(value.clone());
-                    })
-                })
-        });
+        let otp_input = cx.new_view(|cx| InputOtp::new(6, cx).masked(true));
+        cx.subscribe(&otp_input, |this, _, ev: &InputEvent, cx| match ev {
+            InputEvent::Change(text) => {
+                this.otp_value = Some(text.clone());
+                cx.notify();
+            }
+            _ => {}
+        })
+        .detach();
 
         Self {
             input1,
@@ -126,11 +125,6 @@ impl InputStory {
         }
     }
 
-    #[allow(unused)]
-    fn on_change(ev: &ClickEvent, cx: &mut WindowContext) {
-        println!("Input changed: {:?}", ev);
-    }
-
     fn tab(&mut self, _: &Tab, cx: &mut ViewContext<Self>) {
         self.cycle_focus(true, cx);
     }
@@ -142,14 +136,14 @@ impl InputStory {
     fn on_input_event(
         &mut self,
         _: View<TextInput>,
-        event: &TextEvent,
+        event: &InputEvent,
         _cx: &mut ViewContext<Self>,
     ) {
         match event {
-            TextEvent::Input { text } => println!("Input: {}", text),
-            TextEvent::PressEnter => println!("PressEnter"),
-            TextEvent::Focus => println!("Focus"),
-            TextEvent::Blur => println!("Blur"),
+            InputEvent::Change(text) => println!("Change: {}", text),
+            InputEvent::PressEnter => println!("PressEnter"),
+            InputEvent::Focus => println!("Focus"),
+            InputEvent::Blur => println!("Blur"),
         };
     }
 }
@@ -183,25 +177,35 @@ impl Render for InputStory {
             .justify_start()
             .gap_3()
             .child(
-                section("Normal Input", cx)
-                    .child(self.input1.clone())
-                    .child(self.input2.clone()),
+                h_flex()
+                    .gap_3()
+                    .items_start()
+                    .child(
+                        section("Normal Input", cx)
+                            .child(self.input1.clone())
+                            .child(self.input2.clone()),
+                    )
+                    .child(
+                        section("Input State", cx)
+                            .child(self.disabled_input.clone())
+                            .child(self.mash_input.clone()),
+                    ),
             )
             .child(
-                section("Input State", cx)
-                    .child(self.disabled_input.clone())
-                    .child(self.mash_input.clone()),
-            )
-            .child(
-                section("Preifx and Suffix", cx)
-                    .child(self.prefix_input1.clone())
-                    .child(self.both_input1.clone())
-                    .child(self.suffix_input1.clone()),
-            )
-            .child(
-                section("Input Size", cx)
-                    .child(self.large_input.clone())
-                    .child(self.small_input.clone()),
+                h_flex()
+                    .gap_3()
+                    .items_start()
+                    .child(
+                        section("Preifx and Suffix", cx)
+                            .child(self.prefix_input1.clone())
+                            .child(self.both_input1.clone())
+                            .child(self.suffix_input1.clone()),
+                    )
+                    .child(
+                        section("Input Size", cx)
+                            .child(self.large_input.clone())
+                            .child(self.small_input.clone()),
+                    ),
             )
             .child(
                 section("Input OTP", cx).child(

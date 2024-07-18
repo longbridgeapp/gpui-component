@@ -5,7 +5,7 @@ use gpui::{
 use ui::{
     button::Button,
     h_flex,
-    input::{TextEvent, TextInput},
+    input::{InputEvent, TextInput},
     theme::ActiveTheme,
     v_flex,
     webview::WebView,
@@ -44,8 +44,8 @@ impl WebViewStory {
 
             cx.subscribe(
                 &address_input,
-                |this: &mut Self, input, event: &TextEvent, cx| match event {
-                    TextEvent::PressEnter => {
+                |this: &mut Self, input, event: &InputEvent, cx| match event {
+                    InputEvent::PressEnter => {
                         let url = input.read(cx).text();
                         this.webview.update(cx, |view, _| {
                             view.load_url(&url);
