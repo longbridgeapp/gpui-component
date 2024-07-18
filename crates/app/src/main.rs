@@ -4,20 +4,18 @@ use anyhow::Result;
 use app_state::AppState;
 use assets::Assets;
 use gpui::{actions, App, AppContext, KeyBinding, Menu, MenuItem};
+use ui::input;
 
 mod app_state;
 mod assets;
 mod story_workspace;
 
-actions!(main_menu, [Quit, Copy]);
+actions!(main_menu, [Quit]);
 
 fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
     story_workspace::init(app_state.clone(), cx);
 
-    cx.bind_keys([
-        KeyBinding::new("cmd-q", Quit, None),
-        KeyBinding::new("cmd-c", Copy, None),
-    ]);
+    cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
 
     Ok(())
 }
@@ -40,11 +38,15 @@ fn main() {
         cx.set_menus(vec![
             Menu {
                 name: "GPUI App",
-                items: vec![MenuItem::action("Quit", Quit)],
+                items: vec![MenuItem::action("Exit App", Quit)],
             },
             Menu {
                 name: "Edit",
-                items: vec![MenuItem::action("Copy", Copy)],
+                items: vec![
+                    MenuItem::action("Copy", input::Copy),
+                    MenuItem::action("Cut", input::Cut),
+                    MenuItem::action("Paste", input::Paste),
+                ],
             },
         ]);
 
