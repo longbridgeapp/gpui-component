@@ -27,12 +27,14 @@ impl Country {
 }
 
 impl DropdownItem for Country {
+    type Value = String;
+
     fn title(&self) -> Cow<'_, str> {
         self.name.as_str().into()
     }
 
-    fn value(&self) -> Cow<'_, str> {
-        self.code.as_str().into()
+    fn value(&self) -> Self::Value {
+        self.code.clone()
     }
 }
 

@@ -31,27 +31,32 @@ use crate::{
 
 /// A trait for items that can be displayed in a dropdown.
 pub trait DropdownItem {
+    type Value;
     fn title(&self) -> Cow<'_, str>;
-    fn value(&self) -> Cow<'_, str>;
+    fn value(&self) -> Self::Value;
 }
 
 impl DropdownItem for String {
+    type Value = Self;
+
     fn title(&self) -> Cow<'_, str> {
         self.as_str().into()
     }
 
-    fn value(&self) -> Cow<'_, str> {
-        self.as_str().into()
+    fn value(&self) -> Self::Value {
+        self.clone()
     }
 }
 
 impl DropdownItem for SharedString {
+    type Value = Self;
+
     fn title(&self) -> Cow<'_, str> {
         self.as_ref().into()
     }
 
-    fn value(&self) -> Cow<'_, str> {
-        self.as_ref().into()
+    fn value(&self) -> Self::Value {
+        self.clone()
     }
 }
 
@@ -134,7 +139,7 @@ where
                 view.selected_value = self
                     .selected_index
                     .and_then(|ix| self.delegate.get(ix))
-                    .map(|item| item.value().to_string().into());
+                    .map(DropdownItem::value);
                 view.open = false;
             });
         }
@@ -154,7 +159,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     cleanable: bool,
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
-    selected_value: Option<SharedString>,
+    selected_value: Option<<D::Item as DropdownItem>::Value>,
 }
 
 impl<D> Dropdown<D>
@@ -235,11 +240,11 @@ where
         self.selected_value = self
             .selected_index(cx)
             .and_then(|ix| self.list.read(cx).delegate().delegate.get(ix))
-            .map(|item| item.value().to_string().into());
+            .map(|item| item.value());
     }
 
-    pub fn selected_value(&self) -> Option<SharedString> {
-        self.selected_value.clone()
+    pub fn selected_value(&self) -> Option<&<D::Item as DropdownItem>::Value> {
+        self.selected_value.as_ref()
     }
 
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
