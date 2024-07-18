@@ -208,9 +208,9 @@ impl StoryWorkspace {
                 .update(&mut cx, |_, cx| {
                     cx.activate_window();
                     cx.set_window_title("GPUI App");
-                    cx.on_release(|_, _, _cx| {
+                    cx.on_release(|_, _, cx| {
                         // exit app
-                        std::process::exit(0);
+                        cx.quit();
                     })
                     .detach();
                 })
