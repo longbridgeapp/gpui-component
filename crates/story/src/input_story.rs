@@ -7,7 +7,7 @@ use gpui::{
 use ui::{
     button::Button,
     h_flex,
-    input::{InputOtp, TextInput},
+    input::{InputOtp, TextEvent, TextInput},
     prelude::FluentBuilder as _,
     v_flex, Clickable, FocusableCycle, IconName, Size,
 };
@@ -53,6 +53,12 @@ impl InputStory {
             input
         });
 
+        cx.subscribe(&input1, Self::on_input_event).detach();
+
+        let input2 = cx.new_view(|cx| TextInput::new(cx).placeholder("Enter text here..."));
+
+        cx.subscribe(&input2, Self::on_input_event).detach();
+
         let mask_input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx).cleanable(true);
             input.set_masked(true, cx);
@@ -93,7 +99,7 @@ impl InputStory {
 
         Self {
             input1,
-            input2: cx.new_view(|cx| TextInput::new(cx).placeholder("Enter text here...")),
+            input2,
             mash_input: mask_input,
             disabled_input: cx.new_view(|cx| {
                 let mut input = TextInput::new(cx);
@@ -131,6 +137,20 @@ impl InputStory {
 
     fn tab_prev(&mut self, _: &TabPrev, cx: &mut ViewContext<Self>) {
         self.cycle_focus(false, cx);
+    }
+
+    fn on_input_event(
+        &mut self,
+        _: View<TextInput>,
+        event: &TextEvent,
+        _cx: &mut ViewContext<Self>,
+    ) {
+        match event {
+            TextEvent::Input { text } => println!("Input: {}", text),
+            TextEvent::PressEnter => println!("PressEnter"),
+            TextEvent::Focus => println!("Focus"),
+            TextEvent::Blur => println!("Blur"),
+        };
     }
 }
 

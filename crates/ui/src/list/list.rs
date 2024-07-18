@@ -160,13 +160,13 @@ where
         event: &TextEvent,
         cx: &mut ViewContext<Self>,
     ) {
-        #[allow(clippy::single_match)]
         match event {
             TextEvent::Input { text } => {
                 self.delegate.perform_search(&text.trim(), cx);
                 cx.notify()
             }
             TextEvent::PressEnter => self.action_confirm(&Confirm, cx),
+            _ => {}
         }
     }
 

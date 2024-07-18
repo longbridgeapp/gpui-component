@@ -50,6 +50,8 @@ actions!(
 pub enum TextEvent {
     Input { text: SharedString },
     PressEnter,
+    Focus,
+    Blur,
 }
 
 pub fn init(cx: &mut AppContext) {
@@ -503,6 +505,7 @@ impl TextInput {
         self.blink_cursor.update(cx, |cursor, cx| {
             cursor.start(cx);
         });
+        cx.emit(TextEvent::Focus);
     }
 
     fn on_blur(&mut self, cx: &mut ViewContext<Self>) {
@@ -510,6 +513,7 @@ impl TextInput {
         self.blink_cursor.update(cx, |cursor, cx| {
             cursor.stop(cx);
         });
+        cx.emit(TextEvent::Blur);
     }
 
     fn pause_blink_cursor(&mut self, cx: &mut ViewContext<Self>) {
