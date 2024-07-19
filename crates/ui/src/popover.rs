@@ -60,7 +60,7 @@ enum PopupMode {
 pub struct Popover<M: ManagedView> {
     id: ElementId,
     anchor: AnchorCorner,
-    trigger: Option<Box<dyn FnOnce(&WindowContext) -> AnyElement + 'static>>,
+    trigger: Option<Box<dyn FnOnce(bool, &WindowContext) -> AnyElement + 'static>>,
     content: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
     mouse_button: MouseButton,
     mode: PopupMode,
@@ -103,7 +103,9 @@ where
     where
         T: Selectable + IntoElement + 'static,
     {
-        self.trigger = Some(Box::new(|_| trigger.into_any_element()));
+        self.trigger = Some(Box::new(|is_open, _| {
+            trigger.selected(is_open).into_any_element()
+        }));
         self
     }
 
@@ -118,7 +120,7 @@ where
         self
     }
 
-    fn render_trigger(&mut self, cx: &mut WindowContext) -> impl IntoElement {
+    fn render_trigger(&mut self, is_open: bool, cx: &mut WindowContext) -> impl IntoElement {
         let base = div().id("popover-trigger");
 
         if self.trigger.is_none() {
@@ -127,7 +129,7 @@ where
 
         let trigger = self.trigger.take().unwrap();
 
-        base.child((trigger)(cx)).into_element()
+        base.child((trigger)(is_open, cx)).into_element()
     }
 
     fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
@@ -214,13 +216,13 @@ impl<M: ManagedView> Element for Popover<M> {
         let mode = self.mode;
 
         self.with_element_state(id.unwrap(), cx, |view, element_state, cx| {
-            let mut trigger_element = view.render_trigger(cx).into_any_element();
-            let trigger_layout_id = trigger_element.request_layout(cx);
-
             let mut popover_layout_id = None;
             let mut popover_element = None;
+            let mut is_open = false;
 
             if let Some(content_view) = element_state.content_view.borrow_mut().as_mut() {
+                is_open = true;
+
                 let mut anchored = anchored().snap_to_window().anchor(view.anchor);
                 if let Some(trigger_bounds) = element_state.trigger_bounds {
                     anchored = anchored.position(view.resolved_corner(trigger_bounds));
@@ -269,6 +271,9 @@ impl<M: ManagedView> Element for Popover<M> {
                 popover_layout_id = Some(element.request_layout(cx));
                 popover_element = Some(element);
             }
+
+            let mut trigger_element = view.render_trigger(is_open, cx).into_any_element();
+            let trigger_layout_id = trigger_element.request_layout(cx);
 
             let layout_id = cx.request_layout(
                 Style::default(),
