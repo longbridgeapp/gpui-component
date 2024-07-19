@@ -5,9 +5,9 @@ use crate::{
     Clickable, Disableable, Icon, Selectable, Size, StyledExt,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, ClickEvent, DefiniteLength, Div, ElementId, FocusHandle,
-    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce,
-    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
+    FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -40,6 +40,7 @@ pub struct Button {
     focus_handle: FocusHandle,
     icon: Option<Icon>,
     label: Option<SharedString>,
+    children: Vec<AnyElement>,
     disabled: bool,
     selected: bool,
     width: Option<DefiniteLength>,
@@ -70,6 +71,7 @@ impl Button {
             tooltip: None,
             on_click: None,
             loading: false,
+            children: Vec::new(),
         }
     }
 
@@ -171,6 +173,12 @@ impl Styled for Button {
     }
 }
 
+impl ParentElement for Button {
+    fn extend(&mut self, elements: impl IntoIterator<Item = gpui::AnyElement>) {
+        self.children.extend(elements)
+    }
+}
+
 impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let style: ButtonStyle = self.style;
@@ -186,7 +194,7 @@ impl RenderOnce for Button {
             .when_some(self.width, |this, width| this.w(width))
             .when_some(self.height, |this, height| this.h(height))
             .map(|this| {
-                if self.label.is_none() {
+                if self.label.is_none() && self.children.is_empty() {
                     // Icon Button
                     match self.size {
                         Size::Size(px) => this.size(px),
@@ -268,6 +276,7 @@ impl RenderOnce for Button {
                         this.child(Indicator::new().size(self.size).color(text_color))
                     })
                     .when_some(self.label, |this, label| this.child(label))
+                    .children(self.children)
                     .map(|this| match self.size {
                         Size::XSmall => this.text_xs(),
                         Size::Small => this.text_sm(),

@@ -84,6 +84,19 @@ impl Render for ButtonStory {
                                     .icon(Icon::new(IconName::Maximize))
                                     .style(ButtonStyle::Secondary)
                                     .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-icon-4", cx)
+                                    .style(ButtonStyle::Secondary)
+                                    .child(
+                                        h_flex()
+                                            .items_center()
+                                            .gap_2()
+                                            .child("Custom Child")
+                                            .child(IconName::ChevronDown)
+                                            .child(IconName::Eye),
+                                    )
+                                    .on_click(Self::on_click),
                             ),
                     ),
             )
