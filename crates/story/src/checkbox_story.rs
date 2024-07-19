@@ -3,7 +3,14 @@ use gpui::{
     WindowContext,
 };
 
-use ui::{checkbox::Checkbox, h_flex, radio::Radio, v_flex, Disableable as _, Selection};
+use ui::{
+    button::{Button, ButtonStyle},
+    checkbox::Checkbox,
+    h_flex,
+    label::Label,
+    radio::Radio,
+    v_flex, Clickable, Disableable as _, IconName, Selection,
+};
 
 pub struct CheckboxStory {
     check1: Selection,
@@ -11,6 +18,7 @@ pub struct CheckboxStory {
     check3: Selection,
     select1: bool,
     select2: bool,
+    masked: bool,
 }
 
 impl CheckboxStory {
@@ -21,6 +29,7 @@ impl CheckboxStory {
             check3: Selection::Selected,
             select1: false,
             select2: true,
+            masked: false,
         }
     }
 
@@ -39,6 +48,25 @@ impl Render for CheckboxStory {
         v_flex()
             .p_4()
             .gap_6()
+            .child(
+                h_flex()
+                    .items_center()
+                    .gap_1()
+                    .child(Label::new("9,182,1 USD").text_2xl().masked(self.masked))
+                    .child(
+                        Button::new("btn-mask", cx)
+                            .style(ButtonStyle::Ghost)
+                            .icon(if self.masked {
+                                IconName::EyeOff
+                            } else {
+                                IconName::Eye
+                            })
+                            .on_click(cx.listener(|this, _, _| {
+                                this.masked = !this.masked;
+                            })),
+                    ),
+            )
+            .child(Label::new("500 USD").text_xl().masked(self.masked))
             .child(
                 v_flex().items_start().justify_start().gap_6().child(
                     h_flex()
