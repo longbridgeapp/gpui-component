@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    deferred, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Render, Styled, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
@@ -208,10 +208,11 @@ impl Render for PickerStory {
                 )
             })
             .when(self.open, |this| {
-                this.child(
+                this.child(deferred(
                     div().absolute().size_full().top_0().left_0().child(
                         v_flex().flex().flex_col().items_center().child(
                             v_flex()
+                                .occlude()
                                 .w(px(450.))
                                 .h(px(350.))
                                 .elevation_3(cx)
@@ -222,7 +223,7 @@ impl Render for PickerStory {
                                 })),
                         ),
                     ),
-                )
+                ))
             })
     }
 }

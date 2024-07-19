@@ -39,11 +39,11 @@ fn main() {
 
         cx.set_menus(vec![
             Menu {
-                name: "GPUI App",
+                name: "GPUI App".into(),
                 items: vec![MenuItem::action("Quit", Quit)],
             },
             Menu {
-                name: "Edit",
+                name: "Edit".into(),
                 items: vec![MenuItem::action("Copy", Copy)],
             },
         ]);
