@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use gpui::{
     hsla, point, AppContext, BoxShadow, Global, Hsla, ModelContext, Pixels, SharedString,
-    ViewContext, WindowAppearance,
+    ViewContext, WindowAppearance, WindowContext,
 };
 
 pub trait ActiveTheme {
@@ -22,6 +22,12 @@ impl<'a, V> ActiveTheme for ViewContext<'a, V> {
 }
 
 impl<'a, V> ActiveTheme for ModelContext<'a, V> {
+    fn theme(&self) -> &Theme {
+        self.deref().theme()
+    }
+}
+
+impl<'a> ActiveTheme for WindowContext<'a> {
     fn theme(&self) -> &Theme {
         self.deref().theme()
     }
