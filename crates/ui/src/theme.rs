@@ -1,5 +1,8 @@
+use std::ops::Deref;
+
 use gpui::{
-    hsla, point, AppContext, BoxShadow, Global, Hsla, Pixels, SharedString, WindowAppearance,
+    hsla, point, AppContext, BoxShadow, Global, Hsla, ModelContext, Pixels, SharedString,
+    ViewContext, WindowAppearance,
 };
 
 pub trait ActiveTheme {
@@ -9,6 +12,18 @@ pub trait ActiveTheme {
 impl ActiveTheme for AppContext {
     fn theme(&self) -> &Theme {
         Theme::get_global(self)
+    }
+}
+
+impl<'a, V> ActiveTheme for ViewContext<'a, V> {
+    fn theme(&self) -> &Theme {
+        self.deref().theme()
+    }
+}
+
+impl<'a, V> ActiveTheme for ModelContext<'a, V> {
+    fn theme(&self) -> &Theme {
+        self.deref().theme()
     }
 }
 
