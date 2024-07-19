@@ -27,6 +27,8 @@ pub enum IconName {
     ArrowRight,
     ChevronLeft,
     ChevronRight,
+    Eye,
+    EyeOff,
 }
 
 impl IconName {
@@ -53,6 +55,8 @@ impl IconName {
             IconName::ArrowRight => "icons/arrow-right.svg",
             IconName::ChevronLeft => "icons/chevron-left.svg",
             IconName::ChevronRight => "icons/chevron-right.svg",
+            IconName::Eye => "icons/eye.svg",
+            IconName::EyeOff => "icons/eye-off.svg",
         }
         .into()
     }

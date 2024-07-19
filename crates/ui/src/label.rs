@@ -19,6 +19,7 @@ pub struct Label {
     label: SharedString,
     multiple_lines: bool,
     align: TextAlign,
+    marked: bool,
 }
 
 impl Label {
@@ -28,6 +29,7 @@ impl Label {
             label: label.into(),
             multiple_lines: true,
             align: TextAlign::default(),
+            marked: false,
         }
     }
 
@@ -38,6 +40,11 @@ impl Label {
 
     pub fn text_align(mut self, align: TextAlign) -> Self {
         self.align = align;
+        self
+    }
+
+    pub fn masked(mut self, masked: bool) -> Self {
+        self.marked = masked;
         self
     }
 }
@@ -56,6 +63,12 @@ impl RenderOnce for Label {
             self.label
         };
 
+        let text_display = if self.marked {
+            "*".repeat(text.chars().count())
+        } else {
+            text.to_string()
+        };
+
         h_flex()
             .map(|this| match self.align {
                 TextAlign::Left => this.justify_start(),
@@ -63,6 +76,6 @@ impl RenderOnce for Label {
                 TextAlign::Right => this.justify_end(),
             })
             .text_color(cx.theme().foreground)
-            .child(self.base.child(text))
+            .child(self.base.child(text_display))
     }
 }
