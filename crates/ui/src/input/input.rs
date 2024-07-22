@@ -57,49 +57,51 @@ pub enum InputEvent {
     Blur,
 }
 
+const CONTEXT: &str = "Input";
+
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
-        KeyBinding::new("backspace", Backspace, None),
-        KeyBinding::new("delete", Delete, None),
-        KeyBinding::new("enter", Enter, None),
-        KeyBinding::new("left", Left, None),
-        KeyBinding::new("right", Right, None),
-        KeyBinding::new("shift-left", SelectLeft, None),
-        KeyBinding::new("shift-right", SelectRight, None),
-        KeyBinding::new("home", Home, None),
-        KeyBinding::new("end", End, None),
-        KeyBinding::new("shift-home", SelectToHome, None),
-        KeyBinding::new("shift-end", SelectToEnd, None),
+        KeyBinding::new("backspace", Backspace, Some(CONTEXT)),
+        KeyBinding::new("delete", Delete, Some(CONTEXT)),
+        KeyBinding::new("enter", Enter, Some(CONTEXT)),
+        KeyBinding::new("left", Left, Some(CONTEXT)),
+        KeyBinding::new("right", Right, Some(CONTEXT)),
+        KeyBinding::new("shift-left", SelectLeft, Some(CONTEXT)),
+        KeyBinding::new("shift-right", SelectRight, Some(CONTEXT)),
+        KeyBinding::new("home", Home, Some(CONTEXT)),
+        KeyBinding::new("end", End, Some(CONTEXT)),
+        KeyBinding::new("shift-home", SelectToHome, Some(CONTEXT)),
+        KeyBinding::new("shift-end", SelectToEnd, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, None),
+        KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-a", SelectAll, None),
+        KeyBinding::new("cmd-a", SelectAll, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-a", SelectAll, None),
+        KeyBinding::new("ctrl-a", SelectAll, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-c", Copy, None),
+        KeyBinding::new("cmd-c", Copy, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-c", Copy, None),
+        KeyBinding::new("ctrl-c", Copy, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-x", Cut, None),
+        KeyBinding::new("cmd-x", Cut, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-x", Cut, None),
+        KeyBinding::new("ctrl-x", Cut, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-v", Paste, None),
+        KeyBinding::new("cmd-v", Paste, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-v", Paste, None),
+        KeyBinding::new("ctrl-v", Paste, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("ctrl-a", Home, None),
+        KeyBinding::new("ctrl-a", Home, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("ctrl-e", End, None),
+        KeyBinding::new("ctrl-e", End, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-z", Undo, None),
+        KeyBinding::new("cmd-z", Undo, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-shift-z", Redo, None),
+        KeyBinding::new("cmd-shift-z", Redo, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-z", Undo, None),
+        KeyBinding::new("ctrl-z", Undo, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-y", Redo, None),
+        KeyBinding::new("ctrl-y", Redo, Some(CONTEXT)),
     ]);
 }
 
@@ -908,7 +910,7 @@ impl Render for TextInput {
 
         div()
             .flex()
-            .key_context("TextInput")
+            .key_context(CONTEXT)
             .track_focus(&self.focus_handle)
             .when(!self.disabled, |this| {
                 this.on_action(cx.listener(Self::backspace))
@@ -928,12 +930,8 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::copy))
             .on_action(cx.listener(Self::paste))
             .on_action(cx.listener(Self::cut))
-            .when(self.history.can_undo(), |this| {
-                this.on_action(cx.listener(Self::undo))
-            })
-            .when(self.history.can_redo(), |this| {
-                this.on_action(cx.listener(Self::redo))
-            })
+            .on_action(cx.listener(Self::undo))
+            .on_action(cx.listener(Self::redo))
             .on_action(cx.listener(Self::redo))
             // Double click to select all
             .on_double_click(cx.listener(|view, _, cx| {
