@@ -293,7 +293,7 @@ impl Element for Scrollbar {
         cx: &mut gpui::WindowContext,
     ) {
         let hitbox_bounds = hitbox.bounds;
-        let is_both = self.axis.is_both();
+        let has_both = self.axis.is_both();
 
         cx.with_content_mask(
             Some(ContentMask {
@@ -316,8 +316,13 @@ impl Element for Scrollbar {
                         )
                     };
 
+                    println!(
+                        "------ {:?} container_size: {:?}",
+                        scroll_area_size, container_size
+                    );
+
                     // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
-                    let margin_end = if !is_vertical && is_both {
+                    let margin_end = if has_both && !is_vertical {
                         self.width
                     } else {
                         px(0.)
