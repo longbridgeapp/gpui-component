@@ -1,6 +1,7 @@
 mod button_story;
 mod checkbox_story;
 mod dropdown_story;
+mod icon_story;
 mod image_story;
 mod input_story;
 mod list_story;
@@ -17,6 +18,7 @@ mod webview_story;
 pub use button_story::ButtonStory;
 pub use checkbox_story::CheckboxStory;
 pub use dropdown_story::DropdownStory;
+pub use icon_story::IconStory;
 pub use image_story::ImageStory;
 pub use input_story::InputStory;
 pub use list_story::ListStory;

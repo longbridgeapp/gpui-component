@@ -45,7 +45,7 @@ impl RenderOnce for Indicator {
         let color = self.color.unwrap_or_else(|| cx.theme().indicator);
         div()
             .child(
-                Icon::new(self.icon)
+                Icon::new(self.icon.clone())
                     .size(self.size)
                     .text_color(color)
                     .with_animation(

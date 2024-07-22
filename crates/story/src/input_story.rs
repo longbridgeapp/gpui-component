@@ -68,20 +68,20 @@ impl InputStory {
 
         let prefix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
-                .prefix(IconName::Search.view(cx))
+                .prefix(|_| IconName::Search)
                 .placeholder("Search some thing...")
                 .cleanable(true)
         });
         let suffix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
-                .suffix(IconName::Info.view(cx))
+                .suffix(|_| IconName::Info)
                 .placeholder("Info here...")
                 .cleanable(true)
         });
         let both_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
-                .prefix(IconName::Search.view(cx))
-                .suffix(IconName::Info.view(cx))
+                .prefix(|_| IconName::Search)
+                .suffix(|_| IconName::Info)
                 .cleanable(true)
                 .placeholder("This input have prefix and suffix.")
         });

@@ -1,16 +1,18 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
+use fake::Fake;
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, ParentElement, Render, Styled, View, ViewContext,
-    VisualContext as _, WeakView, WindowContext,
+    InteractiveElement as _, IntoElement, ParentElement, Render, Styled, Task, Timer, View,
+    ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
     button::Button,
     h_flex,
     list::{List, ListDelegate, ListItem},
-    v_flex, Clickable as _, IconName, StyledExt,
+    theme::ActiveTheme as _,
+    v_flex, Clickable as _, Icon, IconName, StyledExt,
 };
 
 pub struct ListItemDeletegate {
@@ -31,14 +33,25 @@ impl ListDelegate for ListItemDeletegate {
         Some(self.selected_index)
     }
 
-    fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) {
-        self.matches = self
-            .items
-            .iter()
-            .filter(|item| item.to_lowercase().contains(&query.to_lowercase()))
-            .cloned()
-            .collect();
-        cx.notify();
+    fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) -> Task<()> {
+        let query = query.to_string();
+        cx.spawn(move |this, mut cx| async move {
+            // Simulate a slow search.
+            let sleep = (0.15..0.3).fake();
+            Timer::after(Duration::from_secs_f64(sleep)).await;
+
+            this.update(&mut cx, |this, cx| {
+                this.delegate_mut().matches = this
+                    .delegate()
+                    .items
+                    .iter()
+                    .filter(|item| item.to_lowercase().contains(&query.to_lowercase()))
+                    .cloned()
+                    .collect();
+                cx.notify();
+            })
+            .ok();
+        })
     }
 
     fn render_item(&self, ix: usize, _cx: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
@@ -54,6 +67,22 @@ impl ListDelegate for ListItemDeletegate {
         } else {
             None
         }
+    }
+
+    fn render_empty(&self, cx: &mut ViewContext<List<Self>>) -> impl IntoElement {
+        v_flex()
+            .size_full()
+            .child(
+                Icon::new(IconName::Inbox)
+                    .size(px(50.))
+                    .text_color(cx.theme().muted_foreground),
+            )
+            .child("No matches found")
+            .items_center()
+            .justify_center()
+            .p_3()
+            .bg(cx.theme().muted)
+            .text_color(cx.theme().muted_foreground)
     }
 
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
