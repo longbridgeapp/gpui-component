@@ -6,6 +6,7 @@
 use std::ops::Range;
 
 use super::blink_cursor::BlinkCursor;
+use super::history::{Change, History};
 use crate::button::{Button, ButtonStyle};
 use crate::styled_ext::Sizeful;
 use crate::theme::ActiveTheme;
@@ -41,6 +42,8 @@ actions!(
         Copy,
         Cut,
         Paste,
+        Undo,
+        Redo,
         MoveToStartOfLine,
         MoveToEndOfLine,
         TextChanged,
@@ -54,51 +57,62 @@ pub enum InputEvent {
     Blur,
 }
 
+const CONTEXT: &str = "Input";
+
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
-        KeyBinding::new("backspace", Backspace, None),
-        KeyBinding::new("delete", Delete, None),
-        KeyBinding::new("enter", Enter, None),
-        KeyBinding::new("left", Left, None),
-        KeyBinding::new("right", Right, None),
-        KeyBinding::new("shift-left", SelectLeft, None),
-        KeyBinding::new("shift-right", SelectRight, None),
-        KeyBinding::new("home", Home, None),
-        KeyBinding::new("end", End, None),
-        KeyBinding::new("shift-home", SelectToHome, None),
-        KeyBinding::new("shift-end", SelectToEnd, None),
+        KeyBinding::new("backspace", Backspace, Some(CONTEXT)),
+        KeyBinding::new("delete", Delete, Some(CONTEXT)),
+        KeyBinding::new("enter", Enter, Some(CONTEXT)),
+        KeyBinding::new("left", Left, Some(CONTEXT)),
+        KeyBinding::new("right", Right, Some(CONTEXT)),
+        KeyBinding::new("shift-left", SelectLeft, Some(CONTEXT)),
+        KeyBinding::new("shift-right", SelectRight, Some(CONTEXT)),
+        KeyBinding::new("home", Home, Some(CONTEXT)),
+        KeyBinding::new("end", End, Some(CONTEXT)),
+        KeyBinding::new("shift-home", SelectToHome, Some(CONTEXT)),
+        KeyBinding::new("shift-end", SelectToEnd, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, None),
+        KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-a", SelectAll, None),
+        KeyBinding::new("cmd-a", SelectAll, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-a", SelectAll, None),
+        KeyBinding::new("ctrl-a", SelectAll, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-c", Copy, None),
+        KeyBinding::new("cmd-c", Copy, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-c", Copy, None),
+        KeyBinding::new("ctrl-c", Copy, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-x", Cut, None),
+        KeyBinding::new("cmd-x", Cut, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-x", Cut, None),
+        KeyBinding::new("ctrl-x", Cut, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("cmd-v", Paste, None),
+        KeyBinding::new("cmd-v", Paste, Some(CONTEXT)),
         #[cfg(not(target_os = "macos"))]
-        KeyBinding::new("ctrl-v", Paste, None),
+        KeyBinding::new("ctrl-v", Paste, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("ctrl-a", Home, None),
+        KeyBinding::new("ctrl-a", Home, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
-        KeyBinding::new("ctrl-e", End, None),
+        KeyBinding::new("ctrl-e", End, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-z", Undo, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-shift-z", Redo, Some(CONTEXT)),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-z", Undo, Some(CONTEXT)),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-y", Redo, Some(CONTEXT)),
     ]);
 }
 
 pub struct TextInput {
     focus_handle: FocusHandle,
     text: SharedString,
+    history: History,
+    blink_cursor: Model<BlinkCursor>,
     prefix: Option<AnyView>,
     suffix: Option<AnyView>,
     placeholder: SharedString,
-    blink_cursor: Model<BlinkCursor>,
     selected_range: Range<usize>,
     selection_reversed: bool,
     marked_range: Option<Range<usize>>,
@@ -119,11 +133,13 @@ impl TextInput {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         let blink_cursor = cx.new_model(|cx| BlinkCursor::new(cx));
+        let history = History::new();
         let input = Self {
             focus_handle: focus_handle.clone(),
             text: "".into(),
-            placeholder: "".into(),
             blink_cursor,
+            history,
+            placeholder: "".into(),
             selected_range: 0..0,
             selection_reversed: false,
             marked_range: None,
@@ -164,8 +180,12 @@ impl TextInput {
 
     /// Set the text of the input field.
     pub fn set_text(&mut self, text: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
-        self.text = text.into();
-        self.selected_range = self.text.len()..self.text.len();
+        self.history.ignore = true;
+        let text: SharedString = text.into();
+        let range = 0..self.text.chars().map(|c| c.len_utf16()).sum();
+        self.replace_text_in_range(Some(range), &text, cx);
+        self.history.ignore = false;
+
         cx.notify();
     }
 
@@ -354,6 +374,43 @@ impl TextInput {
             let new_text = clipboard.text().replace('\n', "");
             self.replace_text_in_range(None, &new_text, cx);
         }
+    }
+
+    fn push_history(&mut self, range: &Range<usize>, new_text: &str, cx: &mut ViewContext<Self>) {
+        if self.history.ignore {
+            return;
+        }
+
+        let old_text = self
+            .text_for_range(self.range_to_utf16(&range), cx)
+            .unwrap_or("".to_string());
+
+        let new_range = range.start..range.start + new_text.len();
+
+        self.history
+            .push(range.clone(), &old_text, new_range, new_text);
+    }
+
+    fn undo(&mut self, _: &Undo, cx: &mut ViewContext<Self>) {
+        self.history.ignore = true;
+        if let Some(changes) = self.history.undo() {
+            for change in changes {
+                let range_utf16 = self.range_to_utf16(&change.new_range);
+                self.replace_text_in_range(Some(range_utf16), &change.old_text, cx);
+            }
+        }
+        self.history.ignore = false;
+    }
+
+    fn redo(&mut self, _: &Redo, cx: &mut ViewContext<Self>) {
+        self.history.ignore = true;
+        if let Some(changes) = self.history.redo() {
+            for change in changes {
+                let range_utf16 = self.range_to_utf16(&change.old_range);
+                self.replace_text_in_range(Some(range_utf16), &change.new_text, cx);
+            }
+        }
+        self.history.ignore = false;
     }
 
     fn move_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
@@ -567,6 +624,7 @@ impl ViewInputHandler for TextInput {
             .or(self.marked_range.clone())
             .unwrap_or(self.selected_range.clone());
 
+        self.push_history(&range, new_text, cx);
         self.text =
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
@@ -592,6 +650,7 @@ impl ViewInputHandler for TextInput {
             .or(self.marked_range.clone())
             .unwrap_or(self.selected_range.clone());
 
+        self.push_history(&range, new_text, cx);
         self.text =
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.marked_range = Some(range.start..range.start + new_text.len());
@@ -851,7 +910,7 @@ impl Render for TextInput {
 
         div()
             .flex()
-            .key_context("TextInput")
+            .key_context(CONTEXT)
             .track_focus(&self.focus_handle)
             .when(!self.disabled, |this| {
                 this.on_action(cx.listener(Self::backspace))
@@ -871,6 +930,9 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::copy))
             .on_action(cx.listener(Self::paste))
             .on_action(cx.listener(Self::cut))
+            .on_action(cx.listener(Self::undo))
+            .on_action(cx.listener(Self::redo))
+            .on_action(cx.listener(Self::redo))
             // Double click to select all
             .on_double_click(cx.listener(|view, _, cx| {
                 view.select_all(&SelectAll, cx);
