@@ -1,13 +1,12 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    canvas, deferred, div, prelude::FluentBuilder as _, px, relative, AnyElement, AnyView, Element,
-    ElementId, GlobalElementId, InteractiveElement as _, IntoElement, ParentElement as _, Pixels,
-    Position, Render, ScrollHandle, SharedString, Size, StatefulInteractiveElement, Style,
-    Styled as _, ViewContext, WindowContext,
+    canvas, div, relative, AnyElement, AnyView, Element, ElementId, GlobalElementId,
+    InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Position, ScrollHandle,
+    SharedString, Size, StatefulInteractiveElement, Style, Styled as _, WindowContext,
 };
 
-use crate::{v_flex, StyledExt};
+use crate::StyledExt;
 
 use super::{Scrollbar, ScrollbarAxis, ScrollbarState};
 
@@ -137,23 +136,32 @@ impl Element for ScrollView {
             let mut element = div()
                 .relative()
                 .size_full()
-                .child(deferred(
-                    Scrollbar::both(view, state, handle.clone(), scroll_size.get()).axis(axix),
-                ))
                 .child(
-                    v_flex()
+                    div()
                         .id(scroll_id)
-                        .relative()
                         .track_scroll(&handle)
                         .overflow_scroll()
+                        .relative()
                         .size_full()
-                        .children(content)
-                        .child({
+                        .debug_green()
+                        .child(div().debug_yellow().w_auto().children(content).child({
                             let scroll_size = element_state.scroll_size.clone();
                             canvas(move |b, _| scroll_size.set(b.size), |_, _, _| {})
                                 .absolute()
                                 .size_full()
-                        }),
+                        })),
+                )
+                .child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .right_0()
+                        .bottom_0()
+                        .child(
+                            Scrollbar::both(view, state, handle.clone(), scroll_size.get())
+                                .axis(axix),
+                        ),
                 )
                 .into_any_element();
             let element_id = element.request_layout(cx);

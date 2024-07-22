@@ -316,11 +316,6 @@ impl Element for Scrollbar {
                         )
                     };
 
-                    println!(
-                        "------ {:?} container_size: {:?}",
-                        scroll_area_size, container_size
-                    );
-
                     // The horizontal scrollbar is set avoid overlapping with the vertical scrollbar, if the vertical scrollbar is visible.
                     let margin_end = if has_both && !is_vertical {
                         self.width
