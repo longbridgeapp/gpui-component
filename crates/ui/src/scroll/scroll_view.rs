@@ -143,8 +143,7 @@ impl Element for ScrollView {
                         .overflow_scroll()
                         .relative()
                         .size_full()
-                        .debug_green()
-                        .child(div().debug_yellow().w_auto().children(content).child({
+                        .child(div().debug_pink().children(content).child({
                             let scroll_size = element_state.scroll_size.clone();
                             canvas(move |b, _| scroll_size.set(b.size), |_, _, _| {})
                                 .absolute()

@@ -77,6 +77,15 @@ pub trait StyledExt: Styled + Sized {
         elevated(self, cx, ElevationIndex::ModalSurface)
     }
 
+    /// Render a border with a width of 1px, color red
+    fn debug_red(self) -> Self {
+        if cfg!(debug_assertions) {
+            self.border_1().border_color(crate::red_500())
+        } else {
+            self
+        }
+    }
+
     /// Render a border with a width of 1px, color blue
     fn debug_blue(self) -> Self {
         if cfg!(debug_assertions) {
