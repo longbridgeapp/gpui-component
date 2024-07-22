@@ -6,7 +6,7 @@
 use std::ops::Range;
 
 use super::blink_cursor::BlinkCursor;
-use super::history::{Change, EditChange, History};
+use super::history::{Change, History};
 use crate::button::{Button, ButtonStyle};
 use crate::styled_ext::Sizeful;
 use crate::theme::ActiveTheme;
@@ -178,11 +178,11 @@ impl TextInput {
 
     /// Set the text of the input field.
     pub fn set_text(&mut self, text: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
-        // self.text = text.into();
-        // self.selected_range = self.text.len()..self.text.len();
+        self.history.ignore = true;
         let text: SharedString = text.into();
         let range = 0..self.text.chars().map(|c| c.len_utf16()).sum();
         self.replace_text_in_range(Some(range), &text, cx);
+        self.history.ignore = false;
 
         cx.notify();
     }
@@ -293,19 +293,6 @@ impl TextInput {
         self.select_to(self.text.len(), cx);
     }
 
-    fn push_hsitory(
-        &mut self,
-        range_utf16: Range<usize>,
-        new_text: &str,
-        cx: &mut ViewContext<Self>,
-    ) {
-        let edit_change = EditChange {
-            range_utf16,
-            text: new_text.to_string(),
-        };
-        self.history.push(Change::Edit(edit_change));
-    }
-
     fn backspace(&mut self, _: &Backspace, cx: &mut ViewContext<Self>) {
         if self.selected_range.is_empty() {
             self.select_to(self.previous_boundary(self.cursor_offset()), cx)
@@ -387,27 +374,41 @@ impl TextInput {
         }
     }
 
-    fn undo(&mut self, _: &Undo, cx: &mut ViewContext<Self>) {
-        if let Some(change) = self.history.undo() {
-            println!("undo: {:?}", change);
-            match change {
-                Change::Edit(edit_change) => {
-                    self.replace_text_in_range(Some(edit_change.range_utf16), "", cx)
-                }
-                Change::Undo => {}
-            }
+    fn push_history(&mut self, range: &Range<usize>, new_text: &str, cx: &mut ViewContext<Self>) {
+        if self.history.ignore {
+            return;
         }
+
+        let old_text = self
+            .text_for_range(self.range_to_utf16(&range), cx)
+            .unwrap_or("".to_string());
+
+        let new_range = range.start..range.start + new_text.len();
+        let change = Change {
+            old_range: range.clone(),
+            new_range,
+            new_text: new_text.to_string(),
+            old_text,
+        };
+        self.history.push(change);
+    }
+
+    fn undo(&mut self, _: &Undo, cx: &mut ViewContext<Self>) {
+        self.history.ignore = true;
+        if let Some(change) = self.history.undo() {
+            let range_utf16 = self.range_to_utf16(&change.new_range);
+            self.replace_text_in_range(Some(range_utf16), &change.old_text, cx);
+        }
+        self.history.ignore = false;
     }
 
     fn redo(&mut self, _: &Redo, cx: &mut ViewContext<Self>) {
+        self.history.ignore = true;
         if let Some(change) = self.history.redo() {
-            match change {
-                Change::Edit(edit_change) => {
-                    self.replace_text_in_range(Some(edit_change.range_utf16), &edit_change.text, cx)
-                }
-                Change::Undo => {}
-            }
+            let range_utf16 = self.range_to_utf16(&change.old_range);
+            self.replace_text_in_range(Some(range_utf16), &change.new_text, cx);
         }
+        self.history.ignore = false;
     }
 
     fn move_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
@@ -621,11 +622,11 @@ impl ViewInputHandler for TextInput {
             .or(self.marked_range.clone())
             .unwrap_or(self.selected_range.clone());
 
+        self.push_history(&range, new_text, cx);
         self.text =
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range.take();
-        self.push_hsitory(range.clone(), new_text, cx);
         cx.emit(InputEvent::Change(self.text.clone()));
         cx.notify();
     }
@@ -647,6 +648,7 @@ impl ViewInputHandler for TextInput {
             .or(self.marked_range.clone())
             .unwrap_or(self.selected_range.clone());
 
+        self.push_history(&range, new_text, cx);
         self.text =
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
         self.marked_range = Some(range.start..range.start + new_text.len());
@@ -655,7 +657,6 @@ impl ViewInputHandler for TextInput {
             .map(|range_utf16| self.range_from_utf16(range_utf16))
             .map(|new_range| new_range.start + range.start..new_range.end + range.end)
             .unwrap_or_else(|| range.start + new_text.len()..range.start + new_text.len());
-        self.push_hsitory(range.clone(), new_text, cx);
         cx.emit(InputEvent::Change(self.text.clone()));
         cx.notify();
     }
