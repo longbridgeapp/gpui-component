@@ -386,29 +386,29 @@ impl TextInput {
             .unwrap_or("".to_string());
 
         let new_range = range.start..range.start + new_text.len();
-        let change = Change {
-            old_range: range.clone(),
-            new_range,
-            new_text: new_text.to_string(),
-            old_text,
-        };
-        self.history.push(change);
+
+        self.history
+            .push(range.clone(), &old_text, new_range, new_text);
     }
 
     fn undo(&mut self, _: &Undo, cx: &mut ViewContext<Self>) {
         self.history.ignore = true;
-        if let Some(change) = self.history.undo() {
-            let range_utf16 = self.range_to_utf16(&change.new_range);
-            self.replace_text_in_range(Some(range_utf16), &change.old_text, cx);
+        if let Some(changes) = self.history.undo() {
+            for change in changes {
+                let range_utf16 = self.range_to_utf16(&change.new_range);
+                self.replace_text_in_range(Some(range_utf16), &change.old_text, cx);
+            }
         }
         self.history.ignore = false;
     }
 
     fn redo(&mut self, _: &Redo, cx: &mut ViewContext<Self>) {
         self.history.ignore = true;
-        if let Some(change) = self.history.redo() {
-            let range_utf16 = self.range_to_utf16(&change.old_range);
-            self.replace_text_in_range(Some(range_utf16), &change.new_text, cx);
+        if let Some(changes) = self.history.redo() {
+            for change in changes {
+                let range_utf16 = self.range_to_utf16(&change.old_range);
+                self.replace_text_in_range(Some(range_utf16), &change.new_text, cx);
+            }
         }
         self.history.ignore = false;
     }
