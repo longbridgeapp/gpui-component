@@ -37,6 +37,10 @@ impl History {
         }
     }
 
+    pub fn can_undo(&self) -> bool {
+        !self.undos.is_empty()
+    }
+
     pub fn redo(&mut self) -> Option<Change> {
         if let Some(change) = self.redos.pop() {
             self.undos.push(change.clone());
@@ -44,5 +48,9 @@ impl History {
         } else {
             None
         }
+    }
+
+    pub fn can_redo(&self) -> bool {
+        !self.redos.is_empty()
     }
 }

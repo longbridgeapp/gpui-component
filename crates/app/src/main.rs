@@ -4,6 +4,7 @@ use anyhow::Result;
 use app_state::AppState;
 use assets::Assets;
 use gpui::{actions, App, AppContext, KeyBinding, Menu, MenuItem};
+use ui::input::{Cut, Paste, Redo, Undo};
 
 mod app_state;
 mod assets;
@@ -44,7 +45,14 @@ fn main() {
             },
             Menu {
                 name: "Edit".into(),
-                items: vec![MenuItem::action("Copy", Copy)],
+                items: vec![
+                    MenuItem::os_action("Undo", Undo, gpui::OsAction::Undo),
+                    MenuItem::os_action("Redo", Redo, gpui::OsAction::Redo),
+                    MenuItem::separator(),
+                    MenuItem::os_action("Cut", Cut, gpui::OsAction::Cut),
+                    MenuItem::os_action("Copy", Copy, gpui::OsAction::Copy),
+                    MenuItem::os_action("Paste", Paste, gpui::OsAction::Paste),
+                ],
             },
         ]);
 

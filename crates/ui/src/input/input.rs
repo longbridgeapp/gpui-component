@@ -928,7 +928,12 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::copy))
             .on_action(cx.listener(Self::paste))
             .on_action(cx.listener(Self::cut))
-            .on_action(cx.listener(Self::undo))
+            .when(self.history.can_undo(), |this| {
+                this.on_action(cx.listener(Self::undo))
+            })
+            .when(self.history.can_redo(), |this| {
+                this.on_action(cx.listener(Self::redo))
+            })
             .on_action(cx.listener(Self::redo))
             // Double click to select all
             .on_double_click(cx.listener(|view, _, cx| {
