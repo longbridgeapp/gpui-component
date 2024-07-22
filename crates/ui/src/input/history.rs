@@ -6,7 +6,7 @@ use std::{
 
 const MAX_UNDO: usize = 1000;
 /// Group interval in milliseconds
-const GROUP_INTERVAL: u64 = 500;
+const GROUP_INTERVAL: u64 = 1000;
 
 #[derive(Debug)]
 pub struct History {
