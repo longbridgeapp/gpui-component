@@ -6,16 +6,17 @@
 use std::ops::Range;
 
 use super::blink_cursor::BlinkCursor;
-use super::history::{Change, History};
+use super::history::History;
 use crate::button::{Button, ButtonStyle};
+use crate::indicator::Indicator;
 use crate::styled_ext::Sizeful;
 use crate::theme::ActiveTheme;
 use crate::{event::InterativeElementExt as _, Size};
 use crate::{Clickable, IconName, StyledExt as _};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    actions, div, fill, point, px, relative, rems, size, AnyView, AppContext, Bounds, ClickEvent,
-    ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
+    actions, div, fill, point, px, relative, rems, size, AnyElement, AppContext, Bounds,
+    ClickEvent, ClipboardItem, Context as _, Element, ElementId, ElementInputHandler, EventEmitter,
     FocusHandle, FocusableView, GlobalElementId, InteractiveElement as _, IntoElement, KeyBinding,
     KeyDownEvent, LayoutId, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
     PaintQuad, ParentElement as _, Pixels, Point, Render, ShapedLine, SharedString, Style,
@@ -110,8 +111,9 @@ pub struct TextInput {
     text: SharedString,
     history: History,
     blink_cursor: Model<BlinkCursor>,
-    prefix: Option<AnyView>,
-    suffix: Option<AnyView>,
+    prefix: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
+    suffix: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
+    loading: bool,
     placeholder: SharedString,
     selected_range: Range<usize>,
     selection_reversed: bool,
@@ -151,6 +153,7 @@ impl TextInput {
             masked: false,
             appearance: true,
             cleanable: false,
+            loading: false,
             prefix: None,
             suffix: None,
             size: Size::Medium,
@@ -201,6 +204,26 @@ impl TextInput {
         cx.notify();
     }
 
+    /// Set the prefix element of the input field.
+    pub fn set_prefix<F, E>(&mut self, builder: F, cx: &mut ViewContext<Self>)
+    where
+        F: Fn(&WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.prefix = Some(Box::new(move |cx| builder(cx).into_any_element()));
+        cx.notify();
+    }
+
+    /// Set the suffix element of the input field.
+    pub fn set_suffix<F, E>(&mut self, builder: F, cx: &mut ViewContext<Self>)
+    where
+        F: Fn(&WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.suffix = Some(Box::new(move |cx| builder(cx).into_any_element()));
+        cx.notify();
+    }
+
     /// Set the appearance of the input field.
     pub fn appearance(mut self, appearance: bool) -> Self {
         self.appearance = appearance;
@@ -208,20 +231,28 @@ impl TextInput {
     }
 
     /// Set the prefix element of the input field, for example a search Icon.
-    pub fn prefix(mut self, prefix: impl Into<AnyView>) -> Self {
-        self.prefix = Some(prefix.into());
+    pub fn prefix<F, E>(mut self, builder: F) -> Self
+    where
+        F: Fn(&WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.prefix = Some(Box::new(move |cx| builder(cx).into_any_element()));
+        self
+    }
+
+    /// Set the suffix element of the input field, for example a clear button.
+    pub fn suffix<F, E>(mut self, builder: F) -> Self
+    where
+        F: Fn(&WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.suffix = Some(Box::new(move |cx| builder(cx).into_any_element()));
         self
     }
 
     /// Set the placeholder text of the input field.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
-        self
-    }
-
-    /// Set the suffix element of the input field, for example a clear button.
-    pub fn suffix(mut self, suffix: impl Into<AnyView>) -> Self {
-        self.suffix = Some(suffix.into());
         self
     }
 
@@ -235,6 +266,12 @@ impl TextInput {
     pub fn cleanable(mut self, cleanable: bool) -> Self {
         self.cleanable = cleanable;
         self
+    }
+
+    /// Set true to show indicator at the input right.
+    pub fn set_loading(&mut self, loading: bool, cx: &mut ViewContext<Self>) {
+        self.loading = loading;
+        cx.notify();
     }
 
     /// Return the text of the input field.
@@ -908,6 +945,9 @@ impl Render for TextInput {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let focused = self.focus_handle.is_focused(cx);
 
+        let prefix = self.prefix.as_ref().map(|build| build(cx));
+        let suffix = self.suffix.as_ref().map(|build| build(cx));
+
         div()
             .flex()
             .key_context(CONTEXT)
@@ -961,7 +1001,7 @@ impl Render for TextInput {
                         cx.theme().background
                     })
             })
-            .when_some(self.prefix.clone(), |this, prefix| this.child(prefix))
+            .children(prefix)
             .gap_1()
             .items_center()
             .child(
@@ -974,16 +1014,20 @@ impl Render for TextInput {
                         input: cx.view().clone(),
                     }),
             )
-            .when(self.cleanable && !self.text.is_empty(), |this| {
-                this.child(
-                    Button::new("clean-text", cx)
-                        .icon(IconName::Close)
-                        .style(ButtonStyle::Ghost)
-                        .size(px(15.))
-                        .cursor_pointer()
-                        .on_click(cx.listener(Self::clean)),
-                )
-            })
-            .when_some(self.suffix.clone(), |this, suffix| this.child(suffix))
+            .when(self.loading, |this| this.child(Indicator::new()))
+            .when(
+                self.cleanable && !self.loading && !self.text.is_empty(),
+                |this| {
+                    this.child(
+                        Button::new("clean-text", cx)
+                            .icon(IconName::Close)
+                            .style(ButtonStyle::Ghost)
+                            .size(px(15.))
+                            .cursor_pointer()
+                            .on_click(cx.listener(Self::clean)),
+                    )
+                },
+            )
+            .children(suffix)
     }
 }

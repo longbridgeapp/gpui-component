@@ -1,18 +1,18 @@
+use std::time::Duration;
 use std::{cell::Cell, rc::Rc};
-
-use gpui::prelude::FluentBuilder as _;
 
 use crate::input::{InputEvent, TextInput};
 use crate::scroll::ScrollbarState;
 use crate::theme::{ActiveTheme, Colorize as _};
+use crate::IconName;
 use crate::{scroll::Scrollbar, v_flex};
-use crate::{Icon, IconName};
 use gpui::{
-    actions, div, px, uniform_list, AppContext, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
-    ParentElement as _, Render, Styled as _, UniformListScrollHandle, View, ViewContext,
-    VisualContext as _,
+    actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, FocusHandle,
+    FocusableView, InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior,
+    MouseButton, ParentElement as _, Render, Styled as _, Task, UniformListScrollHandle, View,
+    ViewContext, VisualContext as _,
 };
+use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
 
@@ -33,7 +33,9 @@ pub trait ListDelegate: Sized + 'static {
 
     /// When Query Input change, this method will be called.
     /// You can perform search here.
-    fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) {}
+    fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) -> Task<()> {
+        Task::Ready(Some(()))
+    }
 
     /// Return the number of items in the list.
     fn items_count(&self) -> usize;
@@ -42,6 +44,11 @@ pub trait ListDelegate: Sized + 'static {
     ///
     /// Return None will skip the item.
     fn render_item(&self, ix: usize, cx: &mut ViewContext<List<Self>>) -> Option<Self::Item>;
+
+    /// Return a Element to show when list is empty.
+    fn render_empty(&self, cx: &mut ViewContext<List<Self>>) -> impl IntoElement {
+        div()
+    }
 
     /// Return the confirmed index of the selected item.
     fn confirmed_index(&self) -> Option<usize> {
@@ -63,6 +70,8 @@ pub struct List<D: ListDelegate> {
     delegate: D,
     max_height: Option<Length>,
     query_input: Option<View<TextInput>>,
+    last_query: Option<String>,
+    loading: bool,
 
     enable_scrollbar: bool,
     vertical_scroll_handle: UniformListScrollHandle,
@@ -79,7 +88,7 @@ where
         let query_input = cx.new_view(|cx| {
             TextInput::new(cx)
                 .appearance(false)
-                .prefix(Icon::new(IconName::Search).view(cx))
+                .prefix(|_| IconName::Search)
                 .placeholder("Search...")
                 .cleanable(true)
         });
@@ -91,11 +100,13 @@ where
             focus_handle: cx.focus_handle(),
             delegate,
             query_input: Some(query_input),
+            last_query: None,
             selected_index: None,
             vertical_scroll_handle: UniformListScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             max_height: None,
             enable_scrollbar: true,
+            loading: false,
         }
     }
 
@@ -162,12 +173,36 @@ where
     ) {
         match event {
             InputEvent::Change(text) => {
-                self.delegate.perform_search(&text.trim(), cx);
-                cx.notify()
+                let text = text.trim().to_string();
+                if Some(&text) == self.last_query.as_ref() {
+                    return;
+                }
+
+                self.set_loading(true, cx);
+                let search = self.delegate.perform_search(&text, cx);
+
+                cx.spawn(|this, mut cx| async move {
+                    search.await;
+                    // Always wait 100ms to avoid flicker
+                    Timer::after(Duration::from_millis(100)).await;
+                    this.update(&mut cx, |this, cx| {
+                        this.last_query = Some(text);
+                        this.set_loading(false, cx);
+                    })
+                })
+                .detach();
             }
             InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
             _ => {}
         }
+    }
+
+    fn set_loading(&mut self, loading: bool, cx: &mut ViewContext<Self>) {
+        self.loading = loading;
+        if let Some(input) = &self.query_input {
+            input.update(cx, |input, cx| input.set_loading(loading, cx))
+        }
+        cx.notify();
     }
 
     fn action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
@@ -176,11 +211,19 @@ where
     }
 
     fn action_confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
+        if self.delegate.items_count() == 0 {
+            return;
+        }
+
         self.delegate.confirm(self.selected_index, cx);
         cx.notify();
     }
 
     fn action_select_prev(&mut self, _: &SelectPrev, cx: &mut ViewContext<Self>) {
+        if self.delegate.items_count() == 0 {
+            return;
+        }
+
         let selected_index = self.selected_index.unwrap_or(0);
         if selected_index > 0 {
             self.selected_index = Some(selected_index - 1);
@@ -193,6 +236,10 @@ where
     }
 
     fn action_select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
+        if self.delegate.items_count() == 0 {
+            return;
+        }
+
         let selected_index = self.selected_index.unwrap_or(0);
         if selected_index < self.delegate.items_count() - 1 {
             self.selected_index = Some(selected_index + 1);
@@ -261,39 +308,44 @@ where
                     .min_h(px(100.))
                     .when_some(self.max_height, |this, h| this.max_h(h))
                     .overflow_hidden()
-                    .child(
-                        uniform_list(view, "uniform-list", items_count, {
-                            move |list, visible_range, cx| {
-                                visible_range
-                                    .map(|ix| {
-                                        div()
-                                            .id("list-item")
-                                            .w_full()
-                                            .children(list.delegate.render_item(ix, cx))
-                                            .when_some(
-                                                list.selected_index,
-                                                |this, selected_index| {
-                                                    this.when(ix == selected_index, |this| {
-                                                        this.bg(selected_bg)
-                                                    })
-                                                },
-                                            )
-                                            .on_mouse_down(
-                                                MouseButton::Left,
-                                                cx.listener(move |this, _, cx| {
-                                                    this.selected_index = Some(ix);
-                                                    this.action_confirm(&Confirm, cx);
-                                                }),
-                                            )
-                                    })
-                                    .collect::<Vec<_>>()
-                            }
-                        })
-                        .flex_grow()
-                        .with_sizing_behavior(sizing_behavior)
-                        .track_scroll(vertical_scroll_handle)
-                        .into_any_element(),
-                    )
+                    .when(items_count == 0, |this| {
+                        this.child(self.delegate().render_empty(cx))
+                    })
+                    .when(items_count > 0, |this| {
+                        this.child(
+                            uniform_list(view, "uniform-list", items_count, {
+                                move |list, visible_range, cx| {
+                                    visible_range
+                                        .map(|ix| {
+                                            div()
+                                                .id("list-item")
+                                                .w_full()
+                                                .children(list.delegate.render_item(ix, cx))
+                                                .when_some(
+                                                    list.selected_index,
+                                                    |this, selected_index| {
+                                                        this.when(ix == selected_index, |this| {
+                                                            this.bg(selected_bg)
+                                                        })
+                                                    },
+                                                )
+                                                .on_mouse_down(
+                                                    MouseButton::Left,
+                                                    cx.listener(move |this, _, cx| {
+                                                        this.selected_index = Some(ix);
+                                                        this.action_confirm(&Confirm, cx);
+                                                    }),
+                                                )
+                                        })
+                                        .collect::<Vec<_>>()
+                                }
+                            })
+                            .flex_grow()
+                            .with_sizing_behavior(sizing_behavior)
+                            .track_scroll(vertical_scroll_handle)
+                            .into_any_element(),
+                        )
+                    })
                     .children(self.render_scrollbar(cx)),
             )
     }

@@ -1,9 +1,9 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
-    ButtonStory, CheckboxStory, DropdownStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
-    TableStory, TooltipStory, WebViewStory,
+    ButtonStory, CheckboxStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
+    PickerStory, PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
+    SwitchStory, TableStory, TooltipStory, WebViewStory,
 };
 use workspace::{dock::DockPosition, TitleBar, Workspace};
 
@@ -120,6 +120,15 @@ impl StoryWorkspace {
             px(300.),
             cx,
         );
+
+        StoryContainer::add_pane(
+            "Icon",
+            "Icon use examples",
+            IconStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
 
         StoryContainer::add_pane(
             "Image",

@@ -5699,6 +5699,7 @@ dependencies = [
  "serde",
  "serde_json",
  "smallvec",
+ "smol",
  "taffy",
  "unicode-segmentation",
  "usvg",

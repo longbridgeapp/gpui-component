@@ -29,6 +29,7 @@ pub enum IconName {
     ChevronRight,
     Eye,
     EyeOff,
+    Inbox,
 }
 
 impl IconName {
@@ -57,6 +58,7 @@ impl IconName {
             IconName::ChevronRight => "icons/chevron-right.svg",
             IconName::Eye => "icons/eye.svg",
             IconName::EyeOff => "icons/eye-off.svg",
+            IconName::Inbox => "icons/inbox.svg",
         }
         .into()
     }
@@ -90,7 +92,7 @@ pub struct Icon {
     base: Svg,
     path: SharedString,
     text_color: Option<Hsla>,
-    size: Size,
+    size: Option<Size>,
 }
 
 impl Default for Icon {
@@ -99,14 +101,18 @@ impl Default for Icon {
             base: svg().flex_none().size_4(),
             path: "".into(),
             text_color: None,
-            size: Size::Medium,
+            size: None,
         }
     }
 }
 
 impl Clone for Icon {
     fn clone(&self) -> Self {
-        Self::default().path(self.path.clone()).size(self.size)
+        let mut this = Self::default().path(self.path.clone());
+        if let Some(size) = self.size {
+            this = this.size(size);
+        }
+        this
     }
 }
 
@@ -128,7 +134,7 @@ impl Icon {
     /// Also can receive a `ButtonSize` to convert to `IconSize`,
     /// Or a `Pixels` to set a custom size: `px(30.)`
     pub fn size(mut self, size: impl Into<Size>) -> Self {
-        self.size = size.into();
+        self.size = Some(size.into());
 
         self
     }
@@ -161,7 +167,7 @@ impl RenderOnce for Icon {
 
         self.base
             .text_color(text_color)
-            .map(|this| match self.size {
+            .when_some(self.size, |this, size| match size {
                 Size::Size(px) => this.size(px),
                 Size::XSmall => this.size_3(),
                 Size::Small => this.size_3p5(),
@@ -184,9 +190,8 @@ impl Render for Icon {
 
         svg()
             .flex_none()
-            .size_4()
             .text_color(text_color)
-            .map(|this| match self.size {
+            .when_some(self.size, |this, size| match size {
                 Size::Size(px) => this.size(px),
                 Size::XSmall => this.size_3(),
                 Size::Small => this.size_3p5(),
