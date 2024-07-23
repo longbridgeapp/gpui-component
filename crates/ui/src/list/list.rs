@@ -6,6 +6,7 @@ use crate::scroll::ScrollbarState;
 use crate::theme::{ActiveTheme, Colorize as _};
 use crate::IconName;
 use crate::{scroll::Scrollbar, v_flex};
+use gpui::SharedString;
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, FocusHandle,
     FocusableView, InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior,
@@ -144,6 +145,19 @@ where
 
     pub fn selected_index(&self) -> Option<usize> {
         self.selected_index
+    }
+
+    /// Set the query_input text
+    pub fn set_query(&mut self, query: &str, cx: &mut ViewContext<Self>) {
+        if let Some(query_input) = &self.query_input {
+            let query = query.to_owned();
+            query_input.update(cx, |input, cx| input.set_text(query, cx))
+        }
+    }
+
+    /// Get the query_input text
+    pub fn query(&self, cx: &mut ViewContext<Self>) -> Option<SharedString> {
+        self.query_input.as_ref().map(|input| input.read(cx).text())
     }
 
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
