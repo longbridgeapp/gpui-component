@@ -9,7 +9,7 @@ use ui::button::Button;
 use ui::divider::Divider;
 use ui::scroll::{scroll_view, Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
-use ui::{h_flex, v_flex, Clickable, StyledExt};
+use ui::{h_flex, v_flex, Clickable};
 
 pub struct ScrollableStory {
     scroll_handle: ScrollHandle,
@@ -182,7 +182,7 @@ impl Render for ScrollableStory {
                     .w_full()
                     .h(px(200.))
                     .child(scroll_view("scrollview-1", view).content(move |cx| {
-                        v_flex().m_3().w(test_width).debug_blue().gap_1().children(
+                        v_flex().m_3().w(test_width).gap_1().children(
                             items
                                 .iter()
                                 .map(|s| div().bg(cx.theme().card).child(s.clone())),

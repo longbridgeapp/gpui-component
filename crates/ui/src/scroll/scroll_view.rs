@@ -6,8 +6,6 @@ use gpui::{
     SharedString, Size, StatefulInteractiveElement, Style, Styled as _, WindowContext,
 };
 
-use crate::StyledExt;
-
 use super::{Scrollbar, ScrollbarAxis, ScrollbarState};
 
 pub fn scroll_view(id: impl Into<ElementId>, view: impl Into<AnyView>) -> ScrollView {
@@ -144,7 +142,7 @@ impl Element for ScrollView {
                         .overflow_scroll()
                         .relative()
                         .size_full()
-                        .child(div().debug_pink().children(content).child({
+                        .child(div().children(content).child({
                             let scroll_size = element_state.scroll_size.clone();
                             canvas(move |b, _| scroll_size.set(b.size), |_, _, _| {})
                                 .absolute()
