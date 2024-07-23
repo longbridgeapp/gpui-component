@@ -30,6 +30,12 @@ pub enum IconName {
     Eye,
     EyeOff,
     Inbox,
+    Heart,
+    HeartOff,
+    Star,
+    StarOff,
+    ThumbsUp,
+    ThumbsDown,
 }
 
 impl IconName {
@@ -59,6 +65,12 @@ impl IconName {
             IconName::Eye => "icons/eye.svg",
             IconName::EyeOff => "icons/eye-off.svg",
             IconName::Inbox => "icons/inbox.svg",
+            IconName::Heart => "icons/heart.svg",
+            IconName::HeartOff => "icons/heart-off.svg",
+            IconName::Star => "icons/star.svg",
+            IconName::StarOff => "icons/star-off.svg",
+            IconName::ThumbsUp => "icons/thumbs-up.svg",
+            IconName::ThumbsDown => "icons/thumbs-down.svg",
         }
         .into()
     }
@@ -171,7 +183,7 @@ impl Styled for Icon {
 
 impl RenderOnce for Icon {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let text_color = self.text_color.unwrap_or_else(|| cx.theme().foreground);
+        let text_color = self.text_color.unwrap_or_else(|| cx.text_style().color);
 
         self.base
             .text_color(text_color)

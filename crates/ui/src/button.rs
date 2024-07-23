@@ -267,7 +267,7 @@ impl RenderOnce for Button {
                     .text_color(text_color)
                     .when(!self.loading, |this| {
                         this.when_some(self.icon, |this, icon| {
-                            this.child(icon.size(self.size).text_color(text_color))
+                            this.child(div().text_color(text_color).child(icon.size(self.size)))
                         })
                     })
                     .when(self.loading, |this| {
