@@ -44,6 +44,7 @@ impl ScrollView {
     }
 
     /// Set only a horizontal scrollbar.
+    /// In current implementation, this is not supported yet.
     pub fn horizontal(mut self) -> Self {
         self.set_axis(ScrollbarAxis::Horizontal);
         self
