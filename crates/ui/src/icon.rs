@@ -117,7 +117,8 @@ impl Clone for Icon {
 }
 
 impl Icon {
-    pub fn new(name: IconName) -> Self {
+    pub fn new(name: impl Into<IconName>) -> Self {
+        let name: IconName = name.into();
         Self::default().path(name.path())
     }
 
