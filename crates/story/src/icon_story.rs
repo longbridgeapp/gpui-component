@@ -1,5 +1,10 @@
 use gpui::{px, rems, ParentElement, Render, Styled, View, VisualContext as _, WindowContext};
-use ui::{h_flex, theme::ActiveTheme as _, v_flex, Icon, IconName};
+use ui::{
+    button::{Button, ButtonStyle},
+    h_flex,
+    theme::ActiveTheme as _,
+    v_flex, Icon, IconName,
+};
 
 pub struct IconStory {}
 
@@ -25,6 +30,24 @@ impl Render for IconStory {
                         .text_color(ui::green_500()),
                 )
                 .child(Icon::new(IconName::Maximize).size(px(55.)))
+                .child(
+                    Button::new("like1", cx)
+                        .icon(
+                            Icon::new(IconName::Heart)
+                                .text_color(ui::gray_500())
+                                .size_6(),
+                        )
+                        .style(ButtonStyle::Ghost),
+                )
+                .child(
+                    Button::new("like2", cx)
+                        .icon(
+                            Icon::new(IconName::HeartOff)
+                                .text_color(ui::red_500())
+                                .size_6(),
+                        )
+                        .style(ButtonStyle::Ghost),
+                )
                 .child(
                     Icon::new(IconName::Plus)
                         .w(rems(3.))
