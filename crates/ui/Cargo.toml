@@ -28,6 +28,7 @@ raw-window-handle = "0.6.2"
 winit = "0.30.3"
 wry = "0"
 smol = "1"
+regex = "1"
 
 [lints]
 workspace = true

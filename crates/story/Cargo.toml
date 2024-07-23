@@ -13,6 +13,7 @@ workspace.workspace = true
 charts-rs = "0.3"
 image = "0.25.1"
 wry = "0"
+regex = "1"
 
 [lints]
 workspace = true
