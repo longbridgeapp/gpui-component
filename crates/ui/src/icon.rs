@@ -65,25 +65,25 @@ impl IconName {
 
     /// Return the icon as a View<Icon>
     pub fn view(self, cx: &mut WindowContext) -> View<Icon> {
-        Icon::new(self).view(cx)
+        Icon::build(self).view(cx)
     }
 }
 
 impl From<IconName> for Icon {
     fn from(val: IconName) -> Self {
-        Icon::new(val)
+        Icon::build(val)
     }
 }
 
 impl From<IconName> for AnyElement {
     fn from(val: IconName) -> Self {
-        Icon::new(val).into_any_element()
+        Icon::build(val).into_any_element()
     }
 }
 
 impl RenderOnce for IconName {
     fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
-        Icon::new(self)
+        Icon::build(self)
     }
 }
 
@@ -116,9 +116,16 @@ impl Clone for Icon {
     }
 }
 
+pub trait IconNamed {
+    fn path(&self) -> SharedString;
+}
+
 impl Icon {
-    pub fn new(name: impl Into<IconName>) -> Self {
-        let name: IconName = name.into();
+    pub fn new(icon: impl Into<Icon>) -> Self {
+        icon.into()
+    }
+
+    fn build(name: IconName) -> Self {
         Self::default().path(name.path())
     }
 
