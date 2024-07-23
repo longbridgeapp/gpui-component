@@ -310,6 +310,7 @@ where
             .when_some(self.query_input.clone(), |this, input| {
                 this.child(
                     div()
+                        .py_1()
                         .px_2()
                         .border_b_1()
                         .border_color(cx.theme().border)

@@ -184,6 +184,10 @@ impl RenderOnce for Button {
         let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
         let focused = self.focus_handle.is_focused(cx);
+        let icon_size = match self.size {
+            Size::Size(v) => Size::Size(v * 0.75),
+            _ => self.size,
+        };
 
         self.base
             .id(self.id)
@@ -191,6 +195,7 @@ impl RenderOnce for Button {
             .flex()
             .items_center()
             .justify_center()
+            .cursor_pointer()
             .when_some(self.width, |this, width| this.w(width))
             .when_some(self.height, |this, height| this.h(height))
             .map(|this| {
@@ -205,6 +210,7 @@ impl RenderOnce for Button {
                 } else {
                     // Normal Button
                     match self.size {
+                        Size::Size(size) => this.p(size * 0.2),
                         Size::XSmall => this.px_1().py_1().h_5(),
                         Size::Small => this.px_3().py_2().h_6(),
                         _ => this.px_4().py_2().h_8(),
@@ -239,8 +245,9 @@ impl RenderOnce for Button {
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
-                    this.on_mouse_down(MouseButton::Left, |_, cx| cx.prevent_default())
+                    this.on_mouse_down(MouseButton::Left, |_, cx| cx.stop_propagation())
                         .on_click(move |event, cx| {
+                            cx.prevent_default();
                             cx.stop_propagation();
                             (on_click)(event, cx)
                         })
@@ -267,7 +274,7 @@ impl RenderOnce for Button {
                     .text_color(text_color)
                     .when(!self.loading, |this| {
                         this.when_some(self.icon, |this, icon| {
-                            this.child(div().text_color(text_color).child(icon.size(self.size)))
+                            this.child(div().text_color(text_color).child(icon.size(icon_size)))
                         })
                     })
                     .when(self.loading, |this| {

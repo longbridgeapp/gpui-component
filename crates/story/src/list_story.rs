@@ -91,7 +91,7 @@ impl RenderOnce for CompanyListItem {
                     .text_color(text_color)
                     .child(
                         v_flex()
-                            .gap_2()
+                            .gap_1()
                             .max_w(px(500.))
                             .overflow_x_hidden()
                             .flex_nowrap()
@@ -274,32 +274,5 @@ impl Render for ListStory {
                     .border_color(cx.theme().border)
                     .child(self.company_list.clone()),
             )
-        // .child(
-        //     div()
-        //         .invisible()
-        //         .flex_1()
-        //         .size_full()
-        //         .border_1()
-        //         .border_color(cx.theme().border)
-        //         .py_1()
-        //         .px_4()
-        //         .rounded_md()
-        //         .when_some(self.selected_company.clone(), |this, company| {
-        //             this.child(
-        //                 div()
-        //                     .flex_1()
-        //                     .gap_2()
-        //                     .child(
-        //                         h_flex()
-        //                             .items_start()
-        //                             .justify_between()
-        //                             .child(div().text_3xl().mb_6().child(company.name.clone()))
-        //                             .child(format!("{:.2}", company.last_done)),
-        //                     )
-        //                     .child(company.industry.clone())
-        //                     .child(company.description.clone()),
-        //             )
-        //         }),
-        // )
     }
 }

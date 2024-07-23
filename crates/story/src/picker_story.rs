@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use ui::{
-    button::Button,
+    button::{Button, ButtonStyle},
     h_flex,
     list::{List, ListDelegate, ListItem},
     theme::ActiveTheme as _,
@@ -54,7 +54,7 @@ impl ListDelegate for ListItemDeletegate {
         })
     }
 
-    fn render_item(&self, ix: usize, _cx: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
+    fn render_item(&self, ix: usize, _: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
         let selected = ix == self.selected_index;
         if let Some(item) = self.matches.get(ix) {
             let list_item = ListItem::new(("item", ix))
@@ -62,7 +62,24 @@ impl ListDelegate for ListItemDeletegate {
                 .selected(selected)
                 .py_1()
                 .px_3()
-                .child(item.to_string());
+                .child(
+                    h_flex()
+                        .items_center()
+                        .justify_between()
+                        .child(item.to_string()),
+                )
+                .suffix(|cx| {
+                    Button::new("like", cx)
+                        .icon(IconName::Heart)
+                        .style(ButtonStyle::Ghost)
+                        .size(px(18.))
+                        .on_click(move |_, cx| {
+                            cx.stop_propagation();
+                            cx.prevent_default();
+
+                            println!("You have clicked like.");
+                        })
+                });
             Some(list_item)
         } else {
             None
