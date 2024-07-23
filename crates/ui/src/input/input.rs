@@ -127,6 +127,8 @@ pub struct TextInput {
     appearance: bool,
     cleanable: bool,
     size: Size,
+    pattern: Option<regex::Regex>,
+    validate: Option<Box<dyn Fn(&str) -> bool + 'static>>,
 }
 
 impl EventEmitter<InputEvent> for TextInput {}
@@ -157,6 +159,8 @@ impl TextInput {
             prefix: None,
             suffix: None,
             size: Size::Medium,
+            pattern: None,
+            validate: None,
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -265,6 +269,18 @@ impl TextInput {
     /// Set true to show the clear button when the input field is not empty.
     pub fn cleanable(mut self, cleanable: bool) -> Self {
         self.cleanable = cleanable;
+        self
+    }
+
+    /// Set the regular expression pattern of the input field.
+    pub fn pattern(mut self, pattern: regex::Regex) -> Self {
+        self.pattern = Some(pattern);
+        self
+    }
+
+    /// Set the validation function of the input field.
+    pub fn validate(mut self, f: impl Fn(&str) -> bool + 'static) -> Self {
+        self.validate = Some(Box::new(f));
         self
     }
 
@@ -619,6 +635,23 @@ impl TextInput {
     fn on_key_down_for_blink_cursor(&mut self, _: &KeyDownEvent, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx)
     }
+
+    fn is_valid_input(&self, new_text: &str) -> bool {
+        if new_text.is_empty() {
+            return true;
+        }
+
+        if let Some(validate) = &self.validate {
+            if !validate(new_text) {
+                return false;
+            }
+        }
+
+        self.pattern
+            .as_ref()
+            .map(|p| p.is_match(new_text))
+            .unwrap_or(true)
+    }
 }
 
 impl ViewInputHandler for TextInput {
@@ -661,9 +694,14 @@ impl ViewInputHandler for TextInput {
             .or(self.marked_range.clone())
             .unwrap_or(self.selected_range.clone());
 
-        self.push_history(&range, new_text, cx);
-        self.text =
+        let pending_text: SharedString =
             (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
+        if !self.is_valid_input(&pending_text) {
+            return;
+        }
+
+        self.push_history(&range, new_text, cx);
+        self.text = pending_text;
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range.take();
         cx.emit(InputEvent::Change(self.text.clone()));
@@ -686,10 +724,14 @@ impl ViewInputHandler for TextInput {
             .map(|range_utf16| self.range_from_utf16(range_utf16))
             .or(self.marked_range.clone())
             .unwrap_or(self.selected_range.clone());
+        let pending_text: SharedString =
+            (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
+        if !self.is_valid_input(&pending_text) {
+            return;
+        }
 
         self.push_history(&range, new_text, cx);
-        self.text =
-            (self.text[0..range.start].to_owned() + new_text + &self.text[range.end..]).into();
+        self.text = pending_text;
         self.marked_range = Some(range.start..range.start + new_text.len());
         self.selected_range = new_selected_range_utf16
             .as_ref()

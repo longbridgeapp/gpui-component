@@ -75,7 +75,8 @@ impl InputStory {
         let suffix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
                 .suffix(|_| IconName::Info)
-                .placeholder("Info here...")
+                .placeholder("This input only support [a-zA-Z0-9] characters.")
+                .pattern(regex::Regex::new(r"^[a-zA-Z0-9]*$").unwrap())
                 .cleanable(true)
         });
         let both_input1 = cx.new_view(|cx| {
@@ -114,7 +115,8 @@ impl InputStory {
             small_input: cx.new_view(|cx| {
                 TextInput::new(cx)
                     .size(Size::Small)
-                    .placeholder("Small input")
+                    .validate(|s| s.parse::<f32>().is_ok())
+                    .placeholder("validate to limit float number.")
             }),
             prefix_input1,
             suffix_input1,
