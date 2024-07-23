@@ -46,6 +46,15 @@ fn elevated<E: Styled>(this: E, cx: &WindowContext, index: ElevationIndex) -> E 
         .shadow(index.shadow())
 }
 
+macro_rules! font_weight {
+    ($fn:ident, $const:ident) => {
+        /// [docs](https://tailwindcss.com/docs/font-weight)
+        fn $fn(self) -> Self {
+            self.font_weight(gpui::FontWeight::$const)
+        }
+    };
+}
+
 /// Extends [`gpui::Styled`] with specific styling methods.
 pub trait StyledExt: Styled + Sized {
     /// Horizontally stacks elements.
@@ -139,6 +148,16 @@ pub trait StyledExt: Styled + Sized {
     fn outline(self, cx: &WindowContext) -> Self {
         self.border_color(cx.theme().ring)
     }
+
+    font_weight!(font_thin, THIN);
+    font_weight!(font_extralight, EXTRA_LIGHT);
+    font_weight!(font_light, LIGHT);
+    font_weight!(font_normal, NORMAL);
+    font_weight!(font_medium, MEDIUM);
+    font_weight!(font_semibold, SEMIBOLD);
+    font_weight!(font_bold, BOLD);
+    font_weight!(font_extrabold, EXTRA_BOLD);
+    font_weight!(font_black, BLACK);
 }
 
 impl<E: Styled> StyledExt for E {}
