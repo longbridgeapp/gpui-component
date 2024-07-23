@@ -239,8 +239,9 @@ impl RenderOnce for Button {
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
-                    this.on_mouse_down(MouseButton::Left, |_, cx| cx.prevent_default())
+                    this.on_mouse_down(MouseButton::Left, |_, cx| cx.stop_propagation())
                         .on_click(move |event, cx| {
+                            cx.prevent_default();
                             cx.stop_propagation();
                             (on_click)(event, cx)
                         })

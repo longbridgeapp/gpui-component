@@ -1,8 +1,9 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, ClickEvent, Div, ElementId, InteractiveElement, IntoElement,
-    MouseButton, MouseDownEvent, ParentElement, Pixels, RenderOnce, Stateful,
+    div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
+    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
+use smallvec::SmallVec;
 
 use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable};
 
@@ -12,21 +13,23 @@ pub struct ListItem {
     disabled: bool,
     selected: bool,
     check_icon: Option<Icon>,
-    border_radius: Option<Pixels>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
+    suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
+    children: SmallVec<[AnyElement; 2]>,
 }
 
 impl ListItem {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
-            base: div().id(id.into()),
+            base: h_flex().id(id.into()).gap_x_1().py_1().px_2().text_base(),
             disabled: false,
             selected: false,
             on_click: None,
             on_secondary_mouse_down: None,
             check_icon: None,
-            border_radius: None,
+            suffix: None,
+            children: SmallVec::new(),
         }
     }
 
@@ -45,8 +48,13 @@ impl ListItem {
         self
     }
 
-    pub fn rounded(mut self, r: impl Into<Pixels>) -> Self {
-        self.border_radius = Some(r.into());
+    /// Set the suffix element of the input field, for example a clear button.
+    pub fn suffix<F, E>(mut self, builder: F) -> Self
+    where
+        F: Fn(&mut WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.suffix = Some(Box::new(move |cx| builder(cx).into_any_element()));
         self
     }
 
@@ -86,21 +94,17 @@ impl Styled for ListItem {
 
 impl ParentElement for ListItem {
     fn extend(&mut self, elements: impl IntoIterator<Item = gpui::AnyElement>) {
-        self.base.extend(elements)
+        self.children.extend(elements);
     }
 }
 
 impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        h_flex()
-            .id("list-item")
+        self.base
+            .text_color(cx.theme().foreground)
             .relative()
-            .gap_x_2()
             .items_center()
             .justify_between()
-            .text_base()
-            .text_color(cx.theme().foreground)
-            .when_some(self.border_radius, |this, r| this.rounded(r))
             .when_some(self.on_click, |this, on_click| {
                 if !self.disabled {
                     this.cursor_pointer().on_click(on_click)
@@ -108,9 +112,9 @@ impl RenderOnce for ListItem {
                     this
                 }
             })
-            .when(self.selected, |this| this.bg(cx.theme().accent))
+            .when(self.selected, |this| this.bg(cx.theme().list_item_active))
             .when(!self.selected && !self.disabled, |this| {
-                this.hover(|this| this.bg(cx.theme().accent))
+                this.hover(|this| this.bg(cx.theme().list_item_hover))
             })
             // Right click
             .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {
@@ -120,13 +124,25 @@ impl RenderOnce for ListItem {
                     this
                 }
             })
-            .child(self.base.w_full())
-            .when(self.selected, |this| {
-                if let Some(icon) = self.check_icon {
-                    this.child(icon.text_color(cx.theme().muted_foreground).mr_2())
-                } else {
-                    this
-                }
-            })
+            .child(
+                h_flex()
+                    .w_full()
+                    .items_center()
+                    .justify_between()
+                    .gap_1()
+                    .child(div().w_full().children(self.children))
+                    .when_some(self.check_icon, |this, icon| {
+                        this.child(
+                            div()
+                                .w_5()
+                                .items_center()
+                                .justify_center()
+                                .when(self.selected, |this| {
+                                    this.child(icon.text_color(cx.theme().muted_foreground))
+                                }),
+                        )
+                    }),
+            )
+            .when_some(self.suffix, |this, suffix| this.child(suffix(cx)))
     }
 }
