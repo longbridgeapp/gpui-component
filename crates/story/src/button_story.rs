@@ -1,5 +1,5 @@
 use gpui::{
-    ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
+    px, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
@@ -267,6 +267,12 @@ impl Render for ButtonStory {
                             .icon(IconName::Close)
                             .size(Size::XSmall)
                             .style(ButtonStyle::Danger),
+                    )
+                    .child(
+                        Button::new("icon-button-9", cx)
+                            .icon(IconName::Heart)
+                            .size(px(24.))
+                            .style(ButtonStyle::Ghost),
                     ),
             )
     }

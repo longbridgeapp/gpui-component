@@ -72,6 +72,7 @@ impl ListDelegate for ListItemDeletegate {
                     Button::new("like", cx)
                         .icon(IconName::Heart)
                         .style(ButtonStyle::Ghost)
+                        .size(px(18.))
                         .on_click(move |_, cx| {
                             cx.stop_propagation();
                             cx.prevent_default();
