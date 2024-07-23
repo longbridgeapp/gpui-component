@@ -215,7 +215,7 @@ where
             cleanable: true,
             title_prefix: None,
         };
-        this.update_selected_value(cx);
+        this.set_selected_index(selected_index, cx);
         this
     }
 
@@ -426,7 +426,9 @@ where
                     .input_px(self.size)
                     .input_py(self.size)
                     .input_h(self.size)
-                    .on_click(cx.listener(Self::toggle_menu))
+                    .when(!self.open, |this| {
+                        this.on_click(cx.listener(Self::toggle_menu))
+                    })
                     .child(
                         h_flex()
                             .w_full()
