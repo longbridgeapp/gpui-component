@@ -79,6 +79,7 @@ pub struct List<D: ListDelegate> {
     scrollbar_state: Rc<Cell<ScrollbarState>>,
 
     selected_index: Option<usize>,
+    _search_task: Task<()>,
 }
 
 impl<D> List<D>
@@ -108,6 +109,7 @@ where
             max_height: None,
             enable_scrollbar: true,
             loading: false,
+            _search_task: Task::Ready(None),
         }
     }
 
@@ -195,16 +197,15 @@ where
                 self.set_loading(true, cx);
                 let search = self.delegate.perform_search(&text, cx);
 
-                cx.spawn(|this, mut cx| async move {
+                self._search_task = cx.spawn(|this, mut cx| async move {
                     search.await;
                     // Always wait 100ms to avoid flicker
                     Timer::after(Duration::from_millis(100)).await;
-                    this.update(&mut cx, |this, cx| {
+                    let _ = this.update(&mut cx, |this, cx| {
                         this.last_query = Some(text);
                         this.set_loading(false, cx);
-                    })
-                })
-                .detach();
+                    });
+                });
             }
             InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
             _ => {}

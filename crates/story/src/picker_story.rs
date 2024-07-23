@@ -37,7 +37,7 @@ impl ListDelegate for ListItemDeletegate {
         let query = query.to_string();
         cx.spawn(move |this, mut cx| async move {
             // Simulate a slow search.
-            let sleep = (0.15..0.3).fake();
+            let sleep = (0.05..0.1).fake();
             Timer::after(Duration::from_secs_f64(sleep)).await;
 
             this.update(&mut cx, |this, cx| {
