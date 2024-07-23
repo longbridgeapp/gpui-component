@@ -2,12 +2,12 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    canvas, deferred, div, px, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
+    canvas, div, px, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
     StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::button::Button;
 use ui::divider::Divider;
-use ui::scroll::{Scrollbar, ScrollbarAxis, ScrollbarState};
+use ui::scroll::{scroll_view, Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
 use ui::{h_flex, v_flex, Clickable};
 
@@ -121,16 +121,7 @@ impl Render for ScrollableStory {
                         div()
                             .relative()
                             .w_full()
-                            .h(px(400.))
-                            .child(deferred(
-                                Scrollbar::both(
-                                    view,
-                                    self.scroll_state.clone(),
-                                    self.scroll_handle.clone(),
-                                    self.scroll_size,
-                                )
-                                .axis(self.axis),
-                            ))
+                            .h(px(350.))
                             .child(
                                 div()
                                     .id("scroll-story")
@@ -159,8 +150,44 @@ impl Render for ScrollableStory {
                                                 .size_full()
                                             }),
                                     ),
+                            )
+                            .child(
+                                div()
+                                    .absolute()
+                                    .top_0()
+                                    .left_0()
+                                    .right_0()
+                                    .bottom_0()
+                                    .child(
+                                        Scrollbar::both(
+                                            view,
+                                            self.scroll_state.clone(),
+                                            self.scroll_handle.clone(),
+                                            self.scroll_size,
+                                        )
+                                        .axis(self.axis),
+                                    ),
                             ),
                     ),
             )
+            .child({
+                let view = cx.view().clone();
+                let items = self.items.clone();
+                let test_width = self.test_width;
+
+                div()
+                    .relative()
+                    .border_1()
+                    .border_color(cx.theme().border)
+                    .w_full()
+                    .h(px(200.))
+                    .child(scroll_view("scrollview-1", view).content(move |cx| {
+                        v_flex().m_3().w(test_width).gap_1().children(
+                            items
+                                .iter()
+                                .map(|s| div().bg(cx.theme().card).child(s.clone())),
+                        )
+                    }))
+            })
     }
 }

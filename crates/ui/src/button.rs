@@ -2,7 +2,7 @@ use crate::{
     h_flex,
     indicator::Indicator,
     theme::{ActiveTheme, Colorize as _},
-    Clickable, Disableable, Icon, Selectable, Size, StyledExt,
+    Clickable, Disableable, Icon, Selectable, Size,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
@@ -235,9 +235,7 @@ impl RenderOnce for Button {
                 .border_color(normal_style.border)
                 .bg(normal_style.bg)
             })
-            .when(focused, |this| {
-                this.border_color(cx.theme().ring).debug_blue()
-            })
+            .when(focused, |this| this.border_color(cx.theme().ring))
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
