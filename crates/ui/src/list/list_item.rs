@@ -129,7 +129,7 @@ impl RenderOnce for ListItem {
                     .w_full()
                     .items_center()
                     .justify_between()
-                    .gap_1()
+                    .gap_x_1()
                     .child(div().w_full().children(self.children))
                     .when_some(self.check_icon, |this, icon| {
                         this.child(
