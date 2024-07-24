@@ -21,16 +21,11 @@ pub struct WebView {
 }
 
 impl WebView {
-    pub fn new(cx: &mut WindowContext) -> Self {
-        let focus_handle = cx.focus_handle();
-        let window_handle = cx.raw_window_handle();
-
-        let webview = wry::WebView::new_as_child(&window_handle)
-            .expect("failed to create webview to child window");
+    pub fn new(cx: &mut WindowContext, webview: wry::WebView) -> Self {
         let _ = webview.set_bounds(Rect::default());
 
         Self {
-            focus_handle,
+            focus_handle: cx.focus_handle(),
             visable: true,
             webview: Rc::new(webview),
         }
