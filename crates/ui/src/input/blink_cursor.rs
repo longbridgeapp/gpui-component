@@ -5,7 +5,7 @@ use gpui::{ModelContext, Timer};
 /// To manage the Input cursor blinking.
 ///
 /// It will start blinking with a interval of 500ms.
-/// Every loop will notify the view to update the `visable`, and Input will observe this update to touch repaint.
+/// Every loop will notify the view to update the `visible`, and Input will observe this update to touch repaint.
 ///
 /// The input painter will check if this in visible state, then it will draw the cursor.
 pub struct BlinkCursor {

@@ -33,6 +33,9 @@ pub mod theme;
 pub mod tooltip;
 pub mod webview;
 
+// re-export
+pub use wry;
+
 pub use clickable::Clickable;
 pub use disableable::Disableable;
 pub use event::InterativeElementExt;

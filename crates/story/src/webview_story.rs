@@ -22,7 +22,12 @@ impl WebViewStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         let focus_handle = cx.focus_handle();
 
-        let webview = cx.new_view(|cx| WebView::new(cx));
+        let webview = cx.new_view(|cx| {
+            let webview = ui::wry::WebViewBuilder::new_as_child(&cx.raw_window_handle())
+                .build()
+                .unwrap();
+            WebView::new(cx, webview)
+        });
 
         let address_input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx);
