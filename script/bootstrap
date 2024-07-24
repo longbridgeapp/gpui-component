@@ -2,7 +2,7 @@
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   echo "Install Linux dependencies..."
-  script/install-linux-deps.sh
+  script/install-linux-deps
 else
   echo "Install macOS dependencies..."
 fi
