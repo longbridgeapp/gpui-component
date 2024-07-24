@@ -71,13 +71,14 @@ impl RenderOnce for Label {
             text.to_string()
         };
 
-        div()
-            .map(|this| match self.align {
-                TextAlign::Left => this.justify_start(),
-                TextAlign::Center => this.justify_center(),
-                TextAlign::Right => this.justify_end(),
-            })
-            .text_color(cx.theme().foreground)
-            .child(self.base.child(text_display))
+        div().text_color(cx.theme().foreground).child(
+            self.base
+                .map(|this| match self.align {
+                    TextAlign::Left => this.justify_start(),
+                    TextAlign::Center => this.justify_center(),
+                    TextAlign::Right => this.justify_end(),
+                })
+                .child(text_display),
+        )
     }
 }
