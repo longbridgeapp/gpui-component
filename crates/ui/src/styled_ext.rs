@@ -1,5 +1,11 @@
-use crate::theme::ActiveTheme;
-use gpui::{hsla, point, px, rems, Axis, BoxShadow, FocusHandle, Pixels, Styled, WindowContext};
+use crate::{
+    scroll::{Scrollable, ScrollbarAxis},
+    theme::ActiveTheme,
+};
+use gpui::{
+    hsla, point, px, rems, AnyView, Axis, BoxShadow, Element, FocusHandle, Pixels, Styled,
+    WindowContext,
+};
 use smallvec::{smallvec, SmallVec};
 
 pub enum ElevationIndex {
@@ -147,6 +153,16 @@ pub trait StyledExt: Styled + Sized {
     /// Render a border with a width of 1px, color ring color
     fn outline(self, cx: &WindowContext) -> Self {
         self.border_color(cx.theme().ring)
+    }
+
+    /// Wraps the element in a ScrollView.
+    ///
+    /// Current this is only have a vertical scrollbar.
+    fn scrollable(self, view: impl Into<AnyView>, axis: ScrollbarAxis) -> Scrollable<Self>
+    where
+        Self: Element,
+    {
+        Scrollable::new(self, view, axis)
     }
 
     font_weight!(font_thin, THIN);
