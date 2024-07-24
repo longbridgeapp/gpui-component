@@ -21,7 +21,11 @@ pub struct ScrollView {
 }
 
 impl ScrollView {
-    fn new(id: impl Into<ElementId>, view: impl Into<AnyView>, axis: ScrollbarAxis) -> Self {
+    pub(super) fn new(
+        id: impl Into<ElementId>,
+        view: impl Into<AnyView>,
+        axis: ScrollbarAxis,
+    ) -> Self {
         let view: AnyView = view.into();
         Self {
             id: ElementId::Name(SharedString::from(format!(
