@@ -1,0 +1,35 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+
+jobs:
+  test:
+    name: Test
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: script/bootstrap
+      - name: Setup | Cache Cargo
+        uses: actions/cache@v3.0.11
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-test-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Lint
+        run: |
+          cargo install cargo-machete
+          cargo machete
+          cargo clippy
+      - name: Build test
+        run: cargo build

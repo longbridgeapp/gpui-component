@@ -6,13 +6,10 @@ edition = "2021"
 [dependencies]
 ui.workspace = true
 gpui.workspace = true
-serde.workspace = true
 fake = "2.9.2"
 anyhow = "1"
 workspace.workspace = true
 charts-rs = "0.3"
-image = "0.25.1"
-wry = "0"
 regex = "1"
 
 [lints]
