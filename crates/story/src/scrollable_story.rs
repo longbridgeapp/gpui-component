@@ -7,7 +7,7 @@ use gpui::{
 };
 use ui::button::Button;
 use ui::divider::Divider;
-use ui::scroll::{scroll_view, Scrollbar, ScrollbarAxis, ScrollbarState};
+use ui::scroll::{Scrollable, Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
 use ui::{h_flex, v_flex, Clickable};
 
@@ -171,7 +171,6 @@ impl Render for ScrollableStory {
                     ),
             )
             .child({
-                let view = cx.view().clone();
                 let items = self.items.clone();
                 let test_width = self.test_width;
 
@@ -181,13 +180,18 @@ impl Render for ScrollableStory {
                     .border_color(cx.theme().border)
                     .w_full()
                     .h(px(200.))
-                    .child(scroll_view("scrollview-1", view).content(move |cx| {
-                        v_flex().m_3().w(test_width).gap_1().children(
-                            items
-                                .iter()
-                                .map(|s| div().bg(cx.theme().card).child(s.clone())),
-                        )
-                    }))
+                    .child(
+                        v_flex()
+                            .m_3()
+                            .w(test_width)
+                            .gap_1()
+                            .children(
+                                items
+                                    .iter()
+                                    .map(|s| div().bg(cx.theme().card).child(s.clone())),
+                            )
+                            .scrollable("scroll-view1", cx.view().clone()),
+                    )
             })
     }
 }
