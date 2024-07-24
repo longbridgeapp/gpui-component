@@ -7,9 +7,9 @@ use gpui::{
 };
 use ui::button::Button;
 use ui::divider::Divider;
-use ui::scroll::{Scrollable, Scrollbar, ScrollbarAxis, ScrollbarState};
+use ui::scroll::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
-use ui::{h_flex, v_flex, Clickable};
+use ui::{h_flex, v_flex, Clickable, StyledExt as _};
 
 pub struct ScrollableStory {
     scroll_handle: ScrollHandle,
@@ -182,15 +182,18 @@ impl Render for ScrollableStory {
                     .h(px(200.))
                     .child(
                         v_flex()
-                            .m_3()
+                            .id("test-1")
+                            .focusable()
+                            .scrollable(cx.view().clone(), ScrollbarAxis::Vertical)
+                            .p_3()
                             .w(test_width)
                             .gap_1()
+                            .child("Hello world")
                             .children(
                                 items
                                     .iter()
                                     .map(|s| div().bg(cx.theme().card).child(s.clone())),
-                            )
-                            .scrollable("scroll-view1", cx.view().clone()),
+                            ),
                     )
             })
     }

@@ -1,55 +1,119 @@
+use std::{cell::Cell, rc::Rc};
+
+use super::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use gpui::{
-    px, relative, AnyView, Bounds, ContentMask, Corners, Edges, Element, ElementId,
-    GlobalElementId, Hitbox, Hsla, IntoElement, IsZero as _, LayoutId, PaintQuad, Pixels, Point,
-    Position, ScrollHandle, ScrollWheelEvent, Style, WindowContext,
+    canvas, div, relative, AnyElement, AnyView, Element, ElementId, GlobalElementId,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, Position, ScrollHandle,
+    SharedString, Size, StatefulInteractiveElement, Style, StyleRefinement, Styled, WindowContext,
 };
 
-/// The scroll axis direction.
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScrollableAxis {
-    /// Horizontal scroll.
-    Horizontal,
-    /// Vertical scroll.
-    Vertical,
-}
-
-/// Make a scrollable mask element to cover the parent view with the mouse wheel event listening.
-///
-/// When the mouse wheel is scrolled, will move the `scroll_handle` scrolling with the `axis` direction.
-/// You can use this `scroll_handle` to control what you want to scroll.
-/// This is only can handle once axis scrolling.
-pub struct ScrollableMask {
+/// A scroll view is a container that allows the user to scroll through a large amount of content.
+pub struct Scrollable<E> {
+    id: ElementId,
+    element: Option<E>,
     view: AnyView,
-    axis: ScrollableAxis,
-    scroll_handle: ScrollHandle,
-    debug: Option<Hsla>,
+    axis: ScrollbarAxis,
+    /// This is not used yet.
+    _style: StyleRefinement,
 }
 
-impl ScrollableMask {
-    /// Create a new scrollable mask element.
-    pub fn new(
-        view: impl Into<AnyView>,
-        axis: ScrollableAxis,
-        scroll_handle: &ScrollHandle,
-    ) -> Self {
+impl<E> Scrollable<E>
+where
+    E: Element,
+{
+    pub(crate) fn new(element: E, view: impl Into<AnyView>, axis: ScrollbarAxis) -> Self {
+        let view: AnyView = view.into();
+        let id = ElementId::Name(SharedString::from(format!(
+            "ScrollView:{}-{:?}",
+            view.entity_id(),
+            element.id(),
+        )));
+
         Self {
-            view: view.into(),
-            scroll_handle: scroll_handle.clone(),
+            element: Some(element),
+            id,
+            view,
             axis,
-            debug: None,
+            _style: StyleRefinement::default(),
         }
     }
 
-    /// Enable the debug border, to show the mask bounds.
-    #[allow(dead_code)]
-    pub fn debug(mut self) -> Self {
-        self.debug = Some(gpui::yellow());
+    /// Set only a vertical scrollbar.
+    pub fn vertical(mut self) -> Self {
+        self.set_axis(ScrollbarAxis::Vertical);
         self
+    }
+
+    /// Set only a horizontal scrollbar.
+    /// In current implementation, this is not supported yet.
+    pub fn horizontal(mut self) -> Self {
+        self.set_axis(ScrollbarAxis::Horizontal);
+        self
+    }
+
+    /// Set the axis of the scroll view.
+    pub fn set_axis(&mut self, axis: ScrollbarAxis) {
+        self.axis = axis;
+    }
+
+    fn with_element_state<R>(
+        &mut self,
+        id: &GlobalElementId,
+        cx: &mut WindowContext,
+        f: impl FnOnce(&mut Self, &mut ScrollViewState, &mut WindowContext) -> R,
+    ) -> R {
+        cx.with_optional_element_state::<ScrollViewState, _>(Some(id), |element_state, cx| {
+            let mut element_state = element_state.unwrap().unwrap_or_default();
+            let result = f(self, &mut element_state, cx);
+            (result, Some(element_state))
+        })
     }
 }
 
-impl IntoElement for ScrollableMask {
+pub struct ScrollViewState {
+    scroll_size: Rc<Cell<Size<Pixels>>>,
+    state: Rc<Cell<ScrollbarState>>,
+    handle: ScrollHandle,
+}
+
+impl Default for ScrollViewState {
+    fn default() -> Self {
+        Self {
+            handle: ScrollHandle::new(),
+            scroll_size: Rc::new(Cell::new(Size::default())),
+            state: Rc::new(Cell::new(ScrollbarState::default())),
+        }
+    }
+}
+
+impl<E> ParentElement for Scrollable<E>
+where
+    E: Element + ParentElement,
+{
+    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
+        if let Some(element) = &mut self.element {
+            element.extend(elements);
+        }
+    }
+}
+
+impl<E> Styled for Scrollable<E>
+where
+    E: Element + Styled,
+{
+    fn style(&mut self) -> &mut StyleRefinement {
+        if let Some(element) = &mut self.element {
+            element.style()
+        } else {
+            &mut self._style
+        }
+    }
+}
+
+impl<E> IntoElement for Scrollable<E>
+where
+    E: Element,
+{
     type Element = Self;
 
     fn into_element(self) -> Self::Element {
@@ -57,103 +121,97 @@ impl IntoElement for ScrollableMask {
     }
 }
 
-impl Element for ScrollableMask {
-    type RequestLayoutState = ();
-    type PrepaintState = Hitbox;
+impl<E> Element for Scrollable<E>
+where
+    E: Element,
+{
+    type RequestLayoutState = AnyElement;
+    type PrepaintState = ScrollViewState;
 
-    fn id(&self) -> Option<ElementId> {
-        None
+    fn id(&self) -> Option<gpui::ElementId> {
+        Some(self.id.clone())
     }
 
     fn request_layout(
         &mut self,
-        _: Option<&GlobalElementId>,
-        cx: &mut WindowContext,
-    ) -> (LayoutId, Self::RequestLayoutState) {
+        id: Option<&gpui::GlobalElementId>,
+        cx: &mut gpui::WindowContext,
+    ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let mut style = Style::default();
-        // Set the layout style relative to the table view to get same size.
-        style.position = Position::Absolute;
         style.flex_grow = 1.0;
-        style.flex_shrink = 1.0;
-        style.size.width = relative(1.).into();
-        style.size.height = relative(1.).into();
+        style.position = Position::Relative;
+        style.size.width = relative(1.0).into();
+        style.size.height = relative(1.0).into();
 
-        (cx.request_layout(style, None), ())
+        let axis = self.axis;
+        let view = self.view.clone();
+
+        let scroll_id = self.id.clone();
+        let content = self.element.take().map(|c| c.into_any_element());
+
+        self.with_element_state(id.unwrap(), cx, |_, element_state, cx| {
+            let handle = element_state.handle.clone();
+            let state = element_state.state.clone();
+            let scroll_size = element_state.scroll_size.clone();
+
+            let mut element = div()
+                .relative()
+                .size_full()
+                .child(
+                    div()
+                        .id(scroll_id)
+                        .track_scroll(&handle)
+                        .overflow_scroll()
+                        .relative()
+                        .size_full()
+                        .child(div().children(content).child({
+                            let scroll_size = element_state.scroll_size.clone();
+                            canvas(move |b, _| scroll_size.set(b.size), |_, _, _| {})
+                                .absolute()
+                                .size_full()
+                        })),
+                )
+                .child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .right_0()
+                        .bottom_0()
+                        .child(
+                            Scrollbar::both(view, state, handle.clone(), scroll_size.get())
+                                .axis(axis),
+                        ),
+                )
+                .into_any_element();
+            let element_id = element.request_layout(cx);
+
+            let layout_id = cx.request_layout(style, vec![element_id]);
+
+            (layout_id, element)
+        })
     }
 
     fn prepaint(
         &mut self,
-        _: Option<&GlobalElementId>,
-        bounds: Bounds<Pixels>,
-        _: &mut Self::RequestLayoutState,
-        cx: &mut WindowContext,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<Pixels>,
+        element: &mut Self::RequestLayoutState,
+        cx: &mut gpui::WindowContext,
     ) -> Self::PrepaintState {
-        // Move y to bounds height to cover the parent view.
-        let cover_bounds = Bounds {
-            origin: Point {
-                x: bounds.origin.x,
-                y: bounds.origin.y - bounds.size.height,
-            },
-            size: bounds.size,
-        };
-
-        cx.insert_hitbox(cover_bounds, false)
+        element.prepaint(cx);
+        // do nothing
+        ScrollViewState::default()
     }
 
     fn paint(
         &mut self,
-        _: Option<&GlobalElementId>,
-        _: Bounds<Pixels>,
-        _: &mut Self::RequestLayoutState,
-        hitbox: &mut Self::PrepaintState,
-        cx: &mut WindowContext,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<Pixels>,
+        element: &mut Self::RequestLayoutState,
+        _: &mut Self::PrepaintState,
+        cx: &mut gpui::WindowContext,
     ) {
-        let line_height = cx.line_height();
-        let bounds = hitbox.bounds;
-
-        cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
-            if let Some(color) = self.debug {
-                cx.paint_quad(PaintQuad {
-                    bounds,
-                    border_widths: Edges::all(px(1.0)),
-                    border_color: color,
-                    background: gpui::transparent_white(),
-                    corner_radii: Corners::all(px(0.)),
-                });
-            }
-
-            cx.on_mouse_event({
-                let mouse_position = cx.mouse_position();
-                let scroll_handle = self.scroll_handle.clone();
-                let old_offset = scroll_handle.offset();
-                let view_id = self.view.entity_id();
-                let is_horizontal = self.axis == ScrollableAxis::Horizontal;
-
-                move |event: &ScrollWheelEvent, _, cx| {
-                    if bounds.contains(&mouse_position) {
-                        let delta = event.delta.pixel_delta(line_height);
-
-                        if is_horizontal && !delta.x.is_zero() {
-                            // When is horizontal scroll, move the horizontal scroll handle to make scrolling.
-                            let mut offset = scroll_handle.offset();
-                            offset.x += delta.x;
-                            scroll_handle.set_offset(offset);
-                        }
-
-                        if !is_horizontal && !delta.y.is_zero() {
-                            // When is vertical scroll, move the vertical scroll handle to make scrolling.
-                            let mut offset = scroll_handle.offset();
-                            offset.y += delta.y;
-                            scroll_handle.set_offset(offset);
-                        }
-
-                        if old_offset != scroll_handle.offset() {
-                            cx.notify(view_id);
-                            cx.stop_propagation();
-                        }
-                    }
-                }
-            });
-        });
+        element.paint(cx)
     }
 }
