@@ -212,7 +212,7 @@ where
             size: Size::Medium,
             selected_value: None,
             open: false,
-            cleanable: true,
+            cleanable: false,
             title_prefix: None,
         };
         this.set_selected_index(selected_index, cx);
