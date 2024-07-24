@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install system dependencies
-        run: sh ./script/install-linux-deps.sh
+        run: script/bootstrap
       - name: Setup | Cache Cargo
         uses: actions/cache@v3.0.11
         with:

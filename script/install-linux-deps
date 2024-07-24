@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+sudo apt-get update
+sudo apt-get install -y gcc g++ clang fontconfig-devel wayland-devel libwebkit2gtk-4.1-dev libxkbcommon-x11-devel openssl-devel vulkan-loader
