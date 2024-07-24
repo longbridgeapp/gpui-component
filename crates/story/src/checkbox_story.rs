@@ -1,5 +1,5 @@
 use gpui::{
-    IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext as _,
+    px, rems, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext as _,
     WindowContext,
 };
 
@@ -9,8 +9,10 @@ use ui::{
     h_flex,
     label::Label,
     radio::Radio,
-    v_flex, Clickable, Disableable as _, IconName, Selection,
+    v_flex, Clickable, Disableable as _, IconName, Selection, StyledExt,
 };
+
+use crate::section;
 
 pub struct CheckboxStory {
     check1: Selection,
@@ -46,30 +48,55 @@ impl CheckboxStory {
 impl Render for CheckboxStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
-            .p_4()
             .gap_6()
             .child(
-                h_flex()
-                    .items_center()
-                    .gap_1()
-                    .child(Label::new("9,182,1 USD").text_2xl().masked(self.masked))
+                section("Label", cx)
                     .child(
-                        Button::new("btn-mask", cx)
-                            .style(ButtonStyle::Ghost)
-                            .icon(if self.masked {
-                                IconName::EyeOff
-                            } else {
-                                IconName::Eye
-                            })
-                            .on_click(cx.listener(|this, _, _| {
-                                this.masked = !this.masked;
-                            })),
+                        h_flex()
+                            .w_full()
+                            .justify_between()
+                            .gap_4()
+                            .child(Label::new("Text align left"))
+                            .child(Label::new("Text align center").text_center())
+                            .child(Label::new("Text align right").text_right()),
+                    )
+                    .child(Label::new("Color Label").text_color(ui::red_500()))
+                    .child(
+                        Label::new("Font Size Label")
+                            .text_size(px(20.))
+                            .text_left()
+                            .font_semibold()
+                            .line_height(rems(1.8)),
                     ),
             )
-            .child(Label::new("500 USD").text_xl().masked(self.masked))
             .child(
-                v_flex().items_start().justify_start().gap_6().child(
+                section("Maksed Label", cx).child(
+                    v_flex()
+                        .w_full()
+                        .gap_4()
+                        .child(
+                            h_flex()
+                                .child(Label::new("9,182,1 USD").text_2xl().masked(self.masked))
+                                .child(
+                                    Button::new("btn-mask", cx)
+                                        .style(ButtonStyle::Ghost)
+                                        .icon(if self.masked {
+                                            IconName::EyeOff
+                                        } else {
+                                            IconName::Eye
+                                        })
+                                        .on_click(cx.listener(|this, _, _| {
+                                            this.masked = !this.masked;
+                                        })),
+                                ),
+                        )
+                        .child(Label::new("500 USD").text_xl().masked(self.masked)),
+                ),
+            )
+            .child(
+                section("Checkbox", cx).child(
                     h_flex()
+                        .w_full()
                         .items_center()
                         .gap_6()
                         .child(
@@ -98,8 +125,9 @@ impl Render for CheckboxStory {
                 ),
             )
             .child(
-                h_flex().items_center().gap_4().child(
+                section("Disabled Checkbox", cx).child(
                     h_flex()
+                        .w_full()
                         .items_center()
                         .gap_6()
                         .child(
@@ -123,29 +151,32 @@ impl Render for CheckboxStory {
                 ),
             )
             .child(
-                h_flex()
-                    .gap_4()
-                    .child(
-                        Radio::new("radio1")
-                            .selected(self.select1)
-                            .on_click(cx.listener(|this, v, _cx| {
-                                this.select1 = *v;
-                            })),
-                    )
-                    .child(
-                        Radio::new("radio2")
-                            .label("Radio")
-                            .selected(self.select2)
-                            .on_click(cx.listener(|this, v, _cx| {
-                                this.select2 = *v;
-                            })),
-                    )
-                    .child(
-                        Radio::new("radio3")
-                            .label("Disabled Radio")
-                            .selected(true)
-                            .disabled(true),
-                    ),
+                section("Radio", cx).child(
+                    h_flex()
+                        .w_full()
+                        .gap_4()
+                        .child(
+                            Radio::new("radio1")
+                                .selected(self.select1)
+                                .on_click(cx.listener(|this, v, _cx| {
+                                    this.select1 = *v;
+                                })),
+                        )
+                        .child(
+                            Radio::new("radio2")
+                                .label("Radio")
+                                .selected(self.select2)
+                                .on_click(cx.listener(|this, v, _cx| {
+                                    this.select2 = *v;
+                                })),
+                        )
+                        .child(
+                            Radio::new("radio3")
+                                .label("Disabled Radio")
+                                .selected(true)
+                                .disabled(true),
+                        ),
+                ),
             )
     }
 }

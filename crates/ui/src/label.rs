@@ -43,6 +43,21 @@ impl Label {
         self
     }
 
+    pub fn text_left(mut self) -> Self {
+        self.align = TextAlign::Left;
+        self
+    }
+
+    pub fn text_center(mut self) -> Self {
+        self.align = TextAlign::Center;
+        self
+    }
+
+    pub fn text_right(mut self) -> Self {
+        self.align = TextAlign::Right;
+        self
+    }
+
     pub fn masked(mut self, masked: bool) -> Self {
         self.marked = masked;
         self
