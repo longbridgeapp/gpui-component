@@ -17,7 +17,7 @@ pub struct ScrollView {
     id: ElementId,
     view: AnyView,
     axix: ScrollbarAxis,
-    content: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
+    content: Option<Box<dyn FnOnce(&mut WindowContext) -> AnyElement + 'static>>,
 }
 
 impl ScrollView {
@@ -52,7 +52,7 @@ impl ScrollView {
     #[must_use]
     pub fn content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&mut WindowContext) -> E + 'static,
+        F: FnOnce(&mut WindowContext) -> E + 'static,
         E: IntoElement,
     {
         self.content = Some(Box::new(move |cx| builder(cx).into_any_element()));
@@ -125,7 +125,7 @@ impl Element for ScrollView {
         let view = self.view.clone();
 
         let scroll_id = self.id.clone();
-        let content = self.content.as_ref().map(|c| c(cx));
+        let content = self.content.take().map(|c| c(cx));
 
         self.with_element_state(id.unwrap(), cx, |_, element_state, cx| {
             let handle = element_state.handle.clone();
