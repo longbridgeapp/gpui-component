@@ -13,6 +13,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
     runs-on: ubuntu-latest
     steps:
+      - name: Install system dependencies
+        run: sudo apt-get install -y libgtk-3-dev
       - uses: actions/checkout@v4
       - name: Setup | Cache Cargo
         uses: actions/cache@v3.0.11
