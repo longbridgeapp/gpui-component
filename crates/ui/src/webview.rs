@@ -17,7 +17,7 @@ pub fn init(_cx: &AppContext) {}
 pub struct WebView {
     focus_handle: FocusHandle,
     webview: Rc<wry::WebView>,
-    visable: bool,
+    visible: bool,
 }
 
 impl WebView {
@@ -26,7 +26,7 @@ impl WebView {
 
         Self {
             focus_handle: cx.focus_handle(),
-            visable: true,
+            visible: true,
             webview: Rc::new(webview),
         }
     }
@@ -40,7 +40,7 @@ impl WebView {
     }
 
     pub fn visible(&self) -> bool {
-        self.visable
+        self.visible
     }
 
     /// Go back in the webview history.
