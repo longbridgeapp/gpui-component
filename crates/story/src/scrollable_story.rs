@@ -183,8 +183,8 @@ impl Render for ScrollableStory {
                     .child(
                         v_flex()
                             .id("test-1")
-                            .focusable()
                             .scrollable(cx.view().clone(), ScrollbarAxis::Vertical)
+                            .focusable()
                             .p_3()
                             .w(test_width)
                             .gap_1()

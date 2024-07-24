@@ -2,9 +2,9 @@ use std::{cell::Cell, rc::Rc};
 
 use super::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use gpui::{
-    canvas, div, relative, AnyElement, AnyView, Element, ElementId, GlobalElementId,
-    InteractiveElement as _, IntoElement, ParentElement, Pixels, Position, ScrollHandle,
-    SharedString, Size, StatefulInteractiveElement, Style, StyleRefinement, Styled, WindowContext,
+    canvas, div, relative, AnyElement, AnyView, Div, Element, ElementId, GlobalElementId,
+    InteractiveElement, IntoElement, ParentElement, Pixels, Position, ScrollHandle, SharedString,
+    Size, Stateful, StatefulInteractiveElement, Style, StyleRefinement, Styled, WindowContext,
 };
 
 /// A scroll view is a container that allows the user to scroll through a large amount of content.
@@ -13,8 +13,8 @@ pub struct Scrollable<E> {
     element: Option<E>,
     view: AnyView,
     axis: ScrollbarAxis,
-    /// This is not used yet.
-    _style: StyleRefinement,
+    /// This is a fake element to handle Styled, InteractiveElement, not used.
+    _element: Stateful<Div>,
 }
 
 impl<E> Scrollable<E>
@@ -31,10 +31,10 @@ where
 
         Self {
             element: Some(element),
+            _element: div().id("fake"),
             id,
             view,
             axis,
-            _style: StyleRefinement::default(),
         }
     }
 
@@ -105,10 +105,24 @@ where
         if let Some(element) = &mut self.element {
             element.style()
         } else {
-            &mut self._style
+            self._element.style()
         }
     }
 }
+
+impl<E> InteractiveElement for Scrollable<E>
+where
+    E: Element + InteractiveElement,
+{
+    fn interactivity(&mut self) -> &mut gpui::Interactivity {
+        if let Some(element) = &mut self.element {
+            element.interactivity()
+        } else {
+            self._element.interactivity()
+        }
+    }
+}
+impl<E> StatefulInteractiveElement for Scrollable<E> where E: Element + StatefulInteractiveElement {}
 
 impl<E> IntoElement for Scrollable<E>
 where
