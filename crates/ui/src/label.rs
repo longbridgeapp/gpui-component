@@ -1,9 +1,9 @@
 use gpui::{
-    div, prelude::FluentBuilder, Div, IntoElement, ParentElement, RenderOnce, SharedString, Styled,
-    WindowContext,
+    div, prelude::FluentBuilder, rems, Div, IntoElement, ParentElement, RenderOnce, SharedString,
+    Styled, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme};
+use crate::theme::ActiveTheme;
 
 #[derive(Default)]
 pub enum TextAlign {
@@ -25,7 +25,7 @@ pub struct Label {
 impl Label {
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
-            base: div(),
+            base: div().line_height(rems(1.25)),
             label: label.into(),
             multiple_lines: true,
             align: TextAlign::default(),
@@ -55,6 +55,8 @@ impl Styled for Label {
     }
 }
 
+const MASKED: &'static str = "•";
+
 impl RenderOnce for Label {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let text = if !self.multiple_lines {
@@ -64,12 +66,12 @@ impl RenderOnce for Label {
         };
 
         let text_display = if self.marked {
-            "*".repeat(text.chars().count())
+            MASKED.repeat(text.chars().count())
         } else {
             text.to_string()
         };
 
-        h_flex()
+        div()
             .map(|this| match self.align {
                 TextAlign::Left => this.justify_start(),
                 TextAlign::Center => this.justify_center(),
