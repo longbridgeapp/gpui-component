@@ -52,9 +52,8 @@ impl Render for CheckboxStory {
             .child(
                 section("Label", cx)
                     .child(
-                        h_flex()
+                        v_flex()
                             .w_full()
-                            .justify_between()
                             .gap_4()
                             .child(Label::new("Text align left"))
                             .child(Label::new("Text align center").text_center())

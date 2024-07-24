@@ -3,7 +3,7 @@ use gpui::{
     Styled, WindowContext,
 };
 
-use crate::theme::ActiveTheme;
+use crate::{theme::ActiveTheme, StyledExt};
 
 #[derive(Default)]
 pub enum TextAlign {
@@ -88,6 +88,7 @@ impl RenderOnce for Label {
 
         div().text_color(cx.theme().foreground).child(
             self.base
+                .h_flex()
                 .map(|this| match self.align {
                     TextAlign::Left => this.justify_start(),
                     TextAlign::Center => this.justify_center(),
