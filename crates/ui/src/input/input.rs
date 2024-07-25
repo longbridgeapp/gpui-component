@@ -51,6 +51,7 @@ actions!(
     ]
 );
 
+#[derive(Clone)]
 pub enum InputEvent {
     Change(SharedString),
     PressEnter,
