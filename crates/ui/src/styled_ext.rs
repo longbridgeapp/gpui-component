@@ -195,16 +195,34 @@ impl From<Pixels> for Size {
 }
 
 #[allow(unused)]
-pub trait Sizeful<T: Styled> {
+pub trait StyleSized<T: Styled> {
     fn input_size(self, size: Size) -> Self;
+    fn input_pl(self, size: Size) -> Self;
+    fn input_pr(self, size: Size) -> Self;
     fn input_px(self, size: Size) -> Self;
     fn input_py(self, size: Size) -> Self;
     fn input_h(self, size: Size) -> Self;
 }
 
-impl<T: Styled> Sizeful<T> for T {
+impl<T: Styled> StyleSized<T> for T {
     fn input_size(self, size: Size) -> Self {
         self.input_px(size).input_py(size).input_h(size)
+    }
+
+    fn input_pl(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.pl_5(),
+            Size::Medium => self.pl_3(),
+            _ => self.pl_2(),
+        }
+    }
+
+    fn input_pr(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.pr_5(),
+            Size::Medium => self.pr_3(),
+            _ => self.pr_2(),
+        }
     }
 
     fn input_px(self, size: Size) -> Self {

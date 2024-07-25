@@ -38,7 +38,7 @@ pub use wry;
 
 pub use clickable::Clickable;
 pub use disableable::Disableable;
-pub use event::InterativeElementExt;
+pub use event::InteractiveElementExt;
 pub use focusable::FocusableCycle;
 pub use selectable::{Selectable, Selection};
 pub use styled_ext::{Size, StyledExt};

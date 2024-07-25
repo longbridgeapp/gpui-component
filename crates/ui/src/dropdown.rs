@@ -24,7 +24,7 @@ use crate::{
     button::{Button, ButtonStyle},
     h_flex,
     list::{self, List, ListDelegate, ListItem},
-    styled_ext::Sizeful,
+    styled_ext::StyleSized,
     theme::ActiveTheme as _,
     Clickable as _, Icon, IconName, Size, StyledExt,
 };

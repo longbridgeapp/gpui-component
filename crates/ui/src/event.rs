@@ -1,6 +1,6 @@
 use gpui::{ClickEvent, Focusable, InteractiveElement, WindowContext};
 
-pub trait InterativeElementExt: InteractiveElement {
+pub trait InteractiveElementExt: InteractiveElement {
     /// Set the listener for a double click event.
     fn on_double_click(
         mut self,
@@ -18,9 +18,9 @@ pub trait InterativeElementExt: InteractiveElement {
     }
 }
 
-impl<E: InteractiveElement> InterativeElementExt for Focusable<E> {}
+impl<E: InteractiveElement> InteractiveElementExt for Focusable<E> {}
 
-// impl<E> InterativeElementExt for Stateful<E>
+// impl<E> InteractiveElementExt for Stateful<E>
 // where
 //     E: Element,
 //     Self: InteractiveElement,
