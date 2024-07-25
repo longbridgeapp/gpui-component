@@ -9,9 +9,9 @@ use super::blink_cursor::BlinkCursor;
 use super::history::History;
 use crate::button::{Button, ButtonStyle};
 use crate::indicator::Indicator;
-use crate::styled_ext::Sizeful;
+use crate::styled_ext::StyleSized;
 use crate::theme::ActiveTheme;
-use crate::{event::InterativeElementExt as _, Size};
+use crate::{event::InteractiveElementExt as _, Size};
 use crate::{Clickable, IconName, StyledExt as _};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
@@ -821,7 +821,7 @@ impl Element for TextElement {
         let cursor = input.cursor_offset();
         let style = cx.text_style();
 
-        let (disaplay_text, text_color) = if text.is_empty() {
+        let (display_text, text_color) = if text.is_empty() {
             (placeholder, cx.theme().muted_foreground)
         } else if input.masked {
             (
@@ -833,7 +833,7 @@ impl Element for TextElement {
         };
 
         let run = TextRun {
-            len: disaplay_text.len(),
+            len: display_text.len(),
             font: style.font(),
             color: text_color,
             background_color: None,
@@ -857,7 +857,7 @@ impl Element for TextElement {
                     ..run.clone()
                 },
                 TextRun {
-                    len: disaplay_text.len() - marked_range.end,
+                    len: display_text.len() - marked_range.end,
                     ..run.clone()
                 },
             ]
@@ -871,7 +871,7 @@ impl Element for TextElement {
         let font_size = style.font_size.to_pixels(cx.rem_size());
         let line = cx
             .text_system()
-            .shape_line(disaplay_text, font_size, &runs)
+            .shape_line(display_text, font_size, &runs)
             .unwrap();
 
         // Calculate the scroll offset to keep the cursor in view
@@ -1036,7 +1036,8 @@ impl Render for TextInput {
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
                     .when(focused, |this| this.outline(cx))
-                    .input_px(self.size)
+                    .when(prefix.is_none(), |this| this.input_pl(self.size))
+                    .when(suffix.is_none(), |this| this.input_pr(self.size))
                     .bg(if self.disabled {
                         cx.theme().muted
                     } else {

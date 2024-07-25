@@ -1,5 +1,5 @@
 use gpui::{
-    actions, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
+    actions, div, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
     ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
@@ -68,21 +68,21 @@ impl InputStory {
 
         let prefix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
-                .prefix(|_| IconName::Search)
+                .prefix(|_| div().child(IconName::Search).ml_3())
                 .placeholder("Search some thing...")
                 .cleanable(true)
         });
         let suffix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
-                .suffix(|_| IconName::Info)
+                .suffix(|_| div().child(IconName::Info).mr_3())
                 .placeholder("This input only support [a-zA-Z0-9] characters.")
                 .pattern(regex::Regex::new(r"^[a-zA-Z0-9]*$").unwrap())
                 .cleanable(true)
         });
         let both_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
-                .prefix(|_| IconName::Search)
-                .suffix(|_| IconName::Info)
+                .prefix(|_| div().child(IconName::Search).ml_3())
+                .suffix(|_| div().child(IconName::Info).mr_3())
                 .cleanable(true)
                 .placeholder("This input have prefix and suffix.")
         });
@@ -198,7 +198,7 @@ impl Render for InputStory {
                     .gap_3()
                     .items_start()
                     .child(
-                        section("Preifx and Suffix", cx)
+                        section("Prefix and Suffix", cx)
                             .child(self.prefix_input1.clone())
                             .child(self.both_input1.clone())
                             .child(self.suffix_input1.clone()),
