@@ -43,8 +43,11 @@ impl ScrollableStory {
         } else if n == 1 {
             self.items = (0..100).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
             self.test_width = px(10000.);
-        } else {
+        } else if n == 2 {
             self.items = (0..500).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
+            self.test_width = px(10000.);
+        } else {
+            self.items = (0..5).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
             self.test_width = px(10000.);
         }
         self.scroll_state.set(ScrollbarState::default());
@@ -85,6 +88,13 @@ impl Render for ScrollableStory {
                             .label("Size 2")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_test_cases(2, cx);
+                            })),
+                    )
+                    .child(
+                        Button::new("test-3", cx)
+                            .label("Size 3")
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.change_test_cases(3, cx);
                             })),
                     )
                     .child(Divider::vertical().px_2())

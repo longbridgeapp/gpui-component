@@ -131,6 +131,8 @@ impl ScrollbarAxis {
         match self {
             Self::Vertical => vec![Self::Vertical],
             Self::Horizontal => vec![Self::Horizontal],
+            // This should keep vertical first, vertical is the primary axis
+            // if vertical not need display, then horizontal will not keep right margin.
             Self::Both => vec![Self::Vertical, Self::Horizontal],
         }
     }
@@ -293,7 +295,7 @@ impl Element for Scrollbar {
         cx: &mut gpui::WindowContext,
     ) {
         let hitbox_bounds = hitbox.bounds;
-        let has_both = self.axis.is_both();
+        let mut has_both = self.axis.is_both();
 
         cx.with_content_mask(
             Some(ContentMask {
@@ -322,6 +324,12 @@ impl Element for Scrollbar {
                     } else {
                         px(0.)
                     };
+
+                    // Hide scrollbar, if the scroll area is smaller than the container.
+                    if scroll_area_size <= container_size {
+                        has_both = false;
+                        continue;
+                    }
 
                     let thumb_length = (container_size / scroll_area_size * container_size)
                         .max(px(MIN_THUMB_SIZE));
