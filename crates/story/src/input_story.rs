@@ -7,7 +7,7 @@ use gpui::{
 use ui::{
     button::Button,
     h_flex,
-    input::{InputEvent, InputOtp, TextInput},
+    input::{InputEvent, OTPInput, TextInput},
     prelude::FluentBuilder as _,
     v_flex, Clickable, FocusableCycle, IconName, Size,
 };
@@ -33,9 +33,9 @@ pub struct InputStory {
     both_input1: View<TextInput>,
     large_input: View<TextInput>,
     small_input: View<TextInput>,
-    otp_input: View<InputOtp>,
+    otp_input: View<OTPInput>,
     otp_value: Option<SharedString>,
-    opt_input2: View<InputOtp>,
+    opt_input2: View<OTPInput>,
 }
 
 impl InputStory {
@@ -87,7 +87,7 @@ impl InputStory {
                 .placeholder("This input have prefix and suffix.")
         });
 
-        let otp_input = cx.new_view(|cx| InputOtp::new(6, cx).masked(true));
+        let otp_input = cx.new_view(|cx| OTPInput::new(6, cx).masked(true));
         cx.subscribe(&otp_input, |this, _, ev: &InputEvent, cx| match ev {
             InputEvent::Change(text) => {
                 this.otp_value = Some(text.clone());
@@ -123,7 +123,7 @@ impl InputStory {
             both_input1,
             otp_input,
             otp_value: None,
-            opt_input2: cx.new_view(|cx| InputOtp::new(6, cx).groups(3)),
+            opt_input2: cx.new_view(|cx| OTPInput::new(6, cx).groups(3)),
         }
     }
 
@@ -210,12 +210,12 @@ impl Render for InputStory {
                     ),
             )
             .child(
-                section("Input OTP", cx).child(
+                section("OTP Input", cx).child(
                     v_flex()
                         .gap_3()
                         .child(self.otp_input.clone())
                         .when_some(self.otp_value.clone(), |this, otp| {
-                            this.child(format!("You input OTP: {}", otp))
+                            this.child(format!("Your OTP: {}", otp))
                         })
                         .child(self.opt_input2.clone()),
                 ),
