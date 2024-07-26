@@ -1,4 +1,4 @@
-use std::{borrow::Cow, rc::Rc};
+use std::borrow::Cow;
 
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder, px, rems, AnyElement, AppContext, ClickEvent,
@@ -184,7 +184,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
-    render_empty: Option<Rc<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
+    render_empty: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
 }
 
 impl<D> Dropdown<D>
@@ -247,11 +247,12 @@ where
         self
     }
 
-    pub fn render_empty<F>(mut self, f: F) -> Self
+    pub fn render_empty<E, F>(mut self, f: F) -> Self
     where
-        F: Fn(&WindowContext) -> AnyElement + 'static,
+        E: IntoElement,
+        F: Fn(&WindowContext) -> E + 'static,
     {
-        self.render_empty = Some(Rc::new(f));
+        self.render_empty = Some(Box::new(move |cx| f(cx).into_any_element()));
         self
     }
 
