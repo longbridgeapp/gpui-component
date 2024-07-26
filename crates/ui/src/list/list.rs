@@ -3,15 +3,14 @@ use std::{cell::Cell, rc::Rc};
 
 use crate::input::{InputEvent, TextInput};
 use crate::scroll::ScrollbarState;
-use crate::theme::{ActiveTheme, Colorize as _};
+use crate::theme::{ActiveTheme, Colorize};
 use crate::IconName;
 use crate::{scroll::Scrollbar, v_flex};
 use gpui::SharedString;
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, FocusHandle,
-    FocusableView, InteractiveElement as _, IntoElement, KeyBinding, Length, ListSizingBehavior,
-    MouseButton, ParentElement as _, Render, Styled as _, Task, UniformListScrollHandle, View,
-    ViewContext, VisualContext as _,
+    actions, div, prelude::FluentBuilder, uniform_list, AppContext, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
+    ParentElement, Render, Styled, Task, UniformListScrollHandle, View, ViewContext, VisualContext,
 };
 use smol::Timer;
 
@@ -326,7 +325,6 @@ where
                 v_flex()
                     .flex_grow()
                     .relative()
-                    .min_h(px(100.))
                     .when_some(self.max_height, |this, h| this.max_h(h))
                     .overflow_hidden()
                     .when(items_count == 0, |this| {

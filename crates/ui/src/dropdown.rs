@@ -1,11 +1,19 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, rc::Rc};
 
 use gpui::{
-    actions, deferred, div, prelude::FluentBuilder as _, px, rems, AnyElement, AppContext,
-    ClickEvent, DismissEvent, Element, ElementId, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, KeyBinding, LayoutId, ParentElement as _, Render,
-    SharedString, StatefulInteractiveElement as _, Styled as _, View, ViewContext,
-    VisualContext as _, WeakView, WindowContext,
+    actions, deferred, div, prelude::FluentBuilder, px, rems, AnyElement, AppContext, ClickEvent,
+    DismissEvent, Div, Element, ElementId, EventEmitter, FocusHandle, Focusable, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, LayoutId, ParentElement, Render, SharedString,
+    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext, WeakView, WindowContext,
+};
+
+use crate::{
+    button::{Button, ButtonStyle},
+    h_flex,
+    list::{self, List, ListDelegate, ListItem},
+    styled_ext::StyleSized,
+    theme::ActiveTheme,
+    Clickable, Icon, IconName, Size, StyledExt,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
@@ -19,15 +27,6 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("escape", Escape, context),
     ])
 }
-
-use crate::{
-    button::{Button, ButtonStyle},
-    h_flex,
-    list::{self, List, ListDelegate, ListItem},
-    styled_ext::StyleSized,
-    theme::ActiveTheme as _,
-    Clickable as _, Icon, IconName, Size, StyledExt,
-};
 
 /// A trait for items that can be displayed in a dropdown.
 pub trait DropdownItem {
@@ -185,6 +184,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
+    render_empty: Option<Rc<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
 }
 
 impl<D> Dropdown<D>
@@ -214,6 +214,7 @@ where
             open: false,
             cleanable: false,
             title_prefix: None,
+            render_empty: None,
         };
         this.set_selected_index(selected_index, cx);
         this
@@ -243,6 +244,14 @@ where
     /// Set true to show the clear button when the input field is not empty.
     pub fn cleanable(mut self, cleanable: bool) -> Self {
         self.cleanable = cleanable;
+        self
+    }
+
+    pub fn render_empty<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&WindowContext) -> AnyElement + 'static,
+    {
+        self.render_empty = Some(Rc::new(f));
         self
     }
 
@@ -326,18 +335,23 @@ where
     }
 
     fn render_menu_content(&self, cx: &WindowContext) -> impl IntoElement {
+        let is_empty = self.list.read(cx).delegate().delegate.is_empty();
+
         div()
-            .absolute()
-            .mt_1p5()
-            .bg(cx.theme().background)
-            .border_1()
-            .border_color(cx.theme().input)
-            .rounded(px(cx.theme().radius))
-            .shadow_md()
             .track_focus(&self.list.focus_handle(cx))
-            .child(self.list.clone())
             .on_mouse_down_out(|_, cx| {
                 cx.dispatch_action(Box::new(Escape));
+            })
+            .map(|this| {
+                if is_empty {
+                    if let Some(render_empty) = &self.render_empty {
+                        with_style(this, cx).child(render_empty(cx))
+                    } else {
+                        this
+                    }
+                } else {
+                    with_style(this, cx).child(self.list.clone())
+                }
             })
     }
 
@@ -350,7 +364,7 @@ where
                 .delegate
                 .get(*selected_index)
                 .map(|item| item.title().to_string())
-                .unwrap();
+                .unwrap_or_default();
 
             h_flex()
                 .children(self.title_prefix.clone().map(|prefix| {
@@ -365,6 +379,16 @@ where
                 .child(self.placeholder.clone())
         }
     }
+}
+
+fn with_style(d: Focusable<Div>, cx: &WindowContext) -> Focusable<Div> {
+    d.absolute()
+        .mt_1p5()
+        .bg(cx.theme().background)
+        .border_1()
+        .border_color(cx.theme().input)
+        .rounded(px(cx.theme().radius))
+        .shadow_md()
 }
 
 impl Dropdown<Vec<SharedString>> {

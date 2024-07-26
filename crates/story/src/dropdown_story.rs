@@ -43,6 +43,7 @@ pub struct DropdownStory {
     fruit_dropdown: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown1: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown2: View<Dropdown<Vec<SharedString>>>,
+    simple_dropdown3: View<Dropdown<Vec<SharedString>>>,
 }
 
 impl DropdownStory {
@@ -105,6 +106,18 @@ impl DropdownStory {
                     .size(ui::Size::Small)
                     .placeholder("Language")
                     .title_prefix("Language: ")
+                }),
+                simple_dropdown3: cx.new_view(|cx| {
+                    Dropdown::string_list("string-list3", Vec::<SharedString>::new(), None, cx)
+                        .size(ui::Size::Small)
+                        .render_empty(|cx| {
+                            h_flex()
+                                .h_24()
+                                .justify_center()
+                                .text_color(cx.theme().muted_foreground)
+                                .child("No Data")
+                                .into_any_element()
+                        })
                 }),
             }
         })
@@ -175,7 +188,8 @@ impl Render for DropdownStory {
                     .w_128()
                     .gap_2()
                     .child(self.simple_dropdown1.clone())
-                    .child(self.simple_dropdown2.clone()),
+                    .child(self.simple_dropdown2.clone())
+                    .child(self.simple_dropdown3.clone()),
             )
     }
 }
