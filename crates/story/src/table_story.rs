@@ -1,13 +1,12 @@
-
 use fake::Fake;
 use gpui::{
-    ParentElement, Render, SharedString, Styled, View, ViewContext,
-    VisualContext as _, WindowContext,
+    ParentElement, Pixels, Render, SharedString, Styled, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
 use ui::{
     checkbox::Checkbox,
     h_flex,
-    table::{Table, TableDelegate},
+    table::{Table, TableDelegate, TableEvent},
     v_flex, Selectable, Selection,
 };
 
@@ -97,7 +96,7 @@ impl TableDelegate for CustomerTableDelegate {
         }
     }
 
-    fn col_width(&self, col_ix: usize) -> Option<f32> {
+    fn col_width(&self, col_ix: usize) -> Option<Pixels> {
         match col_ix {
             0 => Some(50.0),
             1 => Some(220.0),
@@ -115,6 +114,15 @@ impl TableDelegate for CustomerTableDelegate {
             13 => Some(90.0),
             _ => None,
         }
+        .map(Pixels::from)
+    }
+
+    fn can_resize_col(&self, col_ix: usize) -> bool {
+        return col_ix > 1;
+    }
+
+    fn on_col_widths_changed(&mut self, col_widths: Vec<Option<Pixels>>) {
+        println!("Col widths changed: {:?}", col_widths);
     }
 
     fn render_td(&self, row_ix: usize, col_ix: usize) -> impl gpui::IntoElement {
@@ -156,6 +164,9 @@ impl TableStory {
     fn new(cx: &mut ViewContext<Self>) -> Self {
         let delegate = CustomerTableDelegate::new(2000);
         let table = cx.new_view(|cx| Table::new(delegate, cx));
+
+        cx.subscribe(&table, Self::on_table_event).detach();
+
         Self { table }
     }
 
@@ -165,6 +176,21 @@ impl TableStory {
             table.delegate_mut().loop_selection = s.is_selected();
             cx.notify();
         });
+    }
+
+    fn on_table_event(
+        &mut self,
+        _: View<Table<CustomerTableDelegate>>,
+        event: &TableEvent,
+        _cx: &mut ViewContext<Self>,
+    ) {
+        match event {
+            TableEvent::ColWidthsChanged(col_widths) => {
+                println!("Col widths changed: {:?}", col_widths)
+            }
+            TableEvent::SelectCol(ix) => println!("Select col: {}", ix),
+            TableEvent::SelectRow(ix) => println!("Select row: {}", ix),
+        }
     }
 }
 

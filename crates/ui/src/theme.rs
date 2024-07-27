@@ -331,6 +331,11 @@ pub struct Theme {
     pub slider_thumb: Hsla,
     pub list_item_active: Hsla,
     pub list_item_hover: Hsla,
+    pub table: Hsla,
+    pub table_even: Hsla,
+    pub table_head: Hsla,
+    pub table_active: Hsla,
+    pub table_hover: Hsla,
 }
 
 impl Global for Theme {}
@@ -398,6 +403,11 @@ impl From<Colors> for Theme {
             slider_thumb: colors.background,
             list_item_active: colors.secondary_active,
             list_item_hover: colors.secondary,
+            table_head: colors.secondary.opacity(0.5),
+            table: colors.background,
+            table_even: colors.secondary.opacity(0.3),
+            table_active: colors.secondary_active,
+            table_hover: colors.secondary_active.opacity(0.7),
         }
     }
 }
