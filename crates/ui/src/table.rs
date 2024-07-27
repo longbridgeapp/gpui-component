@@ -443,7 +443,7 @@ where
         let cols_count: usize = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
-        fn last_empty_col(cx: &mut WindowContext) -> Div {
+        fn last_empty_col(_: &mut WindowContext) -> Div {
             h_flex().w(px(100.)).h_full().flex_shrink_0()
         }
 
