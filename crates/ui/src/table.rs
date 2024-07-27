@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex,
+    v_flex, StyledExt,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Bounds, Div,
@@ -286,9 +286,6 @@ where
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         const HANDLE_SIZE: Pixels = px(3.);
-        if ix > self.col_groups.len() - 1 {
-            return div().into_any_element();
-        }
 
         if !self.delegate.can_resize_col(ix) {
             return div().into_any_element();
@@ -310,7 +307,7 @@ where
             .child(
                 div()
                     .h_full()
-                    .h_6()
+                    .h_5()
                     .justify_center()
                     .bg(cx.theme().border)
                     .when(is_resizing, |this| this.bg(cx.theme().drag_border))
@@ -344,6 +341,7 @@ where
                 },
             ))
             .on_drag(DragCol((cx.entity_id(), ix)), |drag, cx| {
+                cx.stop_propagation();
                 cx.new_view(|_| drag.clone())
             })
             .on_mouse_up_out(
@@ -367,10 +365,6 @@ where
     /// and the `size` is the new size for the col.
     fn resize_cols(&mut self, ix: usize, size: Pixels, cx: &mut ViewContext<Self>) {
         const MIN_WIDTH: Pixels = px(10.0);
-        // Only resize the left cols.
-        if ix == self.col_groups.len() - 1 {
-            return;
-        }
         if !self.delegate.can_resize_col(ix) {
             return;
         }
@@ -449,6 +443,10 @@ where
         let cols_count: usize = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
+        fn last_empty_col(cx: &mut WindowContext) -> Div {
+            h_flex().w(px(100.)).h_full().flex_shrink_0()
+        }
+
         fn tr(_: &mut WindowContext) -> Div {
             h_flex()
         }
@@ -490,6 +488,7 @@ where
                                             .enumerate()
                                             .map(|(col_ix, _)| table.render_th(col_ix, cx)),
                                     )
+                                    .child(last_empty_col(cx))
                                     .map(|this| vec![this])
                             }
                         })
@@ -506,6 +505,17 @@ where
                                     tr(cx)
                                         .id(("table-row", row_ix))
                                         .w_full()
+                                        .when(row_ix > 0, |this| this.border_t_1())
+                                        .when(row_ix % 2 == 0, |this| {
+                                            this.bg(cx.theme().table_even)
+                                        })
+                                        .hover(|this| {
+                                            if table.selected_row.is_some() {
+                                                this
+                                            } else {
+                                                this.bg(cx.theme().table_hover)
+                                            }
+                                        })
                                         .children((0..cols_count).map(|col_ix| {
                                             table
                                                 .col_wrap(col_ix, cx) // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
@@ -521,17 +531,7 @@ where
                                                         ),
                                                 )
                                         }))
-                                        .when(row_ix > 0, |this| this.border_t_1())
-                                        .when(row_ix % 2 == 0, |this| {
-                                            this.bg(cx.theme().table_even)
-                                        })
-                                        .hover(|this| {
-                                            if table.selected_row.is_some() {
-                                                this
-                                            } else {
-                                                this.bg(cx.theme().table_hover)
-                                            }
-                                        })
+                                        .child(last_empty_col(cx))
                                         // Row selected style
                                         .when_some(table.selected_row, |this, selected_row| {
                                             this.when(
