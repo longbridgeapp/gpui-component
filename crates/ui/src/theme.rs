@@ -403,7 +403,7 @@ impl From<Colors> for Theme {
             slider_thumb: colors.background,
             list_item_active: colors.secondary_active,
             list_item_hover: colors.secondary,
-            table_head: colors.background,
+            table_head: colors.secondary.opacity(0.5),
             table: colors.background,
             table_even: colors.secondary.opacity(0.3),
             table_active: colors.secondary_active,

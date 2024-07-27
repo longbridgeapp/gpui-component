@@ -2,17 +2,16 @@ use std::{cell::Cell, rc::Rc};
 
 use crate::{
     h_flex,
-    resizable::DragPanel,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
-    theme::{ActiveTheme, Colorize},
-    v_flex, StyledExt,
+    theme::ActiveTheme,
+    v_flex,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Axis, Bounds,
-    Div, DragMoveEvent, EntityId, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, KeyBinding, MouseButton, ParentElement as _, Pixels,
-    Render, ScrollHandle, SharedString, StatefulInteractiveElement as _, Styled,
-    UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
+    actions, canvas, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Bounds, Div,
+    DragMoveEvent, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
+    IntoElement, KeyBinding, MouseButton, ParentElement as _, Pixels, Render, ScrollHandle,
+    SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -287,22 +286,39 @@ where
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         const HANDLE_SIZE: Pixels = px(3.);
+        if ix > self.col_groups.len() - 1 {
+            return div().into_any_element();
+        }
 
         if !self.delegate.can_resize_col(ix) {
             return div().into_any_element();
         }
 
-        div()
+        let group_id: SharedString = format!("resizable-handle-{}", ix).into();
+        let is_resizing = self.resizing_col == Some(ix);
+
+        h_flex()
             .id(("resizable-handle", ix))
+            .group(group_id.clone())
             .occlude()
             .cursor_col_resize()
-            .when(self.resizing_col == Some(ix), |this| {
-                this.bg(cx.theme().drag_border)
-            })
-            .hover(|this| this.bg(cx.theme().drag_border))
             .h_full()
             .w(HANDLE_SIZE)
-            .ml(-(HANDLE_SIZE / 2.))
+            .ml(-(HANDLE_SIZE))
+            .justify_end()
+            .items_center()
+            .child(
+                div()
+                    .h_full()
+                    .h_6()
+                    .justify_center()
+                    .bg(cx.theme().border)
+                    .when(is_resizing, |this| this.bg(cx.theme().drag_border))
+                    .group_hover(group_id, |this| this.bg(cx.theme().drag_border))
+                    .w(px(1.)),
+            )
+            .hover(|this| this.bg(cx.theme().drag_border))
+            .when(is_resizing, |this| this.bg(cx.theme().drag_border))
             .on_drag_move(cx.listener(
                 move |view, e: &DragMoveEvent<DragCol>, cx| match e.drag(cx) {
                     DragCol((entity_id, ix)) => {
@@ -319,20 +335,31 @@ where
                         view.resizing_col = Some(ix);
 
                         let col_group = view.col_groups.get(ix).expect("BUG: invalid col index");
-                        view.resize_cols(ix, e.event.position.x - col_group.bounds.left(), cx);
+                        view.resize_cols(
+                            ix,
+                            e.event.position.x - HANDLE_SIZE - col_group.bounds.left(),
+                            cx,
+                        );
                     }
                 },
             ))
             .on_drag(DragCol((cx.entity_id(), ix)), |drag, cx| {
                 cx.new_view(|_| drag.clone())
             })
-            .on_drop(cx.listener(|view, _: &DragCol, cx| {
-                view.resizing_col = None;
+            .on_mouse_up_out(
+                MouseButton::Left,
+                cx.listener(|view, _, cx| {
+                    if view.resizing_col.is_none() {
+                        return;
+                    }
 
-                let new_widths = view.col_groups.iter().map(|g| g.width).collect();
-                cx.emit(TableEvent::ColWidthsChanged(new_widths));
-                cx.notify();
-            }))
+                    view.resizing_col = None;
+
+                    let new_widths = view.col_groups.iter().map(|g| g.width).collect();
+                    cx.emit(TableEvent::ColWidthsChanged(new_widths));
+                    cx.notify();
+                }),
+            )
             .into_any_element()
     }
 
@@ -361,9 +388,10 @@ where
         }
         self.col_groups[ix].width = Some(new_width);
 
-        let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
-        let next_width = (next_width - changed_width).max(MIN_WIDTH);
-        self.col_groups[ix + 1].width = Some(next_width);
+        // Resize next col, table not need to resize the right cols.
+        // let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
+        // let next_width = (next_width - changed_width).max(MIN_WIDTH);
+        // self.col_groups[ix + 1].width = Some(next_width);
 
         cx.notify();
     }
@@ -385,9 +413,7 @@ where
                     .child(self.delegate.render_th(col_ix)),
             )
             // resize handle
-            .when(col_ix < self.col_groups.len() - 1, |this| {
-                this.child(self.render_resize_handle(col_ix, cx))
-            })
+            .child(self.render_resize_handle(col_ix, cx))
             // to save the bounds of this col.
             .child({
                 let view = cx.view().clone();
@@ -423,8 +449,8 @@ where
         let cols_count: usize = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
-        fn tr(cx: &mut WindowContext) -> Div {
-            h_flex().gap_1().border_color(cx.theme().border)
+        fn tr(_: &mut WindowContext) -> Div {
+            h_flex()
         }
 
         let inner_table = v_flex()
@@ -453,6 +479,7 @@ where
                                 tr(cx)
                                     .id("table-head")
                                     .w_full()
+                                    .h_10()
                                     .overflow_scroll()
                                     .track_scroll(&horizontal_scroll_handle)
                                     .bg(cx.theme().table_head)
@@ -463,7 +490,6 @@ where
                                             .enumerate()
                                             .map(|(col_ix, _)| table.render_th(col_ix, cx)),
                                     )
-                                    .flex_1()
                                     .map(|this| vec![this])
                             }
                         })
