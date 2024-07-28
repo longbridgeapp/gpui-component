@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex,
+    v_flex, Icon, IconName,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Bounds, Div,
@@ -40,6 +40,7 @@ pub fn init(cx: &mut AppContext) {
 struct ColGroup {
     width: Option<Pixels>,
     bounds: Bounds<Pixels>,
+    sort: Option<ColSort>,
 }
 
 #[derive(Clone)]
@@ -48,6 +49,16 @@ pub(crate) struct DragCol {
     pub(crate) name: SharedString,
     pub(crate) width: Option<Pixels>,
     pub(crate) col_ix: usize,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ColSort {
+    /// No sorting.
+    Default,
+    /// Sort in ascending order.
+    Ascending,
+    /// Sort in descending order.
+    Descending,
 }
 
 impl Render for DragCol {
@@ -122,6 +133,16 @@ pub trait TableDelegate: Sized + 'static {
     /// This is only called when the table initializes.
     fn col_width(&self, col_ix: usize) -> Option<Pixels>;
 
+    /// Return the sort state of the column at the given index.
+    ///
+    /// This is only called when the table initializes.
+    fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+        None
+    }
+
+    /// Perform sort on the column at the given index.
+    fn perform_sort(&mut self, col_ix: usize, sort: ColSort, cx: &mut WindowContext) {}
+
     /// Render the header cell at the given column index, default to the column name.
     fn render_th(&self, col_ix: usize) -> impl IntoElement {
         div().size_full().child(self.col_name(col_ix))
@@ -184,6 +205,7 @@ where
             .map(|col_ix| ColGroup {
                 width: self.delegate.col_width(col_ix),
                 bounds: Bounds::default(),
+                sort: self.delegate.col_sort(col_ix),
             })
             .collect();
         cx.notify();
@@ -453,6 +475,69 @@ where
         cx.notify();
     }
 
+    fn perform_sort(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
+        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
+        if sort.is_none() {
+            return;
+        }
+
+        let sort = sort.unwrap();
+        let sort = match sort {
+            ColSort::Ascending => ColSort::Descending,
+            ColSort::Descending => ColSort::Ascending,
+            ColSort::Default => ColSort::Ascending,
+        };
+
+        for (ix, col_group) in self.col_groups.iter_mut().enumerate() {
+            if ix == col_ix {
+                col_group.sort = Some(sort);
+            } else {
+                col_group.sort = Some(ColSort::Default);
+            }
+        }
+
+        self.delegate_mut().perform_sort(col_ix, sort, cx);
+
+        cx.notify();
+    }
+
+    fn render_sort_icon(
+        &self,
+        col_ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) -> Option<impl IntoElement> {
+        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
+        if sort.is_none() {
+            return None;
+        }
+
+        let sort = sort.unwrap();
+
+        let icon = match sort {
+            ColSort::Ascending => IconName::SortAscending,
+            ColSort::Descending => IconName::SortDescending,
+            ColSort::Default => IconName::ChevronsUpDown,
+        };
+
+        Some(
+            div()
+                .id(("icon-sort", col_ix))
+                .cursor_pointer()
+                .ml_2()
+                .p(px(2.))
+                .rounded_sm()
+                .hover(|this| this.bg(cx.theme().secondary))
+                .active(|this| this.bg(cx.theme().secondary_active))
+                .on_mouse_down(MouseButton::Left, |_, cx| cx.stop_propagation())
+                .on_click(cx.listener(move |table, _, cx| table.perform_sort(col_ix, cx)))
+                .child(
+                    Icon::new(icon)
+                        .size_3()
+                        .text_color(cx.theme().secondary_foreground),
+                ),
+        )
+    }
+
     /// Render the column header.
     /// The children must be one by one items.
     /// Becuase the horizontal scroll handle will use the child_item_bounds to
@@ -472,7 +557,14 @@ where
                             this.on_col_head_click(col_ix, cx);
                         }),
                     )
-                    .child(self.delegate.render_th(col_ix))
+                    .child(
+                        h_flex()
+                            .size_full()
+                            .justify_between()
+                            .items_center()
+                            .child(self.delegate.render_th(col_ix))
+                            .children(self.render_sort_icon(col_ix, cx)),
+                    )
                     .when(self.delegate.can_move_col(col_ix), |this| {
                         this.on_drag(
                             DragCol {

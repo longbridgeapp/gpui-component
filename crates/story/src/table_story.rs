@@ -6,7 +6,7 @@ use gpui::{
 use ui::{
     checkbox::Checkbox,
     h_flex,
-    table::{Table, TableDelegate, TableEvent},
+    table::{ColSort, Table, TableDelegate, TableEvent},
     v_flex, Selectable, Selection,
 };
 
@@ -45,44 +45,67 @@ fn randome_customers(size: usize) -> Vec<Customer> {
         })
         .collect()
 }
+
+struct Column {
+    id: SharedString,
+    name: SharedString,
+    sort: Option<ColSort>,
+}
+
+impl Column {
+    fn new(
+        id: impl Into<SharedString>,
+        name: impl Into<SharedString>,
+        sort: Option<ColSort>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+            sort,
+        }
+    }
+}
+
 struct CustomerTableDelegate {
     customers: Vec<Customer>,
-    col_names: Vec<(SharedString, SharedString)>,
+    columns: Vec<Column>,
     loop_selection: bool,
     col_resize: bool,
     col_order: bool,
+    col_sort: bool,
 }
 
 impl CustomerTableDelegate {
     fn new(size: usize) -> Self {
         Self {
             customers: randome_customers(size),
-            col_names: vec![
-                ("id".into(), "ID".into()),
-                ("login".into(), "Login".into()),
-                ("first_name".into(), "First Name".into()),
-                ("last_name".into(), "Last Name".into()),
-                ("company".into(), "Company".into()),
-                ("city".into(), "City".into()),
-                ("country".into(), "Country".into()),
-                ("email".into(), "Email".into()),
-                ("phone".into(), "Phone".into()),
-                ("gender".into(), "Gender".into()),
-                ("age".into(), "Age".into()),
-                ("verified".into(), "Verified".into()),
-                ("confirmed".into(), "Confirmed".into()),
-                ("twitter".into(), "Twitter".into()),
+            columns: vec![
+                Column::new("id", "ID", Some(ColSort::Ascending)),
+                Column::new("login", "Login", Some(ColSort::Default)),
+                Column::new("first_name", "First Name", Some(ColSort::Default)),
+                Column::new("last_name", "Last Name", Some(ColSort::Default)),
+                Column::new("company", "Company", Some(ColSort::Default)),
+                Column::new("city", "City", Some(ColSort::Default)),
+                Column::new("country", "Country", Some(ColSort::Default)),
+                Column::new("email", "Email", Some(ColSort::Default)),
+                Column::new("phone", "Phone", None),
+                Column::new("gender", "Gender", None),
+                Column::new("age", "Age", Some(ColSort::Default)),
+                Column::new("verified", "Verified", None),
+                Column::new("confirmed", "Confirmed", None),
+                Column::new("twitter", "Twitter", None),
             ],
             loop_selection: true,
             col_resize: true,
             col_order: true,
+            col_sort: true,
         }
     }
 }
 
 impl TableDelegate for CustomerTableDelegate {
     fn cols_count(&self) -> usize {
-        self.col_names.len()
+        self.columns.len()
     }
 
     fn rows_count(&self) -> usize {
@@ -90,17 +113,17 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn col_name(&self, col_ix: usize) -> SharedString {
-        if let Some(col) = self.col_names.get(col_ix) {
-            col.1.clone()
+        if let Some(col) = self.columns.get(col_ix) {
+            col.name.clone()
         } else {
             "--".into()
         }
     }
 
     fn col_width(&self, col_ix: usize) -> Option<Pixels> {
-        if let Some(col) = self.col_names.get(col_ix) {
+        if let Some(col) = self.columns.get(col_ix) {
             Some(
-                match col.0.as_ref() {
+                match col.id.as_ref() {
                     "id" => 50.0,
                     "login" => 220.0,
                     "first_name" => 150.0,
@@ -131,8 +154,8 @@ impl TableDelegate for CustomerTableDelegate {
     fn render_td(&self, row_ix: usize, col_ix: usize) -> impl gpui::IntoElement {
         let customer = self.customers.get(row_ix).unwrap();
 
-        let col = self.col_names.get(col_ix).unwrap();
-        let text = match col.0.as_ref() {
+        let col = self.columns.get(col_ix).unwrap();
+        let text = match col.id.as_ref() {
             "id" => customer.id.to_string(),
             "login" => customer.login.clone(),
             "first_name" => customer.first_name.clone(),
@@ -162,8 +185,92 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn move_col(&mut self, col_ix: usize, to_ix: usize) {
-        let col = self.col_names.remove(col_ix);
-        self.col_names.insert(to_ix, col);
+        let col = self.columns.remove(col_ix);
+        self.columns.insert(to_ix, col);
+    }
+
+    fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+        self.columns.get(col_ix).map(|c| c.sort).flatten()
+    }
+
+    fn perform_sort(&mut self, col_ix: usize, sort: ColSort, _: &mut WindowContext) {
+        if let Some(col) = self.columns.get_mut(col_ix) {
+            col.sort = Some(sort);
+            let asc = matches!(sort, ColSort::Ascending);
+
+            match col.id.as_ref() {
+                "id" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.id.cmp(&b.id)
+                    } else {
+                        b.id.cmp(&a.id)
+                    }
+                }),
+                "login" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.login.cmp(&b.login)
+                    } else {
+                        b.login.cmp(&a.login)
+                    }
+                }),
+                "first_name" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.first_name.cmp(&b.first_name)
+                    } else {
+                        b.first_name.cmp(&a.first_name)
+                    }
+                }),
+                "last_name" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.last_name.cmp(&b.last_name)
+                    } else {
+                        b.last_name.cmp(&a.last_name)
+                    }
+                }),
+                "company" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.company.cmp(&b.company)
+                    } else {
+                        b.company.cmp(&a.company)
+                    }
+                }),
+                "city" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.city.cmp(&b.city)
+                    } else {
+                        b.city.cmp(&a.city)
+                    }
+                }),
+                "country" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.country.cmp(&b.country)
+                    } else {
+                        b.country.cmp(&a.country)
+                    }
+                }),
+                "email" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.email.cmp(&b.email)
+                    } else {
+                        b.email.cmp(&a.email)
+                    }
+                }),
+                "age" => self.customers.sort_by(|a, b| {
+                    if asc {
+                        a.age.cmp(&b.age)
+                    } else {
+                        b.age.cmp(&a.age)
+                    }
+                }),
+                _ => {}
+            }
+
+            for col in self.columns.iter_mut() {
+                if let Some(ColSort::Ascending) = col.sort {
+                    col.sort = Some(ColSort::Default);
+                }
+            }
+        }
     }
 }
 
@@ -205,6 +312,14 @@ impl TableStory {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
             table.delegate_mut().col_order = s.is_selected();
+            cx.notify();
+        });
+    }
+
+    fn toggle_col_sort(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+        let table = self.table.clone();
+        table.update(cx, |table, cx| {
+            table.delegate_mut().col_sort = s.is_selected();
             cx.notify();
         });
     }
@@ -253,6 +368,12 @@ impl Render for TableStory {
                             .label("Column Order")
                             .selected(delegate.col_order)
                             .on_click(cx.listener(Self::toggle_col_order)),
+                    )
+                    .child(
+                        Checkbox::new("col-sort")
+                            .label("Column Sort")
+                            .selected(delegate.col_sort)
+                            .on_click(cx.listener(Self::toggle_col_sort)),
                     ),
             )
             .child(self.table.clone())
