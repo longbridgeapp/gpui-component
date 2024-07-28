@@ -9,7 +9,7 @@ use crate::{
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Bounds, Div,
     DragMoveEvent, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, KeyBinding, MouseButton, ParentElement as _, Pixels, Render, ScrollHandle,
+    IntoElement, KeyBinding, MouseButton, ParentElement as _, Pixels, Point, Render, ScrollHandle,
     SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
     VisualContext as _, WindowContext,
 };
@@ -36,13 +36,35 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
+#[derive(Debug, Clone, Copy)]
 struct ColGroup {
     width: Option<Pixels>,
     bounds: Bounds<Pixels>,
 }
 
-#[derive(Clone, Render)]
-pub struct DragCol(pub (EntityId, usize));
+#[derive(Clone)]
+pub(crate) struct DragCol {
+    pub(crate) entity_id: EntityId,
+    pub(crate) name: SharedString,
+    pub(crate) width: Option<Pixels>,
+    pub(crate) col_ix: usize,
+}
+
+impl Render for DragCol {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+            .px_4()
+            .py_1()
+            .bg(cx.theme().table_head)
+            .border_1()
+            .border_color(cx.theme().border)
+            .shadow_md()
+            .when_some(self.width.clone(), |this, width| this.w(width))
+            .min_w(px(100.))
+            .max_w(px(450.))
+            .child(self.name.clone())
+    }
+}
 
 #[derive(Clone, Render)]
 pub struct ResizeCol(pub (EntityId, usize));
@@ -63,6 +85,8 @@ pub enum TableEvent {
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
+    /// The bounds of the table.
+    bounds: Bounds<Pixels>,
     horizontal_scroll_handle: ScrollHandle,
     vertical_scroll_handle: UniformListScrollHandle,
     col_groups: Vec<ColGroup>,
@@ -85,7 +109,7 @@ pub trait TableDelegate: Sized + 'static {
     fn rows_count(&self) -> usize;
 
     /// Returns the name of the column at the given index.
-    fn column_name(&self, col_ix: usize) -> SharedString;
+    fn col_name(&self, col_ix: usize) -> SharedString;
 
     /// Returns whether the column at the given index can be resized. Default: true
     fn can_resize_col(&self, col_ix: usize) -> bool {
@@ -100,7 +124,7 @@ pub trait TableDelegate: Sized + 'static {
 
     /// Render the header cell at the given column index, default to the column name.
     fn render_th(&self, col_ix: usize) -> impl IntoElement {
-        div().size_full().child(self.column_name(col_ix))
+        div().size_full().child(self.col_name(col_ix))
     }
 
     /// Render cell at the given row and column.
@@ -113,6 +137,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Default: true
     fn can_loop_select(&self) -> bool {
         true
+    }
+
+    /// Return true to enable column order change.
+    fn can_move_col(&self, col_ix: usize) -> bool {
+        false
     }
 
     /// Move the column at the given `col_ix` to insert before the column at the given `to_ix`.
@@ -135,6 +164,7 @@ where
             selected_row: None,
             selected_col: None,
             resizing_col: None,
+            bounds: Bounds::default(),
         };
 
         this.prepare_col_groups(cx);
@@ -319,8 +349,8 @@ where
             )
             .hover(|this| this.bg(cx.theme().drag_border))
             .when(is_resizing, |this| this.bg(cx.theme().drag_border))
-            .on_drag_move(cx.listener(
-                move |view, e: &DragMoveEvent<ResizeCol>, cx| match e.drag(cx) {
+            .on_drag_move(cx.listener(move |view, e: &DragMoveEvent<ResizeCol>, cx| {
+                match e.drag(cx) {
                     ResizeCol((entity_id, ix)) => {
                         if cx.entity_id() != *entity_id {
                             return;
@@ -334,15 +364,23 @@ where
                         let ix = *ix;
                         view.resizing_col = Some(ix);
 
-                        let col_group = view.col_groups.get(ix).expect("BUG: invalid col index");
+                        let col_group = view
+                            .col_groups
+                            .get(ix)
+                            .expect("BUG: invalid col index")
+                            .clone();
+
                         view.resize_cols(
                             ix,
                             e.event.position.x - HANDLE_SIZE - col_group.bounds.left(),
                             cx,
                         );
+
+                        // scroll the table if the drag is near the edge
+                        view.scroll_table_by_col_resizing(e.event.position, col_group, cx);
                     }
-                },
-            ))
+                };
+            }))
             .on_drag(ResizeCol((cx.entity_id(), ix)), |drag, cx| {
                 cx.stop_propagation();
                 cx.new_view(|_| drag.clone())
@@ -364,10 +402,32 @@ where
             .into_any_element()
     }
 
+    /// Scroll table when mouse position is near the edge of the table bounds.
+    fn scroll_table_by_col_resizing(
+        &mut self,
+        pos: Point<Pixels>,
+        col_group: ColGroup,
+        _: &mut ViewContext<Self>,
+    ) {
+        let mut offset = self.horizontal_scroll_handle.offset();
+        let col_bounds = col_group.bounds;
+
+        if pos.x < self.bounds.left() && col_bounds.right() < self.bounds.left() + px(20.) {
+            offset.x += px(1.);
+        } else if pos.x > self.bounds.right() && col_bounds.right() > self.bounds.right() - px(20.)
+        {
+            offset.x -= px(1.);
+        }
+
+        self.horizontal_scroll_handle.set_offset(offset);
+    }
+
     /// The `ix`` is the index of the col to resize,
     /// and the `size` is the new size for the col.
     fn resize_cols(&mut self, ix: usize, size: Pixels, cx: &mut ViewContext<Self>) {
         const MIN_WIDTH: Pixels = px(10.0);
+        const MAX_WIDTH: Pixels = px(1200.0);
+
         if !self.delegate.can_resize_col(ix) {
             return;
         }
@@ -383,7 +443,7 @@ where
         if changed_width > px(-1.0) && changed_width < px(1.0) {
             return;
         }
-        self.col_groups[ix].width = Some(new_width);
+        self.col_groups[ix].width = Some(new_width.min(MAX_WIDTH));
 
         // Resize next col, table not need to resize the right cols.
         // let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
@@ -399,6 +459,9 @@ where
     /// calculate the item position for itself's `scroll_to_item` method.
     fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
+        let col_group = self.col_groups.get(col_ix).expect("BUG: invalid col index");
+
+        let name = self.delegate.col_name(col_ix);
         self.col_wrap(col_ix, cx)
             .child(
                 self.render_cell(col_ix, cx)
@@ -410,26 +473,36 @@ where
                         }),
                     )
                     .child(self.delegate.render_th(col_ix))
-                    .on_drag(DragCol((entity_id, col_ix)), |drag, cx| {
-                        cx.stop_propagation();
-                        cx.new_view(|_| drag.clone())
-                    })
-                    .drag_over::<DragCol>(|this, _, cx| {
-                        this.rounded_l_none()
-                            .border_l_2()
-                            .border_r_0()
-                            .border_color(cx.theme().drag_border)
-                    })
-                    .on_drop(cx.listener(move |table, drag: &DragCol, cx| {
-                        let drag = drag.0;
+                    .when(self.delegate.can_move_col(col_ix), |this| {
+                        this.on_drag(
+                            DragCol {
+                                entity_id,
+                                col_ix,
+                                name,
+                                width: col_group.width,
+                            },
+                            |drag, cx| {
+                                cx.stop_propagation();
+                                cx.new_view(|_| drag.clone())
+                            },
+                        )
+                        .drag_over::<DragCol>(|this, _, cx| {
+                            this.rounded_l_none()
+                                .border_l_2()
+                                .border_r_0()
+                                .border_color(cx.theme().drag_border)
+                        })
+                        .on_drop(cx.listener(
+                            move |table, drag: &DragCol, cx| {
+                                // If the drag col is not the same as the drop col, then swap the cols.
+                                if drag.entity_id != cx.entity_id() {
+                                    return;
+                                }
 
-                        // If the drag col is not the same as the drop col, then swap the cols.
-                        if drag.0 != cx.entity_id() {
-                            return;
-                        }
-
-                        table.move_col(drag.1, col_ix, cx);
-                    })),
+                                table.move_col(drag.col_ix, col_ix, cx);
+                            },
+                        ))
+                    }),
             )
             // resize handle
             .child(self.render_resize_handle(col_ix, cx))
@@ -595,6 +668,7 @@ where
                 ),
             );
 
+        let view = cx.view().clone();
         div()
             .size_full()
             .rounded_md()
@@ -607,6 +681,10 @@ where
                 cx.view().clone(),
                 ScrollableAxis::Horizontal,
                 &horizontal_scroll_handle,
+            ))
+            .child(canvas(
+                move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                |_, _, _| {},
             ))
     }
 }

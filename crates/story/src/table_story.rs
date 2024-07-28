@@ -49,6 +49,8 @@ struct CustomerTableDelegate {
     customers: Vec<Customer>,
     col_names: Vec<(SharedString, SharedString)>,
     loop_selection: bool,
+    col_resize: bool,
+    col_order: bool,
 }
 
 impl CustomerTableDelegate {
@@ -72,6 +74,8 @@ impl CustomerTableDelegate {
                 ("twitter".into(), "Twitter".into()),
             ],
             loop_selection: true,
+            col_resize: true,
+            col_order: true,
         }
     }
 }
@@ -85,7 +89,7 @@ impl TableDelegate for CustomerTableDelegate {
         self.customers.len()
     }
 
-    fn column_name(&self, col_ix: usize) -> SharedString {
+    fn col_name(&self, col_ix: usize) -> SharedString {
         if let Some(col) = self.col_names.get(col_ix) {
             col.1.clone()
         } else {
@@ -121,7 +125,7 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn can_resize_col(&self, col_ix: usize) -> bool {
-        return col_ix > 1;
+        return self.col_resize && col_ix > 1;
     }
 
     fn render_td(&self, row_ix: usize, col_ix: usize) -> impl gpui::IntoElement {
@@ -151,6 +155,10 @@ impl TableDelegate for CustomerTableDelegate {
 
     fn can_loop_select(&self) -> bool {
         self.loop_selection
+    }
+
+    fn can_move_col(&self, _: usize) -> bool {
+        self.col_order
     }
 
     fn move_col(&mut self, col_ix: usize, to_ix: usize) {
@@ -185,6 +193,22 @@ impl TableStory {
         });
     }
 
+    fn toggle_col_resize(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+        let table = self.table.clone();
+        table.update(cx, |table, cx| {
+            table.delegate_mut().col_resize = s.is_selected();
+            cx.notify();
+        });
+    }
+
+    fn toggle_col_order(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+        let table = self.table.clone();
+        table.update(cx, |table, cx| {
+            table.delegate_mut().col_order = s.is_selected();
+            cx.notify();
+        });
+    }
+
     fn on_table_event(
         &mut self,
         _: View<Table<CustomerTableDelegate>>,
@@ -209,12 +233,27 @@ impl Render for TableStory {
             .size_full()
             .gap_2()
             .child(
-                h_flex().items_center().child(
-                    Checkbox::new("loop-selection")
-                        .label("Loop Selection")
-                        .selected(delegate.loop_selection)
-                        .on_click(cx.listener(Self::toggle_loop_selection)),
-                ),
+                h_flex()
+                    .items_center()
+                    .gap_2()
+                    .child(
+                        Checkbox::new("loop-selection")
+                            .label("Loop Selection")
+                            .selected(delegate.loop_selection)
+                            .on_click(cx.listener(Self::toggle_loop_selection)),
+                    )
+                    .child(
+                        Checkbox::new("col-resize")
+                            .label("Column Resize")
+                            .selected(delegate.col_resize)
+                            .on_click(cx.listener(Self::toggle_col_resize)),
+                    )
+                    .child(
+                        Checkbox::new("col-order")
+                            .label("Column Order")
+                            .selected(delegate.col_order)
+                            .on_click(cx.listener(Self::toggle_col_order)),
+                    ),
             )
             .child(self.table.clone())
     }

@@ -59,8 +59,8 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Left, Right / Up, Down to selection column or row.
   - [x] Horizontal scroll
   - [x] Vertical scroll
-  - [ ] Column resizing
-  - [ ] Column ordering
+  - [x] Column resizing
+  - [x] Column ordering
   - [ ] Sort event emit
 - [ ] Drawer
 - [ ] Modal
