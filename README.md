@@ -61,7 +61,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Vertical scroll
   - [x] Column resizing
   - [x] Column ordering
-  - [ ] Sort event emit
+  - [x] Column sorting
 - [ ] Drawer
 - [ ] Modal
 
