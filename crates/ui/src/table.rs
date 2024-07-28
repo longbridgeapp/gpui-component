@@ -44,6 +44,9 @@ struct ColGroup {
 #[derive(Clone, Render)]
 pub struct DragCol(pub (EntityId, usize));
 
+#[derive(Clone, Render)]
+pub struct ResizeCol(pub (EntityId, usize));
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum SelectionState {
     Column,
@@ -95,9 +98,6 @@ pub trait TableDelegate: Sized + 'static {
     /// This is only called when the table initializes.
     fn col_width(&self, col_ix: usize) -> Option<Pixels>;
 
-    /// When the column has resized, this method is called.
-    fn on_col_widths_changed(&mut self, col_widths: Vec<Option<Pixels>>) {}
-
     /// Render the header cell at the given column index, default to the column name.
     fn render_th(&self, col_ix: usize) -> impl IntoElement {
         div().size_full().child(self.column_name(col_ix))
@@ -114,6 +114,9 @@ pub trait TableDelegate: Sized + 'static {
     fn can_loop_select(&self) -> bool {
         true
     }
+
+    /// Move the column at the given `col_ix` to insert before the column at the given `to_ix`.
+    fn move_col(&mut self, col_ix: usize, to_ix: usize) {}
 }
 
 impl<D> Table<D>
@@ -317,8 +320,8 @@ where
             .hover(|this| this.bg(cx.theme().drag_border))
             .when(is_resizing, |this| this.bg(cx.theme().drag_border))
             .on_drag_move(cx.listener(
-                move |view, e: &DragMoveEvent<DragCol>, cx| match e.drag(cx) {
-                    DragCol((entity_id, ix)) => {
+                move |view, e: &DragMoveEvent<ResizeCol>, cx| match e.drag(cx) {
+                    ResizeCol((entity_id, ix)) => {
                         if cx.entity_id() != *entity_id {
                             return;
                         }
@@ -340,7 +343,7 @@ where
                     }
                 },
             ))
-            .on_drag(DragCol((cx.entity_id(), ix)), |drag, cx| {
+            .on_drag(ResizeCol((cx.entity_id(), ix)), |drag, cx| {
                 cx.stop_propagation();
                 cx.new_view(|_| drag.clone())
             })
@@ -395,16 +398,38 @@ where
     /// Becuase the horizontal scroll handle will use the child_item_bounds to
     /// calculate the item position for itself's `scroll_to_item` method.
     fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let entity_id = cx.entity_id();
         self.col_wrap(col_ix, cx)
             .child(
                 self.render_cell(col_ix, cx)
+                    .id(("col-header", col_ix))
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(move |this, _, cx| {
                             this.on_col_head_click(col_ix, cx);
                         }),
                     )
-                    .child(self.delegate.render_th(col_ix)),
+                    .child(self.delegate.render_th(col_ix))
+                    .on_drag(DragCol((entity_id, col_ix)), |drag, cx| {
+                        cx.stop_propagation();
+                        cx.new_view(|_| drag.clone())
+                    })
+                    .drag_over::<DragCol>(|this, _, cx| {
+                        this.rounded_l_none()
+                            .border_l_2()
+                            .border_r_0()
+                            .border_color(cx.theme().drag_border)
+                    })
+                    .on_drop(cx.listener(move |table, drag: &DragCol, cx| {
+                        let drag = drag.0;
+
+                        // If the drag col is not the same as the drop col, then swap the cols.
+                        if drag.0 != cx.entity_id() {
+                            return;
+                        }
+
+                        table.move_col(drag.1, col_ix, cx);
+                    })),
             )
             // resize handle
             .child(self.render_resize_handle(col_ix, cx))
@@ -418,6 +443,18 @@ where
                 .absolute()
                 .size_full()
             })
+    }
+
+    fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Self>) {
+        if col_ix == to_ix {
+            return;
+        }
+
+        self.delegate.move_col(col_ix, to_ix);
+        let col_group = self.col_groups.remove(col_ix);
+        self.col_groups.insert(to_ix, col_group);
+
+        cx.notify();
     }
 }
 

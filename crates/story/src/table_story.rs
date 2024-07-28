@@ -25,26 +25,6 @@ struct Customer {
     verified: bool,
     confirmed: bool,
 }
-impl Customer {
-    fn col_names() -> Vec<SharedString> {
-        vec![
-            "ID".into(),
-            "Login".into(),
-            "First Name".into(),
-            "Last Name".into(),
-            "Company".into(),
-            "City".into(),
-            "Country".into(),
-            "Email".into(),
-            "Phone".into(),
-            "Gender".into(),
-            "Age".into(),
-            "Verified".into(),
-            "Confirmed".into(),
-            "Twitter".into(),
-        ]
-    }
-}
 
 fn randome_customers(size: usize) -> Vec<Customer> {
     (0..size)
@@ -67,6 +47,7 @@ fn randome_customers(size: usize) -> Vec<Customer> {
 }
 struct CustomerTableDelegate {
     customers: Vec<Customer>,
+    col_names: Vec<(SharedString, SharedString)>,
     loop_selection: bool,
 }
 
@@ -74,6 +55,22 @@ impl CustomerTableDelegate {
     fn new(size: usize) -> Self {
         Self {
             customers: randome_customers(size),
+            col_names: vec![
+                ("id".into(), "ID".into()),
+                ("login".into(), "Login".into()),
+                ("first_name".into(), "First Name".into()),
+                ("last_name".into(), "Last Name".into()),
+                ("company".into(), "Company".into()),
+                ("city".into(), "City".into()),
+                ("country".into(), "Country".into()),
+                ("email".into(), "Email".into()),
+                ("phone".into(), "Phone".into()),
+                ("gender".into(), "Gender".into()),
+                ("age".into(), "Age".into()),
+                ("verified".into(), "Verified".into()),
+                ("confirmed".into(), "Confirmed".into()),
+                ("twitter".into(), "Twitter".into()),
+            ],
             loop_selection: true,
         }
     }
@@ -81,7 +78,7 @@ impl CustomerTableDelegate {
 
 impl TableDelegate for CustomerTableDelegate {
     fn cols_count(&self) -> usize {
-        Customer::col_names().len()
+        self.col_names.len()
     }
 
     fn rows_count(&self) -> usize {
@@ -89,58 +86,63 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn column_name(&self, col_ix: usize) -> SharedString {
-        if let Some(name) = Customer::col_names().get(col_ix) {
-            name.clone()
+        if let Some(col) = self.col_names.get(col_ix) {
+            col.1.clone()
         } else {
             "--".into()
         }
     }
 
     fn col_width(&self, col_ix: usize) -> Option<Pixels> {
-        match col_ix {
-            0 => Some(50.0),
-            1 => Some(220.0),
-            2 => Some(150.0),
-            3 => Some(150.0),
-            4 => Some(300.0),
-            5 => Some(200.0),
-            6 => Some(200.0),
-            7 => Some(350.0),
-            8 => Some(240.0),
-            9 => Some(80.0),
-            10 => Some(90.0),
-            11 => Some(90.0),
-            12 => Some(90.0),
-            13 => Some(90.0),
-            _ => None,
+        if let Some(col) = self.col_names.get(col_ix) {
+            Some(
+                match col.0.as_ref() {
+                    "id" => 50.0,
+                    "login" => 220.0,
+                    "first_name" => 150.0,
+                    "last_name" => 150.0,
+                    "company" => 300.0,
+                    "city" => 200.0,
+                    "country" => 200.0,
+                    "email" => 350.0,
+                    "phone" => 240.0,
+                    "gender" => 80.0,
+                    "age" => 90.0,
+                    "verified" => 90.0,
+                    "confirmed" => 90.0,
+                    "twitter" => 90.0,
+                    _ => 200.0,
+                }
+                .into(),
+            )
+        } else {
+            None
         }
-        .map(Pixels::from)
     }
 
     fn can_resize_col(&self, col_ix: usize) -> bool {
         return col_ix > 1;
     }
 
-    fn on_col_widths_changed(&mut self, col_widths: Vec<Option<Pixels>>) {
-        println!("Col widths changed: {:?}", col_widths);
-    }
-
     fn render_td(&self, row_ix: usize, col_ix: usize) -> impl gpui::IntoElement {
         let customer = self.customers.get(row_ix).unwrap();
-        let text = match col_ix {
-            0 => customer.id.to_string(),
-            1 => customer.login.clone(),
-            2 => customer.first_name.clone(),
-            3 => customer.last_name.clone(),
-            4 => customer.company.clone(),
-            5 => customer.city.clone(),
-            6 => customer.country.clone(),
-            7 => customer.email.clone(),
-            8 => customer.phone.clone(),
-            9 => customer.gender.to_string(),
-            10 => customer.age.to_string(),
-            11 => customer.verified.to_string(),
-            12 => customer.confirmed.to_string(),
+
+        let col = self.col_names.get(col_ix).unwrap();
+        let text = match col.0.as_ref() {
+            "id" => customer.id.to_string(),
+            "login" => customer.login.clone(),
+            "first_name" => customer.first_name.clone(),
+            "last_name" => customer.last_name.clone(),
+            "company" => customer.company.clone(),
+            "city" => customer.city.clone(),
+            "country" => customer.country.clone(),
+            "email" => customer.email.clone(),
+            "phone" => customer.phone.clone(),
+            "gender" => customer.gender.to_string(),
+            "age" => customer.age.to_string(),
+            "verified" => customer.verified.to_string(),
+            "confirmed" => customer.confirmed.to_string(),
+            "twitter" => "twitter".to_string(),
             _ => "--".to_string(),
         };
 
@@ -149,6 +151,11 @@ impl TableDelegate for CustomerTableDelegate {
 
     fn can_loop_select(&self) -> bool {
         self.loop_selection
+    }
+
+    fn move_col(&mut self, col_ix: usize, to_ix: usize) {
+        let col = self.col_names.remove(col_ix);
+        self.col_names.insert(to_ix, col);
     }
 }
 
