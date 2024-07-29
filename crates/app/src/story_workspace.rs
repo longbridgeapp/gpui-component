@@ -9,9 +9,9 @@ use workspace::{TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
-    switch::{LabelSide, Switch},
+    button::{Button, ButtonStyle},
     theme::{ActiveTheme, Theme},
-    Size,
+    Clickable as _, IconName, Size,
 };
 
 use crate::app_state::AppState;
@@ -275,19 +275,32 @@ impl Render for StoryWorkspace {
                             .justify_end()
                             .px_2()
                             .mr_3()
+                            .gap_2()
                             .child(
-                                Switch::new("theme-mode")
+                                Button::new("theme-mode", cx)
+                                    .when_else(
+                                        cx.theme().mode.is_dark(),
+                                        |this| this.icon(IconName::Moon),
+                                        |this| this.icon(IconName::Sun),
+                                    )
                                     .size(Size::Small)
-                                    .checked(cx.theme().mode.is_dark())
-                                    .label_side(LabelSide::Left)
-                                    .label("Dark Mode")
-                                    .on_click(move |checked, cx| {
-                                        let mode = match checked {
-                                            true => ui::theme::ThemeMode::Dark,
-                                            false => ui::theme::ThemeMode::Light,
+                                    .style(ButtonStyle::Ghost)
+                                    .on_click(move |_, cx| {
+                                        let mode = match cx.theme().mode.is_dark() {
+                                            true => ui::theme::ThemeMode::Light,
+                                            false => ui::theme::ThemeMode::Dark,
                                         };
 
                                         Theme::change(mode, cx);
+                                    }),
+                            )
+                            .child(
+                                Button::new("github", cx)
+                                    .icon(IconName::GitHub)
+                                    .size(Size::Small)
+                                    .style(ButtonStyle::Ghost)
+                                    .on_click(|_, cx| {
+                                        cx.open_url("https://github.com/huacnlee/gpui-component")
                                     }),
                             ),
                     ),
