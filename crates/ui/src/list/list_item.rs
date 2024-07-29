@@ -112,9 +112,9 @@ impl RenderOnce for ListItem {
                     this
                 }
             })
-            .when(self.selected, |this| this.bg(cx.theme().list_item_active))
+            .when(self.selected, |this| this.bg(cx.theme().list_active))
             .when(!self.selected && !self.disabled, |this| {
-                this.hover(|this| this.bg(cx.theme().list_item_hover))
+                this.hover(|this| this.bg(cx.theme().list_hover))
             })
             // Right click
             .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {

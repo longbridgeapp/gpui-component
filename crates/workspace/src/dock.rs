@@ -200,8 +200,6 @@ impl Dock {
                 let Some(_panel) = dock.read(cx).active_panel() else {
                     return;
                 };
-
-                // workspace.update_active_view_for_followers(cx)
             }
         })
         .detach();

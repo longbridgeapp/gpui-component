@@ -143,8 +143,9 @@ where
 
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
         if let Some(view) = self.dropdown.upgrade() {
-            cx.update_view(&view, |view, _| {
+            cx.update_view(&view, |view, cx| {
                 view.open = false;
+                view.focus(cx);
             });
         }
     }
@@ -161,6 +162,7 @@ where
                 cx.emit(DropdownEvent::Confirm(selected_value.clone()));
                 view.selected_value = selected_value;
                 view.open = false;
+                view.focus(cx);
             });
         }
     }
@@ -294,6 +296,10 @@ where
         self.selected_value.as_ref()
     }
 
+    pub fn focus(&self, cx: &mut WindowContext) {
+        self.focus_handle.focus(cx);
+    }
+
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
         if !self.open {
             return;
@@ -420,7 +426,7 @@ where
     D: DropdownDelegate + 'static,
 {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let focused = self.focus_handle.is_focused(cx);
+        let is_focused = self.focus_handle.is_focused(cx);
         let show_clean = self.cleanable && self.selected_index(cx).is_some();
 
         div()
@@ -436,7 +442,9 @@ where
             .relative()
             .child(
                 div()
-                    .id(self.id.clone())
+                    .id(ElementId::Name(
+                        format!("dropdown-input:{}", self.id).into(),
+                    ))
                     .relative()
                     .flex()
                     .w_full()
@@ -447,7 +455,7 @@ where
                     .border_color(cx.theme().input)
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
-                    .when(focused, |this| this.outline(cx))
+                    .when(is_focused, |this| this.outline(cx))
                     .input_px(self.size)
                     .input_py(self.size)
                     .input_h(self.size)

@@ -3,9 +3,9 @@ use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, CheckboxStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
     PickerStory, PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
-    SwitchStory, TableStory, TooltipStory, WebViewStory,
+    SwitchStory, TableStory, TooltipStory,
 };
-use workspace::{dock::DockPosition, TitleBar, Workspace};
+use workspace::{TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
@@ -113,13 +113,14 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
+        StoryContainer::add_pane(
+            "List",
+            "A list displays a series of items.",
             ListStory::view(cx).into(),
             workspace.clone(),
-            DockPosition::Left,
-            px(300.),
             cx,
-        );
+        )
+        .detach();
 
         StoryContainer::add_pane(
             "Icon",
@@ -139,13 +140,13 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
-            WebViewStory::view(cx).into(),
-            workspace.clone(),
-            DockPosition::Right,
-            px(450.),
-            cx,
-        );
+        // StoryContainer::add_panel(
+        //     WebViewStory::view(cx).into(),
+        //     workspace.clone(),
+        //     DockPosition::Right,
+        //     px(450.),
+        //     cx,
+        // );
 
         StoryContainer::add_pane(
             "Table",

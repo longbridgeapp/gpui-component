@@ -307,10 +307,6 @@ impl FocusableView for MyPanel {
 }
 impl Render for MyPanel {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
-            .id("my-panel")
-            .track_focus(&self.focus_handle)
-            .size_full()
-            .child(self.view.clone())
+        div().id("my-panel").size_full().child(self.view.clone())
     }
 }

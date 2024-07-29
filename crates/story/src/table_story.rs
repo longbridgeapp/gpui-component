@@ -190,7 +190,7 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
-        self.columns.get(col_ix).map(|c| c.sort).flatten()
+        self.columns.get(col_ix).and_then(|c| c.sort)
     }
 
     fn perform_sort(&mut self, col_ix: usize, sort: ColSort, _: &mut WindowContext) {

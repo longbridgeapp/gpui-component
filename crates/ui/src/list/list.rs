@@ -6,12 +6,12 @@ use crate::scroll::ScrollbarState;
 use crate::theme::{ActiveTheme, Colorize};
 use crate::IconName;
 use crate::{scroll::Scrollbar, v_flex};
-use gpui::SharedString;
 use gpui::{
     actions, div, prelude::FluentBuilder, uniform_list, AppContext, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
     ParentElement, Render, Styled, Task, UniformListScrollHandle, View, ViewContext, VisualContext,
 };
+use gpui::{SharedString, WindowContext};
 use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -135,8 +135,8 @@ where
         &mut self.delegate
     }
 
-    pub fn focus(&mut self, cx: &mut ViewContext<Self>) {
-        cx.focus(&self.focus_handle);
+    pub fn focus(&mut self, cx: &mut WindowContext) {
+        self.focus_handle(cx).focus(cx);
     }
 
     pub fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<Self>) {
@@ -298,7 +298,7 @@ where
             ListSizingBehavior::Auto
         };
 
-        let selected_bg = cx.theme().accent.opacity(0.8);
+        let selected_bg = cx.theme().list_active;
 
         v_flex()
             .key_context("List")

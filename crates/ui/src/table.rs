@@ -704,7 +704,7 @@ where
                                         .id(("table-row", row_ix))
                                         .w_full()
                                         .when(row_ix > 0, |this| this.border_t_1())
-                                        .when(row_ix % 2 == 0, |this| {
+                                        .when(row_ix % 2 != 0, |this| {
                                             this.bg(cx.theme().table_even)
                                         })
                                         .hover(|this| {
