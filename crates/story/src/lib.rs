@@ -44,7 +44,7 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex, StyledExt};
+use ui::{divider::Divider, h_flex, label::Label, v_flex};
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
