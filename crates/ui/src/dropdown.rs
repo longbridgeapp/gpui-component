@@ -119,21 +119,21 @@ where
         self.selected_index
     }
 
-    fn render_item(
-        &self,
-        ix: usize,
-        _cx: &mut gpui::ViewContext<List<Self>>,
-    ) -> Option<Self::Item> {
+    fn render_item(&self, ix: usize, cx: &mut gpui::ViewContext<List<Self>>) -> Option<Self::Item> {
         let selected = self
             .selected_index
             .map_or(false, |selected_index| selected_index == ix);
+        let size = self
+            .dropdown
+            .upgrade()
+            .map_or(Size::Medium, |dropdown| dropdown.read(cx).size);
 
         if let Some(item) = self.delegate.get(ix) {
             let list_item = ListItem::new(("list-item", ix))
                 .check_icon(IconName::Check)
                 .selected(selected)
-                .py_1()
-                .px_3()
+                .input_text_size(size)
+                .list_size(size)
                 .child(item.title().to_string());
             Some(list_item)
         } else {
@@ -144,8 +144,8 @@ where
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
         if let Some(view) = self.dropdown.upgrade() {
             cx.update_view(&view, |view, cx| {
-                view.open = false;
                 view.focus(cx);
+                view.open = false;
             });
         }
     }
@@ -160,9 +160,9 @@ where
                     .and_then(|ix| self.delegate.get(ix))
                     .map(|item| item.value().clone());
                 cx.emit(DropdownEvent::Confirm(selected_value.clone()));
+                view.focus(cx);
                 view.selected_value = selected_value;
                 view.open = false;
-                view.focus(cx);
             });
         }
     }
@@ -456,9 +456,7 @@ where
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
                     .when(is_focused, |this| this.outline(cx))
-                    .input_px(self.size)
-                    .input_py(self.size)
-                    .input_h(self.size)
+                    .input_size(self.size)
                     .when(!self.open, |this| {
                         this.on_click(cx.listener(Self::toggle_menu))
                     })

@@ -196,15 +196,29 @@ impl From<Pixels> for Size {
 
 #[allow(unused)]
 pub trait StyleSized<T: Styled> {
+    fn input_text_size(self, size: Size) -> Self;
     fn input_size(self, size: Size) -> Self;
     fn input_pl(self, size: Size) -> Self;
     fn input_pr(self, size: Size) -> Self;
     fn input_px(self, size: Size) -> Self;
     fn input_py(self, size: Size) -> Self;
     fn input_h(self, size: Size) -> Self;
+    fn list_size(self, size: Size) -> Self;
+    fn list_px(self, size: Size) -> Self;
+    fn list_py(self, size: Size) -> Self;
 }
 
 impl<T: Styled> StyleSized<T> for T {
+    fn input_text_size(self, size: Size) -> Self {
+        match size {
+            Size::XSmall => self.text_size(rems(0.75)),
+            Size::Small => self.text_size(rems(0.8)),
+            Size::Medium => self.text_size(rems(0.875)),
+            Size::Large => self.text_size(rems(1.)),
+            Size::Size(size) => self.text_size(size),
+        }
+    }
+
     fn input_size(self, size: Size) -> Self {
         self.input_px(size).input_py(size).input_h(size)
     }
@@ -243,9 +257,30 @@ impl<T: Styled> StyleSized<T> for T {
 
     fn input_h(self, size: Size) -> Self {
         match size {
-            Size::Large => self.h_11().text_size(rems(1.)),
-            Size::Medium => self.h_8().text_size(rems(0.875)),
-            _ => self.h(px(26.)).text_size(rems(0.8)),
+            Size::Large => self.h_11(),
+            Size::Medium => self.h_8(),
+            _ => self.h(px(26.)),
+        }
+        .input_text_size(size)
+    }
+
+    fn list_size(self, size: Size) -> Self {
+        self.list_px(size).list_py(size).input_text_size(size)
+    }
+
+    fn list_px(self, size: Size) -> Self {
+        match size {
+            Size::Small => self.px_2(),
+            _ => self.px_3(),
+        }
+    }
+
+    fn list_py(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.py_2(),
+            Size::Medium => self.py_1(),
+            Size::Small => self.py_0p5(),
+            _ => self.py_1(),
         }
     }
 }
