@@ -144,12 +144,12 @@ pub trait TableDelegate: Sized + 'static {
     fn perform_sort(&mut self, col_ix: usize, sort: ColSort, cx: &mut WindowContext) {}
 
     /// Render the header cell at the given column index, default to the column name.
-    fn render_th(&self, col_ix: usize) -> impl IntoElement {
+    fn render_th(&self, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement {
         div().size_full().child(self.col_name(col_ix))
     }
 
     /// Render cell at the given row and column.
-    fn render_td(&self, row_ix: usize, col_ix: usize) -> impl IntoElement;
+    fn render_td(&self, row_ix: usize, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement;
 
     /// Return true to enable loop selection on the table.
     ///
@@ -558,7 +558,7 @@ where
                             .size_full()
                             .justify_between()
                             .items_center()
-                            .child(self.delegate.render_th(col_ix))
+                            .child(self.delegate.render_th(col_ix, cx))
                             .children(self.render_sort_icon(col_ix, cx)),
                     )
                     .when(self.delegate.can_move_col(col_ix), |this| {
@@ -703,12 +703,14 @@ where
                                     tr(cx)
                                         .id(("table-row", row_ix))
                                         .w_full()
-                                        .when(row_ix > 0, |this| this.border_t_1())
-                                        .when(row_ix % 2 == 0, |this| {
+                                        .when(row_ix > 0, |this| {
+                                            this.border_t_1().border_color(cx.theme().border)
+                                        })
+                                        .when(row_ix % 2 != 0, |this| {
                                             this.bg(cx.theme().table_even)
                                         })
                                         .hover(|this| {
-                                            if table.selected_row.is_some() {
+                                            if table.selected_row == Some(row_ix) {
                                                 this
                                             } else {
                                                 this.bg(cx.theme().table_hover)
@@ -725,7 +727,7 @@ where
                                                         .child(
                                                             table
                                                                 .delegate
-                                                                .render_td(row_ix, col_ix),
+                                                                .render_td(row_ix, col_ix, cx),
                                                         ),
                                                 )
                                         }))

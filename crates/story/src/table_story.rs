@@ -1,13 +1,15 @@
 use fake::Fake;
 use gpui::{
-    ParentElement, Pixels, Render, SharedString, Styled, View, ViewContext, VisualContext as _,
-    WindowContext,
+    div, img, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 use ui::{
     checkbox::Checkbox,
     h_flex,
+    label::Label,
     table::{ColSort, Table, TableDelegate, TableEvent},
-    v_flex, Selectable, Selection,
+    theme::ActiveTheme as _,
+    v_flex, Icon, IconName, Selectable, Selection,
 };
 
 struct Customer {
@@ -26,6 +28,14 @@ struct Customer {
     confirmed: bool,
 }
 
+impl Customer {
+    fn render_avatar(&self, _: &mut WindowContext) -> impl IntoElement {
+        let image_id = self.id % 70 + 1;
+        let avatar_url = format!("https://i.pravatar.cc/40?image={}", image_id);
+        img(avatar_url).size_5().rounded_full()
+    }
+}
+
 fn randome_customers(size: usize) -> Vec<Customer> {
     (0..size)
         .map(|id| Customer {
@@ -38,10 +48,10 @@ fn randome_customers(size: usize) -> Vec<Customer> {
             country: fake::faker::address::en::CountryName().fake::<String>(),
             email: fake::faker::internet::en::FreeEmail().fake::<String>(),
             phone: fake::faker::phone_number::en::PhoneNumber().fake::<String>(),
-            gender: (0..1).fake(),
+            gender: (0..=1).fake(),
             age: (18..80).fake(),
-            verified: (0..1).fake::<u8>() == 1,
-            confirmed: (0..1).fake::<u8>() == 1,
+            verified: (0..=1).fake::<u8>() == 1,
+            confirmed: (0..=1).fake::<u8>() == 1,
         })
         .collect()
 }
@@ -124,7 +134,7 @@ impl TableDelegate for CustomerTableDelegate {
         if let Some(col) = self.columns.get(col_ix) {
             Some(
                 match col.id.as_ref() {
-                    "id" => 50.0,
+                    "id" => 100.0,
                     "login" => 220.0,
                     "first_name" => 150.0,
                     "last_name" => 150.0,
@@ -151,29 +161,50 @@ impl TableDelegate for CustomerTableDelegate {
         return self.col_resize && col_ix > 1;
     }
 
-    fn render_td(&self, row_ix: usize, col_ix: usize) -> impl gpui::IntoElement {
+    fn render_td(&self, row_ix: usize, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement {
         let customer = self.customers.get(row_ix).unwrap();
 
         let col = self.columns.get(col_ix).unwrap();
-        let text = match col.id.as_ref() {
-            "id" => customer.id.to_string(),
-            "login" => customer.login.clone(),
-            "first_name" => customer.first_name.clone(),
-            "last_name" => customer.last_name.clone(),
-            "company" => customer.company.clone(),
-            "city" => customer.city.clone(),
-            "country" => customer.country.clone(),
-            "email" => customer.email.clone(),
-            "phone" => customer.phone.clone(),
-            "gender" => customer.gender.to_string(),
-            "age" => customer.age.to_string(),
-            "verified" => customer.verified.to_string(),
-            "confirmed" => customer.confirmed.to_string(),
-            "twitter" => "twitter".to_string(),
-            _ => "--".to_string(),
-        };
-
-        SharedString::from(text)
+        match col.id.as_ref() {
+            "id" => customer.id.to_string().into_any_element(),
+            "login" => h_flex()
+                .items_center()
+                .gap_2()
+                .child(customer.render_avatar(cx))
+                .child(customer.login.clone())
+                .into_any_element(),
+            "first_name" => customer.first_name.clone().into_any_element(),
+            "last_name" => customer.last_name.clone().into_any_element(),
+            "company" => h_flex()
+                .items_center()
+                .justify_between()
+                .gap_1()
+                .child(customer.company.clone())
+                .child(IconName::Info)
+                .into_any_element(),
+            "city" => customer.city.clone().into_any_element(),
+            "country" => customer.country.clone().into_any_element(),
+            "email" => customer.email.clone().into_any_element(),
+            "phone" => customer.phone.clone().into_any_element(),
+            "gender" => match customer.gender {
+                0 => "Male",
+                1 => "Famale",
+                _ => "",
+            }
+            .into_any_element(),
+            "age" => customer.age.to_string().into_any_element(),
+            "verified" => match customer.verified {
+                true => "Yes".to_string().into_any_element(),
+                false => "No".to_string().into_any_element(),
+            },
+            "confirmed" => match customer.confirmed {
+                true => Icon::new(IconName::Check).size_4().into_any_element(),
+                false => div().into_any_element(),
+            },
+            _ => Label::new("--")
+                .text_color(cx.theme().muted_foreground)
+                .into_any_element(),
+        }
     }
 
     fn can_loop_select(&self) -> bool {
@@ -190,7 +221,7 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
-        self.columns.get(col_ix).map(|c| c.sort).flatten()
+        self.columns.get(col_ix).and_then(|c| c.sort)
     }
 
     fn perform_sort(&mut self, col_ix: usize, sort: ColSort, _: &mut WindowContext) {
@@ -284,7 +315,7 @@ impl TableStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
-        let delegate = CustomerTableDelegate::new(2000);
+        let delegate = CustomerTableDelegate::new(5000);
         let table = cx.new_view(|cx| Table::new(delegate, cx));
 
         cx.subscribe(&table, Self::on_table_event).detach();

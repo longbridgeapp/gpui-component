@@ -669,8 +669,8 @@ impl Pane {
             .suffix(
                 div()
                     .id("close-tab")
-                    .p(px(0.5))
-                    .rounded_lg()
+                    .p(px(0.))
+                    .rounded_sm()
                     .invisible()
                     .child(Icon::new(IconName::Close).size(px(12.)))
                     .hover(|this| this.bg(cx.theme().accent.darken(0.1)))

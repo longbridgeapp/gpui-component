@@ -71,11 +71,11 @@ impl RenderOnce for CompanyListItem {
         };
 
         let bg_color = if self.selected {
-            cx.theme().accent
+            cx.theme().list_active
         } else if self.ix % 2 == 0 {
-            cx.theme().background
+            cx.theme().list
         } else {
-            cx.theme().accent.opacity(0.3)
+            cx.theme().list_even
         };
 
         self.base
@@ -266,13 +266,9 @@ impl Render for ListStory {
             .size_full()
             .gap_4()
             .mb_4()
-            .child(
-                v_flex()
-                    .h_full()
-                    .w_full()
-                    .border_r_1()
-                    .border_color(cx.theme().border)
-                    .child(self.company_list.clone()),
-            )
+            .border_1()
+            .border_color(cx.theme().border)
+            .rounded_md()
+            .child(v_flex().h_full().w_full().child(self.company_list.clone()))
     }
 }
