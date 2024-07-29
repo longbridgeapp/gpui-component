@@ -223,7 +223,7 @@ impl Colors {
             tab_bar: hsl(240.0, 4.8, 95.9),
             list: hsl(0.0, 0.0, 100.),
             list_even: hsl(240.0, 5.0, 96.0),
-            list_active: hsl(240.0, 7., 86.0),
+            list_active: hsl(240.0, 7., 88.0),
             list_head: hsl(240.0, 0., 94.),
         }
     }
@@ -285,9 +285,9 @@ impl Colors {
             panel: hsl(299.0, 2., 9.),
             tab_bar: hsl(299.0, 2., 9.),
             list: hsl(0.0, 0.0, 6.0),
-            list_even: hsl(240.0, 3.7, 12.0),
-            list_active: hsl(240.0, 3.7, 22.0),
-            list_head: hsl(240.0, 3.7, 15.9),
+            list_even: hsl(240.0, 3.7, 8.0),
+            list_active: hsl(240.0, 3.7, 15.0),
+            list_head: hsl(240.0, 3.7, 10.9),
         }
     }
 }
