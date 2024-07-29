@@ -432,7 +432,6 @@ where
         div()
             .id(self.id.clone())
             .key_context("Dropdown")
-            .group(format!("dropdown-group:{}", self.id))
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::up))
             .on_action(cx.listener(Self::down))
@@ -440,11 +439,10 @@ where
             .on_action(cx.listener(Self::escape))
             .size_full()
             .relative()
+            .input_text_size(self.size)
             .child(
                 div()
-                    .id(ElementId::Name(
-                        format!("dropdown-input:{}", self.id).into(),
-                    ))
+                    .id("dropdown-input")
                     .relative()
                     .flex()
                     .w_full()
@@ -468,7 +466,7 @@ where
                             .child(div().flex_1().child(self.display_title(cx)))
                             .when(show_clean, |this| {
                                 this.child(
-                                    Button::new("clean-text", cx)
+                                    Button::new("clean", cx)
                                         .icon(IconName::Close)
                                         .style(ButtonStyle::Ghost)
                                         .size(px(14.))
@@ -485,7 +483,7 @@ where
                     ),
             )
             .child(DropdownMenuElement {
-                id: ElementId::Name(format!("dropdown-menu:{}", self.id).into()),
+                id: "dropdown-menu".into(),
                 dropdown: cx.view().clone(),
             })
     }
