@@ -70,7 +70,7 @@ impl Render for DragCol {
             .border_1()
             .border_color(cx.theme().border)
             .shadow_md()
-            .when_some(self.width.clone(), |this, width| this.w(width))
+            .when_some(self.width, |this, width| this.w(width))
             .min_w(px(100.))
             .max_w(px(450.))
             .child(self.name.clone())
@@ -386,11 +386,7 @@ where
                         let ix = *ix;
                         view.resizing_col = Some(ix);
 
-                        let col_group = view
-                            .col_groups
-                            .get(ix)
-                            .expect("BUG: invalid col index")
-                            .clone();
+                        let col_group = *view.col_groups.get(ix).expect("BUG: invalid col index");
 
                         view.resize_cols(
                             ix,
