@@ -68,6 +68,10 @@ impl OtpInput {
         self
     }
 
+    pub fn focus(&self, cx: &mut ViewContext<Self>) {
+        self.focus_handle.focus(cx);
+    }
+
     fn on_input_mouse_down(&mut self, _: &MouseDownEvent, cx: &mut ViewContext<Self>) {
         cx.focus(&self.focus_handle);
     }
