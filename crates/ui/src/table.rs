@@ -708,7 +708,7 @@ where
                                             this.bg(cx.theme().table_even)
                                         })
                                         .hover(|this| {
-                                            if table.selected_row.is_some() {
+                                            if table.selected_row == Some(row_ix) {
                                                 this
                                             } else {
                                                 this.bg(cx.theme().table_hover)
