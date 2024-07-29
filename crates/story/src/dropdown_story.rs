@@ -110,7 +110,7 @@ impl DropdownStory {
                 simple_dropdown3: cx.new_view(|cx| {
                     Dropdown::string_list("string-list3", Vec::<SharedString>::new(), None, cx)
                         .size(ui::Size::Small)
-                        .render_empty(|cx| {
+                        .empty(|cx| {
                             h_flex()
                                 .h_24()
                                 .justify_center()

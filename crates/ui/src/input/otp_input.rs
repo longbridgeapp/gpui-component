@@ -13,7 +13,7 @@ pub enum InputOptEvent {
     Change(SharedString),
 }
 
-pub struct OTPInput {
+pub struct OtpInput {
     focus_handle: FocusHandle,
     length: usize,
     number_of_groups: usize,
@@ -22,7 +22,7 @@ pub struct OTPInput {
     blink_cursor: Model<BlinkCursor>,
 }
 
-impl OTPInput {
+impl OtpInput {
     pub fn new(length: usize, cx: &mut ViewContext<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         let blink_cursor = cx.new_model(|cx| BlinkCursor::new(cx));
@@ -128,14 +128,14 @@ impl OTPInput {
     }
 }
 
-impl FocusableView for OTPInput {
+impl FocusableView for OtpInput {
     fn focus_handle(&self, _: &gpui::AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
-impl EventEmitter<InputEvent> for OTPInput {}
+impl EventEmitter<InputEvent> for OtpInput {}
 
-impl Render for OTPInput {
+impl Render for OtpInput {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let blink_show = self.blink_cursor.read(cx).visible();
         let is_focused = self.focus_handle.is_focused(cx);

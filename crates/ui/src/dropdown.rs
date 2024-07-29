@@ -186,7 +186,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
-    render_empty: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
+    empty: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
 }
 
 impl<D> Dropdown<D>
@@ -216,7 +216,7 @@ where
             open: false,
             cleanable: false,
             title_prefix: None,
-            render_empty: None,
+            empty: None,
         };
         this.set_selected_index(selected_index, cx);
         this
@@ -249,12 +249,12 @@ where
         self
     }
 
-    pub fn render_empty<E, F>(mut self, f: F) -> Self
+    pub fn empty<E, F>(mut self, f: F) -> Self
     where
         E: IntoElement,
         F: Fn(&WindowContext) -> E + 'static,
     {
-        self.render_empty = Some(Box::new(move |cx| f(cx).into_any_element()));
+        self.empty = Some(Box::new(move |cx| f(cx).into_any_element()));
         self
     }
 
@@ -351,7 +351,7 @@ where
             })
             .map(|this| {
                 if is_empty {
-                    if let Some(render_empty) = &self.render_empty {
+                    if let Some(render_empty) = &self.empty {
                         with_style(this, cx).child(render_empty(cx))
                     } else {
                         this

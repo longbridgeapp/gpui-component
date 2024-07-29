@@ -16,7 +16,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Input icon
   - [ ] Textarea
   - [ ] ContextMenu to let user copy, cut, paste
-- [x] OTPInput
+- [x] OtpInput
 - [x] Button
   - [x] Button with Icon
   - [x] IconButton
