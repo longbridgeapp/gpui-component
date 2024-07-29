@@ -550,6 +550,7 @@ where
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(move |this, _, cx| {
+                            cx.stop_propagation();
                             this.on_col_head_click(col_ix, cx);
                         }),
                     )

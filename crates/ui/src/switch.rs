@@ -140,6 +140,7 @@ impl RenderOnce for Switch {
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_mouse_down(gpui::MouseButton::Left, move |_, cx| {
+                        cx.stop_propagation();
                         on_click(&!self.checked, cx);
                     })
                 },

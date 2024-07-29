@@ -351,6 +351,7 @@ where
                                                 .on_mouse_down(
                                                     MouseButton::Left,
                                                     cx.listener(move |this, _, cx| {
+                                                        cx.stop_propagation();
                                                         this.selected_index = Some(ix);
                                                         this.action_confirm(&Confirm, cx);
                                                     }),

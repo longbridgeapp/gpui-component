@@ -632,6 +632,8 @@ where
                     .on_mouse_down(
                         gpui::MouseButton::Left,
                         cx.listener(|_, _, cx| {
+                            cx.stop_propagation();
+
                             PopoverWindowState::close_window(cx);
                         }),
                     ),
