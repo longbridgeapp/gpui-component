@@ -296,6 +296,10 @@ impl TextInput {
         self.text.clone()
     }
 
+    pub fn disabled(&self) -> bool {
+        self.disabled
+    }
+
     pub fn focus(&self, cx: &mut ViewContext<Self>) {
         self.focus_handle.focus(cx);
     }
