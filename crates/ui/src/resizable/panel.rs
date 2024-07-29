@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     canvas, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, Axis, Bounds, DragMoveEvent,
-    EntityId, InteractiveElement as _, IntoElement, ParentElement, Pixels, Render,
+    EntityId, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, Render,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
@@ -18,6 +18,7 @@ pub struct ResizablePanelGroup {
     axis: Axis,
     handle_size: Pixels,
     size: Pixels,
+    resizing_panel_ix: Option<usize>,
 }
 
 impl ResizablePanelGroup {
@@ -28,6 +29,7 @@ impl ResizablePanelGroup {
             panels: Vec::new(),
             handle_size: px(3.),
             size: px(20.),
+            resizing_panel_ix: None,
         }
     }
 
@@ -77,11 +79,19 @@ impl ResizablePanelGroup {
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
         let handle_size = self.handle_size;
+        let is_resizing = self.resizing_panel_ix == Some(ix);
 
         div()
             .id(("resizable-handle", ix))
             .occlude()
             .hover(|this| this.bg(cx.theme().drag_border))
+            .when(is_resizing, |this| this.bg(cx.theme().drag_border))
+            .when(self.axis.is_horizontal(), |this| {
+                this.cursor_col_resize().top_0().h_full().w(handle_size)
+            })
+            .when(self.axis.is_vertical(), |this| {
+                this.cursor_row_resize().left_0().w_full().h(handle_size)
+            })
             .on_drag_move(cx.listener(
                 move |view, e: &DragMoveEvent<DragPanel>, cx| match e.drag(cx) {
                     DragPanel((entity_id, ix, axis)) => {
@@ -90,6 +100,7 @@ impl ResizablePanelGroup {
                         }
 
                         let ix = *ix;
+                        view.resizing_panel_ix = Some(ix);
                         let panel = view
                             .panels
                             .get(ix)
@@ -108,12 +119,16 @@ impl ResizablePanelGroup {
                     }
                 },
             ))
-            .when(self.axis.is_horizontal(), |this| {
-                this.cursor_col_resize().top_0().h_full().w(handle_size)
-            })
-            .when(self.axis.is_vertical(), |this| {
-                this.cursor_row_resize().left_0().w_full().h(handle_size)
-            })
+            .on_mouse_up_out(
+                MouseButton::Left,
+                cx.listener(|view, _, _| {
+                    if view.resizing_panel_ix.is_none() {
+                        return;
+                    }
+
+                    view.resizing_panel_ix = None;
+                }),
+            )
             .on_drag(DragPanel((cx.entity_id(), ix, axis)), |drag_panel, cx| {
                 cx.stop_propagation();
                 cx.new_view(|_| drag_panel.clone())
