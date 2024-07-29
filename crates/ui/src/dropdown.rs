@@ -432,7 +432,6 @@ where
         div()
             .id(self.id.clone())
             .key_context("Dropdown")
-            .group(format!("dropdown-group:{}", self.id))
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::up))
             .on_action(cx.listener(Self::down))
