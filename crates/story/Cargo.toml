@@ -11,6 +11,7 @@ anyhow = "1"
 workspace.workspace = true
 charts-rs = "0.3"
 regex = "1"
+bytes = "1"
 
 [lints]
 workspace = true

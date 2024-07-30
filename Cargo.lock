@@ -4717,6 +4717,7 @@ name = "story"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytes",
  "charts-rs",
  "fake",
  "gpui",
@@ -5284,6 +5285,7 @@ name = "ui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytes",
  "gpui",
  "image",
  "once_cell",
