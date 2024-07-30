@@ -4,8 +4,10 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonStyle},
-    h_flex, v_flex, Clickable, Disableable as _, Icon, IconName, Selectable, Size,
+    button::{Button, ButtonCustomStyle, ButtonStyle},
+    h_flex,
+    theme::ActiveTheme,
+    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable, Size,
 };
 
 use crate::section;
@@ -59,6 +61,19 @@ impl Render for ButtonStory {
                                 Button::new("button-5-ghost", cx)
                                     .label("Ghost Button")
                                     .style(ButtonStyle::Ghost)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-6-custom", cx)
+                                    .label("Custom Button")
+                                    .style(ButtonStyle::Custom(
+                                        ButtonCustomStyle::new(cx)
+                                            .color(cx.theme().muted)
+                                            .foreground(cx.theme().destructive)
+                                            .border(cx.theme().scrollbar)
+                                            .hover(cx.theme().tab_active_foreground)
+                                            .active(cx.theme().selection),
+                                    ))
                                     .on_click(Self::on_click),
                             ),
                     )
