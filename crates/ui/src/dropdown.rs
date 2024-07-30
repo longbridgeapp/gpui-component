@@ -134,7 +134,12 @@ where
                 .selected(selected)
                 .input_text_size(size)
                 .list_size(size)
-                .child(item.title().to_string());
+                .child(
+                    div()
+                        .whitespace_nowrap()
+                        .overflow_hidden()
+                        .child(item.title().to_string()),
+                );
             Some(list_item)
         } else {
             None
