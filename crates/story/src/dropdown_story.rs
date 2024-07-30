@@ -72,7 +72,7 @@ impl DropdownStory {
             "Banana",
             "Grape",
             "Pineapple",
-            "Watermelon",
+            "Watermelon & This is a longlonglonglonglonglonglonglonglong title",
             "Avocado",
         ];
         let fruit_dropdown =
