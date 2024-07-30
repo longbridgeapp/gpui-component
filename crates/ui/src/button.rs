@@ -25,12 +25,59 @@ impl From<Pixels> for ButtonRounded {
 }
 
 #[derive(Clone, Copy)]
+pub struct ButtonCustomStyle {
+    color: Hsla,
+    foreground: Hsla,
+    border: Hsla,
+    hover: Hsla,
+    active: Hsla,
+}
+
+impl ButtonCustomStyle {
+    pub fn new(cx: &WindowContext) -> Self {
+        Self {
+            color: cx.theme().secondary,
+            foreground: cx.theme().secondary_foreground,
+            border: cx.theme().border,
+            hover: cx.theme().secondary_hover,
+            active: cx.theme().secondary_active,
+        }
+    }
+
+    pub fn color(mut self, color: Hsla) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn foreground(mut self, color: Hsla) -> Self {
+        self.foreground = color;
+        self
+    }
+
+    pub fn border(mut self, color: Hsla) -> Self {
+        self.border = color;
+        self
+    }
+
+    pub fn hover(mut self, color: Hsla) -> Self {
+        self.hover = color;
+        self
+    }
+
+    pub fn active(mut self, color: Hsla) -> Self {
+        self.active = color;
+        self
+    }
+}
+
+#[derive(Clone, Copy)]
 pub enum ButtonStyle {
     Primary,
     Secondary,
     Danger,
     Outline,
     Ghost,
+    Custom(ButtonCustomStyle),
 }
 
 #[derive(IntoElement)]
@@ -306,6 +353,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive,
             ButtonStyle::Outline => cx.theme().transparent,
             ButtonStyle::Ghost => cx.theme().transparent,
+            ButtonStyle::Custom(colors) => colors.color,
         }
     }
 
@@ -316,6 +364,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_foreground,
             ButtonStyle::Outline => cx.theme().secondary_foreground,
             ButtonStyle::Ghost => cx.theme().secondary_foreground,
+            ButtonStyle::Custom(colors) => colors.foreground,
         }
     }
 
@@ -326,6 +375,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive,
             ButtonStyle::Outline => cx.theme().border,
             ButtonStyle::Ghost => cx.theme().transparent,
+            ButtonStyle::Custom(colors) => colors.border,
         }
     }
 
@@ -344,6 +394,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_hover,
             ButtonStyle::Outline => cx.theme().secondary_hover,
             ButtonStyle::Ghost => cx.theme().secondary,
+            ButtonStyle::Custom(colors) => colors.hover,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
@@ -358,6 +409,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_active,
             ButtonStyle::Outline => cx.theme().secondary_active,
             ButtonStyle::Ghost => cx.theme().secondary_active,
+            ButtonStyle::Custom(colors) => colors.active,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
@@ -372,6 +424,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_active,
             ButtonStyle::Outline => cx.theme().secondary_active,
             ButtonStyle::Ghost => cx.theme().secondary_active,
+            ButtonStyle::Custom(colors) => colors.active,
         };
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
