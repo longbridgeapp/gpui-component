@@ -17,6 +17,7 @@ pub mod dropdown;
 pub mod indicator;
 pub mod input;
 pub mod label;
+pub mod link;
 pub mod list;
 pub mod popover;
 pub mod popup_menu;

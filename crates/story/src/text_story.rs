@@ -8,13 +8,14 @@ use ui::{
     checkbox::Checkbox,
     h_flex,
     label::Label,
+    link::Link,
     radio::Radio,
     v_flex, Clickable, Disableable as _, IconName, Selection, StyledExt,
 };
 
 use crate::section;
 
-pub struct CheckboxStory {
+pub struct TextStory {
     check1: Selection,
     check2: Selection,
     check3: Selection,
@@ -23,7 +24,7 @@ pub struct CheckboxStory {
     masked: bool,
 }
 
-impl CheckboxStory {
+impl TextStory {
     pub(crate) fn new(_cx: &mut WindowContext) -> Self {
         Self {
             check1: Selection::Unselected,
@@ -45,7 +46,7 @@ impl CheckboxStory {
     }
 }
 
-impl Render for CheckboxStory {
+impl Render for TextStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .gap_6()
@@ -74,7 +75,19 @@ impl Render for CheckboxStory {
                                 .text_left()
                                 .line_height(rems(1.8)),
                         ),
-                    ),
+                    )
+
+            )
+            .child(
+                section("Link", cx).child(
+                    h_flex().items_start().gap_3()
+                        .child(Link::new("link1").href("https://github.com").child("GitHub"))
+                        .child(Link::new("link2").href("https://github.com").text_color(ui::red_500()).text_decoration_color(ui::red_500()).child("Red Link"))
+                        .child(Link::new("link3").child(h_flex().gap_1().child(IconName::GitHub).child("GitHub")).on_click(cx.listener(|_, _, cx| {
+                            cx.open_url("https://google.com")
+                        })))
+                        .child(div().w(px(250.)).child(Link::new("link4").child("https://github.com/huacnlee/gpui-component").href("https://github.com/huacnlee/gpui-component")))
+                )
             )
             .child(
                 section("Maksed Label", cx).child(
