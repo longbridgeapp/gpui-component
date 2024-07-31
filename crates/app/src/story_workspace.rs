@@ -1,9 +1,9 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
-    ButtonStory, CheckboxStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
-    PickerStory, PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
-    SwitchStory, TableStory, TooltipStory,
+    ButtonStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory, PickerStory,
+    PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
+    TableStory, TextStory, TooltipStory,
 };
 use workspace::{TitleBar, Workspace};
 
@@ -60,9 +60,9 @@ impl StoryWorkspace {
         .detach();
 
         StoryContainer::add_pane(
-            "Checkbox",
-            "A control that allows the user to toggle between checked and not checked.",
-            CheckboxStory::view(cx).into(),
+            "Text",
+            "Links, paragraphs, checkboxes, and more.",
+            TextStory::view(cx).into(),
             workspace.clone(),
             cx,
         )

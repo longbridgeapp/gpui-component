@@ -1,5 +1,4 @@
 mod button_story;
-mod checkbox_story;
 mod dropdown_story;
 mod icon_story;
 mod image_story;
@@ -12,11 +11,11 @@ mod resizable_story;
 mod scrollable_story;
 mod switch_story;
 mod table_story;
+mod text_story;
 mod tooltip_story;
 mod webview_story;
 
 pub use button_story::ButtonStory;
-pub use checkbox_story::CheckboxStory;
 pub use dropdown_story::DropdownStory;
 pub use icon_story::IconStory;
 pub use image_story::ImageStory;
@@ -29,6 +28,7 @@ pub use resizable_story::ResizableStory;
 pub use scrollable_story::ScrollableStory;
 pub use switch_story::SwitchStory;
 pub use table_story::TableStory;
+pub use text_story::TextStory;
 pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 

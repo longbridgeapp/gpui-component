@@ -161,6 +161,7 @@ struct Colors {
     pub list_even: Hsla,
     pub list_active: Hsla,
     pub list_head: Hsla,
+    pub link: Hsla,
 }
 
 impl Colors {
@@ -201,6 +202,7 @@ impl Colors {
             list_even: hsl(240.0, 5.0, 96.0),
             list_active: hsl(240.0, 7., 88.0),
             list_head: hsl(240.0, 0., 94.),
+            link: hsl(221.0, 83.0, 53.0),
         }
     }
 
@@ -241,6 +243,7 @@ impl Colors {
             list_even: hsl(240.0, 3.7, 8.0),
             list_active: hsl(240.0, 3.7, 15.0),
             list_head: hsl(240.0, 3.7, 10.9),
+            link: hsl(221.0, 83.0, 53.0),
         }
     }
 }
@@ -304,6 +307,7 @@ pub struct Theme {
     pub table_head: Hsla,
     pub table_active: Hsla,
     pub table_hover: Hsla,
+    pub link: Hsla,
 }
 
 impl Global for Theme {}
@@ -379,6 +383,7 @@ impl From<Colors> for Theme {
             table_even: colors.list_even,
             table_active: colors.list_active,
             table_hover: colors.list_active.opacity(0.6),
+            link: colors.link,
         }
     }
 }
