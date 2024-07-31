@@ -536,7 +536,7 @@ where
 
     /// Render the column header.
     /// The children must be one by one items.
-    /// Becuase the horizontal scroll handle will use the child_item_bounds to
+    /// Because the horizontal scroll handle will use the child_item_bounds to
     /// calculate the item position for itself's `scroll_to_item` method.
     fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
