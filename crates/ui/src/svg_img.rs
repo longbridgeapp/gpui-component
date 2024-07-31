@@ -5,6 +5,8 @@ use gpui::{
     Interactivity, IntoElement, IsZero, Pixels, SharedString, Size, StyleRefinement, Styled,
     WindowContext,
 };
+use image::Frame;
+use smallvec::SmallVec;
 
 use image::ImageBuffer;
 
@@ -124,7 +126,10 @@ impl Asset for Image {
                 pixel.swap(0, 2);
             }
 
-            Ok(Arc::new(ImageData::new(buffer)))
+            Ok(Arc::new(ImageData::new(SmallVec::from_elem(
+                Frame::new(buffer),
+                1,
+            ))))
         }
     }
 }
@@ -257,7 +262,7 @@ impl Element for SvgImg {
                         origin: new_origin,
                     };
 
-                    match cx.paint_image(img_bounds, px(0.).into(), data, false) {
+                    match cx.paint_image(img_bounds, px(0.).into(), data, 0, false) {
                         Ok(_) => {}
                         Err(err) => eprintln!("failed to paint svg image: {:?}", err),
                     }

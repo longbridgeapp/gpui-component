@@ -278,11 +278,13 @@ impl Render for StoryWorkspace {
                             .gap_2()
                             .child(
                                 Button::new("theme-mode", cx)
-                                    .when_else(
-                                        cx.theme().mode.is_dark(),
-                                        |this| this.icon(IconName::Moon),
-                                        |this| this.icon(IconName::Sun),
-                                    )
+                                    .map(|this| {
+                                        if cx.theme().mode.is_dark() {
+                                            this.icon(IconName::Sun)
+                                        } else {
+                                            this.icon(IconName::Moon)
+                                        }
+                                    })
                                     .size(Size::Small)
                                     .style(ButtonStyle::Ghost)
                                     .on_click(move |_, cx| {

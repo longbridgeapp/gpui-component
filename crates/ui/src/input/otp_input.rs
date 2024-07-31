@@ -1,7 +1,7 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AnyElement, Context, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton,
-    MouseDownEvent, ParentElement as _, Render, SharedString, Styled as _, ViewContext,
+    div, prelude::FluentBuilder, AnyElement, Context, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton, MouseDownEvent,
+    ParentElement as _, Render, SharedString, Styled as _, ViewContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, v_flex};
@@ -174,27 +174,22 @@ impl Render for OtpInput {
                     .h_8()
                     .text_lg()
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::on_input_mouse_down))
-                    .when_some_else(
-                        c,
-                        |this, c| {
-                            this.child(if self.masked {
-                                SharedString::from("•")
-                            } else {
-                                SharedString::from(c.to_string())
-                            })
-                        },
-                        |this| {
-                            this.when(is_input_focused && blink_show, |this| {
-                                this.child(
-                                    div()
-                                        .h_4()
-                                        .w_0()
-                                        .border_l_3()
-                                        .border_color(crate::blue_500()),
-                                )
-                            })
-                        },
-                    )
+                    .map(|this| match c {
+                        Some(c) => this.child(if self.masked {
+                            SharedString::from("•")
+                        } else {
+                            SharedString::from(c.to_string())
+                        }),
+                        None => this.when(is_input_focused && blink_show, |this| {
+                            this.child(
+                                div()
+                                    .h_4()
+                                    .w_0()
+                                    .border_l_3()
+                                    .border_color(crate::blue_500()),
+                            )
+                        }),
+                    })
                     .into_any_element(),
             );
         }
