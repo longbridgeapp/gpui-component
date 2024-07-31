@@ -1,6 +1,6 @@
 use gpui::{
     div, ClickEvent, Div, ElementId, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    RenderOnce, SharedString, Stateful, StatefulInteractiveElement, Styled, TextStyle,
+    RenderOnce, SharedString, Stateful, StatefulInteractiveElement, Styled,
 };
 
 use crate::theme::{ActiveTheme as _, Colorize};

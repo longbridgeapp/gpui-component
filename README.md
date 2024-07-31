@@ -22,6 +22,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] IconButton
   - [x] Glost / Outline Button
   - [x] Loading
+- [x] Link
 - [x] Label
 - [x] Icon
 - [x] Checkbox
