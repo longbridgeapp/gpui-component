@@ -1,6 +1,6 @@
 use gpui::{
-    px, rems, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext as _,
-    WindowContext,
+    div, px, rems, IntoElement, ParentElement, Render, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 use ui::{
@@ -51,6 +51,7 @@ impl Render for CheckboxStory {
             .gap_6()
             .child(
                 section("Label", cx)
+                    .items_start()
                     .child(
                         v_flex()
                             .w_full()
@@ -66,6 +67,13 @@ impl Render for CheckboxStory {
                             .text_left()
                             .font_semibold()
                             .line_height(rems(1.8)),
+                    )
+                    .child(
+                        div().w(px(200.)).child(
+                            Label::new("Label should support text wrap in default, if the text is too long, it should wrap to the next line.")
+                                .text_left()
+                                .line_height(rems(1.8)),
+                        ),
                     ),
             )
             .child(
@@ -96,7 +104,7 @@ impl Render for CheckboxStory {
                 section("Checkbox", cx).child(
                     h_flex()
                         .w_full()
-                        .items_center()
+                        .items_start()
                         .gap_6()
                         .child(
                             Checkbox::new("check1")
@@ -120,7 +128,13 @@ impl Render for CheckboxStory {
                                 .on_click(cx.listener(|v, _, _| {
                                     v.check3 = v.check3.inverse();
                                 })),
-                        ),
+                        )
+                        .child(
+                            div().w(px(300.)).child(
+                                Checkbox::new("longlong-checkbox")
+                                .label("Warp: Label should support text wrap in default, if the text is too long, it should wrap to the next line.")
+                            ),
+                        )
                 ),
             )
             .child(
@@ -154,6 +168,7 @@ impl Render for CheckboxStory {
                     h_flex()
                         .w_full()
                         .gap_4()
+                        .items_start()
                         .child(
                             Radio::new("radio1")
                                 .selected(self.select1)
@@ -174,7 +189,15 @@ impl Render for CheckboxStory {
                                 .label("Disabled Radio")
                                 .selected(true)
                                 .disabled(true),
-                        ),
+                        )
+                        .child(
+                              div().w(px(200.)).child(
+                                  Radio::new("radio3")
+                                      .label("Warp: A long long long text radio label")
+                                      .selected(true)
+                                      .disabled(true),
+                              ),
+                        )
                 ),
             )
     }
