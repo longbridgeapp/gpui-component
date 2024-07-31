@@ -148,7 +148,7 @@ impl StoryContainer {
         }
     }
 
-    pub fn add_pane(
+    pub fn add_item(
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
         story: AnyView,

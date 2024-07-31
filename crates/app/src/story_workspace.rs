@@ -41,7 +41,7 @@ impl StoryWorkspace {
         })
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Buttons",
             "Displays a button or a component that looks like a button.",
             ButtonStory::view(cx).into(),
@@ -50,7 +50,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Input",
             "A control that allows the user to input text.",
             InputStory::view(cx).into(),
@@ -59,7 +59,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Text",
             "Links, paragraphs, checkboxes, and more.",
             TextStory::view(cx).into(),
@@ -68,7 +68,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Switch",
             "A control that allows the user to toggle between two states.",
             SwitchStory::view(cx).into(),
@@ -77,7 +77,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Dropdowns",
             "Displays a list of options for the user to pick from—triggered by a button.",
             DropdownStory::new(cx).into(),
@@ -86,7 +86,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Picker",
             "Picker is a component that allows the user to select an item from a list of options.",
             PickerStory::view(cx).into(),
@@ -95,7 +95,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Popover",
             "Displays rich content in a portal, triggered by a button.",
             PopoverStory::view(cx).into(),
@@ -104,7 +104,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Tooltip",
             "Displays a short message when users hover over an element.",
             TooltipStory::view(cx).into(),
@@ -113,7 +113,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "List",
             "A list displays a series of items.",
             ListStory::view(cx).into(),
@@ -122,7 +122,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Icon",
             "Icon use examples",
             IconStory::view(cx).into(),
@@ -131,7 +131,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
@@ -140,7 +140,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        // StoryContainer::add_panel(
+        // StoryContainer::add_iteml(
         //     WebViewStory::view(cx).into(),
         //     workspace.clone(),
         //     DockPosition::Right,
@@ -148,7 +148,7 @@ impl StoryWorkspace {
         //     cx,
         // );
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Table",
             "Powerful table and datagrids built.",
             TableStory::view(cx).into(),
@@ -157,7 +157,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Progress",
             "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
             ProgressStory::view(cx).into(),
@@ -166,7 +166,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Resizable",
             "Accessible resizable panel groups and layouts with keyboard support.",
             ResizableStory::view(cx).into(),
@@ -175,7 +175,7 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_item(
             "Scrollable",
             "A scrollable area with scroll bar",
             ScrollableStory::view(cx).into(),
