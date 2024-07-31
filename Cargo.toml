@@ -15,19 +15,19 @@ serde = "1.0.203"
 serde_json = "1"
 
 [workspace.lints.clippy]
-dbg_macro = "deny"
-todo = "deny"
-single_range_in_vec_init = "allow"
-style = "allow"
 almost_complete_range = "allow"
 arc_with_non_send_sync = "allow"
 borrowed_box = "allow"
+dbg_macro = "deny"
 let_underscore_future = "allow"
 map_entry = "allow"
+module_inception = "allow"
 non_canonical_partial_ord_impl = "allow"
 reversed_empty_ranges = "allow"
+single_range_in_vec_init = "allow"
+style = { level = "allow", priority = -1 }
+todo = "deny"
 type_complexity = "allow"
-module_inception = "allow"
 
 [profile.dev]
 split-debuginfo = "unpacked"

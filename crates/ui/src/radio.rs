@@ -1,6 +1,7 @@
 use gpui::{
-    div, prelude::FluentBuilder, svg, CursorStyle, ElementId, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, WindowContext,
+    div, prelude::FluentBuilder, relative, svg, CursorStyle, ElementId, InteractiveElement,
+    IntoElement, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    WindowContext,
 };
 
 use crate::{
@@ -63,29 +64,41 @@ impl RenderOnce for Radio {
             .gap_x_2()
             .cursor(CursorStyle::PointingHand)
             .text_color(color)
+            .items_start()
             .child(
                 div()
                     .relative()
-                    .w_3p5()
-                    .h_3p5()
+                    .size_4()
+                    .flex_shrink_0()
                     .rounded_full()
                     .border_1()
                     .border_color(color)
-                    .mt_neg_0p5()
+                    .when(self.selected, |this| this.bg(color))
                     .child(
                         svg()
                             .absolute()
                             .top_px()
                             .left_px()
-                            .size_2p5()
+                            .size_3()
                             .text_color(color)
+                            .when(self.selected, |this| {
+                                this.text_color(cx.theme().primary_foreground)
+                            })
                             .map(|this| match self.selected {
                                 true => this.path(IconName::Check.path()),
                                 false => this,
                             }),
                     ),
             )
-            .when_some(self.label, |this, label| this.child(label))
+            .when_some(self.label, |this, label| {
+                this.child(
+                    div()
+                        .size_full()
+                        .overflow_hidden()
+                        .line_height(relative(1.))
+                        .child(label),
+                )
+            })
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {

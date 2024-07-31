@@ -1,6 +1,7 @@
 use gpui::{
-    prelude::FluentBuilder as _, svg, ElementId, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _, WindowContext,
+    div, prelude::FluentBuilder as _, relative, svg, ElementId, InteractiveElement, IntoElement,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _,
+    WindowContext,
 };
 
 use crate::{
@@ -84,9 +85,8 @@ impl RenderOnce for Checkbox {
         h_flex()
             .id(self.id)
             .group(group_id.clone())
-            .justify_center()
-            .items_center()
             .gap_2()
+            .items_start()
             .child(
                 v_flex()
                     .relative()
@@ -94,6 +94,7 @@ impl RenderOnce for Checkbox {
                     .border_color(color)
                     .rounded_sm()
                     .size_4()
+                    .flex_shrink_0()
                     .map(|this| match self.checked {
                         Selection::Unselected => this.bg(theme.transparent),
                         _ => this.bg(color),
@@ -121,7 +122,14 @@ impl RenderOnce for Checkbox {
             )
             .map(|this| {
                 if let Some(label) = self.label {
-                    this.child(label).text_color(color)
+                    this.child(
+                        div()
+                            .w_full()
+                            .overflow_hidden()
+                            .line_height(relative(1.))
+                            .child(label),
+                    )
+                    .text_color(color)
                 } else {
                     this
                 }
