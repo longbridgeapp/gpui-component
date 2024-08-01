@@ -52,6 +52,7 @@ fn main() {
                 ],
             },
         ]);
+        cx.activate(true);
 
         story_workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
             // do something
