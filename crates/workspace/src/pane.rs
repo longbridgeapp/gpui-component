@@ -910,6 +910,7 @@ impl Render for Pane {
                             div.v_flex()
                                 .id("pane-item-container")
                                 .size_full()
+                                .overflow_y_scroll()
                                 .child(item.to_any())
                         } else {
                             div.id("pane-item-container")
