@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder, px, rems, AnyElement, AppContext, ClickEvent,
     DismissEvent, Div, Element, ElementId, EventEmitter, FocusHandle, Focusable, FocusableView,
