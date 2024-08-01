@@ -7,9 +7,9 @@ use crate::{
     v_flex, Icon, IconName,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder as _, px, uniform_list, AppContext, Bounds, Div,
-    DragMoveEvent, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, KeyBinding, MouseButton, ParentElement as _, Pixels, Point, Render, ScrollHandle,
+    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
+    DragMoveEvent, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
+    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, ScrollHandle,
     SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
     VisualContext as _, WindowContext,
 };
@@ -110,6 +110,9 @@ pub struct Table<D: TableDelegate> {
 
     /// The column index that is being resized.
     resizing_col: Option<usize>,
+
+    /// Set stripe style of the table.
+    stripe: bool,
 }
 
 #[allow(unused)]
@@ -146,6 +149,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Render the header cell at the given column index, default to the column name.
     fn render_th(&self, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement {
         div().size_full().child(self.col_name(col_ix))
+    }
+
+    /// Render the row at the given row and column.
+    fn render_tr(&self, row_ix: usize, cx: &mut WindowContext) -> Div {
+        h_flex()
     }
 
     /// Render cell at the given row and column.
@@ -186,6 +194,7 @@ where
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
+            stripe: true,
         };
 
         this.prepare_col_groups(cx);
@@ -198,6 +207,11 @@ where
 
     pub fn delegate_mut(&mut self) -> &mut D {
         &mut self.delegate
+    }
+
+    pub fn stripe(mut self, stripe: bool) -> Self {
+        self.stripe = stripe;
+        self
     }
 
     fn prepare_col_groups(&mut self, cx: &mut ViewContext<Self>) {
@@ -701,13 +715,15 @@ where
                         move |table, visible_range, cx| {
                             visible_range
                                 .map(|row_ix| {
-                                    tr(cx)
+                                    table
+                                        .delegate
+                                        .render_tr(row_ix, cx)
                                         .id(("table-row", row_ix))
                                         .w_full()
                                         .when(row_ix > 0, |this| {
                                             this.border_t_1().border_color(cx.theme().border)
                                         })
-                                        .when(row_ix % 2 != 0, |this| {
+                                        .when(table.stripe && row_ix % 2 != 0, |this| {
                                             this.bg(cx.theme().table_even)
                                         })
                                         .hover(|this| {
