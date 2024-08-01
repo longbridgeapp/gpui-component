@@ -271,7 +271,7 @@ impl Render for PopupMenu {
                                         if let Some(icon) = icon {
                                             this.child(icon.clone())
                                         } else {
-                                            this.child(icon_placeholder.clone().unwrap())
+                                            this.children(icon_placeholder.clone())
                                         }
                                     }))
                                 })
