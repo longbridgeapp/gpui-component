@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use crate::{theme::ActiveTheme, Icon, IconName, Size};
+use crate::{Icon, IconName, Size};
 use gpui::{
-    div, ease_in_out, percentage, Animation, AnimationExt as _, Hsla, IntoElement, ParentElement,
-    RenderOnce, Styled as _, Transformation,
+    div, ease_in_out, percentage, prelude::FluentBuilder as _, Animation, AnimationExt as _, Hsla,
+    IntoElement, ParentElement, RenderOnce, Styled as _, Transformation,
 };
 
 #[derive(IntoElement)]
@@ -41,13 +41,12 @@ impl Indicator {
 }
 
 impl RenderOnce for Indicator {
-    fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
-        let color = self.color.unwrap_or_else(|| cx.theme().indicator);
+    fn render(self, _: &mut gpui::WindowContext) -> impl IntoElement {
         div()
             .child(
                 Icon::new(self.icon.clone())
                     .size(self.size)
-                    .text_color(color)
+                    .when_some(self.color, |this, color| this.text_color(color))
                     .with_animation(
                         "circle",
                         Animation::new(self.speed).repeat().with_easing(ease_in_out),

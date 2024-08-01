@@ -5,9 +5,9 @@ use crate::{
     Clickable, Disableable, Icon, Selectable, Size,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
-    FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, Div, ElementId, FocusHandle,
+    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce,
+    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -24,7 +24,7 @@ impl From<Pixels> for ButtonRounded {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ButtonCustomStyle {
     color: Hsla,
     foreground: Hsla,
@@ -70,14 +70,21 @@ impl ButtonCustomStyle {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ButtonStyle {
     Primary,
     Secondary,
     Danger,
     Outline,
     Ghost,
+    Link,
     Custom(ButtonCustomStyle),
+}
+
+impl ButtonStyle {
+    fn is_link(&self) -> bool {
+        matches!(self, Self::Link)
+    }
 }
 
 #[derive(IntoElement)]
@@ -90,11 +97,10 @@ pub struct Button {
     children: Vec<AnyElement>,
     disabled: bool,
     selected: bool,
-    width: Option<DefiniteLength>,
-    height: Option<DefiniteLength>,
     style: ButtonStyle,
     rounded: ButtonRounded,
     size: Size,
+    compact: bool,
     tooltip: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     loading: bool,
@@ -111,61 +117,65 @@ impl Button {
             disabled: false,
             selected: false,
             style: ButtonStyle::Secondary,
-            width: None,
-            height: None,
             rounded: ButtonRounded::Medium,
             size: Size::Medium,
             tooltip: None,
             on_click: None,
             loading: false,
+            compact: false,
             children: Vec::new(),
         }
     }
 
-    pub fn primary(
-        id: impl Into<ElementId>,
-        label: impl Into<SharedString>,
-        cx: &mut WindowContext,
-    ) -> Self {
-        Self::new(id, cx).label(label).style(ButtonStyle::Primary)
-    }
-
-    pub fn danger(
-        id: impl Into<ElementId>,
-        label: impl Into<SharedString>,
-        cx: &mut WindowContext,
-    ) -> Self {
-        Self::new(id, cx).label(label).style(ButtonStyle::Danger)
-    }
-
-    pub fn small(
-        id: impl Into<ElementId>,
-        label: impl Into<SharedString>,
-        cx: &mut WindowContext,
-    ) -> Self {
-        Self::new(id, cx).label(label).size(Size::Small)
-    }
-
-    pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
-        self.width = Some(width.into());
+    /// With the primary style for the Button.
+    pub fn primary(mut self) -> Self {
+        self.style = ButtonStyle::Primary;
         self
     }
 
-    pub fn height(mut self, height: impl Into<DefiniteLength>) -> Self {
-        self.height = Some(height.into());
+    /// With the secondary style for the Button.
+    pub fn danger(mut self) -> Self {
+        self.style = ButtonStyle::Danger;
         self
     }
 
+    /// With the ghost style for the Button.
+    pub fn ghost(mut self) -> Self {
+        self.style = ButtonStyle::Ghost;
+        self
+    }
+
+    /// With the outline style for the Button.
+    pub fn outline(mut self) -> Self {
+        self.style = ButtonStyle::Outline;
+        self
+    }
+
+    /// With the link style for the Button.
+    pub fn link(mut self) -> Self {
+        self.style = ButtonStyle::Link;
+        self
+    }
+
+    /// With the custom style for the Button.
+    pub fn custom(mut self, custom: ButtonCustomStyle) -> Self {
+        self.style = ButtonStyle::Custom(custom);
+        self
+    }
+
+    /// Set the border radius of the Button.
     pub fn rounded(mut self, rounded: impl Into<ButtonRounded>) -> Self {
         self.rounded = rounded.into();
         self
     }
 
+    /// Set the ui::Size of the Button.
     pub fn size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
         self
     }
 
+    /// Set label to the Button, if no label is set, the button will be in Icon Button mode.
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
         self
@@ -177,18 +187,27 @@ impl Button {
         self
     }
 
+    /// Set the tooltip of the button.
     pub fn tooltip(mut self, tooltip: impl Into<SharedString>) -> Self {
         self.tooltip = Some(tooltip.into());
         self
     }
 
+    /// Set the ButtonStyle
     pub fn style(mut self, style: ButtonStyle) -> Self {
         self.style = style;
         self
     }
 
+    /// Set true to show the loading indicator.
     pub fn loading(mut self, loading: bool) -> Self {
         self.loading = loading;
+        self
+    }
+
+    /// Set the button to compact mode, then padding will be reduced.
+    pub fn compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
         self
     }
 }
@@ -243,9 +262,7 @@ impl RenderOnce for Button {
             .items_center()
             .justify_center()
             .cursor_pointer()
-            .when_some(self.width, |this, width| this.w(width))
-            .when_some(self.height, |this, height| this.h(height))
-            .map(|this| {
+            .when(!style.is_link(), |this| {
                 if self.label.is_none() && self.children.is_empty() {
                     // Icon Button
                     match self.size {
@@ -258,9 +275,17 @@ impl RenderOnce for Button {
                     // Normal Button
                     match self.size {
                         Size::Size(size) => this.p(size * 0.2),
-                        Size::XSmall => this.px_1().py_1().h_5(),
-                        Size::Small => this.px_3().py_2().h_6(),
-                        _ => this.px_4().py_2().h_8(),
+                        Size::XSmall => this.h_5().p_1(),
+                        Size::Small => this
+                            .px_3()
+                            .py_2()
+                            .h_6()
+                            .when(self.compact, |this| this.p_2()),
+                        _ => this
+                            .px_4()
+                            .py_2()
+                            .h_8()
+                            .when(self.compact, |this| this.p_2()),
                     }
                 }
             })
@@ -271,22 +296,29 @@ impl RenderOnce for Button {
                 ButtonRounded::Size(px) => this.rounded(px),
                 ButtonRounded::None => this.rounded_none(),
             })
+            .text_color(normal_style.fg)
             .when(self.selected, |this| {
                 let selected_style = style.selected(cx);
                 this.bg(selected_style.bg)
                     .border_color(selected_style.border)
+                    .text_color(selected_style.fg)
             })
             .when(!self.disabled && !self.selected, |this| {
-                this.hover(|this| {
-                    let hover_style = style.hovered(cx);
-                    this.bg(hover_style.bg).border_color(hover_style.border)
-                })
-                .active(|this| {
-                    let active_style = style.active(cx);
-                    this.bg(active_style.bg).border_color(active_style.border)
-                })
-                .border_color(normal_style.border)
-                .bg(normal_style.bg)
+                this.border_color(normal_style.border)
+                    .bg(normal_style.bg)
+                    .when(normal_style.underline, |this| this.text_decoration_1())
+                    .hover(|this| {
+                        let hover_style = style.hovered(cx);
+                        this.bg(hover_style.bg)
+                            .border_color(hover_style.border)
+                            .text_color(crate::red_400())
+                    })
+                    .active(|this| {
+                        let active_style = style.active(cx);
+                        this.bg(active_style.bg)
+                            .border_color(active_style.border)
+                            .text_color(active_style.fg)
+                    })
             })
             .when(focused, |this| this.border_color(cx.theme().ring))
             .when_some(
@@ -305,36 +337,29 @@ impl RenderOnce for Button {
                 let disabled_style = style.disabled(cx);
                 this.cursor_not_allowed()
                     .bg(disabled_style.bg)
+                    .text_color(disabled_style.fg)
                     .border_color(disabled_style.border)
             })
             .border_1()
             .child({
-                let text_color = if self.disabled {
-                    normal_style.fg.opacity(0.6)
-                } else {
-                    normal_style.fg
-                };
-
                 h_flex()
+                    .id("label")
                     .items_center()
                     .justify_center()
                     .gap_2()
-                    .text_color(text_color)
-                    .when(!self.loading, |this| {
-                        this.when_some(self.icon, |this, icon| {
-                            this.child(div().text_color(text_color).child(icon.size(icon_size)))
-                        })
-                    })
-                    .when(self.loading, |this| {
-                        this.child(Indicator::new().size(self.size).color(text_color))
-                    })
-                    .when_some(self.label, |this, label| this.child(label))
-                    .children(self.children)
                     .map(|this| match self.size {
                         Size::XSmall => this.text_xs(),
                         Size::Small => this.text_sm(),
                         _ => this.text_base(),
                     })
+                    .when(!self.loading, |this| {
+                        this.when_some(self.icon, |this, icon| this.child(icon.size(icon_size)))
+                    })
+                    .when(self.loading, |this| {
+                        this.child(Indicator::new().size(self.size))
+                    })
+                    .when_some(self.label, |this, label| this.child(label))
+                    .children(self.children)
             })
     }
 }
@@ -343,6 +368,7 @@ struct ButtonStyles {
     bg: Hsla,
     border: Hsla,
     fg: Hsla,
+    underline: bool,
 }
 
 impl ButtonStyle {
@@ -353,6 +379,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive,
             ButtonStyle::Outline => cx.theme().transparent,
             ButtonStyle::Ghost => cx.theme().transparent,
+            ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.color,
         }
     }
@@ -364,6 +391,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_foreground,
             ButtonStyle::Outline => cx.theme().secondary_foreground,
             ButtonStyle::Ghost => cx.theme().secondary_foreground,
+            ButtonStyle::Link => cx.theme().link,
             ButtonStyle::Custom(colors) => colors.foreground,
         }
     }
@@ -375,7 +403,15 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive,
             ButtonStyle::Outline => cx.theme().border,
             ButtonStyle::Ghost => cx.theme().transparent,
+            ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.border,
+        }
+    }
+
+    fn underline(&self, _: &WindowContext) -> bool {
+        match self {
+            ButtonStyle::Link => true,
+            _ => false,
         }
     }
 
@@ -383,8 +419,14 @@ impl ButtonStyle {
         let bg = self.bg_color(cx);
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
+        let underline = self.underline(cx);
 
-        ButtonStyles { bg, border, fg }
+        ButtonStyles {
+            bg,
+            border,
+            fg,
+            underline,
+        }
     }
 
     fn hovered(&self, cx: &WindowContext) -> ButtonStyles {
@@ -394,12 +436,22 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_hover,
             ButtonStyle::Outline => cx.theme().secondary_hover,
             ButtonStyle::Ghost => cx.theme().secondary,
+            ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.hover,
         };
         let border = self.border_color(cx);
-        let fg = self.text_color(cx);
+        let fg = match self {
+            ButtonStyle::Link => cx.theme().link_hover,
+            _ => self.text_color(cx),
+        };
+        let underline = self.underline(cx);
 
-        ButtonStyles { bg, border, fg }
+        ButtonStyles {
+            bg,
+            border,
+            fg,
+            underline,
+        }
     }
 
     fn active(&self, cx: &WindowContext) -> ButtonStyles {
@@ -409,12 +461,22 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_active,
             ButtonStyle::Outline => cx.theme().secondary_active,
             ButtonStyle::Ghost => cx.theme().secondary_active,
+            ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.active,
         };
         let border = self.border_color(cx);
-        let fg = self.text_color(cx);
+        let fg = match self {
+            ButtonStyle::Link => cx.theme().link_active,
+            _ => self.text_color(cx),
+        };
+        let underline = self.underline(cx);
 
-        ButtonStyles { bg, border, fg }
+        ButtonStyles {
+            bg,
+            border,
+            fg,
+            underline,
+        }
     }
 
     fn selected(&self, cx: &WindowContext) -> ButtonStyles {
@@ -424,19 +486,42 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_active,
             ButtonStyle::Outline => cx.theme().secondary_active,
             ButtonStyle::Ghost => cx.theme().secondary_active,
+            ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.active,
         };
         let border = self.border_color(cx);
-        let fg = self.text_color(cx);
+        let fg = match self {
+            ButtonStyle::Link => cx.theme().link_active,
+            _ => self.text_color(cx),
+        };
+        let underline = self.underline(cx);
 
-        ButtonStyles { bg, border, fg }
+        ButtonStyles {
+            bg,
+            border,
+            fg,
+            underline,
+        }
     }
 
     fn disabled(&self, cx: &WindowContext) -> ButtonStyles {
-        let bg = self.bg_color(cx).grayscale().opacity(0.9);
-        let border = self.border_color(cx).grayscale().opacity(0.9);
-        let fg = self.text_color(cx).grayscale();
+        let bg = match self {
+            ButtonStyle::Link => cx.theme().transparent,
+            _ => cx.theme().secondary.darken(0.2).grayscale(),
+        };
+        let fg = match self {
+            ButtonStyle::Link => cx.theme().link.grayscale(),
+            _ => cx.theme().secondary_foreground.darken(0.2).grayscale(),
+        };
 
-        ButtonStyles { bg, border, fg }
+        let border = bg;
+        let underline = self.underline(cx);
+
+        ButtonStyles {
+            bg,
+            border,
+            fg,
+            underline,
+        }
     }
 }

@@ -293,7 +293,6 @@ pub struct Theme {
     pub tab_active: Hsla,
     pub tab_foreground: Hsla,
     pub tab_active_foreground: Hsla,
-    pub indicator: Hsla,
     pub progress_bar: Hsla,
     pub slider_bar: Hsla,
     pub slider_thumb: Hsla,
@@ -308,6 +307,8 @@ pub struct Theme {
     pub table_active: Hsla,
     pub table_hover: Hsla,
     pub link: Hsla,
+    pub link_hover: Hsla,
+    pub link_active: Hsla,
 }
 
 impl Global for Theme {}
@@ -369,7 +370,6 @@ impl From<Colors> for Theme {
             tab_active: colors.background,
             tab_foreground: colors.foreground,
             tab_active_foreground: colors.foreground,
-            indicator: colors.secondary_foreground,
             progress_bar: colors.primary,
             slider_bar: colors.primary,
             slider_thumb: colors.background,
@@ -384,6 +384,8 @@ impl From<Colors> for Theme {
             table_active: colors.list_active,
             table_hover: colors.list_active.opacity(0.6),
             link: colors.link,
+            link_hover: colors.link.lighten(0.2),
+            link_active: colors.link.darken(0.2),
         }
     }
 }

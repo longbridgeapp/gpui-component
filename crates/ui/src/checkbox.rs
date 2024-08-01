@@ -39,8 +39,8 @@ impl Checkbox {
         self
     }
 
-    pub fn checked(mut self, checked: Selection) -> Self {
-        self.checked = checked;
+    pub fn checked(mut self, checked: impl Into<Selection>) -> Self {
+        self.checked = checked.into();
         self
     }
 
