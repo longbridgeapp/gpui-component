@@ -275,9 +275,17 @@ impl RenderOnce for Button {
                     // Normal Button
                     match self.size {
                         Size::Size(size) => this.p(size * 0.2),
-                        Size::XSmall => this.px_1().py_1().h_5(),
-                        Size::Small => this.px_3().py_2().h_6(),
-                        _ => this.px_4().py_2().h_8(),
+                        Size::XSmall => this.h_5().p_1(),
+                        Size::Small => this
+                            .px_3()
+                            .py_2()
+                            .h_6()
+                            .when(self.compact, |this| this.p_2()),
+                        _ => this
+                            .px_4()
+                            .py_2()
+                            .h_8()
+                            .when(self.compact, |this| this.p_2()),
                     }
                 }
             })
