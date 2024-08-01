@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use gpui::{
     px, IntoElement, ParentElement, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
@@ -13,24 +11,24 @@ use ui::{
 };
 
 struct Country {
-    name: String,
-    code: String,
+    name: SharedString,
+    code: SharedString,
 }
 
 impl Country {
-    pub fn new(name: &str, code: &str) -> Self {
+    pub fn new(name: impl Into<SharedString>, code: impl Into<SharedString>) -> Self {
         Self {
-            name: name.to_string(),
-            code: code.to_string(),
+            name: name.into(),
+            code: code.into(),
         }
     }
 }
 
 impl DropdownItem for Country {
-    type Value = String;
+    type Value = SharedString;
 
-    fn title(&self) -> Cow<'_, str> {
-        self.name.as_str().into()
+    fn title(&self) -> SharedString {
+        self.name.clone()
     }
 
     fn value(&self) -> &Self::Value {

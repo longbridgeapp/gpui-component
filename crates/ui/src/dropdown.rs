@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder, px, rems, AnyElement, AppContext, ClickEvent,
     DismissEvent, Div, Element, ElementId, EventEmitter, FocusHandle, Focusable, FocusableView,
@@ -31,15 +29,15 @@ pub fn init(cx: &mut AppContext) {
 /// A trait for items that can be displayed in a dropdown.
 pub trait DropdownItem {
     type Value: Clone;
-    fn title(&self) -> Cow<'_, str>;
+    fn title(&self) -> SharedString;
     fn value(&self) -> &Self::Value;
 }
 
 impl DropdownItem for String {
     type Value = Self;
 
-    fn title(&self) -> Cow<'_, str> {
-        self.as_str().into()
+    fn title(&self) -> SharedString {
+        SharedString::from(self.to_string())
     }
 
     fn value(&self) -> &Self::Value {
@@ -50,8 +48,8 @@ impl DropdownItem for String {
 impl DropdownItem for SharedString {
     type Value = Self;
 
-    fn title(&self) -> Cow<'_, str> {
-        self.as_ref().into()
+    fn title(&self) -> SharedString {
+        SharedString::from(self.to_string())
     }
 
     fn value(&self) -> &Self::Value {
