@@ -12,7 +12,7 @@ use ui::{
     popup_menu::PopupMenu,
     prelude::FluentBuilder,
     switch::Switch,
-    v_flex, Clickable, IconName, Size,
+    v_flex, Clickable as _, IconName, Size,
 };
 
 actions!(
@@ -49,7 +49,8 @@ impl Render for Form {
             .child("This is a form container.")
             .child(self.input1.clone())
             .child(
-                Button::primary("submit", "Submit", cx)
+                Button::new("submit", cx)
+                    .primary()
                     .on_click(cx.listener(|_, _, cx| cx.emit(DismissEvent))),
             )
     }

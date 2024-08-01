@@ -20,6 +20,16 @@ pub enum Selection {
     Selected,
 }
 
+impl From<bool> for Selection {
+    fn from(selected: bool) -> Self {
+        if selected {
+            Self::Selected
+        } else {
+            Self::Unselected
+        }
+    }
+}
+
 impl Display for Selection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

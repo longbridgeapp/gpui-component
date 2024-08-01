@@ -5,18 +5,27 @@ use gpui::{
 
 use ui::{
     button::{Button, ButtonCustomStyle, ButtonStyle},
+    checkbox::Checkbox,
     h_flex,
     theme::ActiveTheme,
-    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable, Size,
+    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable as _, Size,
 };
 
 use crate::section;
 
-pub struct ButtonStory {}
+pub struct ButtonStory {
+    disabled: bool,
+    loading: bool,
+    selected: bool,
+}
 
 impl ButtonStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|_| Self {})
+        cx.new_view(|_| Self {
+            disabled: false,
+            loading: false,
+            selected: false,
+        })
     }
 
     fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
@@ -26,8 +35,43 @@ impl ButtonStory {
 
 impl Render for ButtonStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let disabled = self.disabled;
+        let loading = self.loading;
+        let selected = self.selected;
+
         v_flex()
             .gap_6()
+            .child(
+                h_flex()
+                    .gap_3()
+                    .child(
+                        Checkbox::new("disabled-button")
+                            .label("Disabled Buttons")
+                            .checked(self.disabled)
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.disabled = !view.disabled;
+                                cx.notify();
+                            })),
+                    )
+                    .child(
+                        Checkbox::new("loading-button")
+                            .label("Loading Buttons")
+                            .checked(self.loading)
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.loading = !view.loading;
+                                cx.notify();
+                            })),
+                    )
+                    .child(
+                        Checkbox::new("selected-button")
+                            .label("Selected Buttons")
+                            .checked(self.selected)
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.selected = !view.selected;
+                                cx.notify();
+                            })),
+                    ),
+            )
             .child(
                 h_flex()
                     .gap_6()
@@ -35,45 +79,71 @@ impl Render for ButtonStory {
                         section("Normal Button", cx)
                             .child(
                                 Button::new("button-1", cx)
+                                    .primary()
                                     .label("Primary Button")
-                                    .style(ButtonStyle::Primary)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-2", cx)
                                     .label("Secondary Button")
-                                    .style(ButtonStyle::Secondary)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-4", cx)
+                                    .danger()
                                     .label("Danger Button")
-                                    .style(ButtonStyle::Danger)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-5", cx)
+                                    .outline()
                                     .label("Outline Button")
-                                    .style(ButtonStyle::Outline)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-5-ghost", cx)
+                                    .ghost()
                                     .label("Ghost Button")
-                                    .style(ButtonStyle::Ghost)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-5-link", cx)
+                                    .link()
+                                    .label("Link Button")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-6-custom", cx)
-                                    .label("Custom Button")
-                                    .style(ButtonStyle::Custom(
+                                    .custom(
                                         ButtonCustomStyle::new(cx)
                                             .color(cx.theme().muted)
                                             .foreground(cx.theme().destructive)
                                             .border(cx.theme().scrollbar)
                                             .hover(cx.theme().tab_active_foreground)
                                             .active(cx.theme().selection),
-                                    ))
+                                    )
+                                    .label("Custom Button")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             ),
                     )
@@ -81,23 +151,30 @@ impl Render for ButtonStory {
                         section("Button with Icon", cx)
                             .child(
                                 Button::new("button-icon-1", cx)
+                                    .primary()
                                     .label("Confirm")
                                     .icon(IconName::Check)
-                                    .style(ButtonStyle::Primary)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-icon-2", cx)
                                     .label("Abort")
                                     .icon(IconName::Close)
-                                    .style(ButtonStyle::Secondary)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
                                 Button::new("button-icon-3", cx)
                                     .label("Maximize")
                                     .icon(Icon::new(IconName::Maximize))
-                                    .style(ButtonStyle::Secondary)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -111,6 +188,29 @@ impl Render for ButtonStory {
                                             .child(IconName::ChevronDown)
                                             .child(IconName::Eye),
                                     )
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-icon-5-ghost", cx)
+                                    .style(ButtonStyle::Ghost)
+                                    .icon(IconName::Check)
+                                    .label("Confirm")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-icon-6-link", cx)
+                                    .style(ButtonStyle::Link)
+                                    .icon(IconName::Check)
+                                    .label("Link")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             ),
                     ),
@@ -126,6 +226,9 @@ impl Render for ButtonStory {
                                     .style(ButtonStyle::Primary)
                                     .size(Size::Small)
                                     .loading(true)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -133,6 +236,9 @@ impl Render for ButtonStory {
                                     .label("Secondary Button")
                                     .style(ButtonStyle::Secondary)
                                     .size(Size::Small)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -140,6 +246,39 @@ impl Render for ButtonStory {
                                     .label("Danger Button")
                                     .style(ButtonStyle::Danger)
                                     .size(Size::Small)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-8-outline", cx)
+                                    .label("Outline Button")
+                                    .style(ButtonStyle::Outline)
+                                    .size(Size::Small)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-8-ghost", cx)
+                                    .label("Ghost Button")
+                                    .style(ButtonStyle::Ghost)
+                                    .size(Size::Small)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-8-link", cx)
+                                    .label("Link Button")
+                                    .style(ButtonStyle::Link)
+                                    .size(Size::Small)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             ),
                     )
@@ -150,6 +289,9 @@ impl Render for ButtonStory {
                                     .label("Primary Button")
                                     .style(ButtonStyle::Primary)
                                     .size(Size::XSmall)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -158,6 +300,9 @@ impl Render for ButtonStory {
                                     .style(ButtonStyle::Secondary)
                                     .size(Size::XSmall)
                                     .loading(true)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -165,92 +310,93 @@ impl Render for ButtonStory {
                                     .label("Danger Button")
                                     .style(ButtonStyle::Danger)
                                     .size(Size::XSmall)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
                                     .on_click(Self::on_click),
-                            ),
-                    ),
-            )
-            .child(
-                h_flex()
-                    .gap_6()
-                    .child(
-                        section("Disabled Button", cx)
-                            .child(
-                                Button::new("button-disabled1", cx)
-                                    .label("Disabled Button")
-                                    .style(ButtonStyle::Primary)
-                                    .on_click(Self::on_click)
-                                    .disabled(true),
                             )
                             .child(
-                                Button::new("button-disabled1", cx)
-                                    .label("Disabled Button")
-                                    .style(ButtonStyle::Secondary)
-                                    .on_click(Self::on_click)
-                                    .disabled(true),
+                                Button::new("button-xs-3-ghost", cx)
+                                    .label("Ghost Button")
+                                    .style(ButtonStyle::Ghost)
+                                    .size(Size::XSmall)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-disabled1", cx)
-                                    .label("Disabled Button")
-                                    .style(ButtonStyle::Danger)
-                                    .on_click(Self::on_click)
-                                    .disabled(true)
-                                    .loading(true),
-                            ),
-                    )
-                    .child(
-                        section("Selected Style", cx)
-                            .child(
-                                Button::new("button-selected-1", cx)
-                                    .label("Selected Button")
-                                    .style(ButtonStyle::Primary)
-                                    .selected(true),
+                                Button::new("button-xs-3-outline", cx)
+                                    .label("Outline Button")
+                                    .style(ButtonStyle::Outline)
+                                    .size(Size::XSmall)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-selected-2", cx)
-                                    .label("Selected Button")
-                                    .style(ButtonStyle::Secondary)
-                                    .selected(true),
-                            )
-                            .child(
-                                Button::new("button-selected-3", cx)
-                                    .label("Selected Button")
-                                    .style(ButtonStyle::Danger)
-                                    .selected(true),
+                                Button::new("button-xs-3-link", cx)
+                                    .label("Link Button")
+                                    .style(ButtonStyle::Link)
+                                    .size(Size::XSmall)
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .on_click(Self::on_click),
                             ),
                     ),
             )
             .child(
                 section("Icon Button", cx)
                     .child(
-                        Button::new("icon-button-0", cx)
+                        Button::new("icon-button-primary", cx)
                             .icon(IconName::Search)
-                            .style(ButtonStyle::Primary),
+                            .style(ButtonStyle::Primary)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
-                        Button::new("icon-button-1", cx)
+                        Button::new("icon-button-secondary", cx)
                             .icon(IconName::Info)
-                            .loading(true),
+                            .loading(true)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
-                        Button::new("icon-button-2", cx)
+                        Button::new("icon-button-danger", cx)
                             .icon(IconName::Close)
-                            .style(ButtonStyle::Danger),
+                            .style(ButtonStyle::Danger)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
-                        Button::new("icon-button-3", cx)
+                        Button::new("icon-button-small-primary", cx)
                             .icon(IconName::Search)
                             .size(Size::Small)
-                            .style(ButtonStyle::Primary),
+                            .style(ButtonStyle::Primary)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
-                        Button::new("icon-button-0-outline", cx)
+                        Button::new("icon-button-outline", cx)
                             .icon(IconName::Search)
-                            .style(ButtonStyle::Outline),
+                            .style(ButtonStyle::Outline)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
-                        Button::new("icon-button-1", cx)
-                            .icon(IconName::Info)
-                            .style(ButtonStyle::Ghost),
+                        Button::new("icon-button-ghost", cx)
+                            .icon(IconName::ArrowLeft)
+                            .style(ButtonStyle::Ghost)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     ),
             )
             .child(
@@ -258,36 +404,54 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-4", cx)
                             .icon(IconName::Info)
-                            .size(Size::Small),
+                            .size(Size::Small)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
                         Button::new("icon-button-5", cx)
                             .icon(IconName::Close)
                             .size(Size::Small)
-                            .style(ButtonStyle::Danger),
+                            .style(ButtonStyle::Danger)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
                         Button::new("icon-button-6", cx)
                             .icon(IconName::Search)
                             .size(Size::XSmall)
-                            .style(ButtonStyle::Primary),
+                            .style(ButtonStyle::Primary)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
                         Button::new("icon-button-7", cx)
                             .icon(IconName::Info)
-                            .size(Size::XSmall),
+                            .size(Size::XSmall)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
                         Button::new("icon-button-8", cx)
                             .icon(IconName::Close)
                             .size(Size::XSmall)
-                            .style(ButtonStyle::Danger),
+                            .style(ButtonStyle::Danger)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     )
                     .child(
                         Button::new("icon-button-9", cx)
                             .icon(IconName::Heart)
                             .size(px(24.))
-                            .style(ButtonStyle::Ghost),
+                            .style(ButtonStyle::Ghost)
+                            .disabled(disabled)
+                            .selected(selected)
+                            .loading(loading),
                     ),
             )
     }
