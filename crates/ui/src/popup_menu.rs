@@ -7,7 +7,7 @@ use gpui::{
     VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, IconName};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -42,6 +42,7 @@ pub struct PopupMenu {
     window_handle: AnyWindowHandle,
     action_context: Option<FocusHandle>,
     menu_items: Vec<PopupMenuItem>,
+    has_icon: bool,
     selected_index: Option<usize>,
     min_width: Pixels,
     max_width: Pixels,
@@ -67,6 +68,7 @@ impl PopupMenu {
                 selected_index: None,
                 min_width: px(120.),
                 max_width: px(500.),
+                has_icon: false,
                 _subscriptions: [_on_blur_subscription],
             };
             cx.refresh();
@@ -108,6 +110,20 @@ impl PopupMenu {
         self.add_menu_item(Some(icon.into()), label, action)
     }
 
+    /// Add Menu Item with check icon
+    pub fn menu_with_check(
+        &mut self,
+        label: impl Into<SharedString>,
+        checked: bool,
+        action: Box<dyn Action>,
+    ) -> &mut Self {
+        if checked {
+            self.add_menu_item(Some(IconName::Check.into()), label, action)
+        } else {
+            self.add_menu_item(None, label, action)
+        }
+    }
+
     fn add_menu_item(
         &mut self,
         icon: Option<Icon>,
@@ -115,6 +131,10 @@ impl PopupMenu {
         action: Box<dyn Action>,
     ) -> &mut Self {
         let window_handle = self.window_handle;
+        if icon.is_some() {
+            self.has_icon = true;
+        }
+
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
@@ -210,6 +230,12 @@ impl FocusableView for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+        let icon_placeholder = if self.has_icon {
+            Some(Icon::empty())
+        } else {
+            None
+        };
+
         v_flex()
             .key_context("PopupMenu")
             .track_focus(&self.focus_handle)
@@ -220,23 +246,36 @@ impl Render for PopupMenu {
             .on_mouse_down_out(cx.listener(|this, _, cx| this.dismiss(&Dismiss, cx)))
             .max_h(self.max_width)
             .min_w(self.min_width)
-            .p_1p5()
+            .p_0p5()
             .gap_y_0p5()
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
                 let this = ListItem::new(("menu-item", ix))
+                    .p_0()
                     .on_click(cx.listener(move |this, _, cx| this.on_click(ix, cx)));
                 match item {
-                    PopupMenuItem::Separator => this
-                        .disabled(true)
-                        .child(div().h(px(1.)).m_1().border_0().bg(cx.theme().border)),
+                    PopupMenuItem::Separator => this.disabled(true).child(
+                        div()
+                            .h(px(1.))
+                            .w_full()
+                            .my_px()
+                            .border_0()
+                            .bg(cx.theme().border),
+                    ),
                     PopupMenuItem::Item { icon, label, .. } => {
-                        this.py_1().px_2().text_sm().rounded(px(4.)).child(
+                        this.py(px(3.)).px_3().rounded_md().text_sm().child(
                             h_flex()
                                 .size_full()
-                                .gap_2()
                                 .items_center()
-                                .children(icon.clone())
-                                .child(label.clone()),
+                                .map(|this| {
+                                    this.child(div().absolute().text_sm().map(|this| {
+                                        if let Some(icon) = icon {
+                                            this.child(icon.clone())
+                                        } else {
+                                            this.child(icon_placeholder.clone().unwrap())
+                                        }
+                                    }))
+                                })
+                                .child(div().pl_6().pr_2().child(label.clone())),
                         )
                     }
                 }
