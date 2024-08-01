@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use gpui::{
     px, IntoElement, ParentElement, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
