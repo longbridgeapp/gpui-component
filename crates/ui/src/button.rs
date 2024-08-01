@@ -90,8 +90,6 @@ pub struct Button {
     children: Vec<AnyElement>,
     disabled: bool,
     selected: bool,
-    width: Option<DefiniteLength>,
-    height: Option<DefiniteLength>,
     style: ButtonStyle,
     rounded: ButtonRounded,
     size: Size,
@@ -111,8 +109,6 @@ impl Button {
             disabled: false,
             selected: false,
             style: ButtonStyle::Secondary,
-            width: None,
-            height: None,
             rounded: ButtonRounded::Medium,
             size: Size::Medium,
             tooltip: None,
@@ -144,16 +140,6 @@ impl Button {
         cx: &mut WindowContext,
     ) -> Self {
         Self::new(id, cx).label(label).size(Size::Small)
-    }
-
-    pub fn width(mut self, width: impl Into<DefiniteLength>) -> Self {
-        self.width = Some(width.into());
-        self
-    }
-
-    pub fn height(mut self, height: impl Into<DefiniteLength>) -> Self {
-        self.height = Some(height.into());
-        self
     }
 
     pub fn rounded(mut self, rounded: impl Into<ButtonRounded>) -> Self {
@@ -243,8 +229,6 @@ impl RenderOnce for Button {
             .items_center()
             .justify_center()
             .cursor_pointer()
-            .when_some(self.width, |this, width| this.w(width))
-            .when_some(self.height, |this, height| this.h(height))
             .map(|this| {
                 if self.label.is_none() && self.children.is_empty() {
                     // Icon Button
