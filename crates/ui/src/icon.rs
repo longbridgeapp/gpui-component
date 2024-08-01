@@ -184,6 +184,10 @@ impl Icon {
         self.base = self.base.with_transformation(transformation);
         self
     }
+
+    pub fn empty() -> Self {
+        Self::default()
+    }
 }
 
 impl Styled for Icon {

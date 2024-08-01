@@ -15,7 +15,10 @@ use ui::{
     v_flex, Clickable, IconName, Size,
 };
 
-actions!(popover_story, [Copy, Paste, Cut, SearchAll]);
+actions!(
+    popover_story,
+    [Copy, Paste, Cut, SearchAll, ToggleWindowMode]
+);
 
 struct Form {
     input1: View<TextInput>,
@@ -97,8 +100,8 @@ impl FocusableView for PopoverStory {
 impl Render for PopoverStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
-        let _focused = self.focus_handle.is_focused(cx);
         let focus_handle = self.focus_handle.clone();
+        let window_mode = self.window_mode;
 
         v_flex()
             .track_focus(&self.focus_handle)
@@ -176,7 +179,7 @@ impl Render for PopoverStory {
                     .gap_3()
                     .child(
                         Popover::new("popup-menu")
-                            .when(self.window_mode, |this| this.window_mode())
+                            .when(window_mode, |this| this.window_mode())
                             .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
                             .content(move |cx| {
                                 let focus_handle = focus_handle.clone();
@@ -190,7 +193,9 @@ impl Render for PopoverStory {
                                             IconName::Search,
                                             "Search",
                                             Box::new(SearchAll),
-                                        );
+                                        )
+                                        .separator()
+                                        .menu_with_check("Check Menu", true, Box::new(SearchAll));
 
                                     this
                                 })
