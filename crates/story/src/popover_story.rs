@@ -143,7 +143,7 @@ impl Render for PopoverStory {
                                             .child(
                                                 Button::new("info1", cx)
                                                     .label("Yes")
-                                                    .width(px(80.))
+                                                    .w(px(80.))
                                                     .size(Size::Small),
                                             )
                                             .into_any()
@@ -166,7 +166,7 @@ impl Render for PopoverStory {
                                         .child(
                                             Button::new("info1", cx)
                                                 .label("Yes")
-                                                .width(px(80.))
+                                                .w(px(80.))
                                                 .size(Size::Small),
                                         )
                                         .into_any()
@@ -180,7 +180,7 @@ impl Render for PopoverStory {
                     .child(
                         Popover::new("popup-menu")
                             .when(window_mode, |this| this.window_mode())
-                            .trigger(Button::new("popup-menu-1", cx).icon(IconName::Info))
+                            .trigger(Button::new("popup-menu-1", cx).icon(IconName::Ellipsis))
                             .content(move |cx| {
                                 let focus_handle = focus_handle.clone();
                                 PopupMenu::build(cx, |mut this, _cx| {
@@ -213,9 +213,7 @@ impl Render for PopoverStory {
                                 .when(self.window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
-                                    Button::new("pop", cx)
-                                        .label("Popup with Form")
-                                        .width(px(300.)),
+                                    Button::new("pop", cx).label("Popup with Form").w(px(300.)),
                                 )
                                 .content(move |_| form.clone()),
                         )
@@ -227,7 +225,7 @@ impl Render for PopoverStory {
                                 .trigger(
                                     Button::new("pop", cx)
                                         .label("Mouse Right Click")
-                                        .width(px(300.)),
+                                        .w(px(300.)),
                                 )
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -238,7 +236,7 @@ impl Render for PopoverStory {
                                             .child(
                                                 Button::new("info1", cx)
                                                     .label("Yes")
-                                                    .width(px(80.))
+                                                    .w(px(80.))
                                                     .size(Size::Small),
                                             )
                                             .into_any()

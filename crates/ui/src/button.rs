@@ -5,9 +5,9 @@ use crate::{
     Clickable, Disableable, Icon, Selectable, Size,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, DefiniteLength, Div, ElementId,
-    FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, Div, ElementId, FocusHandle,
+    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce,
+    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
