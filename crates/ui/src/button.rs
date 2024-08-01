@@ -106,6 +106,12 @@ pub struct Button {
     loading: bool,
 }
 
+impl From<Button> for AnyElement {
+    fn from(button: Button) -> Self {
+        button.into_any_element()
+    }
+}
+
 impl Button {
     pub fn new(id: impl Into<ElementId>, cx: &mut WindowContext) -> Self {
         Self {
