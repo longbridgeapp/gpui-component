@@ -38,7 +38,16 @@ impl ListDelegate for ListItemDeletegate {
         cx.spawn(move |this, mut cx| async move {
             // Simulate a slow search.
             let sleep = (0.05..0.1).fake();
-            Timer::after(Duration::from_secs_f64(sleep)).await;
+            println!("--------------- 0");
+            tokio::spawn(async move {
+                println!("--------------- 1");
+                Timer::after(Duration::from_secs_f64(sleep)).await;
+                println!("--------------- 2");
+            })
+            .await
+            .unwrap();
+
+            println!("--------------- 3");
 
             this.update(&mut cx, |this, cx| {
                 this.delegate_mut().matches = this
