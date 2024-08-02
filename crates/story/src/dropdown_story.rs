@@ -4,7 +4,7 @@ use gpui::{
 };
 
 use ui::{
-    dropdown::{Dropdown, DropdownEvent, DropdownItem},
+    dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
     v_flex, Selection,
@@ -38,7 +38,7 @@ impl DropdownItem for Country {
 
 pub struct DropdownStory {
     country_dropdown: View<Dropdown<Vec<Country>>>,
-    fruit_dropdown: View<Dropdown<Vec<SharedString>>>,
+    fruit_dropdown: View<Dropdown<SearchableVec<SharedString>>>,
     simple_dropdown1: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown2: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown3: View<Dropdown<Vec<SharedString>>>,
@@ -64,17 +64,16 @@ impl DropdownStory {
             Dropdown::new("dropdown-country", countries, Some(6), cx).cleanable(true)
         });
 
-        let fruits = vec![
-            "Apple",
-            "Orange",
-            "Banana",
-            "Grape",
-            "Pineapple",
-            "Watermelon & This is a longlonglonglonglonglonglonglonglong title",
-            "Avocado",
-        ];
-        let fruit_dropdown =
-            cx.new_view(|cx| Dropdown::string_list("dropdown-fruits", fruits, None, cx));
+        let fruits = SearchableVec::new(vec![
+            "Apple".into(),
+            "Orange".into(),
+            "Banana".into(),
+            "Grape".into(),
+            "Pineapple".into(),
+            "Watermelon & This is a longlonglonglonglonglonglonglonglong title".into(),
+            "Avocado".into(),
+        ]);
+        let fruit_dropdown = cx.new_view(|cx| Dropdown::new("dropdown-fruits", fruits, None, cx));
 
         cx.new_view(|cx| {
             cx.subscribe(&country_dropdown, Self::on_dropdown_event)
@@ -84,9 +83,9 @@ impl DropdownStory {
                 country_dropdown,
                 fruit_dropdown,
                 simple_dropdown1: cx.new_view(|cx| {
-                    Dropdown::string_list(
+                    Dropdown::new(
                         "string-list1",
-                        vec!["QPUI", "Iced", "QT", "Cocoa"],
+                        vec!["QPUI".into(), "Iced".into(), "QT".into(), "Cocoa".into()],
                         Some(0),
                         cx,
                     )
@@ -95,9 +94,14 @@ impl DropdownStory {
                     .title_prefix("UI: ")
                 }),
                 simple_dropdown2: cx.new_view(|cx| {
-                    Dropdown::string_list(
+                    Dropdown::new(
                         "string-list2",
-                        vec!["Rust", "Go", "C++", "JavaScript"],
+                        vec![
+                            "Rust".into(),
+                            "Go".into(),
+                            "C++".into(),
+                            "JavaScript".into(),
+                        ],
                         None,
                         cx,
                     )
@@ -106,7 +110,7 @@ impl DropdownStory {
                     .title_prefix("Language: ")
                 }),
                 simple_dropdown3: cx.new_view(|cx| {
-                    Dropdown::string_list("string-list3", Vec::<SharedString>::new(), None, cx)
+                    Dropdown::new("string-list3", Vec::<SharedString>::new(), None, cx)
                         .size(ui::Size::Small)
                         .empty(|cx| {
                             h_flex()
