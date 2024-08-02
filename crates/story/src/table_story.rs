@@ -161,7 +161,12 @@ impl TableDelegate for CustomerTableDelegate {
         return self.col_resize && col_ix > 1;
     }
 
-    fn render_td(&self, row_ix: usize, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement {
+    fn render_td(
+        &self,
+        row_ix: usize,
+        col_ix: usize,
+        cx: &mut ViewContext<Table<Self>>,
+    ) -> impl IntoElement {
         let customer = self.customers.get(row_ix).unwrap();
 
         let col = self.columns.get(col_ix).unwrap();
@@ -224,7 +229,7 @@ impl TableDelegate for CustomerTableDelegate {
         self.columns.get(col_ix).and_then(|c| c.sort)
     }
 
-    fn perform_sort(&mut self, col_ix: usize, sort: ColSort, _: &mut WindowContext) {
+    fn perform_sort(&mut self, col_ix: usize, sort: ColSort, _: &mut ViewContext<Table<Self>>) {
         if let Some(col) = self.columns.get_mut(col_ix) {
             col.sort = Some(sort);
             let asc = matches!(sort, ColSort::Ascending);
