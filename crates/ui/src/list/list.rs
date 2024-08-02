@@ -199,16 +199,18 @@ where
                 self._search_task = cx.spawn(|this, mut cx| async move {
                     search.await;
 
-                    let _ = this.update(&mut cx, |this, _| {
+                    this.update(&mut cx, |this, _| {
                         this.vertical_scroll_handle.scroll_to_item(0);
                         this.last_query = Some(text);
-                    });
+                    })
+                    .expect("BUG: failed to update list");
 
                     // Always wait 100ms to avoid flicker
                     Timer::after(Duration::from_millis(100)).await;
-                    let _ = this.update(&mut cx, |this, cx| {
+                    this.update(&mut cx, |this, cx| {
                         this.set_loading(false, cx);
-                    });
+                    })
+                    .expect("BUG: failed to update loading status");
                 });
             }
             InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
