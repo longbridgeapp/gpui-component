@@ -144,20 +144,25 @@ pub trait TableDelegate: Sized + 'static {
     }
 
     /// Perform sort on the column at the given index.
-    fn perform_sort(&mut self, col_ix: usize, sort: ColSort, cx: &mut WindowContext) {}
+    fn perform_sort(&mut self, col_ix: usize, sort: ColSort, cx: &mut ViewContext<Table<Self>>) {}
 
     /// Render the header cell at the given column index, default to the column name.
-    fn render_th(&self, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement {
+    fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
         div().size_full().child(self.col_name(col_ix))
     }
 
     /// Render the row at the given row and column.
-    fn render_tr(&self, row_ix: usize, cx: &mut WindowContext) -> Div {
+    fn render_tr(&self, row_ix: usize, cx: &mut ViewContext<Table<Self>>) -> Div {
         h_flex()
     }
 
     /// Render cell at the given row and column.
-    fn render_td(&self, row_ix: usize, col_ix: usize, cx: &mut WindowContext) -> impl IntoElement;
+    fn render_td(
+        &self,
+        row_ix: usize,
+        col_ix: usize,
+        cx: &mut ViewContext<Table<Self>>,
+    ) -> impl IntoElement;
 
     /// Return true to enable loop selection on the table.
     ///
