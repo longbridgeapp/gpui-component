@@ -19,11 +19,11 @@ use crate::app_state::AppState;
 actions!(workspace, [Open, CloseWindow]);
 
 pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
-    cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
-
     Theme::init(cx);
     ui::init(cx);
     story::init(cx);
+
+    cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
 }
 
 pub struct StoryWorkspace {
