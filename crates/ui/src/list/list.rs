@@ -197,6 +197,8 @@ where
                 let search = self.delegate.perform_search(&text, cx);
 
                 cx.spawn(|this, mut cx| async move {
+                    println!("----------------- before search.");
+
                     search.await;
 
                     println!("----------------- after search.");
