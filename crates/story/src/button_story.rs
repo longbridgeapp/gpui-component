@@ -7,6 +7,7 @@ use ui::{
     button::{Button, ButtonCustomStyle, ButtonStyle},
     checkbox::Checkbox,
     h_flex,
+    prelude::FluentBuilder,
     theme::ActiveTheme,
     v_flex, Clickable, Disableable as _, Icon, IconName, Selectable as _, Size,
 };
@@ -97,7 +98,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -106,7 +107,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -116,7 +117,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -126,7 +127,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -136,7 +137,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -146,7 +147,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -163,7 +164,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             ),
                     )
@@ -177,7 +178,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -187,7 +188,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -197,7 +198,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -214,7 +215,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -225,7 +226,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -236,7 +237,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             ),
                     ),
@@ -255,7 +256,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -266,7 +267,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -277,7 +278,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -288,7 +289,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -299,7 +300,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -310,7 +311,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             ),
                     )
@@ -324,7 +325,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -336,7 +337,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -347,7 +348,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -358,7 +359,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -369,7 +370,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             )
                             .child(
@@ -380,7 +381,7 @@ impl Render for ButtonStory {
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
-                                    .compact(compact)
+                                    .when(compact, |this| this.compact())
                                     .on_click(Self::on_click),
                             ),
                     ),
@@ -394,7 +395,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-secondary", cx)
@@ -403,7 +404,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-danger", cx)
@@ -412,7 +413,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-small-primary", cx)
@@ -422,7 +423,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-outline", cx)
@@ -431,7 +432,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-ghost", cx)
@@ -440,7 +441,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     ),
             )
             .child(
@@ -452,7 +453,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-5", cx)
@@ -462,7 +463,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-6", cx)
@@ -472,7 +473,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-7", cx)
@@ -481,7 +482,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-8", cx)
@@ -491,7 +492,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     )
                     .child(
                         Button::new("icon-button-9", cx)
@@ -501,7 +502,7 @@ impl Render for ButtonStory {
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
-                            .compact(compact),
+                            .when(compact, |this| this.compact()),
                     ),
             )
     }
