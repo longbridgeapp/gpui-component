@@ -12,6 +12,8 @@ workspace.workspace = true
 charts-rs = "0.3"
 regex = "1"
 tokio = { version = "1", features = ["full"] }
+smol = "2.0.0"
+futures = "0.3"
 
 [lints]
 workspace = true

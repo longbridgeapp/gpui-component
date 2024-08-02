@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Ok;
 use fake::Fake;
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
@@ -37,15 +38,32 @@ impl ListDelegate for ListItemDeletegate {
         let query = query.to_string();
         cx.spawn(move |this, mut cx| async move {
             // Simulate a slow search.
-            let sleep = (0.05..0.1).fake();
-            println!("--------------- 0");
-            tokio::spawn(async move {
+            // let sleep = (0.05..0.1).fake();
+            // println!("--------------- 0");
+            // smol::spawn(async move {
+            //     println!("--------------- 1");
+            //     Timer::after(Duration::from_secs_f64(sleep)).await;
+            //     println!("--------------- 2");
+            // })
+            // .await;
+
+            // let _ = tokio::spawn(std::future::poll_fn(|_| {
+            //     println!("----- pull");
+            //     std::task::Poll::Ready(Ok(()))
+            // }))
+            // .await;
+
+            for _ in 0..129 {
                 println!("--------------- 1");
-                Timer::after(Duration::from_secs_f64(sleep)).await;
-                println!("--------------- 2");
-            })
-            .await
-            .unwrap();
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+            // tokio::time::sleep(Duration::from_millis(2)).await;
+
+            // tokio::task::spawn_blocking(|| {
+            //     println!("--------------- 1");
+            // })
+            // .await
+            // .unwrap();
 
             println!("--------------- 3");
 

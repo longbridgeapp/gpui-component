@@ -2270,7 +2270,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "smallvec",
- "smol",
+ "smol 1.3.0",
  "sum_tree",
  "taffy",
  "thiserror",
@@ -4687,6 +4687,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "smol"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e635339259e51ef85ac7aa29a1cd991b957047507288697a690e80ab97d07cad"
+dependencies = [
+ "async-channel 2.3.1",
+ "async-executor",
+ "async-fs 2.1.2",
+ "async-io 2.3.3",
+ "async-lock 3.4.0",
+ "async-net 2.0.0",
+ "async-process 2.2.3",
+ "blocking",
+ "futures-lite 2.3.0",
+]
+
+[[package]]
 name = "snafu"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4790,8 +4807,10 @@ dependencies = [
  "anyhow",
  "charts-rs",
  "fake",
+ "futures",
  "gpui",
  "regex",
+ "smol 2.0.0",
  "tokio",
  "ui",
  "workspace",
@@ -5382,7 +5401,7 @@ dependencies = [
  "serde",
  "serde_json",
  "smallvec",
- "smol",
+ "smol 1.3.0",
  "unicode-segmentation",
  "usvg",
  "wry",

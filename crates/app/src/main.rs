@@ -22,6 +22,15 @@ fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
 
 #[tokio::main]
 async fn main() {
+    let next = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        println!(
+            "panic occurred: {info}: {}",
+            std::backtrace::Backtrace::force_capture()
+        );
+        next(info);
+    }));
+
     let app_state = Arc::new(AppState {});
 
     let app = App::new().with_assets(Assets);
