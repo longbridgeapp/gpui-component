@@ -199,18 +199,24 @@ where
                 self._search_task = cx.spawn(|this, mut cx| async move {
                     search.await;
 
+                    println!("----------------- after search.");
+
                     this.update(&mut cx, |this, _| {
                         this.vertical_scroll_handle.scroll_to_item(0);
                         this.last_query = Some(text);
                     })
                     .unwrap();
 
+                    println!("----------------- after update last query.");
+
                     // Always wait 100ms to avoid flicker
                     Timer::after(Duration::from_millis(100)).await;
+                    println!("----------------- after delay");
                     this.update(&mut cx, |this, cx| {
                         this.set_loading(false, cx);
                     })
                     .unwrap();
+                    println!("----------------- after delay 1");
                 });
             }
             InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
