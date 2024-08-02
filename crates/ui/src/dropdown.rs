@@ -1,9 +1,9 @@
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder, px, rems, AnyElement, AppContext, ClickEvent,
-    DismissEvent, Div, Element, ElementId, Empty, EventEmitter, FocusHandle, Focusable,
-    FocusableView, InteractiveElement, IntoElement, KeyBinding, LayoutId, ParentElement, Render,
-    SharedString, StatefulInteractiveElement, Styled, Task, View, ViewContext, VisualContext,
-    WeakView, WindowContext,
+    DismissEvent, Div, Element, ElementId, EventEmitter, FocusHandle, Focusable, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, LayoutId, ParentElement, Render, SharedString,
+    StatefulInteractiveElement, Styled, Task, View, ViewContext, VisualContext, WeakView,
+    WindowContext,
 };
 
 use crate::{
@@ -219,6 +219,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     list: View<List<DropdownListDelegate<D>>>,
     size: Size,
     open: bool,
+    full_width: bool,
     cleanable: bool,
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
@@ -324,6 +325,7 @@ where
             size: Size::Medium,
             selected_value: None,
             open: false,
+            full_width: false,
             cleanable: false,
             title_prefix: None,
             empty: None,
@@ -334,6 +336,11 @@ where
 
     pub fn size(mut self, size: Size) -> Self {
         self.size = size;
+        self
+    }
+
+    pub fn full_width(mut self) -> Self {
+        self.full_width = true;
         self
     }
 
@@ -529,6 +536,8 @@ where
             .size_full()
             .relative()
             .input_text_size(self.size)
+            .when(self.full_width, |this| this.w_full())
+            .when(!self.full_width, |this| this.flex_none().w_auto())
             .child(
                 div()
                     .id("dropdown-input")
@@ -553,6 +562,7 @@ where
                             .w_full()
                             .items_center()
                             .justify_between()
+                            .gap_3()
                             .child(div().child(self.display_title(cx)))
                             .when(show_clean, |this| {
                                 this.child(

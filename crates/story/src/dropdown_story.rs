@@ -61,7 +61,9 @@ impl DropdownStory {
         ];
 
         let country_dropdown = cx.new_view(|cx| {
-            Dropdown::new("dropdown-country", countries, Some(6), cx).cleanable(true)
+            Dropdown::new("dropdown-country", countries, Some(6), cx)
+                .cleanable(true)
+                .full_width()
         });
 
         let fruits = SearchableVec::new(vec![
