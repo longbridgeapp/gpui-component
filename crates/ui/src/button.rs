@@ -383,9 +383,7 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary,
             ButtonStyle::Secondary => cx.theme().secondary,
             ButtonStyle::Danger => cx.theme().destructive,
-            ButtonStyle::Outline => cx.theme().transparent,
-            ButtonStyle::Ghost => cx.theme().transparent,
-            ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Outline | ButtonStyle::Ghost | ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.color,
         }
     }
@@ -393,10 +391,10 @@ impl ButtonStyle {
     fn text_color(&self, cx: &WindowContext) -> Hsla {
         match self {
             ButtonStyle::Primary => cx.theme().primary_foreground,
-            ButtonStyle::Secondary => cx.theme().secondary_foreground,
+            ButtonStyle::Secondary | ButtonStyle::Outline | ButtonStyle::Ghost => {
+                cx.theme().secondary_foreground
+            }
             ButtonStyle::Danger => cx.theme().destructive_foreground,
-            ButtonStyle::Outline => cx.theme().secondary_foreground,
-            ButtonStyle::Ghost => cx.theme().secondary_foreground,
             ButtonStyle::Link => cx.theme().link,
             ButtonStyle::Custom(colors) => colors.foreground,
         }
@@ -408,8 +406,7 @@ impl ButtonStyle {
             ButtonStyle::Secondary => cx.theme().border,
             ButtonStyle::Danger => cx.theme().destructive,
             ButtonStyle::Outline => cx.theme().border,
-            ButtonStyle::Ghost => cx.theme().transparent,
-            ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Ghost | ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.border,
         }
     }
@@ -438,9 +435,8 @@ impl ButtonStyle {
     fn hovered(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = match self {
             ButtonStyle::Primary => cx.theme().primary_hover,
-            ButtonStyle::Secondary => cx.theme().secondary_hover,
+            ButtonStyle::Secondary | ButtonStyle::Outline => cx.theme().secondary_hover,
             ButtonStyle::Danger => cx.theme().destructive_hover,
-            ButtonStyle::Outline => cx.theme().secondary_hover,
             ButtonStyle::Ghost => cx.theme().secondary,
             ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.hover,
@@ -463,10 +459,10 @@ impl ButtonStyle {
     fn active(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = match self {
             ButtonStyle::Primary => cx.theme().primary_active,
-            ButtonStyle::Secondary => cx.theme().secondary_active,
+            ButtonStyle::Secondary | ButtonStyle::Outline | ButtonStyle::Ghost => {
+                cx.theme().secondary_active
+            }
             ButtonStyle::Danger => cx.theme().destructive_active,
-            ButtonStyle::Outline => cx.theme().secondary_active,
-            ButtonStyle::Ghost => cx.theme().secondary_active,
             ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.active,
         };
@@ -488,10 +484,10 @@ impl ButtonStyle {
     fn selected(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = match self {
             ButtonStyle::Primary => cx.theme().primary_active,
-            ButtonStyle::Secondary => cx.theme().secondary_active,
+            ButtonStyle::Secondary | ButtonStyle::Outline | ButtonStyle::Ghost => {
+                cx.theme().secondary_active
+            }
             ButtonStyle::Danger => cx.theme().destructive_active,
-            ButtonStyle::Outline => cx.theme().secondary_active,
-            ButtonStyle::Ghost => cx.theme().secondary_active,
             ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.active,
         };
@@ -512,11 +508,11 @@ impl ButtonStyle {
 
     fn disabled(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = match self {
-            ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Link | ButtonStyle::Ghost => cx.theme().transparent,
             _ => cx.theme().secondary.darken(0.2).grayscale(),
         };
         let fg = match self {
-            ButtonStyle::Link => cx.theme().link.grayscale(),
+            ButtonStyle::Link | ButtonStyle::Ghost => cx.theme().link.grayscale(),
             _ => cx.theme().secondary_foreground.darken(0.2).grayscale(),
         };
 
