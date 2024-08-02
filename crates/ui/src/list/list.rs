@@ -196,7 +196,7 @@ where
                 self.set_loading(true, cx);
                 let search = self.delegate.perform_search(&text, cx);
 
-                self._search_task = cx.spawn(|this, mut cx| async move {
+                cx.spawn(|this, mut cx| async move {
                     search.await;
 
                     println!("----------------- after search.");
@@ -217,7 +217,8 @@ where
                     })
                     .unwrap();
                     println!("----------------- after delay 1");
-                });
+                })
+                .detach()
             }
             InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
             _ => {}
