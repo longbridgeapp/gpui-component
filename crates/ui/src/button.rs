@@ -212,8 +212,8 @@ impl Button {
     }
 
     /// Set the button to compact mode, then padding will be reduced.
-    pub fn compact(mut self, compact: bool) -> Self {
-        self.compact = compact;
+    pub fn compact(mut self) -> Self {
+        self.compact = true;
         self
     }
 }
