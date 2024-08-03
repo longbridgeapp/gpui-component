@@ -20,16 +20,18 @@ fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
     Ok(())
 }
 
-#[tokio::main]
-async fn main() {
-    let next = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        println!(
-            "panic occurred: {info}: {}",
-            std::backtrace::Backtrace::force_capture()
-        );
-        next(info);
-    }));
+fn main() {
+    {
+        // Initialize tokio runtime in the main thread
+        // This is used for avoid tokio spawn hangs in the main thread.
+        //
+        // https://github.com/huacnlee/gpui-component/pull/100
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _guard = rt.enter();
+    }
 
     let app_state = Arc::new(AppState {});
 

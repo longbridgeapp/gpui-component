@@ -47,23 +47,15 @@ impl ListDelegate for ListItemDeletegate {
             // })
             // .await;
 
-            // let _ = tokio::spawn(std::future::poll_fn(|_| {
-            //     println!("----- pull");
-            //     std::task::Poll::Ready(Ok(()))
-            // }))
-            // .await;
+            let _ = tokio::spawn(async {
+                println!("----- tokio spawn");
+            })
+            .await;
 
             for _ in 0..129 {
                 println!("--------------- 1");
                 tokio::time::sleep(Duration::from_millis(1)).await;
             }
-            // tokio::time::sleep(Duration::from_millis(2)).await;
-
-            // tokio::task::spawn_blocking(|| {
-            //     println!("--------------- 1");
-            // })
-            // .await
-            // .unwrap();
 
             println!("--------------- 3");
 
