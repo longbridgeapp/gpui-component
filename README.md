@@ -75,6 +75,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 
 ## Demo
 
+- [main-app-windows.zip](https://github.com/user-attachments/files/16497646/gpui-app.zip) - Updated at 2024/08/05
 - [main-app-windows.zip](https://github.com/user-attachments/files/16195804/main-app.zip) - Updated at 2024/07/12
 - [main-app-windows.zip](https://github.com/user-attachments/files/16049565/main-app.zip) - Updated at 2024/07/01
 - [main-app-windows.zip](https://github.com/user-attachments/files/16039599/main-app.zip) - Updated at 2024/06/29
