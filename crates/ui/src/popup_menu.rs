@@ -7,7 +7,7 @@ use gpui::{
     VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, IconName};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, IconName, Size};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -33,6 +33,10 @@ enum PopupMenuItem {
 impl PopupMenuItem {
     fn is_clickable(&self) -> bool {
         !matches!(self, PopupMenuItem::Separator)
+    }
+
+    fn has_icon(&self) -> bool {
+        matches!(self, PopupMenuItem::Item { icon: Some(_), .. })
     }
 }
 
@@ -240,6 +244,8 @@ impl Render for PopupMenu {
             None
         };
 
+        let has_icon = self.menu_items.iter().any(|item| item.has_icon());
+
         v_flex()
             .key_context("PopupMenu")
             .track_focus(&self.focus_handle)
@@ -250,7 +256,7 @@ impl Render for PopupMenu {
             .on_mouse_down_out(cx.listener(|this, _, cx| this.dismiss(&Dismiss, cx)))
             .max_h(self.max_width)
             .min_w(self.min_width)
-            .p_0p5()
+            .p_1()
             .gap_y_0p5()
             .bg(cx.theme().menu)
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
@@ -274,13 +280,17 @@ impl Render for PopupMenu {
                                 .map(|this| {
                                     this.child(div().absolute().text_sm().map(|this| {
                                         if let Some(icon) = icon {
-                                            this.child(icon.clone())
+                                            this.child(icon.clone().size(Size::Small).clone())
                                         } else {
                                             this.children(icon_placeholder.clone())
                                         }
                                     }))
                                 })
-                                .child(div().pl_6().pr_2().child(label.clone())),
+                                .child(
+                                    div()
+                                        .when(has_icon, |this| this.pl(px(18.)))
+                                        .child(label.clone()),
+                                ),
                         )
                     }
                 }
