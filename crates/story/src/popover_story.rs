@@ -5,6 +5,7 @@ use gpui::{
 };
 use ui::{
     button::Button,
+    context_menu::ContextMenuExt,
     divider::Divider,
     h_flex,
     input::TextInput,
@@ -50,6 +51,7 @@ impl Render for Form {
             .child(self.input1.clone())
             .child(
                 Button::new("submit", cx)
+                    .label("Submit")
                     .primary()
                     .on_click(cx.listener(|_, _, cx| cx.emit(DismissEvent))),
             )
@@ -117,6 +119,14 @@ impl Render for PopoverStory {
             .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
                 cx.focus(&this.focus_handle);
             }))
+            .context_menu(cx, move |menu, _cx| {
+                menu.track_focus(focus_handle.clone())
+                    .menu("Cut", Box::new(Cut))
+                    .menu("Copy", Box::new(Copy))
+                    .menu("Paste", Box::new(Paste))
+                    .separator()
+                    .menu("About", Box::new(SearchAll))
+            })
             .gap_6()
             .child(
                 Switch::new("switch-window-mode")
@@ -184,8 +194,8 @@ impl Render for PopoverStory {
                             .trigger(Button::new("popup-menu-1", cx).icon(IconName::Ellipsis))
                             .content(move |cx| {
                                 let focus_handle = focus_handle.clone();
-                                PopupMenu::build(cx, |mut this, _cx| {
-                                    this.content(focus_handle)
+                                PopupMenu::build(cx, |menu, _cx| {
+                                    menu.track_focus(focus_handle)
                                         .menu("Copy", Box::new(Copy))
                                         .menu("Cut", Box::new(Cut))
                                         .menu("Paste", Box::new(Paste))
@@ -196,9 +206,7 @@ impl Render for PopoverStory {
                                             Box::new(SearchAll),
                                         )
                                         .separator()
-                                        .menu_with_check("Check Menu", true, Box::new(SearchAll));
-
-                                    this
+                                        .menu_with_check("Check Menu", true, Box::new(SearchAll))
                                 })
                             }),
                     )

@@ -1,7 +1,7 @@
 use gpui::{
     px, relative, AnyView, Bounds, ContentMask, Corners, Edges, Element, ElementId,
     GlobalElementId, Hitbox, Hsla, IntoElement, IsZero as _, LayoutId, PaintQuad, Pixels, Point,
-    Position, ScrollHandle, ScrollWheelEvent, Style, WindowContext,
+    Position, ScrollHandle, ScrollWheelEvent, Stateful, Style, WindowContext,
 };
 
 /// The scroll axis direction.
