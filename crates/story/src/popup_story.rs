@@ -58,14 +58,14 @@ impl Render for Form {
     }
 }
 
-pub struct PopoverStory {
+pub struct PopupStory {
     focus_handle: FocusHandle,
     form: View<Form>,
     message: String,
     window_mode: bool,
 }
 
-impl PopoverStory {
+impl PopupStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)
     }
@@ -94,13 +94,13 @@ impl PopoverStory {
     }
 }
 
-impl FocusableView for PopoverStory {
+impl FocusableView for PopupStory {
     fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl Render for PopoverStory {
+impl Render for PopupStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
         let focus_handle = self.focus_handle.clone();
@@ -215,6 +215,7 @@ impl Render for PopoverStory {
                     )
                     .child(self.message.clone()),
             )
+            .child("Right click to open ContextMenu")
             .child(
                 div().absolute().bottom_4().left_0().w_full().h_10().child(
                     h_flex()

@@ -2,7 +2,7 @@ use gpui::*;
 use prelude::FluentBuilder as _;
 use story::{
     ButtonStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopoverStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
+    PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
     TableStory, TextStory, TooltipStory,
 };
 use workspace::{TitleBar, Workspace};
@@ -96,9 +96,9 @@ impl StoryWorkspace {
         .detach();
 
         StoryContainer::add_pane(
-            "Popover",
-            "Displays rich content in a portal, triggered by a button.",
-            PopoverStory::view(cx).into(),
+            "Popup",
+            "A popup displays content on top of the main page.",
+            PopupStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
