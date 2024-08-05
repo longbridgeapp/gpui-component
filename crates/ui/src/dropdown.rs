@@ -138,6 +138,7 @@ where
         if let Some(item) = self.delegate.get(ix) {
             let list_item = ListItem::new(("list-item", ix))
                 .check_icon(IconName::Check)
+                .cursor_pointer()
                 .selected(selected)
                 .input_text_size(size)
                 .list_size(size)
@@ -213,6 +214,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     focus_handle: FocusHandle,
     list: View<List<DropdownListDelegate<D>>>,
     size: Size,
+    icon: Option<IconName>,
     open: bool,
     cleanable: bool,
     placeholder: SharedString,
@@ -319,6 +321,7 @@ where
             placeholder: "Select...".into(),
             list,
             size: Size::Medium,
+            icon: None,
             selected_value: None,
             open: false,
             cleanable: false,
@@ -351,6 +354,12 @@ where
     /// Set the placeholder for display when dropdown value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Set the right icon for the dropdown input, instead of the default arrow icon.
+    pub fn icon(mut self, icon: impl Into<IconName>) -> Self {
+        self.icon = Some(icon.into());
         self
     }
 
@@ -540,10 +549,6 @@ where
             .size_full()
             .relative()
             .input_text_size(self.size)
-            .map(|this| match self.width {
-                Length::Definite(l) => this.flex_none().w(l),
-                Length::Auto => this.w_full(),
-            })
             .child(
                 div()
                     .id("dropdown-input")
@@ -556,8 +561,13 @@ where
                     .border_color(cx.theme().input)
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
+                    .cursor_pointer()
                     .overflow_hidden()
                     .input_text_size(self.size)
+                    .map(|this| match self.width {
+                        Length::Definite(l) => this.flex_none().w(l),
+                        Length::Auto => this.w_full(),
+                    })
                     .when(is_focused, |this| this.outline(cx))
                     .input_size(self.size)
                     .when(!self.open, |this| {
@@ -578,7 +588,7 @@ where
                             .when(show_clean, |this| {
                                 this.child(
                                     Button::new("clean", cx)
-                                        .icon(IconName::Close)
+                                        .icon(IconName::CircleX)
                                         .style(ButtonStyle::Ghost)
                                         .size(px(14.))
                                         .cursor_pointer()
@@ -586,10 +596,18 @@ where
                                 )
                             })
                             .when(!show_clean, |this| {
-                                this.child(
-                                    Icon::new(IconName::ChevronDown)
-                                        .text_color(cx.theme().muted_foreground),
-                                )
+                                let icon = match self.icon.clone() {
+                                    Some(icon) => icon,
+                                    None => {
+                                        if self.open {
+                                            IconName::ChevronUp
+                                        } else {
+                                            IconName::ChevronDown
+                                        }
+                                    }
+                                };
+
+                                this.child(Icon::new(icon).text_color(cx.theme().muted_foreground))
                             }),
                     ),
             )

@@ -7,7 +7,7 @@ use ui::{
     dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
-    v_flex, Selection,
+    v_flex, IconName, Selection,
 };
 
 struct Country {
@@ -75,6 +75,7 @@ impl DropdownStory {
         ]);
         let fruit_dropdown = cx.new_view(|cx| {
             Dropdown::new("dropdown-fruits", fruits, None, cx)
+                .icon(IconName::Search)
                 .width(px(200.))
                 .menu_width(px(320.))
         });
