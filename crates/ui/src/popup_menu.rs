@@ -3,11 +3,11 @@ use std::rc::Rc;
 use gpui::{
     actions, div, prelude::FluentBuilder, px, Action, AnyWindowHandle, AppContext, Context,
     DismissEvent, EventEmitter, FocusHandle, FocusableView, InteractiveElement, KeyBinding,
-    MouseDownEvent, ParentElement, Pixels, Render, SharedString, Styled as _, View, ViewContext,
+    ParentElement, Pixels, Render, SharedString, Styled as _, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, IconName, StyledExt};
+use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, IconName};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -171,7 +171,6 @@ impl PopupMenu {
     }
 
     fn on_click(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
-        println!("--------------- on_click");
         cx.stop_propagation();
         cx.prevent_default();
         self.selected_index = Some(ix);
@@ -235,7 +234,6 @@ impl FocusableView for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
-        println!("----------------- render popup menu");
         let icon_placeholder = if self.has_icon {
             Some(Icon::empty())
         } else {
@@ -245,18 +243,11 @@ impl Render for PopupMenu {
         v_flex()
             .key_context("PopupMenu")
             .track_focus(&self.focus_handle)
-            .debug_focused(&self.focus_handle, cx)
             .on_action(cx.listener(Self::select_next))
             .on_action(cx.listener(Self::select_prev))
             .on_action(cx.listener(Self::confirm))
             .on_action(cx.listener(Self::dismiss))
             .on_mouse_down_out(cx.listener(|this, _, cx| this.dismiss(&Dismiss, cx)))
-            .on_mouse_down(
-                gpui::MouseButton::Left,
-                cx.listener(|_, _, cx| {
-                    println!("--------- clicked on popup menu");
-                }),
-            )
             .max_h(self.max_width)
             .min_w(self.min_width)
             .p_0p5()

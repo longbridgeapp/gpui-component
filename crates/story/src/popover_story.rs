@@ -119,13 +119,16 @@ impl Render for PopoverStory {
             .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
                 cx.focus(&this.focus_handle);
             }))
-            .context_menu(cx, move |menu, _cx| {
-                menu.track_focus(focus_handle.clone())
-                    .menu("Cut", Box::new(Cut))
-                    .menu("Copy", Box::new(Copy))
-                    .menu("Paste", Box::new(Paste))
-                    .separator()
-                    .menu("About", Box::new(SearchAll))
+            .context_menu({
+                let focus_handle = focus_handle.clone();
+                move |menu, _cx| {
+                    menu.track_focus(focus_handle.clone())
+                        .menu("Cut", Box::new(Cut))
+                        .menu("Copy", Box::new(Copy))
+                        .menu("Paste", Box::new(Paste))
+                        .separator()
+                        .menu("About", Box::new(SearchAll))
+                }
             })
             .gap_6()
             .child(

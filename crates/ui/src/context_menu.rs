@@ -1,10 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    anchored, deferred, div, prelude::FluentBuilder, relative, AnchorCorner, AnyElement, AnyView,
-    AppContext, Bounds, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
+    anchored, deferred, div, prelude::FluentBuilder, relative, AnchorCorner, AnyElement,
+    AppContext, DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
-    Position, Stateful, Style, Styled as _, View, VisualContext, WindowContext,
+    Position, Stateful, Style, Styled as _, View, WindowContext,
 };
 
 use crate::{popup_menu::PopupMenu, theme::ActiveTheme as _, StyledExt as _};
@@ -14,8 +14,7 @@ pub fn init(_cx: &mut AppContext) {}
 pub trait ContextMenuExt: ParentElement + Sized {
     fn context_menu(
         self,
-        cx: &mut WindowContext,
-        f: impl FnOnce(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
     ) -> Self {
         self.child(ContextMenu::new("context_menu").menu(f))
     }
@@ -26,7 +25,7 @@ impl<E> ContextMenuExt for Focusable<E> where E: ParentElement {}
 
 pub struct ContextMenu {
     id: ElementId,
-    menu: Option<Box<dyn FnOnce(PopupMenu, &mut WindowContext) -> PopupMenu + 'static>>,
+    menu: Option<Box<dyn Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static>>,
     anchor: AnchorCorner,
 }
 
@@ -42,7 +41,7 @@ impl ContextMenu {
     #[must_use]
     pub fn menu<F>(mut self, builder: F) -> Self
     where
-        F: FnOnce(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        F: Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
     {
         self.menu = Some(Box::new(builder));
         self
@@ -73,13 +72,8 @@ impl IntoElement for ContextMenu {
 pub struct ContextMenuState {
     menu_view: Rc<RefCell<Option<View<PopupMenu>>>>,
     menu_element: Option<AnyElement>,
-    menu_layout_id: Option<gpui::LayoutId>,
     open: Rc<RefCell<bool>>,
     position: Rc<RefCell<Point<Pixels>>>,
-}
-
-pub struct PrepaintState {
-    menu_bounds: Bounds<Pixels>,
 }
 
 impl Default for ContextMenuState {
@@ -87,7 +81,6 @@ impl Default for ContextMenuState {
         Self {
             menu_view: Rc::new(RefCell::new(None)),
             menu_element: None,
-            menu_layout_id: None,
             open: Rc::new(RefCell::new(false)),
             position: Default::default(),
         }
@@ -96,7 +89,7 @@ impl Default for ContextMenuState {
 
 impl Element for ContextMenu {
     type RequestLayoutState = ContextMenuState;
-    type PrepaintState = PrepaintState;
+    type PrepaintState = ();
 
     fn id(&self) -> Option<ElementId> {
         Some(self.id.clone())
@@ -167,7 +160,7 @@ impl Element for ContextMenu {
                 layout_id,
                 ContextMenuState {
                     menu_element,
-                    menu_layout_id,
+
                     ..Default::default()
                 },
             )
@@ -176,19 +169,13 @@ impl Element for ContextMenu {
 
     fn prepaint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<gpui::Pixels>,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<gpui::Pixels>,
         request_layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
         if let Some(menu_element) = &mut request_layout.menu_element {
             menu_element.prepaint(cx);
-        }
-
-        let menu_bounds = request_layout.menu_layout_id.map(|id| cx.layout_bounds(id));
-
-        PrepaintState {
-            menu_bounds: menu_bounds.unwrap_or_default(),
         }
     }
 
@@ -197,7 +184,7 @@ impl Element for ContextMenu {
         id: Option<&gpui::GlobalElementId>,
         bounds: gpui::Bounds<gpui::Pixels>,
         request_layout: &mut Self::RequestLayoutState,
-        prepaint: &mut Self::PrepaintState,
+        _: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
         if let Some(menu_element) = &mut request_layout.menu_element {
@@ -228,8 +215,17 @@ impl Element for ContextMenu {
                         *position.borrow_mut() = event.position;
                         *open.borrow_mut() = true;
 
-                        *menu_view.borrow_mut() =
-                            Some(PopupMenu::build(cx, |m, cx| (builder)(m, cx)).into_element());
+                        let menu =
+                            PopupMenu::build(cx, |menu, cx| (builder)(menu, cx)).into_element();
+
+                        let open = open.clone();
+                        cx.subscribe(&menu, move |_, _: &DismissEvent, cx| {
+                            *open.borrow_mut() = false;
+                            cx.refresh();
+                        })
+                        .detach();
+
+                        *menu_view.borrow_mut() = Some(menu);
 
                         cx.refresh();
                     }
