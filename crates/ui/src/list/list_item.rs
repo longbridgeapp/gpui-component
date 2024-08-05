@@ -5,7 +5,7 @@ use gpui::{
 };
 use smallvec::SmallVec;
 
-use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable};
+use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable, Size};
 
 #[derive(IntoElement)]
 pub struct ListItem {
@@ -130,17 +130,17 @@ impl RenderOnce for ListItem {
                     .items_center()
                     .justify_between()
                     .gap_x_1()
-                    .child(div().w_full().children(self.children))
+                    .child(div().w_full().overflow_hidden().children(self.children))
                     .when_some(self.check_icon, |this, icon| {
-                        this.child(
-                            div()
-                                .w_5()
-                                .items_center()
-                                .justify_center()
-                                .when(self.selected, |this| {
-                                    this.child(icon.text_color(cx.theme().muted_foreground))
-                                }),
-                        )
+                        this.child(div().w_5().items_center().justify_center().when(
+                            self.selected,
+                            |this| {
+                                this.child(
+                                    icon.size(Size::Small)
+                                        .text_color(cx.theme().muted_foreground),
+                                )
+                            },
+                        ))
                     }),
             )
             .when_some(self.suffix, |this, suffix| this.child(suffix(cx)))

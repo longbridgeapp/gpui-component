@@ -1,9 +1,9 @@
 use gpui::{
     actions, deferred, div, prelude::FluentBuilder, px, rems, AnyElement, AppContext, ClickEvent,
     DismissEvent, Div, Element, ElementId, EventEmitter, FocusHandle, Focusable, FocusableView,
-    InteractiveElement, IntoElement, KeyBinding, LayoutId, ParentElement, Render, SharedString,
-    StatefulInteractiveElement, Styled, Task, View, ViewContext, VisualContext, WeakView,
-    WindowContext,
+    InteractiveElement, IntoElement, KeyBinding, LayoutId, Length, ParentElement, Render,
+    SharedString, StatefulInteractiveElement, Styled, Task, View, ViewContext, VisualContext,
+    WeakView, WindowContext,
 };
 
 use crate::{
@@ -141,12 +141,7 @@ where
                 .selected(selected)
                 .input_text_size(size)
                 .list_size(size)
-                .child(
-                    div()
-                        .whitespace_nowrap()
-                        .overflow_hidden()
-                        .child(item.title().to_string()),
-                );
+                .child(div().whitespace_nowrap().child(item.title().to_string()));
             Some(list_item)
         } else {
             None
@@ -219,12 +214,13 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     list: View<List<DropdownListDelegate<D>>>,
     size: Size,
     open: bool,
-    full_width: bool,
     cleanable: bool,
     placeholder: SharedString,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
     empty: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
+    width: Length,
+    menu_width: Length,
 }
 
 pub struct SearchableVec<T> {
@@ -325,10 +321,11 @@ where
             size: Size::Medium,
             selected_value: None,
             open: false,
-            full_width: false,
             cleanable: false,
             title_prefix: None,
             empty: None,
+            width: Length::Auto,
+            menu_width: Length::Auto,
         };
         this.set_selected_index(selected_index, cx);
         this
@@ -339,8 +336,15 @@ where
         self
     }
 
-    pub fn full_width(mut self) -> Self {
-        self.full_width = true;
+    /// Set the width of the dropdown input, default: Length::Auto
+    pub fn width(mut self, width: impl Into<Length>) -> Self {
+        self.width = width.into();
+        self
+    }
+
+    /// Set the width of the dropdown menu, default: Length::Auto
+    pub fn menu_width(mut self, width: impl Into<Length>) -> Self {
+        self.menu_width = width.into();
         self
     }
 
@@ -536,8 +540,10 @@ where
             .size_full()
             .relative()
             .input_text_size(self.size)
-            .when(self.full_width, |this| this.w_full())
-            .when(!self.full_width, |this| this.flex_none().w_auto())
+            .map(|this| match self.width {
+                Length::Definite(l) => this.flex_none().w(l),
+                Length::Auto => this.w_full(),
+            })
             .child(
                 div()
                     .id("dropdown-input")
@@ -562,8 +568,13 @@ where
                             .w_full()
                             .items_center()
                             .justify_between()
-                            .gap_3()
-                            .child(div().child(self.display_title(cx)))
+                            .gap_1()
+                            .child(
+                                div()
+                                    .w_full()
+                                    .overflow_hidden()
+                                    .child(self.display_title(cx)),
+                            )
                             .when(show_clean, |this| {
                                 this.child(
                                     Button::new("clean", cx)
@@ -586,6 +597,10 @@ where
                 div()
                     .absolute()
                     .overflow_hidden()
+                    .map(|this| match self.menu_width {
+                        Length::Auto => this,
+                        Length::Definite(l) => this.w(l),
+                    })
                     .child(DropdownMenuElement {
                         id: "dropdown-menu".into(),
                         dropdown: cx.view().clone(),

@@ -61,9 +61,7 @@ impl DropdownStory {
         ];
 
         let country_dropdown = cx.new_view(|cx| {
-            Dropdown::new("dropdown-country", countries, Some(6), cx)
-                .cleanable(true)
-                .full_width()
+            Dropdown::new("dropdown-country", countries, Some(6), cx).cleanable(true)
         });
 
         let fruits = SearchableVec::new(vec![
@@ -75,7 +73,11 @@ impl DropdownStory {
             "Watermelon & This is a longlonglonglonglonglonglonglonglong title".into(),
             "Avocado".into(),
         ]);
-        let fruit_dropdown = cx.new_view(|cx| Dropdown::new("dropdown-fruits", fruits, None, cx));
+        let fruit_dropdown = cx.new_view(|cx| {
+            Dropdown::new("dropdown-fruits", fruits, None, cx)
+                .width(px(200.))
+                .menu_width(px(320.))
+        });
 
         cx.new_view(|cx| {
             cx.subscribe(&country_dropdown, Self::on_dropdown_event)
