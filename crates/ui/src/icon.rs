@@ -45,6 +45,7 @@ pub enum IconName {
     ThumbsDown,
     ThumbsUp,
     Menu,
+    Copy,
 }
 
 impl IconName {
@@ -89,6 +90,7 @@ impl IconName {
             IconName::ThumbsDown => "icons/thumbs-down.svg",
             IconName::ThumbsUp => "icons/thumbs-up.svg",
             IconName::Menu => "icons/menu.svg",
+            IconName::Copy => "icons/copy.svg",
         }
         .into()
     }

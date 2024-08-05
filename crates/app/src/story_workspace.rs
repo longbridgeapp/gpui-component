@@ -177,7 +177,7 @@ impl StoryWorkspace {
 
         StoryContainer::add_pane(
             "Scrollable",
-            "A scrollable area with scroll bar",
+            "A scrollable area with scroll bar.",
             ScrollableStory::view(cx).into(),
             workspace.clone(),
             cx,

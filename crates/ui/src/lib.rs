@@ -12,6 +12,7 @@ mod svg_img;
 
 pub mod button;
 pub mod checkbox;
+pub mod clipboard;
 pub mod divider;
 pub mod dropdown;
 pub mod indicator;
