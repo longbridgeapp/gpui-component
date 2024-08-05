@@ -8,7 +8,6 @@ use std::ops::Range;
 use super::blink_cursor::BlinkCursor;
 use super::history::History;
 use crate::button::{Button, ButtonStyle};
-use crate::context_menu::ContextMenuExt;
 use crate::indicator::Indicator;
 use crate::styled_ext::StyleSized;
 use crate::theme::ActiveTheme;
@@ -991,7 +990,6 @@ impl Element for TextElement {
 
 impl Render for TextInput {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let focus_handle = self.focus_handle.clone();
         let focused = self.focus_handle.is_focused(cx);
 
         let prefix = self.prefix.as_ref().map(|build| build(cx));
