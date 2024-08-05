@@ -6,6 +6,7 @@ use gpui::{
 use ui::{
     button::{Button, ButtonStyle},
     checkbox::Checkbox,
+    clipboard::Clipboard,
     h_flex,
     label::Label,
     link::Link,
@@ -210,6 +211,26 @@ impl Render for TextStory {
                                       .selected(true)
                                       .disabled(true),
                               ),
+                        )
+                ),
+            )
+            .child(
+                section("Clipboard", cx).child(
+                    h_flex()
+                        .w_full()
+                        .gap_4()
+                        .items_start()
+                        .child(
+                            Clipboard::new("clipboard1")
+                                .content(|_| Label::new("Click icon to copy"))
+                                .value("Copied!")
+                                .on_copied(|value, _| println!("Copied value: {}", value)),
+                        )
+                        .child(
+                            Clipboard::new("clipboard2")
+                                .content(|_| Link::new("link1").href("https://github.com").child("GitHub"))
+                                .value("https://github.com")
+                                .on_copied(|value, _| println!("Copied value: {}", value)),
                         )
                 ),
             )
