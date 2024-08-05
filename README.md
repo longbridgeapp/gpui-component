@@ -63,6 +63,9 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Column resizing
   - [x] Column ordering
   - [x] Column sorting
+- [x] Menu
+  - [x] Popup Menu
+  - [x] Context Menu
 - [ ] Drawer
 - [ ] Modal
 
