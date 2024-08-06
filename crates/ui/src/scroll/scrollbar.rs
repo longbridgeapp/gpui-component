@@ -2,9 +2,9 @@ use std::{cell::Cell, rc::Rc};
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    fill, point, px, relative, AnyView, Bounds, ContentMask, Edges, Element, Hitbox, IntoElement,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position, ScrollHandle,
-    Style, UniformListScrollHandle,
+    fill, point, px, relative, size, AnyView, Bounds, ContentMask, Edges, Element, Hitbox,
+    IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position,
+    ScrollHandle, Style, UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
@@ -224,7 +224,7 @@ impl Scrollbar {
     ) -> Self {
         let last_item_height = scroll_handle.0.borrow().last_item_height.unwrap_or(px(10.));
         let max_height = items_count as f32 * last_item_height;
-        let scroll_size = gpui::size(px(0.), max_height);
+        let scroll_size = size(px(0.), max_height);
 
         Self::new(
             view.into(),
@@ -441,11 +441,12 @@ impl Element for Scrollbar {
 
                         move |event: &MouseDownEvent, phase, cx| {
                             if phase.bubble() && bounds.contains(&event.position) {
+                                cx.stop_propagation();
+
                                 if thumb_bounds.contains(&event.position) {
                                     // click on the thumb bar, set the drag position
                                     let pos = event.position - thumb_bounds.origin;
 
-                                    cx.stop_propagation();
                                     state.set(state.get().with_drag_pos(axis, pos));
                                     cx.notify(view_id);
                                 } else {
