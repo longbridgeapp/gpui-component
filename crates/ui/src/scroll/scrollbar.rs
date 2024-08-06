@@ -366,9 +366,9 @@ impl Element for Scrollbar {
                     let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
                     let (thumb_bg, bar_bg, inset) = if state.get().dragged_axis == Some(axis) {
-                        (thumb_bg, cx.theme().scrollbar, px(0.))
+                        (thumb_bg, cx.theme().scrollbar, px(1.))
                     } else if state.get().hovered_axis == Some(axis) {
-                        (thumb_bg, cx.theme().scrollbar, px(0.))
+                        (thumb_bg, cx.theme().scrollbar, px(1.))
                     } else {
                         (thumb_bg, cx.theme().transparent, THUMB_INSET)
                     };
@@ -404,27 +404,59 @@ impl Element for Scrollbar {
                         );
                     }
 
+                    fn calc_percentage(
+                        is_vertical: bool,
+                        position: Point<Pixels>,
+                        thumb_length: Pixels,
+                        bounds: Bounds<Pixels>,
+                    ) -> f32 {
+                        if is_vertical {
+                            (position.y - thumb_length / 2. - bounds.origin.y)
+                                / (bounds.size.height - thumb_length)
+                        } else {
+                            (position.x - thumb_length / 2. - bounds.origin.x)
+                                / (bounds.size.width - thumb_length)
+                        }
+                        .min(1.)
+                    }
+
                     cx.on_mouse_event({
                         let state = self.state.clone();
                         let view_id = self.view.entity_id();
+                        let scroll_handle = self.scroll_handle.clone();
 
                         move |event: &MouseDownEvent, phase, cx| {
-                            if phase.bubble() && thumb_bounds.contains(&event.position) {
-                                let drag_pos = if is_vertical {
-                                    point(
-                                        state.get().drag_pos.x,
-                                        event.position.y - thumb_bounds.origin.y,
-                                    )
-                                } else {
-                                    point(
-                                        event.position.x - thumb_bounds.origin.x,
-                                        state.get().drag_pos.y,
-                                    )
-                                };
+                            if phase.bubble() && bounds.contains(&event.position) {
+                                if thumb_bounds.contains(&event.position) {
+                                    // click on the thumb bar, set the drag position
+                                    let pos =  event.position - thumb_bounds.origin;
 
-                                cx.stop_propagation();
-                                state.set(state.get().with_drag_pos(axis, drag_pos));
-                                cx.notify(view_id);
+                                    cx.stop_propagation();
+                                    state.set(state.get().with_drag_pos(axis, pos));
+                                    cx.notify(view_id);
+                                } else {
+                                    // click on the scrollbar, jump to the position
+                                    // Set the thumb bar center to the click position
+                                    let offset = scroll_handle.offset();
+                                    let percentage = calc_percentage(
+                                        is_vertical,
+                                        event.position,
+                                        thumb_length,
+                                        bounds,
+                                    );
+
+                                    if is_vertical {
+                                        scroll_handle.set_offset(point(
+                                            offset.x,
+                                            -scroll_area_size * percentage,
+                                        ));
+                                    } else {
+                                        scroll_handle.set_offset(point(
+                                            -scroll_area_size * percentage,
+                                            offset.y,
+                                        ));
+                                    }
+                                }
                             }
                         }
                     });
@@ -435,7 +467,7 @@ impl Element for Scrollbar {
                         let view_id = self.view.entity_id();
 
                         move |event: &MouseMoveEvent, _, cx| {
-                            if thumb_bounds.contains(&event.position) {
+                            if bounds.contains(&event.position) {
                                 if state.get().hovered_axis != Some(axis) {
                                     state.set(state.get().with_hovered(Some(axis)));
                                     cx.notify(view_id);
@@ -466,20 +498,23 @@ impl Element for Scrollbar {
 
                             // Move thumb position on dragging
                             if state.get().dragged_axis == Some(axis) && event.dragging() {
+                                // drag_pos is the position of the mouse down event
+                                // We need to keep the thumb bar still at the origin down position
                                 let drag_pos = state.get().drag_pos;
+
                                 let percentage = if is_vertical {
-                                    (event.position.y - bounds.origin.y - drag_pos.y)
-                                        / container_size
+                                    (event.position.y - drag_pos.y - bounds.origin.y)
+                                        / (bounds.size.height - thumb_length)
                                 } else {
-                                    (event.position.x - bounds.origin.x - drag_pos.x)
-                                        / container_size
+                                    (event.position.x - drag_pos.x - bounds.origin.x)
+                                        / (bounds.size.width - thumb_length)
                                 }
                                 .min(1.);
 
                                 let offset = if is_vertical {
-                                    point(scroll_handle.offset().x, -percentage * scroll_area_size)
+                                    point(scroll_handle.offset().x, -scroll_area_size * percentage)
                                 } else {
-                                    point(-percentage * scroll_area_size, scroll_handle.offset().y)
+                                    point(-scroll_area_size * percentage, scroll_handle.offset().y)
                                 };
 
                                 scroll_handle.set_offset(offset);
