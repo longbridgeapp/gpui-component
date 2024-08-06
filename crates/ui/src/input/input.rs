@@ -1071,7 +1071,7 @@ impl Render for TextInput {
                         Button::new("clean-text", cx)
                             .icon(IconName::Close)
                             .style(ButtonStyle::Ghost)
-                            .size(px(15.))
+                            .with_size(px(15.))
                             .cursor_pointer()
                             .on_click(cx.listener(Self::clean)),
                     )
