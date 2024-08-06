@@ -225,6 +225,7 @@ where
     }
 
     fn action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
+        self.set_selected_index(None, cx);
         self.delegate.cancel(cx);
         cx.notify();
     }
@@ -259,9 +260,12 @@ where
             return;
         }
 
-        let selected_index = self.selected_index.unwrap_or(0);
-        if selected_index < self.delegate.items_count() - 1 {
-            self.selected_index = Some(selected_index + 1);
+        if let Some(selected_index) = self.selected_index {
+            if selected_index < self.delegate.items_count() - 1 {
+                self.selected_index = Some(selected_index + 1);
+            } else {
+                self.selected_index = Some(0);
+            }
         } else {
             self.selected_index = Some(0);
         }
