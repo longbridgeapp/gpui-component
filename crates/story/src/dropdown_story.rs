@@ -7,7 +7,7 @@ use ui::{
     dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
-    v_flex, IconName, Selection,
+    v_flex, IconName, Selection, Sizable,
 };
 
 struct Country {
@@ -94,7 +94,7 @@ impl DropdownStory {
                         Some(0),
                         cx,
                     )
-                    .size(ui::Size::Small)
+                    .small()
                     .placeholder("UI")
                     .title_prefix("UI: ")
                 }),
@@ -110,13 +110,13 @@ impl DropdownStory {
                         None,
                         cx,
                     )
-                    .size(ui::Size::Small)
+                    .small()
                     .placeholder("Language")
                     .title_prefix("Language: ")
                 }),
                 simple_dropdown3: cx.new_view(|cx| {
                     Dropdown::new("string-list3", Vec::<SharedString>::new(), None, cx)
-                        .size(ui::Size::Small)
+                        .small()
                         .empty(|cx| {
                             h_flex()
                                 .h_24()

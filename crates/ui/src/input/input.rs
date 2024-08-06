@@ -9,10 +9,10 @@ use super::blink_cursor::BlinkCursor;
 use super::history::History;
 use crate::button::{Button, ButtonStyle};
 use crate::indicator::Indicator;
-use crate::styled_ext::StyleSized;
+use crate::styled_ext::{Sizable, StyleSized};
 use crate::theme::ActiveTheme;
 use crate::{event::InteractiveElementExt as _, Size};
-use crate::{Clickable, IconName, StyledExt as _};
+use crate::{Clickable as _, IconName, StyledExt as _};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, fill, point, px, relative, rems, size, AnyElement, AppContext, Bounds,
@@ -258,12 +258,6 @@ impl TextInput {
     /// Set the placeholder text of the input field.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.placeholder = placeholder.into();
-        self
-    }
-
-    /// Set the size of the input field.
-    pub fn size(mut self, size: impl Into<Size>) -> Self {
-        self.size = size.into();
         self
     }
 
@@ -656,6 +650,13 @@ impl TextInput {
             .as_ref()
             .map(|p| p.is_match(new_text))
             .unwrap_or(true)
+    }
+}
+
+impl Sizable for TextInput {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
     }
 }
 

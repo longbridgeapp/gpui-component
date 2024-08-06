@@ -7,7 +7,9 @@ use gpui::{
     VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, list::ListItem, theme::ActiveTheme, v_flex, Icon, IconName, Size};
+use crate::{
+    h_flex, list::ListItem, styled_ext::Sizable as _, theme::ActiveTheme, v_flex, Icon, IconName,
+};
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
 
@@ -280,7 +282,7 @@ impl Render for PopupMenu {
                                 .map(|this| {
                                     this.child(div().absolute().text_sm().map(|this| {
                                         if let Some(icon) = icon {
-                                            this.child(icon.clone().size(Size::Small).clone())
+                                            this.child(icon.clone().small().clone())
                                         } else {
                                             this.children(icon_placeholder.clone())
                                         }

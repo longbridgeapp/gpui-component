@@ -1,7 +1,7 @@
 use crate::{
     stack::h_flex,
     theme::{ActiveTheme, Colorize},
-    Disableable, Size,
+    Disableable, Sizable, Size,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, Div, InteractiveElement, IntoElement, ParentElement as _,
@@ -59,12 +59,6 @@ impl Switch {
         self
     }
 
-    /// Only supported XSmall, Small, Medium
-    pub fn size(mut self, size: Size) -> Self {
-        self.size = size;
-        self
-    }
-
     pub fn on_click(mut self, handler: impl Fn(&bool, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
         self
@@ -72,6 +66,13 @@ impl Switch {
 
     pub fn label_side(mut self, label_side: LabelSide) -> Self {
         self.label_side = label_side;
+        self
+    }
+}
+
+impl Sizable for Switch {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
         self
     }
 }

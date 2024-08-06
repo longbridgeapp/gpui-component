@@ -9,7 +9,7 @@ use ui::{
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
-    v_flex, Clickable, FocusableCycle, IconName, Size,
+    v_flex, Clickable, FocusableCycle, IconName, Sizable,
 };
 
 use crate::section;
@@ -107,14 +107,10 @@ impl InputStory {
                 input.set_disabled(true, cx);
                 input
             }),
-            large_input: cx.new_view(|cx| {
-                TextInput::new(cx)
-                    .size(Size::Large)
-                    .placeholder("Large input")
-            }),
+            large_input: cx.new_view(|cx| TextInput::new(cx).large().placeholder("Large input")),
             small_input: cx.new_view(|cx| {
                 TextInput::new(cx)
-                    .size(Size::Small)
+                    .small()
                     .validate(|s| s.parse::<f32>().is_ok())
                     .placeholder("validate to limit float number.")
             }),

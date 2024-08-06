@@ -13,7 +13,7 @@ use ui::{
     popup_menu::PopupMenu,
     prelude::FluentBuilder,
     switch::Switch,
-    v_flex, Clickable as _, IconName, Size,
+    v_flex, Clickable as _, IconName, Sizable,
 };
 
 actions!(
@@ -158,7 +158,7 @@ impl Render for PopupStory {
                                                 Button::new("info1", cx)
                                                     .label("Yes")
                                                     .w(px(80.))
-                                                    .size(Size::Small),
+                                                    .small(),
                                             )
                                             .into_any()
                                     })
@@ -181,7 +181,7 @@ impl Render for PopupStory {
                                             Button::new("info1", cx)
                                                 .label("Yes")
                                                 .w(px(80.))
-                                                .size(Size::Small),
+                                                .small(),
                                         )
                                         .into_any()
                                 })
@@ -250,7 +250,7 @@ impl Render for PopupStory {
                                                 Button::new("info1", cx)
                                                     .label("Yes")
                                                     .w(px(80.))
-                                                    .size(Size::Small),
+                                                    .small(),
                                             )
                                             .into_any()
                                     })

@@ -1,4 +1,4 @@
-use crate::{theme::ActiveTheme, Size};
+use crate::{styled_ext::Sizable, theme::ActiveTheme, Size};
 use gpui::{
     prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
     SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
@@ -142,7 +142,7 @@ impl Clone for Icon {
     fn clone(&self) -> Self {
         let mut this = Self::default().path(self.path.clone());
         if let Some(size) = self.size {
-            this = this.size(size);
+            this = this.with_size(size);
         }
         this
     }
@@ -169,16 +169,6 @@ impl Icon {
         self
     }
 
-    /// Set the size of the icon, default is `IconSize::Medium`
-    ///
-    /// Also can receive a `ButtonSize` to convert to `IconSize`,
-    /// Or a `Pixels` to set a custom size: `px(30.)`
-    pub fn size(mut self, size: impl Into<Size>) -> Self {
-        self.size = Some(size.into());
-
-        self
-    }
-
     /// Create a new view for the icon
     pub fn view(self, cx: &mut WindowContext) -> View<Icon> {
         cx.new_view(|_| self)
@@ -201,6 +191,13 @@ impl Styled for Icon {
 
     fn text_color(mut self, color: impl Into<Hsla>) -> Self {
         self.text_color = Some(color.into());
+        self
+    }
+}
+
+impl Sizable for Icon {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = Some(size.into());
         self
     }
 }

@@ -11,7 +11,7 @@ use std::sync::Arc;
 use ui::{
     button::{Button, ButtonStyle},
     theme::{ActiveTheme, Theme},
-    Clickable as _, IconName, Size,
+    Clickable as _, IconName, Sizable,
 };
 
 use crate::app_state::AppState;
@@ -285,8 +285,8 @@ impl Render for StoryWorkspace {
                                             this.icon(IconName::Moon)
                                         }
                                     })
-                                    .size(Size::Small)
-                                    .style(ButtonStyle::Ghost)
+                                    .small()
+                                    .ghost()
                                     .on_click(move |_, cx| {
                                         let mode = match cx.theme().mode.is_dark() {
                                             true => ui::theme::ThemeMode::Light,
@@ -299,7 +299,7 @@ impl Render for StoryWorkspace {
                             .child(
                                 Button::new("github", cx)
                                     .icon(IconName::GitHub)
-                                    .size(Size::Small)
+                                    .small()
                                     .style(ButtonStyle::Ghost)
                                     .on_click(|_, cx| {
                                         cx.open_url("https://github.com/huacnlee/gpui-component")

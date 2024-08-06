@@ -8,7 +8,7 @@ use ui::{
     label::Label,
     switch::{LabelSide, Switch},
     theme::ActiveTheme,
-    v_flex, Disableable as _, Size, StyledExt,
+    v_flex, Disableable as _, Sizable, StyledExt,
 };
 
 #[derive(Default)]
@@ -115,7 +115,7 @@ impl Render for SwitchStory {
                         .items_start().child(title("Disabled Switchs")).child(
                         h_flex().items_center()
                         .gap_6()
-                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").size(Size::Small).on_click(cx.listener(move |view, checked, cx| {
+                        .child(Switch::new("switch3").checked(self.switch3).label("Small Size").small().on_click(cx.listener(move |view, checked, cx| {
                             view.switch3 = *checked;
                             cx.notify();
                         })),

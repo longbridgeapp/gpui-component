@@ -9,7 +9,7 @@ use ui::{
     indicator::Indicator,
     progress::Progress,
     slider::{Slider, SliderEvent},
-    v_flex, Clickable, IconName, Size,
+    v_flex, Clickable, IconName, Sizable,
 };
 
 pub struct ProgressStory {
@@ -123,16 +123,16 @@ impl Render for ProgressStory {
             .child(
                 h_flex()
                     .gap_x_2()
-                    .child(Indicator::new().size(Size::XSmall))
-                    .child(Indicator::new().size(Size::Small))
+                    .child(Indicator::new().xsmall())
+                    .child(Indicator::new().small())
                     .child(Indicator::new())
                     .child(
                         Indicator::new()
-                            .size(Size::Large)
+                            .large()
                             .icon(IconName::LoaderCircle)
                             .color(ui::blue_500()),
                     )
-                    .child(Indicator::new().size(px(64.))),
+                    .child(Indicator::new().with_size(px(64.))),
             )
             .child(Divider::horizontal().mt_10().label("Slider"))
             .child(self.slider1.clone())

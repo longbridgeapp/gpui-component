@@ -1,6 +1,7 @@
 use crate::{
     h_flex,
     indicator::Indicator,
+    styled_ext::Sizable,
     theme::{ActiveTheme, Colorize as _},
     Clickable, Disableable, Icon, Selectable, Size,
 };
@@ -175,12 +176,6 @@ impl Button {
         self
     }
 
-    /// Set the ui::Size of the Button.
-    pub fn size(mut self, size: impl Into<Size>) -> Self {
-        self.size = size.into();
-        self
-    }
-
     /// Set label to the Button, if no label is set, the button will be in Icon Button mode.
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
@@ -235,6 +230,13 @@ impl Selectable for Button {
 impl Clickable for Button {
     fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
+        self
+    }
+}
+
+impl Sizable for Button {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
         self
     }
 }
@@ -359,10 +361,12 @@ impl RenderOnce for Button {
                         _ => this.text_base(),
                     })
                     .when(!self.loading, |this| {
-                        this.when_some(self.icon, |this, icon| this.child(icon.size(icon_size)))
+                        this.when_some(self.icon, |this, icon| {
+                            this.child(icon.with_size(icon_size))
+                        })
                     })
                     .when(self.loading, |this| {
-                        this.child(Indicator::new().size(self.size))
+                        this.child(Indicator::new().with_size(self.size))
                     })
                     .when_some(self.label, |this, label| this.child(label))
                     .children(self.children)

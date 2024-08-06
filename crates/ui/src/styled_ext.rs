@@ -194,6 +194,30 @@ impl From<Pixels> for Size {
     }
 }
 
+/// A trait for setting the size of an element.
+pub trait Sizable: Sized {
+    /// Set the ui::Size of this element.
+    ///
+    /// Also can receive a `ButtonSize` to convert to `IconSize`,
+    /// Or a `Pixels` to set a custom size: `px(30.)`
+    fn with_size(self, size: impl Into<Size>) -> Self;
+
+    /// Set to Size::Small
+    fn small(self) -> Self {
+        self.with_size(Size::Small)
+    }
+
+    /// Set to Size::XSmall
+    fn xsmall(self) -> Self {
+        self.with_size(Size::XSmall)
+    }
+
+    /// Set to Size::Medium
+    fn large(self) -> Self {
+        self.with_size(Size::Large)
+    }
+}
+
 #[allow(unused)]
 pub trait StyleSized<T: Styled> {
     fn input_text_size(self, size: Size) -> Self;

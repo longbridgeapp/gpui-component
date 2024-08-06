@@ -3,7 +3,7 @@ use gpui::{
     RenderOnce, SharedString, Styled, WindowContext,
 };
 
-use crate::{button::Button, h_flex, Clickable, IconName};
+use crate::{button::Button, h_flex, Clickable, IconName, Sizable};
 
 #[derive(IntoElement)]
 pub struct Clipboard {
@@ -49,7 +49,8 @@ impl Clipboard {
 impl RenderOnce for Clipboard {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         h_flex()
-            .gap_0p5()
+            .gap_1()
+            .items_center()
             .when_some(self.content_builder, |this, builder| {
                 this.child(builder(cx))
             })
@@ -57,6 +58,7 @@ impl RenderOnce for Clipboard {
                 Button::new(self.id, cx)
                     .icon(IconName::Copy)
                     .ghost()
+                    .xsmall()
                     .on_click(move |_, cx| {
                         cx.stop_propagation();
                         cx.write_to_clipboard(ClipboardItem::new(self.value.to_string()));

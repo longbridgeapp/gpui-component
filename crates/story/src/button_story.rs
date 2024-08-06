@@ -4,12 +4,12 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonCustomStyle, ButtonStyle},
+    button::{Button, ButtonCustomStyle},
     checkbox::Checkbox,
     h_flex,
     prelude::FluentBuilder,
     theme::ActiveTheme,
-    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable as _, Size,
+    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable as _, Sizable as _,
 };
 
 use crate::section;
@@ -203,7 +203,7 @@ impl Render for ButtonStory {
                             )
                             .child(
                                 Button::new("button-icon-4", cx)
-                                    .style(ButtonStyle::Secondary)
+                                    .primary()
                                     .child(
                                         h_flex()
                                             .items_center()
@@ -220,7 +220,7 @@ impl Render for ButtonStory {
                             )
                             .child(
                                 Button::new("button-icon-5-ghost", cx)
-                                    .style(ButtonStyle::Ghost)
+                                    .ghost()
                                     .icon(IconName::Check)
                                     .label("Confirm")
                                     .disabled(disabled)
@@ -231,7 +231,7 @@ impl Render for ButtonStory {
                             )
                             .child(
                                 Button::new("button-icon-6-link", cx)
-                                    .style(ButtonStyle::Link)
+                                    .link()
                                     .icon(IconName::Check)
                                     .label("Link")
                                     .disabled(disabled)
@@ -250,8 +250,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-6", cx)
                                     .label("Primary Button")
-                                    .style(ButtonStyle::Primary)
-                                    .size(Size::Small)
+                                    .primary()
+                                    .small()
                                     .loading(true)
                                     .disabled(disabled)
                                     .selected(selected)
@@ -262,8 +262,7 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-7", cx)
                                     .label("Secondary Button")
-                                    .style(ButtonStyle::Secondary)
-                                    .size(Size::Small)
+                                    .small()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -273,8 +272,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-8", cx)
                                     .label("Danger Button")
-                                    .style(ButtonStyle::Danger)
-                                    .size(Size::Small)
+                                    .danger()
+                                    .small()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -284,8 +283,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-8-outline", cx)
                                     .label("Outline Button")
-                                    .style(ButtonStyle::Outline)
-                                    .size(Size::Small)
+                                    .outline()
+                                    .small()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -295,8 +294,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-8-ghost", cx)
                                     .label("Ghost Button")
-                                    .style(ButtonStyle::Ghost)
-                                    .size(Size::Small)
+                                    .ghost()
+                                    .small()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -306,8 +305,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-8-link", cx)
                                     .label("Link Button")
-                                    .style(ButtonStyle::Link)
-                                    .size(Size::Small)
+                                    .link()
+                                    .small()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -320,8 +319,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-xs-1", cx)
                                     .label("Primary Button")
-                                    .style(ButtonStyle::Primary)
-                                    .size(Size::XSmall)
+                                    .primary()
+                                    .small()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -331,8 +330,7 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-xs-2", cx)
                                     .label("Secondary Button")
-                                    .style(ButtonStyle::Secondary)
-                                    .size(Size::XSmall)
+                                    .xsmall()
                                     .loading(true)
                                     .disabled(disabled)
                                     .selected(selected)
@@ -343,8 +341,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-xs-3", cx)
                                     .label("Danger Button")
-                                    .style(ButtonStyle::Danger)
-                                    .size(Size::XSmall)
+                                    .danger()
+                                    .xsmall()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -354,8 +352,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-xs-3-ghost", cx)
                                     .label("Ghost Button")
-                                    .style(ButtonStyle::Ghost)
-                                    .size(Size::XSmall)
+                                    .ghost()
+                                    .xsmall()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -365,8 +363,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-xs-3-outline", cx)
                                     .label("Outline Button")
-                                    .style(ButtonStyle::Outline)
-                                    .size(Size::XSmall)
+                                    .outline()
+                                    .xsmall()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -376,8 +374,8 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-xs-3-link", cx)
                                     .label("Link Button")
-                                    .style(ButtonStyle::Link)
-                                    .size(Size::XSmall)
+                                    .link()
+                                    .xsmall()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
@@ -391,7 +389,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-primary", cx)
                             .icon(IconName::Search)
-                            .style(ButtonStyle::Primary)
+                            .primary()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -409,7 +407,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-danger", cx)
                             .icon(IconName::Close)
-                            .style(ButtonStyle::Danger)
+                            .danger()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -418,8 +416,8 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-small-primary", cx)
                             .icon(IconName::Search)
-                            .size(Size::Small)
-                            .style(ButtonStyle::Primary)
+                            .small()
+                            .primary()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -428,7 +426,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-outline", cx)
                             .icon(IconName::Search)
-                            .style(ButtonStyle::Outline)
+                            .outline()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -437,7 +435,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-ghost", cx)
                             .icon(IconName::ArrowLeft)
-                            .style(ButtonStyle::Ghost)
+                            .ghost()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -449,7 +447,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-4", cx)
                             .icon(IconName::Info)
-                            .size(Size::Small)
+                            .small()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -458,8 +456,8 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-5", cx)
                             .icon(IconName::Close)
-                            .size(Size::Small)
-                            .style(ButtonStyle::Danger)
+                            .small()
+                            .danger()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -468,8 +466,8 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-6", cx)
                             .icon(IconName::Search)
-                            .size(Size::XSmall)
-                            .style(ButtonStyle::Primary)
+                            .small()
+                            .primary()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -478,7 +476,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-7", cx)
                             .icon(IconName::Info)
-                            .size(Size::XSmall)
+                            .xsmall()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -487,8 +485,8 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-8", cx)
                             .icon(IconName::Close)
-                            .size(Size::XSmall)
-                            .style(ButtonStyle::Danger)
+                            .xsmall()
+                            .danger()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)
@@ -498,7 +496,7 @@ impl Render for ButtonStory {
                         Button::new("icon-button-9", cx)
                             .icon(IconName::Heart)
                             .size(px(24.))
-                            .style(ButtonStyle::Ghost)
+                            .ghost()
                             .disabled(disabled)
                             .selected(selected)
                             .loading(loading)

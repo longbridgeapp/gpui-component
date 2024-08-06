@@ -12,7 +12,7 @@ use crate::{
     list::{self, List, ListDelegate, ListItem},
     styled_ext::StyleSized,
     theme::ActiveTheme,
-    Clickable, Icon, IconName, Size, StyledExt,
+    Clickable, Icon, IconName, Sizable, Size, StyledExt,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
@@ -334,11 +334,6 @@ where
         this
     }
 
-    pub fn size(mut self, size: Size) -> Self {
-        self.size = size;
-        self
-    }
-
     /// Set the width of the dropdown input, default: Length::Auto
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
@@ -519,6 +514,16 @@ fn with_style(d: Focusable<Div>, cx: &WindowContext) -> Focusable<Div> {
         .shadow_md()
 }
 
+impl<D> Sizable for Dropdown<D>
+where
+    D: DropdownDelegate + 'static,
+{
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
+
 impl<D> EventEmitter<DropdownEvent<D>> for Dropdown<D> where D: DropdownDelegate + 'static {}
 impl<D> EventEmitter<DismissEvent> for Dropdown<D> where D: DropdownDelegate + 'static {}
 impl<D> FocusableView for Dropdown<D>
@@ -590,7 +595,7 @@ where
                                     Button::new("clean", cx)
                                         .icon(IconName::CircleX)
                                         .style(ButtonStyle::Ghost)
-                                        .size(px(14.))
+                                        .with_size(px(14.))
                                         .cursor_pointer()
                                         .on_click(cx.listener(Self::clean)),
                                 )
