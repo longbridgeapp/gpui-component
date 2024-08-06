@@ -552,7 +552,7 @@ checksum = "3dcde5f311c85b8ca30c2e4198d4326bc342c76541590106f5fa4a50946ea499"
 [[package]]
 name = "blade-graphics"
 version = "0.4.0"
-source = "git+https://github.com/zed-industries/blade?rev=7e497c534d5d4a30c18d9eb182cf39eaf0aaa25e#7e497c534d5d4a30c18d9eb182cf39eaf0aaa25e"
+source = "git+https://github.com/kvark/blade?rev=ac25c77ed8d86c386a541c935ffe0a0f6024e701#ac25c77ed8d86c386a541c935ffe0a0f6024e701"
 dependencies = [
  "ash",
  "ash-window",
@@ -582,7 +582,7 @@ dependencies = [
 [[package]]
 name = "blade-macros"
 version = "0.2.1"
-source = "git+https://github.com/zed-industries/blade?rev=7e497c534d5d4a30c18d9eb182cf39eaf0aaa25e#7e497c534d5d4a30c18d9eb182cf39eaf0aaa25e"
+source = "git+https://github.com/kvark/blade?rev=ac25c77ed8d86c386a541c935ffe0a0f6024e701#ac25c77ed8d86c386a541c935ffe0a0f6024e701"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -592,7 +592,7 @@ dependencies = [
 [[package]]
 name = "blade-util"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/blade?rev=7e497c534d5d4a30c18d9eb182cf39eaf0aaa25e#7e497c534d5d4a30c18d9eb182cf39eaf0aaa25e"
+source = "git+https://github.com/kvark/blade?rev=ac25c77ed8d86c386a541c935ffe0a0f6024e701#ac25c77ed8d86c386a541c935ffe0a0f6024e701"
 dependencies = [
  "blade-graphics",
  "bytemuck",
@@ -925,7 +925,7 @@ dependencies = [
 [[package]]
 name = "collections"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "rustc-hash",
 ]
@@ -1238,7 +1238,7 @@ dependencies = [
 [[package]]
 name = "derive_refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2178,7 +2178,7 @@ dependencies = [
 [[package]]
 name = "gpui"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "anyhow",
  "as-raw-xcb-connection",
@@ -2278,7 +2278,7 @@ dependencies = [
 [[package]]
 name = "gpui_macros"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2482,7 +2482,7 @@ dependencies = [
 [[package]]
 name = "http_client"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2997,7 +2997,7 @@ dependencies = [
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -4107,7 +4107,7 @@ dependencies = [
 [[package]]
 name = "refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "derive_refineable",
 ]
@@ -4382,7 +4382,7 @@ checksum = "d369a96f978623eb3dc28807c4852d6cc617fed53da5d3c400feff1ef34a714a"
 [[package]]
 name = "semantic_version"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "anyhow",
  "serde",
@@ -4791,7 +4791,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "sum_tree"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "arrayvec",
  "log",
@@ -5427,7 +5427,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "util"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#371a680215f5a1e91fdfd6a00afbbf362f71eade"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#dc819262629081d55ec0bc2eba9122b3da49da97"
 dependencies = [
  "anyhow",
  "async-fs 1.6.0",
