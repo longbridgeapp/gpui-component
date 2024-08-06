@@ -195,7 +195,7 @@ impl Colors {
             input: hsl(240.0, 5.9, 90.0),
             ring: hsl(240.0, 5.9, 65.0),
             selection: hsl(211.0, 97.0, 85.0),
-            scrollbar: hsl(0., 0., 98.),
+            scrollbar: hsl(0., 0., 97.),
             scrollbar_thumb: hsl(0., 0., 49.),
             panel: hsl(0.0, 0.0, 100.0),
             tab_bar: hsl(240.0, 4.8, 95.9),
