@@ -17,7 +17,8 @@ use ui::{
 
 pub struct ListItemDeletegate {
     story: WeakView<PickerStory>,
-    selected_index: usize,
+    confirmed_index: Option<usize>,
+    selected_index: Option<usize>,
     items: Vec<Arc<String>>,
     matches: Vec<Arc<String>>,
 }
@@ -30,7 +31,7 @@ impl ListDelegate for ListItemDeletegate {
     }
 
     fn confirmed_index(&self) -> Option<usize> {
-        Some(self.selected_index)
+        self.confirmed_index
     }
 
     fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) -> Task<()> {
@@ -55,10 +56,13 @@ impl ListDelegate for ListItemDeletegate {
     }
 
     fn render_item(&self, ix: usize, _: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
-        let selected = ix == self.selected_index;
+        let confirmed = Some(ix) == self.confirmed_index;
+        let selected = Some(ix) == self.selected_index;
+
         if let Some(item) = self.matches.get(ix) {
             let list_item = ListItem::new(("item", ix))
                 .check_icon(ui::IconName::Check)
+                .confirmed(confirmed)
                 .selected(selected)
                 .py_1()
                 .px_3()
@@ -115,7 +119,7 @@ impl ListDelegate for ListItemDeletegate {
         if let Some(story) = self.story.upgrade() {
             cx.update_view(&story, |story, cx| {
                 if let Some(ix) = ix {
-                    self.selected_index = ix;
+                    self.confirmed_index = Some(ix);
                     if let Some(item) = self.matches.get(ix) {
                         story.selected_value = Some(item.clone());
                     }
@@ -127,8 +131,9 @@ impl ListDelegate for ListItemDeletegate {
     }
 
     fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
-        if let Some(ix) = ix {
-            self.selected_index = ix;
+        self.selected_index = ix;
+
+        if let Some(_) = ix {
             cx.notify();
         }
     }
@@ -204,7 +209,8 @@ impl PickerStory {
         let story = cx.view().downgrade();
         let delegate = ListItemDeletegate {
             story,
-            selected_index: 0,
+            selected_index: None,
+            confirmed_index: None,
             items: items.clone(),
             matches: items.clone(),
         };

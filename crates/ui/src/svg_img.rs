@@ -84,8 +84,8 @@ impl Asset for Image {
                 return Err(usvg::Error::InvalidSize.into());
             }
             let size = Size {
-                width: size.width * scale,
-                height: size.height * scale,
+                width: (size.width * scale).ceil(),
+                height: (size.height * scale).ceil(),
             };
 
             let bytes = match source.source {
@@ -258,8 +258,8 @@ impl Element for SvgImg {
                     };
 
                     let img_bounds = Bounds {
-                        size: new_size,
-                        origin: new_origin,
+                        origin: new_origin.map(|origin| origin.floor()),
+                        size: new_size.map(|size| size.ceil()),
                     };
 
                     match cx.paint_image(img_bounds, px(0.).into(), data, 0, false) {

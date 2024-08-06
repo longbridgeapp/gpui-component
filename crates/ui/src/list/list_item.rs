@@ -12,6 +12,7 @@ pub struct ListItem {
     base: Stateful<Div>,
     disabled: bool,
     selected: bool,
+    confirmed: bool,
     check_icon: Option<Icon>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
@@ -25,6 +26,7 @@ impl ListItem {
             base: h_flex().id(id.into()).gap_x_1().py_1().px_2().text_base(),
             disabled: false,
             selected: false,
+            confirmed: false,
             on_click: None,
             on_secondary_mouse_down: None,
             check_icon: None,
@@ -33,13 +35,21 @@ impl ListItem {
         }
     }
 
+    /// Set to show check icon, default is None.
     pub fn check_icon(mut self, icon: IconName) -> Self {
         self.check_icon = Some(Icon::new(icon));
         self
     }
 
+    /// Set ListItem as the selected item style.
     pub fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
+        self
+    }
+
+    /// Set ListItem as the confirmed item style, it will show a check icon.
+    pub fn confirmed(mut self, confirmed: bool) -> Self {
+        self.confirmed = confirmed;
         self
     }
 
@@ -100,6 +110,8 @@ impl ParentElement for ListItem {
 
 impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let is_active = self.selected || self.confirmed;
+
         self.base
             .text_color(cx.theme().foreground)
             .relative()
@@ -112,8 +124,8 @@ impl RenderOnce for ListItem {
                     this
                 }
             })
-            .when(self.selected, |this| this.bg(cx.theme().list_active))
-            .when(!self.selected && !self.disabled, |this| {
+            .when(is_active, |this| this.bg(cx.theme().list_active))
+            .when(!is_active && !self.disabled, |this| {
                 this.hover(|this| this.bg(cx.theme().list_hover))
             })
             // Right click
@@ -133,7 +145,7 @@ impl RenderOnce for ListItem {
                     .child(div().w_full().overflow_hidden().children(self.children))
                     .when_some(self.check_icon, |this, icon| {
                         this.child(div().w_5().items_center().justify_center().when(
-                            self.selected,
+                            self.confirmed,
                             |this| {
                                 this.child(
                                     icon.size(Size::Small)
