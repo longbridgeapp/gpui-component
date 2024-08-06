@@ -219,7 +219,6 @@ impl Render for TextStory {
                     h_flex()
                         .w_full()
                         .gap_4()
-                        .items_start()
                         .child(
                             Clipboard::new("clipboard1")
                                 .content(|_| Label::new("Click icon to copy"))

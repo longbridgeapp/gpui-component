@@ -44,7 +44,7 @@ pub use disableable::Disableable;
 pub use event::InteractiveElementExt;
 pub use focusable::FocusableCycle;
 pub use selectable::{Selectable, Selection};
-pub use styled_ext::{Size, StyledExt};
+pub use styled_ext::{Sizable, Size, StyledExt};
 
 pub use colors::*;
 pub use icon::*;
