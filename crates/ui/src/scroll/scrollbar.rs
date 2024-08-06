@@ -2,14 +2,14 @@ use std::{cell::Cell, rc::Rc};
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    fill, point, px, relative, AnyView, Bounds, ContentMask, Element, Hitbox, IntoElement,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, ScrollHandle, Style,
-    UniformListScrollHandle,
+    fill, point, px, relative, AnyView, Bounds, ContentMask, Edges, Element, Hitbox, IntoElement,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position, ScrollHandle,
+    Style, UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
 const THUMB_RADIUS: Pixels = Pixels(5.0);
-const THUMB_INSET: Pixels = Pixels(2.5);
+const THUMB_INSET: Pixels = Pixels(2.);
 
 pub trait ScrollHandleOffsetable {
     fn offset(&self) -> Point<Pixels>;
@@ -365,33 +365,40 @@ impl Element for Scrollbar {
 
                     let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
-                    let (thumb_bg, bar_bg, inset) = if state.get().dragged_axis == Some(axis) {
-                        (thumb_bg, cx.theme().scrollbar, px(1.))
-                    } else if state.get().hovered_axis == Some(axis) {
-                        (thumb_bg, cx.theme().scrollbar, px(1.))
-                    } else {
-                        (thumb_bg, cx.theme().transparent, THUMB_INSET)
-                    };
+                    let (thumb_bg, bar_bg, bar_border, inset) =
+                        if state.get().dragged_axis == Some(axis) {
+                            (thumb_bg, cx.theme().scrollbar, cx.theme().border, px(1.))
+                        } else if state.get().hovered_axis == Some(axis) {
+                            (thumb_bg, cx.theme().scrollbar, cx.theme().border, px(1.))
+                        } else {
+                            (
+                                thumb_bg,
+                                cx.theme().transparent,
+                                gpui::transparent_black(),
+                                THUMB_INSET,
+                            )
+                        };
 
+                    let border_width = px(1.);
                     let thumb_bounds = if is_vertical {
                         Bounds::from_corners(
                             point(
-                                bounds.origin.x + inset,
-                                bounds.origin.y + thumb_start + inset,
+                                bounds.origin.x + inset + border_width,
+                                bounds.origin.y + thumb_start,
                             ),
                             point(
                                 bounds.origin.x + self.width - inset,
-                                bounds.origin.y + thumb_end - (inset * 2),
+                                bounds.origin.y + thumb_end,
                             ),
                         )
                     } else {
                         Bounds::from_corners(
                             point(
-                                bounds.origin.x + thumb_start + inset,
-                                bounds.origin.y + inset,
+                                bounds.origin.x + thumb_start,
+                                bounds.origin.y + inset + border_width,
                             ),
                             point(
-                                bounds.origin.x + thumb_end - (inset * 2),
+                                bounds.origin.x + thumb_end,
                                 bounds.origin.y + self.width - inset,
                             ),
                         )
@@ -399,25 +406,32 @@ impl Element for Scrollbar {
 
                     if state.get().visible {
                         cx.paint_quad(fill(bounds, bar_bg));
+
+                        cx.paint_quad(PaintQuad {
+                            bounds,
+                            corner_radii: (0.).into(),
+                            background: gpui::transparent_black(),
+                            border_widths: if is_vertical {
+                                Edges {
+                                    top: px(0.),
+                                    right: px(0.),
+                                    bottom: px(0.),
+                                    left: border_width,
+                                }
+                            } else {
+                                Edges {
+                                    top: px(1.),
+                                    right: px(0.),
+                                    bottom: px(0.),
+                                    left: border_width,
+                                }
+                            },
+                            border_color: bar_border,
+                        });
+
                         cx.paint_quad(
                             fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS - inset),
                         );
-                    }
-
-                    fn calc_percentage(
-                        is_vertical: bool,
-                        position: Point<Pixels>,
-                        thumb_length: Pixels,
-                        bounds: Bounds<Pixels>,
-                    ) -> f32 {
-                        if is_vertical {
-                            (position.y - thumb_length / 2. - bounds.origin.y)
-                                / (bounds.size.height - thumb_length)
-                        } else {
-                            (position.x - thumb_length / 2. - bounds.origin.x)
-                                / (bounds.size.width - thumb_length)
-                        }
-                        .min(1.)
                     }
 
                     cx.on_mouse_event({
@@ -429,7 +443,7 @@ impl Element for Scrollbar {
                             if phase.bubble() && bounds.contains(&event.position) {
                                 if thumb_bounds.contains(&event.position) {
                                     // click on the thumb bar, set the drag position
-                                    let pos =  event.position - thumb_bounds.origin;
+                                    let pos = event.position - thumb_bounds.origin;
 
                                     cx.stop_propagation();
                                     state.set(state.get().with_drag_pos(axis, pos));
@@ -438,12 +452,14 @@ impl Element for Scrollbar {
                                     // click on the scrollbar, jump to the position
                                     // Set the thumb bar center to the click position
                                     let offset = scroll_handle.offset();
-                                    let percentage = calc_percentage(
-                                        is_vertical,
-                                        event.position,
-                                        thumb_length,
-                                        bounds,
-                                    );
+                                    let percentage = if is_vertical {
+                                        (event.position.y - thumb_length / 2. - bounds.origin.y)
+                                            / (bounds.size.height - thumb_length)
+                                    } else {
+                                        (event.position.x - thumb_length / 2. - bounds.origin.x)
+                                            / (bounds.size.width - thumb_length)
+                                    }
+                                    .min(1.);
 
                                     if is_vertical {
                                         scroll_handle.set_offset(point(
