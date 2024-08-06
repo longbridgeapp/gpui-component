@@ -56,12 +56,13 @@ impl ListDelegate for ListItemDeletegate {
     }
 
     fn render_item(&self, ix: usize, _: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
-        let confimed = Some(ix) == self.confirmed_index;
+        let confirmed = Some(ix) == self.confirmed_index;
         let selected = Some(ix) == self.selected_index;
 
         if let Some(item) = self.matches.get(ix) {
             let list_item = ListItem::new(("item", ix))
-                .when(confimed, |this| this.check_icon(ui::IconName::Check))
+                .check_icon(ui::IconName::Check)
+                .confirmed(confirmed)
                 .selected(selected)
                 .py_1()
                 .px_3()
