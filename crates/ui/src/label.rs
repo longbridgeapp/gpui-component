@@ -3,7 +3,7 @@ use gpui::{
     Styled, WindowContext,
 };
 
-use crate::theme::ActiveTheme;
+use crate::{h_flex, theme::ActiveTheme};
 
 #[derive(Default)]
 pub enum TextAlign {
@@ -25,7 +25,7 @@ pub struct Label {
 impl Label {
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
-            base: div().line_height(rems(1.25)),
+            base: h_flex().line_height(rems(1.25)),
             label: label.into(),
             multiple_lines: true,
             align: TextAlign::default(),
