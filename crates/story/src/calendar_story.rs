@@ -20,11 +20,13 @@ impl CalendarStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
+        let now = chrono::Local::now().naive_local().date();
         let date_picker = cx.new_view(|cx| {
-            DatePicker::new("date_picker_medium", cx)
-                .default_now()
+            let mut picker = DatePicker::new("date_picker_medium", cx)
                 .cleanable(true)
-                .width(px(220.))
+                .width(px(220.));
+            picker.set_date(Some(now), cx);
+            picker
         });
         let date_picker_large = cx.new_view(|cx| {
             DatePicker::new("date_picker_large", cx)
@@ -33,10 +35,11 @@ impl CalendarStory {
                 .width(px(300.))
         });
         let date_picker_small = cx.new_view(|cx| {
-            DatePicker::new("date_picker_small", cx)
-                .default_now()
+            let mut picker = DatePicker::new("date_picker_small", cx)
                 .small()
-                .width(px(180.))
+                .width(px(180.));
+            picker.set_date(Some(now), cx);
+            picker
         });
 
         cx.subscribe(&date_picker, |this, _, ev, _| match ev {

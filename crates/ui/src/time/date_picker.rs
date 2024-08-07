@@ -86,12 +86,6 @@ impl DatePicker {
         self
     }
 
-    /// Set the default date of the date picker.
-    pub fn default_now(mut self) -> Self {
-        self.date = Some(Local::now().naive_local().date());
-        self
-    }
-
     /// Get the date of the date picker.
     pub fn date(&self) -> Option<NaiveDate> {
         self.date

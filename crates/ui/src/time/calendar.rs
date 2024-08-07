@@ -208,10 +208,11 @@ impl Render for Calendar {
                 .child(
                     h_flex()
                         .gap_0p5()
+                        .justify_between()
                         .children(weeks.iter().map(|week| self.render_week(week.clone(), cx))),
                 )
                 .children(self.days().iter().map(|week| {
-                    h_flex().gap_0p5().children(
+                    h_flex().gap_0p5().justify_between().children(
                         week.iter()
                             .enumerate()
                             .map(|(ix, d)| self.render_item(ix, d, cx)),
