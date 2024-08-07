@@ -76,6 +76,11 @@ impl OtpInput {
         cx.notify();
     }
 
+    /// Return the value of the OTP Input.
+    pub fn value(&self) -> SharedString {
+        self.value.clone()
+    }
+
     /// Set masked to true use masked input.
     pub fn masked(mut self, masked: bool) -> Self {
         self.masked = masked;
