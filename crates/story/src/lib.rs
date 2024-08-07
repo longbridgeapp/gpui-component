@@ -50,7 +50,7 @@ pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
 }
 
-pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
+pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {
     use ui::theme::ActiveTheme;
     let theme = cx.theme();
 
@@ -64,7 +64,7 @@ pub fn section(title: impl Into<SharedString>, cx: &WindowContext) -> Div {
         .border_color(theme.border)
         .flex_wrap()
         .justify_around()
-        .child(div().flex_none().w_full().child(title.into()))
+        .child(div().flex_none().w_full().child(title))
 }
 
 pub struct StoryContainer {
