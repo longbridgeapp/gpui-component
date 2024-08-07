@@ -1,10 +1,10 @@
 use gpui::{
-    div, prelude::FluentBuilder, AnyElement, Context, EventEmitter, FocusHandle, FocusableView,
+    div, prelude::FluentBuilder, px, AnyElement, Context, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyDownEvent, Model, MouseButton, MouseDownEvent,
     ParentElement as _, Render, SharedString, Styled as _, ViewContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex};
+use crate::{h_flex, theme::ActiveTheme, v_flex, Icon, IconName, Sizable, Size};
 
 use super::{blink_cursor::BlinkCursor, InputEvent};
 
@@ -20,6 +20,7 @@ pub struct OtpInput {
     masked: bool,
     value: SharedString,
     blink_cursor: Model<BlinkCursor>,
+    size: Size,
 }
 
 impl OtpInput {
@@ -33,6 +34,7 @@ impl OtpInput {
             value: SharedString::default(),
             masked: false,
             blink_cursor: blink_cursor.clone(),
+            size: Size::Medium,
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -62,10 +64,28 @@ impl OtpInput {
         self
     }
 
+    /// Set default value of the OTP Input.
+    pub fn default_value(mut self, value: impl Into<SharedString>) -> Self {
+        self.value = value.into();
+        self
+    }
+
+    /// Set value of the OTP Input.
+    pub fn set_value(&mut self, value: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
+        self.value = value.into();
+        cx.notify();
+    }
+
     /// Set masked to true use masked input.
     pub fn masked(mut self, masked: bool) -> Self {
         self.masked = masked;
         self
+    }
+
+    /// Set masked to true use masked input.
+    pub fn set_masked(&mut self, masked: bool, cx: &mut ViewContext<Self>) {
+        self.masked = masked;
+        cx.notify();
     }
 
     pub fn focus(&self, cx: &mut ViewContext<Self>) {
@@ -132,6 +152,13 @@ impl OtpInput {
     }
 }
 
+impl Sizable for OtpInput {
+    fn with_size(mut self, size: impl Into<crate::Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
+
 impl FocusableView for OtpInput {
     fn focus_handle(&self, _: &gpui::AppContext) -> FocusHandle {
         self.focus_handle.clone()
@@ -143,6 +170,14 @@ impl Render for OtpInput {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let blink_show = self.blink_cursor.read(cx).visible();
         let is_focused = self.focus_handle.is_focused(cx);
+
+        let text_size = match self.size {
+            Size::XSmall => px(14.),
+            Size::Small => px(14.),
+            Size::Medium => px(16.),
+            Size::Large => px(18.),
+            Size::Size(v) => v * 0.5,
+        };
 
         let mut groups: Vec<Vec<AnyElement>> = Vec::with_capacity(self.number_of_groups);
         let mut group_ix = 0;
@@ -170,16 +205,27 @@ impl Render for OtpInput {
                     .items_center()
                     .justify_center()
                     .rounded_md()
-                    .w_8()
-                    .h_8()
-                    .text_lg()
+                    .text_size(text_size)
+                    .map(|this| match self.size {
+                        Size::XSmall => this.w_6().h_6(),
+                        Size::Small => this.w_6().h_6(),
+                        Size::Medium => this.w_8().h_8(),
+                        Size::Large => this.w_11().h_11(),
+                        Size::Size(px) => this.w(px).h(px),
+                    })
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::on_input_mouse_down))
                     .map(|this| match c {
-                        Some(c) => this.child(if self.masked {
-                            SharedString::from("•")
-                        } else {
-                            SharedString::from(c.to_string())
-                        }),
+                        Some(c) => {
+                            if self.masked {
+                                this.child(
+                                    Icon::new(IconName::Asterisk)
+                                        .text_color(cx.theme().secondary_foreground)
+                                        .with_size(text_size),
+                                )
+                            } else {
+                                this.child(c.to_string())
+                            }
+                        }
                         None => this.when(is_input_focused && blink_show, |this| {
                             this.child(
                                 div()

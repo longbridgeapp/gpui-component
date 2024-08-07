@@ -1,15 +1,16 @@
 use gpui::{
-    actions, div, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
+    actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
     ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
 
 use ui::{
     button::Button,
+    checkbox::Checkbox,
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
-    v_flex, Clickable, FocusableCycle, IconName, Sizable,
+    v_flex, Clickable, FocusableCycle, IconName, Selection, Sizable,
 };
 
 use crate::section;
@@ -33,9 +34,12 @@ pub struct InputStory {
     both_input1: View<TextInput>,
     large_input: View<TextInput>,
     small_input: View<TextInput>,
+    otp_masked: bool,
     otp_input: View<OtpInput>,
     otp_value: Option<SharedString>,
-    opt_input2: View<OtpInput>,
+    otp_input_small: View<OtpInput>,
+    otp_input_large: View<OtpInput>,
+    opt_input_sized: View<OtpInput>,
 }
 
 impl InputStory {
@@ -117,9 +121,30 @@ impl InputStory {
             prefix_input1,
             suffix_input1,
             both_input1,
+            otp_masked: true,
             otp_input,
             otp_value: None,
-            opt_input2: cx.new_view(|cx| OtpInput::new(6, cx).groups(3)),
+            otp_input_small: cx.new_view(|cx| {
+                OtpInput::new(6, cx)
+                    .default_value("123456")
+                    .masked(true)
+                    .small()
+                    .groups(1)
+            }),
+            otp_input_large: cx.new_view(|cx| {
+                OtpInput::new(6, cx)
+                    .groups(3)
+                    .large()
+                    .default_value("012345")
+                    .masked(true)
+            }),
+            opt_input_sized: cx.new_view(|cx| {
+                OtpInput::new(4, cx)
+                    .groups(1)
+                    .masked(true)
+                    .default_value("654321")
+                    .with_size(px(55.))
+            }),
         }
     }
 
@@ -143,6 +168,18 @@ impl InputStory {
             InputEvent::Focus => println!("Focus"),
             InputEvent::Blur => println!("Blur"),
         };
+    }
+
+    fn toggle_opt_masked(&mut self, _: &Selection, cx: &mut ViewContext<Self>) {
+        self.otp_masked = !self.otp_masked;
+        self.otp_input
+            .update(cx, |input, cx| input.set_masked(self.otp_masked, cx));
+        self.otp_input_small
+            .update(cx, |input, cx| input.set_masked(self.otp_masked, cx));
+        self.otp_input_large
+            .update(cx, |input, cx| input.set_masked(self.otp_masked, cx));
+        self.opt_input_sized
+            .update(cx, |input, cx| input.set_masked(self.otp_masked, cx));
     }
 }
 
@@ -206,14 +243,29 @@ impl Render for InputStory {
                     ),
             )
             .child(
-                section("OTP Input", cx).child(
+                section(
+                    h_flex()
+                        .items_center()
+                        .justify_between()
+                        .child("OTP Input")
+                        .child(
+                            Checkbox::new("otp-mask")
+                                .label("Masked")
+                                .checked(self.otp_masked)
+                                .on_click(cx.listener(Self::toggle_opt_masked)),
+                        ),
+                    cx,
+                )
+                .child(
                     v_flex()
                         .gap_3()
+                        .child(self.otp_input_small.clone())
                         .child(self.otp_input.clone())
                         .when_some(self.otp_value.clone(), |this, otp| {
                             this.child(format!("Your OTP: {}", otp))
                         })
-                        .child(self.opt_input2.clone()),
+                        .child(self.otp_input_large.clone())
+                        .child(self.opt_input_sized.clone()),
                 ),
             )
             .child(
