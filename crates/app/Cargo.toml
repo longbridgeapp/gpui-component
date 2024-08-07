@@ -11,7 +11,7 @@ log.workspace = true
 workspace.workspace = true
 ui.workspace = true
 story.workspace = true
-
+serde.workspace = true
 
 [lints]
 workspace = true

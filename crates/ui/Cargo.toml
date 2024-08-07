@@ -24,6 +24,10 @@ once_cell = "1.19.0"
 wry = "0"
 smol = "1"
 regex = "1"
+rust-i18n = "3"
+
+# Calendar
+chrono = "0.4.38"
 
 [lints]
 workspace = true

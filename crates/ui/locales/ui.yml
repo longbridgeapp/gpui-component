@@ -1,0 +1,78 @@
+_version: 2
+Calendar:
+  week.0:
+    en: Su
+    zh-CN: 日
+    zh-HK: 日
+  week.1:
+    en: Mo
+    zh-CN: 一
+    zh-HK: 一
+  week.2:
+    en: Tu
+    zh-CN: 二
+    zh-HK: 二
+  week.3:
+    en: We
+    zh-CN: 三
+    zh-HK: 三
+  week.4:
+    en: Th
+    zh-CN: 四
+    zh-HK: 四
+  week.5:
+    en: Fr
+    zh-CN: 五
+    zh-HK: 五
+  week.6:
+    en: Sa
+    zh-CN: 六
+    zh-HK: 六
+  month.January:
+    en: January
+    zh-CN: 一月
+    zh-HK: 一月
+  month.February:
+    en: February
+    zh-CN: 二月
+    zh-HK: 二月
+  month.March:
+    en: March
+    zh-CN: 三月
+    zh-HK: 三月
+  month.April:
+    en: April
+    zh-CN: 四月
+    zh-HK: 四月
+  month.May:
+    en: May
+    zh-CN: 五月
+    zh-HK: 五月
+  month.June:
+    en: June
+    zh-CN: 六月
+    zh-HK: 六月
+  month.July:
+    en: July
+    zh-CN: 七月
+    zh-HK: 七月
+  month.August:
+    en: August
+    zh-CN: 八月
+    zh-HK: 八月
+  month.September:
+    en: September
+    zh-CN: 九月
+    zh-HK: 九月
+  month.October:
+    en: October
+    zh-CN: 十月
+    zh-HK: 十月
+  month.November:
+    en: November
+    zh-CN: 十一月
+    zh-HK: 十一月
+  month.December:
+    en: December
+    zh-CN: 十二月
+    zh-HK: 十二月
