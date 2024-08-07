@@ -66,14 +66,12 @@ impl Render for TextStory {
                     .child(
                         Label::new("Font Size Label")
                             .text_size(px(20.))
-                            .text_left()
                             .font_semibold()
                             .line_height(rems(1.8)),
                     )
                     .child(
                         div().w(px(200.)).child(
                             Label::new("Label should support text wrap in default, if the text is too long, it should wrap to the next line.")
-                                .text_left()
                                 .line_height(rems(1.8)),
                         ),
                     )

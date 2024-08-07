@@ -5,7 +5,7 @@ use gpui::{
 
 use crate::{h_flex, theme::ActiveTheme};
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq)]
 pub enum TextAlign {
     #[default]
     Left,
@@ -93,7 +93,13 @@ impl RenderOnce for Label {
                     TextAlign::Center => this.justify_center(),
                     TextAlign::Right => this.justify_end(),
                 })
-                .child(text_display),
+                .map(|this| {
+                    if self.align == TextAlign::Left {
+                        this.child(div().size_full().child(text_display))
+                    } else {
+                        this.child(text_display)
+                    }
+                }),
         )
     }
 }
