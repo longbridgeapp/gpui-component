@@ -1,4 +1,4 @@
-use chrono::{Local, NaiveDate};
+use chrono::NaiveDate;
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement as _, KeyBinding, Length, MouseButton,
@@ -83,12 +83,6 @@ impl DatePicker {
     /// Set width of the date picker input field, default is `Length::Auto`.
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
-        self
-    }
-
-    /// Set the default date of the date picker.
-    pub fn default_now(mut self) -> Self {
-        self.date = Some(Local::now().naive_local().date());
         self
     }
 
@@ -208,8 +202,9 @@ impl Render for DatePicker {
                     deferred(
                         div()
                             .track_focus(&self.focus_handle)
+                            .occlude()
                             .absolute()
-                            .mt_1()
+                            .mt_2()
                             .overflow_hidden()
                             .rounded_lg()
                             .p_3()
@@ -221,7 +216,7 @@ impl Render for DatePicker {
                             )
                             .child(self.calendar.clone()),
                     )
-                    .with_priority(1),
+                    .with_priority(2),
                 )
             })
     }
