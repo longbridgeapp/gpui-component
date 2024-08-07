@@ -179,11 +179,12 @@ pub trait StyledExt: Styled + Sized {
 impl<E: Styled> StyledExt for E {}
 
 /// A size for elements.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, Copy, PartialEq, Eq, Debug)]
 pub enum Size {
     Size(Pixels),
     XSmall,
     Small,
+    #[default]
     Medium,
     Large,
 }

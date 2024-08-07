@@ -49,7 +49,8 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Slider
 - [ ] Skeleton
 - [ ] DatePicker
-  - [ ] DateTimePicker
+  - [x] DatePicker
+  - [x] Calendar
   - [ ] TimePicker
   - [ ] DateRangePicker
 - [ ] ColorPicker

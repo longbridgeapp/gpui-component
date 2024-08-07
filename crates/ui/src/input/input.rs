@@ -7,12 +7,12 @@ use std::ops::Range;
 
 use super::blink_cursor::BlinkCursor;
 use super::history::History;
-use crate::button::{Button, ButtonStyle};
+use super::ClearButton;
 use crate::indicator::Indicator;
 use crate::styled_ext::{Sizable, StyleSized};
 use crate::theme::ActiveTheme;
 use crate::{event::InteractiveElementExt as _, Size};
-use crate::{Clickable as _, IconName, StyledExt as _};
+use crate::{Clickable as _, StyledExt as _};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, fill, point, px, relative, rems, size, AnyElement, AppContext, Bounds,
@@ -1066,16 +1066,7 @@ impl Render for TextInput {
             .when(self.loading, |this| this.child(Indicator::new()))
             .when(
                 self.cleanable && !self.loading && !self.text.is_empty(),
-                |this| {
-                    this.child(
-                        Button::new("clean-text", cx)
-                            .icon(IconName::Close)
-                            .style(ButtonStyle::Ghost)
-                            .with_size(px(15.))
-                            .cursor_pointer()
-                            .on_click(cx.listener(Self::clean)),
-                    )
-                },
+                |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
             )
             .children(suffix)
     }

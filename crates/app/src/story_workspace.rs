@@ -1,20 +1,28 @@
 use gpui::*;
 use prelude::FluentBuilder as _;
+use private::serde::Deserialize;
 use story::{
-    ButtonStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory, PickerStory,
-    PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer, SwitchStory,
-    TableStory, TextStory, TooltipStory,
+    ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
+    PickerStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
+    SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use workspace::{TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
     button::{Button, ButtonStyle},
+    popover::Popover,
+    popup_menu::PopupMenu,
     theme::{ActiveTheme, Theme},
     Clickable as _, IconName, Sizable,
 };
 
 use crate::app_state::AppState;
+
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+struct SelectLocale(SharedString);
+
+impl_actions!(locale_switcher, [SelectLocale]);
 
 actions!(workspace, [Open, CloseWindow]);
 
@@ -28,6 +36,7 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 
 pub struct StoryWorkspace {
     workspace: View<Workspace>,
+    locale_selector: View<LocaleSelector>,
 }
 
 impl StoryWorkspace {
@@ -184,7 +193,20 @@ impl StoryWorkspace {
         )
         .detach();
 
-        Self { workspace }
+        StoryContainer::add_pane(
+            "Calendar",
+            "A calendar component.",
+            CalendarStory::view(cx).into(),
+            workspace.clone(),
+            cx,
+        )
+        .detach();
+
+        let locale_selector = cx.new_view(LocaleSelector::new);
+        Self {
+            workspace,
+            locale_selector,
+        }
     }
 
     pub fn new_local(
@@ -276,6 +298,7 @@ impl Render for StoryWorkspace {
                             .px_2()
                             .mr_3()
                             .gap_2()
+                            .child(self.locale_selector.clone())
                             .child(
                                 Button::new("theme-mode", cx)
                                     .map(|this| {
@@ -308,5 +331,55 @@ impl Render for StoryWorkspace {
                     ),
             )
             .child(self.workspace.clone())
+    }
+}
+
+struct LocaleSelector {
+    focus_handle: FocusHandle,
+}
+
+impl LocaleSelector {
+    pub fn new(cx: &mut ViewContext<Self>) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
+    }
+
+    fn on_select_locale(&mut self, locale: &SelectLocale, cx: &mut ViewContext<Self>) {
+        ui::set_locale(&locale.0);
+        cx.refresh();
+    }
+}
+
+impl Render for LocaleSelector {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let focus_handle = self.focus_handle.clone();
+        let locale = ui::locale().to_string();
+
+        div()
+            .id("locale-selector")
+            .track_focus(&focus_handle)
+            .on_action(cx.listener(Self::on_select_locale))
+            .child(
+                Popover::new("locale-selector")
+                    .anchor(AnchorCorner::TopRight)
+                    .trigger(Button::new("btn", cx).small().ghost().icon(IconName::Globe))
+                    .content(move |cx| {
+                        let focus_handle = focus_handle.clone();
+                        PopupMenu::build(cx, |this, _cx| {
+                            this.track_focus(focus_handle)
+                                .menu_with_check(
+                                    "English",
+                                    locale == "en",
+                                    Box::new(SelectLocale("en".into())),
+                                )
+                                .menu_with_check(
+                                    "简体中文",
+                                    locale == "zh-CN",
+                                    Box::new(SelectLocale("zh-CN".into())),
+                                )
+                        })
+                    }),
+            )
     }
 }
