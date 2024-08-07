@@ -76,3 +76,8 @@ Calendar:
     en: December
     zh-CN: 十二月
     zh-HK: 十二月
+DatePicker:
+  placeholder:
+    en: Select date
+    zh-CN: 选择日期
+    zh-HK: 選擇日期

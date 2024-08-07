@@ -62,6 +62,7 @@ pub fn init(cx: &mut gpui::AppContext) {
     input::init(cx);
     list::init(cx);
     dropdown::init(cx);
+    date_picker::init(cx);
     popover::init(cx);
     popup_menu::init(cx);
     context_menu::init(cx);

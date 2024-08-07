@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use chrono::{Datelike, Local, NaiveDate};
 use gpui::{
-    prelude::FluentBuilder as _, ClickEvent, InteractiveElement as _, IntoElement,
+    prelude::FluentBuilder as _, ClickEvent, EventEmitter, InteractiveElement as _, IntoElement,
     ParentElement as _, Render, SharedString, StatefulInteractiveElement, Styled as _, ViewContext,
 };
 use rust_i18n::t;
@@ -16,27 +16,40 @@ use crate::{
 
 use super::utils::days_in_month;
 
+pub enum CalendarEvent {
+    /// The user selected a date.
+    Selected(NaiveDate),
+}
+
 pub struct Calendar {
-    date: NaiveDate,
+    date: Option<NaiveDate>,
     current_year: i32,
     current_month: u8,
 }
 
 impl Calendar {
     pub fn new(_cx: &mut ViewContext<Self>) -> Self {
-        let date = Local::now().naive_local().date();
+        let today = Local::now().naive_local().date();
         Self {
-            date,
-            current_month: date.month() as u8,
-            current_year: date.year(),
+            date: None,
+            current_month: today.month() as u8,
+            current_year: today.year(),
         }
     }
 
-    fn set_date(&mut self, date: NaiveDate, cx: &mut ViewContext<Self>) {
+    /// Set the date of the calendar.
+    pub fn set_date(&mut self, date: Option<NaiveDate>, cx: &mut ViewContext<Self>) {
         self.date = date;
-        self.current_month = date.month() as u8;
-        self.current_year = date.year();
+        if let Some(date) = date {
+            self.current_month = date.month() as u8;
+            self.current_year = date.year();
+        }
         cx.notify()
+    }
+
+    /// Get the date of the calendar.
+    pub fn date(&self) -> Option<NaiveDate> {
+        self.date
     }
 
     /// Returns the days of the month in a 2D vector to render on calendar.
@@ -114,7 +127,10 @@ impl Calendar {
     ) -> impl IntoElement {
         let day = d.day();
         let is_current_month = d.month() == self.current_month as u32;
-        let is_active = d.eq(&self.date);
+        let is_active = match self.date {
+            Some(date) => date == *d,
+            None => false,
+        };
 
         let date = *d;
 
@@ -138,10 +154,15 @@ impl Calendar {
                 this.bg(cx.theme().primary)
                     .text_color(cx.theme().primary_foreground)
             })
-            .on_click(cx.listener(move |view, _: &ClickEvent, cx| view.set_date(date, cx)))
+            .on_click(cx.listener(move |view, _: &ClickEvent, cx| {
+                view.set_date(Some(date), cx);
+                cx.emit(CalendarEvent::Selected(date))
+            }))
             .child(day.to_string())
     }
 }
+
+impl EventEmitter<CalendarEvent> for Calendar {}
 
 impl Render for Calendar {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {

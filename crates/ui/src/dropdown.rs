@@ -7,8 +7,8 @@ use gpui::{
 };
 
 use crate::{
-    button::{Button, ButtonStyle},
     h_flex,
+    input::ClearButton,
     list::{self, List, ListDelegate, ListItem},
     styled_ext::StyleSized,
     theme::ActiveTheme,
@@ -591,14 +591,7 @@ where
                                     .child(self.display_title(cx)),
                             )
                             .when(show_clean, |this| {
-                                this.child(
-                                    Button::new("clean", cx)
-                                        .icon(IconName::CircleX)
-                                        .style(ButtonStyle::Ghost)
-                                        .with_size(px(14.))
-                                        .cursor_pointer()
-                                        .on_click(cx.listener(Self::clean)),
-                                )
+                                this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean)))
                             })
                             .when(!show_clean, |this| {
                                 let icon = match self.icon.clone() {
