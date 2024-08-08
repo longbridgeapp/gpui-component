@@ -19,7 +19,61 @@ use super::utils::days_in_month;
 
 pub enum CalendarEvent {
     /// The user selected a date.
-    Selected(NaiveDate),
+    Selected(Date),
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub enum Mode {
+    #[default]
+    Single,
+    Range,
+}
+
+/// The date of the calendar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Date {
+    Single(Option<NaiveDate>),
+    Range(Option<NaiveDate>, Option<NaiveDate>),
+}
+
+impl From<NaiveDate> for Date {
+    fn from(date: NaiveDate) -> Self {
+        Self::Single(Some(date))
+    }
+}
+
+impl From<(NaiveDate, NaiveDate)> for Date {
+    fn from((start, end): (NaiveDate, NaiveDate)) -> Self {
+        Self::Range(Some(start), Some(end))
+    }
+}
+
+impl Date {
+    fn is_active(&self, v: &NaiveDate) -> bool {
+        let v = *v;
+        match self {
+            Self::Single(d) => Some(v) == *d,
+            Self::Range(start, end) => Some(v) == *start || Some(v) == *end,
+        }
+    }
+
+    pub fn is_some(&self) -> bool {
+        match self {
+            Self::Single(Some(_)) | Self::Range(Some(_), _) => true,
+            _ => false,
+        }
+    }
+
+    /// Return formatted date string.
+    pub fn format(&self, format: &str) -> Option<SharedString> {
+        match self {
+            Self::Single(Some(date)) => Some(date.format(format).to_string().into()),
+            Self::Range(Some(start), Some(end)) => {
+                Some(format!("{} - {}", start.format(format), end.format(format)).into())
+            }
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -45,8 +99,9 @@ impl ViewMode {
 
 pub struct Calendar {
     focus_handle: FocusHandle,
-    date: Option<NaiveDate>,
+    date: Date,
     view_mode: ViewMode,
+    mode: Mode,
     current_year: i32,
     current_month: u8,
     years: Vec<Vec<i32>>,
@@ -58,8 +113,9 @@ impl Calendar {
         let today = Local::now().naive_local().date();
         Self {
             focus_handle: cx.focus_handle(),
+            mode: Mode::Single,
             view_mode: ViewMode::Day,
-            date: None,
+            date: Date::Single(None),
             current_month: today.month() as u8,
             current_year: today.year(),
             years: vec![],
@@ -68,18 +124,37 @@ impl Calendar {
         .year_range((today.year() - 50, today.year() + 50))
     }
 
+    /// Set the mode of the calendar, default is `Mode::Single`.
+    pub fn mode(mut self, mode: Mode) -> Self {
+        self.mode = mode;
+        self
+    }
+
     /// Set the date of the calendar.
-    pub fn set_date(&mut self, date: Option<NaiveDate>, cx: &mut ViewContext<Self>) {
-        self.date = date;
-        if let Some(date) = date {
-            self.current_month = date.month() as u8;
-            self.current_year = date.year();
+    ///
+    /// When you set a range date, the mode will be automatically set to `Mode::Range`.
+    pub fn set_date(&mut self, date: impl Into<Date>, cx: &mut ViewContext<Self>) {
+        self.date = date.into();
+
+        match self.date {
+            Date::Single(Some(date)) => {
+                self.mode = Mode::Single;
+                self.current_month = date.month() as u8;
+                self.current_year = date.year();
+            }
+            Date::Range(Some(start), _) => {
+                self.mode = Mode::Range;
+                self.current_month = start.month() as u8;
+                self.current_year = start.year();
+            }
+            _ => {}
         }
+
         cx.notify()
     }
 
     /// Get the date of the calendar.
-    pub fn date(&self) -> Option<NaiveDate> {
+    pub fn date(&self) -> Date {
         self.date
     }
 
@@ -232,18 +307,29 @@ impl Calendar {
     ) -> impl IntoElement {
         let day = d.day();
         let is_current_month = d.month() == self.current_month as u32;
-        let is_active = match self.date {
-            Some(date) => date == *d,
-            None => false,
-        };
+        let is_active = self.date.is_active(d);
 
         let date = *d;
 
         self.item_button(ix, day.to_string(), is_active, !is_current_month, cx)
-            .on_click(cx.listener(move |view, _: &ClickEvent, cx| {
-                view.set_date(Some(date), cx);
-                cx.emit(CalendarEvent::Selected(date));
-            }))
+            .on_click(
+                cx.listener(move |view, _: &ClickEvent, cx| match view.mode {
+                    Mode::Single => {
+                        view.set_date(date, cx);
+                        cx.emit(CalendarEvent::Selected(view.date()));
+                    }
+                    Mode::Range => {
+                        match view.date {
+                            Date::Range(Some(start), None) if start < date => {
+                                view.set_date((start, date), cx);
+                            }
+                            _ => {}
+                        }
+
+                        cx.emit(CalendarEvent::Selected(view.date()));
+                    }
+                }),
+            )
     }
 
     fn set_view_mode(&mut self, mode: ViewMode, cx: &mut ViewContext<Self>) {

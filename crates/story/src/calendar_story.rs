@@ -25,7 +25,7 @@ impl CalendarStory {
             let mut picker = DatePicker::new("date_picker_medium", cx)
                 .cleanable(true)
                 .width(px(220.));
-            picker.set_date(Some(now), cx);
+            picker.set_date(now, cx);
             picker
         });
         let date_picker_large = cx.new_view(|cx| {
@@ -38,13 +38,13 @@ impl CalendarStory {
             let mut picker = DatePicker::new("date_picker_small", cx)
                 .small()
                 .width(px(180.));
-            picker.set_date(Some(now), cx);
+            picker.set_date(now, cx);
             picker
         });
 
         cx.subscribe(&date_picker, |this, _, ev, _| match ev {
             DatePickerEvent::Change(date) => {
-                this.date_picker_value = date.map(|d| d.to_string());
+                this.date_picker_value = date.format("%Y-%m-%d").map(|s| s.to_string());
             }
         })
         .detach();
