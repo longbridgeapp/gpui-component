@@ -1,14 +1,15 @@
 use std::rc::Rc;
 
+use gpui::FocusableView;
 use gpui::{
-    actions, div, prelude::FluentBuilder, px, Action, AnyWindowHandle, AppContext, Context,
-    DismissEvent, EventEmitter, FocusHandle, FocusableView, InteractiveElement, KeyBinding,
-    ParentElement, Pixels, Render, SharedString, Styled as _, View, ViewContext,
-    VisualContext as _, WindowContext,
+    actions, div, prelude::FluentBuilder, px, Action, AppContext, DismissEvent, EventEmitter,
+    FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
+    SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
 use crate::{
-    h_flex, list::ListItem, styled_ext::Sizable as _, theme::ActiveTheme, v_flex, Icon, IconName,
+    button::Button, h_flex, list::ListItem, popover::Popover, styled_ext::Sizable as _,
+    theme::ActiveTheme, v_flex, Icon, IconName, Selectable,
 };
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
@@ -23,12 +24,24 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
+pub trait PopupMenuExt: Selectable + IntoElement + 'static {
+    fn popup_menu(
+        self,
+        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+    ) -> Popover<PopupMenu> {
+        Popover::new("popup-menu")
+            .trigger(self)
+            .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
+    }
+}
+impl PopupMenuExt for Button {}
+
 enum PopupMenuItem {
     Separator,
     Item {
         icon: Option<Icon>,
         label: SharedString,
-        handler: Rc<dyn Fn(Option<&FocusHandle>, &mut WindowContext)>,
+        handler: Rc<dyn Fn(&mut WindowContext)>,
     },
 }
 
@@ -44,9 +57,6 @@ impl PopupMenuItem {
 
 pub struct PopupMenu {
     focus_handle: FocusHandle,
-    /// The parent window handle
-    window_handle: AnyWindowHandle,
-    action_context: Option<FocusHandle>,
     menu_items: Vec<PopupMenuItem>,
     has_icon: bool,
     selected_index: Option<usize>,
@@ -68,8 +78,6 @@ impl PopupMenu {
 
             let menu = Self {
                 focus_handle,
-                action_context: None,
-                window_handle: cx.window_handle(),
                 menu_items: Vec::new(),
                 selected_index: None,
                 min_width: px(120.),
@@ -94,28 +102,46 @@ impl PopupMenu {
         self
     }
 
-    /// You must set content (FocusHandle) with the parent view, if the menu action is listening on the parent view.
-    /// When the Menu Item confirmed, the parent view will be focused again to ensure to receive the action.
-    #[must_use]
-    pub fn track_focus(mut self, focus_handle: FocusHandle) -> Self {
-        self.action_context = Some(focus_handle);
-        self
-    }
-
     /// Add Menu Item
     pub fn menu(mut self, label: impl Into<SharedString>, action: Box<dyn Action>) -> Self {
-        self.add_menu_item(None, label, action);
+        self.add_menu_item(label, None, action);
         self
     }
 
+    /// Add Menu to open link
+    pub fn link(mut self, label: impl Into<SharedString>, href: impl Into<String>) -> Self {
+        let href = href.into();
+        self.menu_items.push(PopupMenuItem::Item {
+            icon: None,
+            label: label.into(),
+            handler: Rc::new(move |cx| cx.open_url(&href)),
+        });
+        self
+    }
+
+    /// Add Menu to open link
+    pub fn link_with_icon(
+        mut self,
+        label: impl Into<SharedString>,
+        icon: impl Into<Icon>,
+        href: impl Into<String>,
+    ) -> Self {
+        let href = href.into();
+        self.menu_items.push(PopupMenuItem::Item {
+            icon: Some(icon.into()),
+            label: label.into(),
+            handler: Rc::new(move |cx| cx.open_url(&href)),
+        });
+        self
+    }
     /// Add Menu Item with Icon
     pub fn menu_with_icon(
         mut self,
-        icon: impl Into<Icon>,
         label: impl Into<SharedString>,
+        icon: impl Into<Icon>,
         action: Box<dyn Action>,
     ) -> Self {
-        self.add_menu_item(Some(icon.into()), label, action);
+        self.add_menu_item(label, Some(icon.into()), action);
         self
     }
 
@@ -127,9 +153,9 @@ impl PopupMenu {
         action: Box<dyn Action>,
     ) -> Self {
         if checked {
-            self.add_menu_item(Some(IconName::Check.into()), label, action);
+            self.add_menu_item(label, Some(IconName::Check.into()), action);
         } else {
-            self.add_menu_item(None, label, action);
+            self.add_menu_item(label, None, action);
         }
 
         self
@@ -137,11 +163,10 @@ impl PopupMenu {
 
     fn add_menu_item(
         &mut self,
-        icon: Option<Icon>,
         label: impl Into<SharedString>,
+        icon: Option<Icon>,
         action: Box<dyn Action>,
     ) -> &mut Self {
-        let window_handle = self.window_handle;
         if icon.is_some() {
             self.has_icon = true;
         }
@@ -149,15 +174,9 @@ impl PopupMenu {
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
-            handler: Rc::new(move |handle, cx| {
-                if let Some(handle) = handle {
-                    cx.update_window(window_handle, |_, cx| {
-                        cx.activate_window();
-                        cx.focus(handle);
-                        cx.dispatch_action(action.boxed_clone());
-                    })
-                    .unwrap();
-                }
+            handler: Rc::new(move |cx| {
+                cx.activate_window();
+                cx.dispatch_action(action.boxed_clone());
             }),
         });
         self
@@ -184,13 +203,12 @@ impl PopupMenu {
     }
 
     fn confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
-        let handle = self.action_context.as_ref();
         match self.selected_index {
             Some(index) => {
                 let item = self.menu_items.get(index);
                 match item {
                     Some(PopupMenuItem::Item { handler, .. }) => {
-                        handler(handle, cx);
+                        handler(cx);
                         self.dismiss(&Dismiss, cx)
                     }
                     _ => {}
@@ -290,7 +308,7 @@ impl Render for PopupMenu {
                                 })
                                 .child(
                                     div()
-                                        .when(has_icon, |this| this.pl(px(18.)))
+                                        .when(has_icon, |this| this.pl(px(19.)).pr_2())
                                         .child(label.clone()),
                                 ),
                         )

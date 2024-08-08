@@ -365,19 +365,17 @@ impl Render for LocaleSelector {
                     .anchor(AnchorCorner::TopRight)
                     .trigger(Button::new("btn", cx).small().ghost().icon(IconName::Globe))
                     .content(move |cx| {
-                        let focus_handle = focus_handle.clone();
                         PopupMenu::build(cx, |this, _cx| {
-                            this.track_focus(focus_handle)
-                                .menu_with_check(
-                                    "English",
-                                    locale == "en",
-                                    Box::new(SelectLocale("en".into())),
-                                )
-                                .menu_with_check(
-                                    "简体中文",
-                                    locale == "zh-CN",
-                                    Box::new(SelectLocale("zh-CN".into())),
-                                )
+                            this.menu_with_check(
+                                "English",
+                                locale == "en",
+                                Box::new(SelectLocale("en".into())),
+                            )
+                            .menu_with_check(
+                                "简体中文",
+                                locale == "zh-CN",
+                                Box::new(SelectLocale("zh-CN".into())),
+                            )
                         })
                     }),
             )

@@ -10,7 +10,7 @@ use ui::{
     h_flex,
     input::TextInput,
     popover::{Popover, PopoverContent},
-    popup_menu::PopupMenu,
+    popup_menu::PopupMenuExt,
     prelude::FluentBuilder,
     switch::Switch,
     v_flex, Clickable as _, IconName, Sizable,
@@ -103,7 +103,6 @@ impl FocusableView for PopupStory {
 impl Render for PopupStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
-        let focus_handle = self.focus_handle.clone();
         let window_mode = self.window_mode;
 
         v_flex()
@@ -120,10 +119,8 @@ impl Render for PopupStory {
                 cx.focus(&this.focus_handle);
             }))
             .context_menu({
-                let focus_handle = focus_handle.clone();
-                move |menu, _cx| {
-                    menu.track_focus(focus_handle.clone())
-                        .menu("Cut", Box::new(Cut))
+                move |this, _cx| {
+                    this.menu("Cut", Box::new(Cut))
                         .menu("Copy", Box::new(Copy))
                         .menu("Paste", Box::new(Paste))
                         .separator()
@@ -133,7 +130,7 @@ impl Render for PopupStory {
             .gap_6()
             .child(
                 Switch::new("switch-window-mode")
-                    .checked(self.window_mode)
+                    .checked(window_mode)
                     .label("Use Window Popover")
                     .on_click(cx.listener(|this, checked, _| {
                         this.window_mode = *checked;
@@ -146,7 +143,7 @@ impl Render for PopupStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
-                                .when(self.window_mode, |this| this.window_mode())
+                                .when(window_mode, |this| this.window_mode())
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -167,7 +164,7 @@ impl Render for PopupStory {
                     )
                     .child(
                         Popover::new("info-top-right")
-                            .when(self.window_mode, |this| this.window_mode())
+                            .when(window_mode, |this| this.window_mode())
                             .anchor(AnchorCorner::TopRight)
                             .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
@@ -192,25 +189,22 @@ impl Render for PopupStory {
                 h_flex()
                     .gap_3()
                     .child(
-                        Popover::new("popup-menu")
-                            .when(window_mode, |this| this.window_mode())
-                            .trigger(Button::new("popup-menu-1", cx).icon(IconName::Ellipsis))
-                            .content(move |cx| {
-                                let focus_handle = focus_handle.clone();
-                                PopupMenu::build(cx, |menu, _cx| {
-                                    menu.track_focus(focus_handle)
-                                        .menu("Copy", Box::new(Copy))
-                                        .menu("Cut", Box::new(Cut))
-                                        .menu("Paste", Box::new(Paste))
-                                        .separator()
-                                        .menu_with_icon(
-                                            IconName::Search,
-                                            "Search",
-                                            Box::new(SearchAll),
-                                        )
-                                        .separator()
-                                        .menu_with_check("Check Menu", true, Box::new(SearchAll))
-                                })
+                        Button::new("popup-menu-1", cx)
+                            .icon(IconName::Ellipsis)
+                            .popup_menu(|this, _| {
+                                this.menu("Copy", Box::new(Copy))
+                                    .menu("Cut", Box::new(Cut))
+                                    .menu("Paste", Box::new(Paste))
+                                    .separator()
+                                    .menu_with_icon("Search", IconName::Search, Box::new(SearchAll))
+                                    .separator()
+                                    .menu_with_check("Check Menu", true, Box::new(SearchAll))
+                                    .separator()
+                                    .link_with_icon(
+                                        "GitHub Repository",
+                                        IconName::GitHub,
+                                        "https://github.com/huacnlee/gpui-component",
+                                    )
                             }),
                     )
                     .child(self.message.clone()),
@@ -223,7 +217,7 @@ impl Render for PopupStory {
                         .justify_between()
                         .child(
                             Popover::new("info-bottom-left")
-                                .when(self.window_mode, |this| this.window_mode())
+                                .when(window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
                                     Button::new("pop", cx).label("Popup with Form").w(px(300.)),
@@ -232,7 +226,7 @@ impl Render for PopupStory {
                         )
                         .child(
                             Popover::new("info-bottom-right")
-                                .when(self.window_mode, |this| this.window_mode())
+                                .when(window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(
