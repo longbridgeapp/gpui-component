@@ -28,10 +28,26 @@ impl NaiveDateExt for chrono::NaiveDate {
     }
 }
 
-pub(crate) fn days_in_month(year: i32, month: u32) -> Vec<Vec<NaiveDate>> {
+pub(crate) fn days_in_month(year: i32, month: u32, number_of_months: u32) -> Vec<Vec<NaiveDate>> {
+    let mut year = year;
+    let mut month = month;
+    if month > 12 {
+        year += 1;
+        month = 1;
+    }
+    if month < 1 {
+        year -= 1;
+        month = 12;
+    }
+
     let date = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
     let num_days = date.days_in_month();
     let start_weekday = date.weekday().num_days_from_sunday();
+
+    let mut total_groups = number_of_months * 5;
+    if total_groups == 0 {
+        total_groups = 5;
+    }
 
     // Get the days in the month, 2023-02 will returns
     // "29|30|31| 1| 2| 3| 4",
@@ -39,8 +55,20 @@ pub(crate) fn days_in_month(year: i32, month: u32) -> Vec<Vec<NaiveDate>> {
     // "12|13|14|15|16|17|18",
     // "19|20|21|22|23|24|25",
     // "26|27|28| 1| 2| 3| 4",
+    //
+    // If the number_of_months is 2, then it will return
+    // "29|30|31| 1| 2| 3| 4",
+    // " 5| 6| 7| 8| 9|10|11",
+    // "12|13|14|15|16|17|18",
+    // "19|20|21|22|23|24|25",
+    // "26|27|28| 1| 2| 3| 4",
+    // " 5| 6| 7| 8| 9|10|11",
+    // "12|13|14|15|16|17|18",
+    // "19|20|21|22|23|24|25",
+    // "26|27|28| 1| 2| 3| 4",
+    // " 5| 6| 7| 8| 9|10|11",
     let mut days = vec![];
-    for n in 0..5 {
+    for n in 0..total_groups as i32 {
         let mut week_days = vec![];
         for weekday in 0..7 {
             let (mut y, mut m) = (year, month);
@@ -103,8 +131,8 @@ mod tests {
     #[test]
     fn test_days() {
         #[track_caller]
-        fn assert_case(date: NaiveDate, expected: Vec<&str>) {
-            let out = days_in_month(date.year(), date.month())
+        fn assert_case(date: NaiveDate, number_of_months: u32, expected: Vec<&str>) {
+            let out = days_in_month(date.year(), date.month(), number_of_months)
                 .iter()
                 .map(|week| {
                     week.iter()
@@ -127,6 +155,7 @@ mod tests {
 
         assert_case(
             NaiveDate::from_ymd_opt(2024, 8, 1).unwrap(),
+            1,
             vec![
                 "7-28|7-29|7-30|7-31| 1| 2| 3",
                 " 4| 5| 6| 7| 8| 9|10",
@@ -137,6 +166,7 @@ mod tests {
         );
         assert_case(
             NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            1,
             vec![
                 "2024-12-29|2024-12-30|2024-12-31| 1| 2| 3| 4",
                 " 5| 6| 7| 8| 9|10|11",
@@ -148,6 +178,7 @@ mod tests {
 
         assert_case(
             NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            1,
             vec![
                 "1-28|1-29|1-30|1-31| 1| 2| 3",
                 " 4| 5| 6| 7| 8| 9|10",
@@ -158,12 +189,30 @@ mod tests {
         );
         assert_case(
             NaiveDate::from_ymd_opt(2023, 2, 20).unwrap(),
+            1,
             vec![
                 "1-29|1-30|1-31| 1| 2| 3| 4",
                 " 5| 6| 7| 8| 9|10|11",
                 "12|13|14|15|16|17|18",
                 "19|20|21|22|23|24|25",
                 "26|27|28|3-1|3-2|3-3|3-4",
+            ],
+        );
+
+        assert_case(
+            NaiveDate::from_ymd_opt(2023, 2, 20).unwrap(),
+            2,
+            vec![
+                "1-29|1-30|1-31| 1| 2| 3| 4",
+                " 5| 6| 7| 8| 9|10|11",
+                "12|13|14|15|16|17|18",
+                "19|20|21|22|23|24|25",
+                "26|27|28|3-1|3-2|3-3|3-4",
+                " 5| 6| 7| 8| 9|10|11",
+                "12|13|14|15|16|17|18",
+                "19|20|21|22|23|24|25",
+                "26|27|28|4-1|4-2|4-3|4-4",
+                " 5| 6| 7| 8| 9|10|11",
             ],
         );
     }

@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use gpui::{
     deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement as _, KeyBinding, Length, MouseButton,
@@ -12,7 +11,7 @@ use crate::{
     theme::ActiveTheme as _, Clickable, Icon, IconName, Sizable, Size, StyledExt as _,
 };
 
-use super::calendar::{Calendar, CalendarEvent};
+use super::calendar::{Calendar, CalendarEvent, Date};
 
 pub fn init(cx: &mut AppContext) {
     let context = Some("DatePicker");
@@ -21,13 +20,13 @@ pub fn init(cx: &mut AppContext) {
 
 #[derive(Clone)]
 pub enum DatePickerEvent {
-    Change(Option<NaiveDate>),
+    Change(Date),
 }
 
 pub struct DatePicker {
     id: ElementId,
     focus_handle: FocusHandle,
-    date: Option<NaiveDate>,
+    date: Date,
     cleanable: bool,
     placeholder: Option<SharedString>,
     open: bool,
@@ -35,6 +34,7 @@ pub struct DatePicker {
     width: Length,
     date_format: SharedString,
     calendar: View<Calendar>,
+    number_of_months: usize,
 }
 
 impl DatePicker {
@@ -43,7 +43,7 @@ impl DatePicker {
 
         cx.subscribe(&calendar, |this, _, ev: &CalendarEvent, cx| match ev {
             CalendarEvent::Selected(date) => {
-                this.update_date(Some(*date), cx);
+                this.update_date(*date, cx);
             }
         })
         .detach();
@@ -51,13 +51,14 @@ impl DatePicker {
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
-            date: None,
+            date: Date::Single(None),
             calendar,
             open: false,
             size: Size::default(),
             width: Length::Auto,
             date_format: "%Y/%m/%d".into(),
             cleanable: false,
+            number_of_months: 1,
             placeholder: None,
         }
     }
@@ -86,17 +87,23 @@ impl DatePicker {
         self
     }
 
+    /// Set the number of months calendar view to display, default is 1.
+    pub fn number_of_months(mut self, number_of_months: usize) -> Self {
+        self.number_of_months = number_of_months;
+        self
+    }
+
     /// Get the date of the date picker.
-    pub fn date(&self) -> Option<NaiveDate> {
+    pub fn date(&self) -> Date {
         self.date
     }
 
     /// Set the date of the date picker.
-    pub fn set_date(&mut self, date: Option<NaiveDate>, cx: &mut ViewContext<Self>) {
-        self.update_date(date, cx);
+    pub fn set_date(&mut self, date: impl Into<Date>, cx: &mut ViewContext<Self>) {
+        self.update_date(date.into(), cx);
     }
 
-    fn update_date(&mut self, date: Option<NaiveDate>, cx: &mut ViewContext<Self>) {
+    fn update_date(&mut self, date: Date, cx: &mut ViewContext<Self>) {
         self.date = date;
         self.calendar.update(cx, |view, cx| {
             view.set_date(date, cx);
@@ -112,7 +119,7 @@ impl DatePicker {
     }
 
     fn clean(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
-        self.update_date(None, cx);
+        self.update_date(Date::Single(None), cx);
     }
 
     fn toggle_calendar(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
@@ -144,8 +151,15 @@ impl Render for DatePicker {
             .unwrap_or_else(|| t!("DatePicker.placeholder").into());
         let display_title = self
             .date
-            .map(|date| date.format(&self.date_format).to_string())
-            .unwrap_or(placeholder.to_string());
+            .format(&self.date_format)
+            .unwrap_or(placeholder.clone());
+
+        self.calendar.update(cx, |view, cx| {
+            view.set_number_of_months(self.number_of_months, cx);
+        });
+
+        let popover_width =
+            285.0 * self.number_of_months as f32 + (self.number_of_months - 1) as f32 * 16.0;
 
         div()
             .id(self.id.clone())
@@ -208,7 +222,7 @@ impl Render for DatePicker {
                             .overflow_hidden()
                             .rounded_lg()
                             .p_3()
-                            .w(px(300.))
+                            .w(px(popover_width))
                             .elevation_2(cx)
                             .on_mouse_up_out(
                                 MouseButton::Left,
