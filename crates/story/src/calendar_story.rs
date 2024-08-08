@@ -46,6 +46,7 @@ impl CalendarStory {
         let date_range_picker = cx.new_view(|cx| {
             let mut picker = DatePicker::new("date_range_picker", cx)
                 .width(px(300.))
+                .number_of_months(2)
                 .cleanable(true);
             picker.set_date((now, now.checked_add_days(Days::new(4)).unwrap()), cx);
             picker

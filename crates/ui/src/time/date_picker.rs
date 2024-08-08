@@ -34,6 +34,7 @@ pub struct DatePicker {
     width: Length,
     date_format: SharedString,
     calendar: View<Calendar>,
+    number_of_months: usize,
 }
 
 impl DatePicker {
@@ -57,6 +58,7 @@ impl DatePicker {
             width: Length::Auto,
             date_format: "%Y/%m/%d".into(),
             cleanable: false,
+            number_of_months: 1,
             placeholder: None,
         }
     }
@@ -82,6 +84,12 @@ impl DatePicker {
     /// Set width of the date picker input field, default is `Length::Auto`.
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
+        self
+    }
+
+    /// Set the number of months calendar view to display, default is 1.
+    pub fn number_of_months(mut self, number_of_months: usize) -> Self {
+        self.number_of_months = number_of_months;
         self
     }
 
@@ -146,6 +154,13 @@ impl Render for DatePicker {
             .format(&self.date_format)
             .unwrap_or(placeholder.clone());
 
+        self.calendar.update(cx, |view, cx| {
+            view.set_number_of_months(self.number_of_months, cx);
+        });
+
+        let popover_width =
+            285.0 * self.number_of_months as f32 + (self.number_of_months - 1) as f32 * 16.0;
+
         div()
             .id(self.id.clone())
             .key_context("DatePicker")
@@ -207,7 +222,7 @@ impl Render for DatePicker {
                             .overflow_hidden()
                             .rounded_lg()
                             .p_3()
-                            .w(px(300.))
+                            .w(px(popover_width))
                             .elevation_2(cx)
                             .on_mouse_up_out(
                                 MouseButton::Left,

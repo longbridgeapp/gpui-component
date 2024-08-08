@@ -144,6 +144,8 @@ pub struct Calendar {
     current_month: u8,
     years: Vec<Vec<i32>>,
     year_page: i32,
+    /// Number of the months view to show.
+    number_of_months: usize,
 }
 
 impl Calendar {
@@ -157,6 +159,7 @@ impl Calendar {
             current_year: today.year(),
             years: vec![],
             year_page: 0,
+            number_of_months: 1,
         }
         .year_range((today.year() - 50, today.year() + 50))
     }
@@ -187,6 +190,17 @@ impl Calendar {
         self.date
     }
 
+    /// Set number of months to show, default is 1.
+    pub fn number_of_months(mut self, number_of_months: usize) -> Self {
+        self.number_of_months = number_of_months;
+        self
+    }
+
+    pub fn set_number_of_months(&mut self, number_of_months: usize, cx: &mut ViewContext<Self>) {
+        self.number_of_months = number_of_months;
+        cx.notify();
+    }
+
     /// Set the year range of the calendar, default is 50 years before and after the current year.
     ///
     /// Each year page contains 20 years, so the range will be divided into chunks of 20 years is better.
@@ -204,9 +218,29 @@ impl Calendar {
         self
     }
 
+    /// Get year and month by offset month.
+    fn offset_year_month(&self, offset_month: usize) -> (i32, u32) {
+        let mut month = self.current_month as i32 + offset_month as i32;
+        let mut year = self.current_year;
+        while month < 1 {
+            month += 12;
+            year -= 1;
+        }
+        while month > 12 {
+            month -= 12;
+            year += 1;
+        }
+
+        (year, month as u32)
+    }
+
     /// Returns the days of the month in a 2D vector to render on calendar.
     fn days(&self) -> Vec<Vec<NaiveDate>> {
-        days_in_month(self.current_year, self.current_month as u32)
+        days_in_month(
+            self.current_year,
+            self.current_month as u32,
+            self.number_of_months as u32,
+        )
     }
 
     fn has_prev_year_page(&self) -> bool {
@@ -263,8 +297,9 @@ impl Calendar {
         cx.notify()
     }
 
-    fn month_name(&self) -> SharedString {
-        match self.current_month {
+    fn month_name(&self, offset_month: usize) -> SharedString {
+        let (_, month) = self.offset_year_month(offset_month);
+        match month {
             1 => t!("Calendar.month.January"),
             2 => t!("Calendar.month.February"),
             3 => t!("Calendar.month.March"),
@@ -317,8 +352,12 @@ impl Calendar {
                 this.text_color(cx.theme().muted_foreground.opacity(0.3))
             })
             .when(secondary_active, |this| {
-                this.bg(cx.theme().accent)
-                    .text_color(cx.theme().accent_foreground)
+                this.bg(if muted {
+                    cx.theme().accent.opacity(0.3)
+                } else {
+                    cx.theme().accent
+                })
+                .text_color(cx.theme().accent_foreground)
             })
             .when(!active, |this| {
                 this.hover(|this| {
@@ -333,9 +372,16 @@ impl Calendar {
             .child(label.into())
     }
 
-    fn render_day(&self, ix: usize, d: &NaiveDate, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_day(
+        &self,
+        ix: usize,
+        d: &NaiveDate,
+        offset_month: usize,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let (_, month) = self.offset_year_month(offset_month);
         let day = d.day();
-        let is_current_month = d.month() == self.current_month as u32;
+        let is_current_month = d.month() == month;
         let is_active = self.date.is_active(d);
         let is_in_range = self.date.is_in_range(d);
 
@@ -404,6 +450,7 @@ impl Calendar {
     fn render_header(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let current_year = self.current_year;
         let disabled = self.view_mode.is_month();
+        let multiple_months = self.number_of_months > 1;
 
         h_flex()
             .gap_0p5()
@@ -422,41 +469,52 @@ impl Calendar {
                             .on_click(cx.listener(Self::prev_year_page))
                     }),
             )
-            .child(
-                h_flex()
-                    .justify_center()
-                    .gap_3()
-                    .child(
-                        Button::new("month", cx)
-                            .ghost()
-                            .label(self.month_name())
-                            .selected(self.view_mode.is_month())
-                            .compact()
-                            .on_click(cx.listener(|view, _, cx| {
-                                if view.view_mode.is_month() {
-                                    view.set_view_mode(ViewMode::Day, cx);
-                                } else {
-                                    view.set_view_mode(ViewMode::Month, cx);
-                                }
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Button::new("year", cx)
-                            .ghost()
-                            .label(current_year.to_string())
-                            .compact()
-                            .selected(self.view_mode.is_year())
-                            .on_click(cx.listener(|view, _, cx| {
-                                if view.view_mode.is_year() {
-                                    view.set_view_mode(ViewMode::Day, cx);
-                                } else {
-                                    view.set_view_mode(ViewMode::Year, cx);
-                                }
-                                cx.notify();
-                            })),
-                    ),
-            )
+            .when(!multiple_months, |this| {
+                this.child(
+                    h_flex()
+                        .justify_center()
+                        .gap_3()
+                        .child(
+                            Button::new("month", cx)
+                                .ghost()
+                                .label(self.month_name(0))
+                                .selected(self.view_mode.is_month())
+                                .compact()
+                                .on_click(cx.listener(|view, _, cx| {
+                                    if view.view_mode.is_month() {
+                                        view.set_view_mode(ViewMode::Day, cx);
+                                    } else {
+                                        view.set_view_mode(ViewMode::Month, cx);
+                                    }
+                                    cx.notify();
+                                })),
+                        )
+                        .child(
+                            Button::new("year", cx)
+                                .ghost()
+                                .label(current_year.to_string())
+                                .compact()
+                                .selected(self.view_mode.is_year())
+                                .on_click(cx.listener(|view, _, cx| {
+                                    if view.view_mode.is_year() {
+                                        view.set_view_mode(ViewMode::Day, cx);
+                                    } else {
+                                        view.set_view_mode(ViewMode::Year, cx);
+                                    }
+                                    cx.notify();
+                                })),
+                        ),
+                )
+            })
+            .when(multiple_months, |this| {
+                this.children((0..self.number_of_months).into_iter().map(|n| {
+                    h_flex()
+                        .justify_center()
+                        .gap_3()
+                        .child(self.month_name(n))
+                        .child(current_year.to_string())
+                }))
+            })
             .child(
                 Button::new("next", cx)
                     .icon(IconName::ArrowRight)
@@ -483,21 +541,28 @@ impl Calendar {
             t!("Calendar.week.6"),
         ];
 
-        v_flex()
-            .gap_0p5()
-            .child(
-                h_flex()
-                    .gap_0p5()
-                    .justify_between()
-                    .children(weeks.iter().map(|week| self.render_week(week.clone(), cx))),
-            )
-            .children(self.days().iter().map(|week| {
-                h_flex().gap_0p5().justify_between().children(
-                    week.iter()
-                        .enumerate()
-                        .map(|(ix, d)| self.render_day(ix, d, cx)),
-                )
-            }))
+        h_flex().gap_4().justify_between().text_sm().children(
+            self.days()
+                .chunks(5)
+                .into_iter()
+                .enumerate()
+                .map(|(offset_month, days)| {
+                    v_flex()
+                        .gap_0p5()
+                        .child(
+                            h_flex().gap_0p5().justify_between().children(
+                                weeks.iter().map(|week| self.render_week(week.clone(), cx)),
+                            ),
+                        )
+                        .children(days.iter().map(|week| {
+                            h_flex().gap_0p5().justify_between().children(
+                                week.iter()
+                                    .enumerate()
+                                    .map(|(ix, d)| self.render_day(ix, d, offset_month, cx)),
+                            )
+                        }))
+                }),
+        )
     }
 
     fn render_months(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -566,16 +631,18 @@ impl Render for Calendar {
         v_flex()
             .track_focus(&self.focus_handle)
             .gap_0p5()
-            .text_sm()
             .child(self.render_header(cx))
-            .when(self.view_mode.is_day(), |this| {
-                this.child(self.render_days(cx))
-            })
-            .when(self.view_mode.is_month(), |this| {
-                this.child(self.render_months(cx))
-            })
-            .when(self.view_mode.is_year(), |this| {
-                this.child(self.render_years(cx))
-            })
+            .child(
+                v_flex()
+                    .when(self.view_mode.is_day(), |this| {
+                        this.child(self.render_days(cx))
+                    })
+                    .when(self.view_mode.is_month(), |this| {
+                        this.child(self.render_months(cx))
+                    })
+                    .when(self.view_mode.is_year(), |this| {
+                        this.child(self.render_years(cx))
+                    }),
+            )
     }
 }
