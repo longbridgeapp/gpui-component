@@ -10,7 +10,7 @@ use ui::{
     h_flex,
     input::TextInput,
     popover::{Popover, PopoverContent},
-    popup_menu::PopupMenu,
+    popup_menu::PopupMenuExt,
     prelude::FluentBuilder,
     switch::Switch,
     v_flex, Clickable as _, IconName, Sizable,
@@ -130,7 +130,7 @@ impl Render for PopupStory {
             .gap_6()
             .child(
                 Switch::new("switch-window-mode")
-                    .checked(self.window_mode)
+                    .checked(window_mode)
                     .label("Use Window Popover")
                     .on_click(cx.listener(|this, checked, _| {
                         this.window_mode = *checked;
@@ -143,7 +143,7 @@ impl Render for PopupStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
-                                .when(self.window_mode, |this| this.window_mode())
+                                .when(window_mode, |this| this.window_mode())
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -164,7 +164,7 @@ impl Render for PopupStory {
                     )
                     .child(
                         Popover::new("info-top-right")
-                            .when(self.window_mode, |this| this.window_mode())
+                            .when(window_mode, |this| this.window_mode())
                             .anchor(AnchorCorner::TopRight)
                             .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
@@ -189,29 +189,22 @@ impl Render for PopupStory {
                 h_flex()
                     .gap_3()
                     .child(
-                        Popover::new("popup-menu")
-                            .when(window_mode, |this| this.window_mode())
-                            .trigger(Button::new("popup-menu-1", cx).icon(IconName::Ellipsis))
-                            .content(move |cx| {
-                                PopupMenu::build(cx, |this, _cx| {
-                                    this.menu("Copy", Box::new(Copy))
-                                        .menu("Cut", Box::new(Cut))
-                                        .menu("Paste", Box::new(Paste))
-                                        .separator()
-                                        .menu_with_icon(
-                                            "Search",
-                                            IconName::Search,
-                                            Box::new(SearchAll),
-                                        )
-                                        .separator()
-                                        .menu_with_check("Check Menu", true, Box::new(SearchAll))
-                                        .separator()
-                                        .link_with_icon(
-                                            "GitHub Repository",
-                                            IconName::GitHub,
-                                            "https://github.com/huacnlee/gpui-component",
-                                        )
-                                })
+                        Button::new("popup-menu-1", cx)
+                            .icon(IconName::Ellipsis)
+                            .popup_menu(|this, _| {
+                                this.menu("Copy", Box::new(Copy))
+                                    .menu("Cut", Box::new(Cut))
+                                    .menu("Paste", Box::new(Paste))
+                                    .separator()
+                                    .menu_with_icon("Search", IconName::Search, Box::new(SearchAll))
+                                    .separator()
+                                    .menu_with_check("Check Menu", true, Box::new(SearchAll))
+                                    .separator()
+                                    .link_with_icon(
+                                        "GitHub Repository",
+                                        IconName::GitHub,
+                                        "https://github.com/huacnlee/gpui-component",
+                                    )
                             }),
                     )
                     .child(self.message.clone()),
@@ -224,7 +217,7 @@ impl Render for PopupStory {
                         .justify_between()
                         .child(
                             Popover::new("info-bottom-left")
-                                .when(self.window_mode, |this| this.window_mode())
+                                .when(window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
                                     Button::new("pop", cx).label("Popup with Form").w(px(300.)),
@@ -233,7 +226,7 @@ impl Render for PopupStory {
                         )
                         .child(
                             Popover::new("info-bottom-right")
-                                .when(self.window_mode, |this| this.window_mode())
+                                .when(window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(

@@ -1,13 +1,15 @@
 use std::rc::Rc;
 
+use gpui::FocusableView;
 use gpui::{
     actions, div, prelude::FluentBuilder, px, Action, AppContext, DismissEvent, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, KeyBinding, ParentElement, Pixels, Render,
+    FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 
 use crate::{
-    h_flex, list::ListItem, styled_ext::Sizable as _, theme::ActiveTheme, v_flex, Icon, IconName,
+    button::Button, h_flex, list::ListItem, popover::Popover, styled_ext::Sizable as _,
+    theme::ActiveTheme, v_flex, Icon, IconName, Selectable,
 };
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);
@@ -21,6 +23,18 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("down", SelectNext, context),
     ]);
 }
+
+pub trait PopupMenuExt: Selectable + IntoElement + 'static {
+    fn popup_menu(
+        self,
+        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+    ) -> Popover<PopupMenu> {
+        Popover::new("popup-menu")
+            .trigger(self)
+            .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
+    }
+}
+impl PopupMenuExt for Button {}
 
 enum PopupMenuItem {
     Separator,
