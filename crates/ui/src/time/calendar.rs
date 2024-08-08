@@ -23,16 +23,30 @@ pub enum CalendarEvent {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum Mode {
+enum ViewMode {
     Day,
     Month,
     Year,
 }
 
+impl ViewMode {
+    fn is_day(&self) -> bool {
+        matches!(self, Self::Day)
+    }
+
+    fn is_month(&self) -> bool {
+        matches!(self, Self::Month)
+    }
+
+    fn is_year(&self) -> bool {
+        matches!(self, Self::Year)
+    }
+}
+
 pub struct Calendar {
     focus_handle: FocusHandle,
     date: Option<NaiveDate>,
-    mode: Mode,
+    view_mode: ViewMode,
     current_year: i32,
     current_month: u8,
     years: Vec<Vec<i32>>,
@@ -44,7 +58,7 @@ impl Calendar {
         let today = Local::now().naive_local().date();
         Self {
             focus_handle: cx.focus_handle(),
-            mode: Mode::Day,
+            view_mode: ViewMode::Day,
             date: None,
             current_month: today.month() as u8,
             current_year: today.year(),
@@ -232,8 +246,8 @@ impl Calendar {
             }))
     }
 
-    fn set_mode(&mut self, mode: Mode, cx: &mut ViewContext<Self>) {
-        self.mode = mode;
+    fn set_view_mode(&mut self, mode: ViewMode, cx: &mut ViewContext<Self>) {
+        self.view_mode = mode;
         cx.notify();
     }
 
@@ -259,7 +273,7 @@ impl Calendar {
 
     fn render_header(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let current_year = self.current_year;
-        let disabled = self.mode == Mode::Month;
+        let disabled = self.view_mode.is_month();
 
         h_flex()
             .gap_0p5()
@@ -270,10 +284,10 @@ impl Calendar {
                     .icon(IconName::ArrowLeft)
                     .ghost()
                     .disabled(disabled)
-                    .when(self.mode == Mode::Day, |this| {
+                    .when(self.view_mode.is_day(), |this| {
                         this.on_click(cx.listener(Self::prev_month))
                     })
-                    .when(self.mode == Mode::Year, |this| {
+                    .when(self.view_mode.is_year(), |this| {
                         this.when(!self.has_prev_year_page(), |this| this.disabled(true))
                             .on_click(cx.listener(Self::prev_year_page))
                     }),
@@ -286,13 +300,13 @@ impl Calendar {
                         Button::new("month", cx)
                             .ghost()
                             .label(self.month_name())
-                            .selected(self.mode == Mode::Month)
+                            .selected(self.view_mode.is_month())
                             .compact()
                             .on_click(cx.listener(|view, _, cx| {
-                                if view.mode == Mode::Month {
-                                    view.set_mode(Mode::Day, cx);
+                                if view.view_mode.is_month() {
+                                    view.set_view_mode(ViewMode::Day, cx);
                                 } else {
-                                    view.set_mode(Mode::Month, cx);
+                                    view.set_view_mode(ViewMode::Month, cx);
                                 }
                                 cx.notify();
                             })),
@@ -302,12 +316,12 @@ impl Calendar {
                             .ghost()
                             .label(current_year.to_string())
                             .compact()
-                            .selected(self.mode == Mode::Year)
+                            .selected(self.view_mode.is_year())
                             .on_click(cx.listener(|view, _, cx| {
-                                if view.mode == Mode::Year {
-                                    view.set_mode(Mode::Day, cx);
+                                if view.view_mode.is_year() {
+                                    view.set_view_mode(ViewMode::Day, cx);
                                 } else {
-                                    view.set_mode(Mode::Year, cx);
+                                    view.set_view_mode(ViewMode::Year, cx);
                                 }
                                 cx.notify();
                             })),
@@ -318,10 +332,10 @@ impl Calendar {
                     .icon(IconName::ArrowRight)
                     .ghost()
                     .disabled(disabled)
-                    .when(self.mode == Mode::Day, |this| {
+                    .when(self.view_mode.is_day(), |this| {
                         this.on_click(cx.listener(Self::next_month))
                     })
-                    .when(self.mode == Mode::Year, |this| {
+                    .when(self.view_mode.is_year(), |this| {
                         this.when(!self.has_next_year_page(), |this| this.disabled(true))
                             .on_click(cx.listener(Self::next_year_page))
                     }),
@@ -375,7 +389,7 @@ impl Calendar {
                             .w(relative(0.3))
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.current_month = (ix + 1) as u8;
-                                view.set_mode(Mode::Day, cx);
+                                view.set_view_mode(ViewMode::Day, cx);
                                 cx.notify();
                             }))
                     })
@@ -405,7 +419,7 @@ impl Calendar {
                             .w(relative(0.2))
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.current_year = year;
-                                view.set_mode(Mode::Day, cx);
+                                view.set_view_mode(ViewMode::Day, cx);
                                 cx.notify();
                             }))
                     })
@@ -423,13 +437,13 @@ impl Render for Calendar {
             .gap_0p5()
             .text_sm()
             .child(self.render_header(cx))
-            .when(self.mode == Mode::Day, |this| {
+            .when(self.view_mode.is_day(), |this| {
                 this.child(self.render_days(cx))
             })
-            .when(self.mode == Mode::Month, |this| {
+            .when(self.view_mode.is_month(), |this| {
                 this.child(self.render_months(cx))
             })
-            .when(self.mode == Mode::Year, |this| {
+            .when(self.view_mode.is_year(), |this| {
                 this.child(self.render_years(cx))
             })
     }
