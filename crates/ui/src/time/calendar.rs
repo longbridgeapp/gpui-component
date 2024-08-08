@@ -507,13 +507,15 @@ impl Calendar {
                 )
             })
             .when(multiple_months, |this| {
-                this.children((0..self.number_of_months).into_iter().map(|n| {
-                    h_flex()
-                        .justify_center()
-                        .gap_3()
-                        .child(self.month_name(n))
-                        .child(current_year.to_string())
-                }))
+                this.child(h_flex().flex_1().justify_around().children(
+                    (0..self.number_of_months).into_iter().map(|n| {
+                        h_flex()
+                            .justify_center()
+                            .gap_3()
+                            .child(self.month_name(n))
+                            .child(current_year.to_string())
+                    }),
+                ))
             })
             .child(
                 Button::new("next", cx)
