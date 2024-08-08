@@ -79,12 +79,21 @@ pub enum ButtonStyle {
     Outline,
     Ghost,
     Link,
+    Text,
     Custom(ButtonCustomStyle),
 }
 
 impl ButtonStyle {
     fn is_link(&self) -> bool {
         matches!(self, Self::Link)
+    }
+
+    fn is_text(&self) -> bool {
+        matches!(self, Self::Text)
+    }
+
+    fn no_padding(&self) -> bool {
+        self.is_link() || self.is_text()
     }
 }
 
@@ -161,6 +170,12 @@ impl Button {
     /// With the link style for the Button.
     pub fn link(mut self) -> Self {
         self.style = ButtonStyle::Link;
+        self
+    }
+
+    /// With the text style for the Button, it will no padding look like a normal text.
+    pub fn text(mut self) -> Self {
+        self.style = ButtonStyle::Text;
         self
     }
 
@@ -270,7 +285,7 @@ impl RenderOnce for Button {
             .items_center()
             .justify_center()
             .cursor_pointer()
-            .when(!style.is_link(), |this| {
+            .when(!style.no_padding(), |this| {
                 if self.label.is_none() && self.children.is_empty() {
                     // Icon Button
                     match self.size {
@@ -387,7 +402,9 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary,
             ButtonStyle::Secondary => cx.theme().secondary,
             ButtonStyle::Danger => cx.theme().destructive,
-            ButtonStyle::Outline | ButtonStyle::Ghost | ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Outline | ButtonStyle::Ghost | ButtonStyle::Link | ButtonStyle::Text => {
+                cx.theme().transparent
+            }
             ButtonStyle::Custom(colors) => colors.color,
         }
     }
@@ -400,6 +417,7 @@ impl ButtonStyle {
             }
             ButtonStyle::Danger => cx.theme().destructive_foreground,
             ButtonStyle::Link => cx.theme().link,
+            ButtonStyle::Text => cx.theme().foreground,
             ButtonStyle::Custom(colors) => colors.foreground,
         }
     }
@@ -410,7 +428,7 @@ impl ButtonStyle {
             ButtonStyle::Secondary => cx.theme().border,
             ButtonStyle::Danger => cx.theme().destructive,
             ButtonStyle::Outline => cx.theme().border,
-            ButtonStyle::Ghost | ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Ghost | ButtonStyle::Link | ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.border,
         }
     }
@@ -443,6 +461,7 @@ impl ButtonStyle {
             ButtonStyle::Danger => cx.theme().destructive_hover,
             ButtonStyle::Ghost => cx.theme().secondary,
             ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.hover,
         };
         let border = self.border_color(cx);
@@ -468,11 +487,13 @@ impl ButtonStyle {
             }
             ButtonStyle::Danger => cx.theme().destructive_active,
             ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.active,
         };
         let border = self.border_color(cx);
         let fg = match self {
             ButtonStyle::Link => cx.theme().link_active,
+            ButtonStyle::Text => cx.theme().foreground.opacity(0.7),
             _ => self.text_color(cx),
         };
         let underline = self.underline(cx);
@@ -493,11 +514,13 @@ impl ButtonStyle {
             }
             ButtonStyle::Danger => cx.theme().destructive_active,
             ButtonStyle::Link => cx.theme().transparent,
+            ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.active,
         };
         let border = self.border_color(cx);
         let fg = match self {
             ButtonStyle::Link => cx.theme().link_active,
+            ButtonStyle::Text => cx.theme().foreground.opacity(0.7),
             _ => self.text_color(cx),
         };
         let underline = self.underline(cx);
@@ -512,11 +535,11 @@ impl ButtonStyle {
 
     fn disabled(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = match self {
-            ButtonStyle::Link | ButtonStyle::Ghost => cx.theme().transparent,
+            ButtonStyle::Link | ButtonStyle::Ghost | ButtonStyle::Text => cx.theme().transparent,
             _ => cx.theme().secondary.darken(0.2).grayscale(),
         };
         let fg = match self {
-            ButtonStyle::Link | ButtonStyle::Ghost => cx.theme().link.grayscale(),
+            ButtonStyle::Link | ButtonStyle::Text => cx.theme().link.grayscale(),
             _ => cx.theme().secondary_foreground.darken(0.2).grayscale(),
         };
 
