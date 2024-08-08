@@ -1,3 +1,4 @@
+use chrono::Days;
 use gpui::{
     px, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
     VisualContext as _, WindowContext,
@@ -12,6 +13,7 @@ pub struct CalendarStory {
     date_picker_small: View<DatePicker>,
     date_picker_large: View<DatePicker>,
     date_picker_value: Option<String>,
+    date_range_picker: View<DatePicker>,
 }
 
 impl CalendarStory {
@@ -41,8 +43,21 @@ impl CalendarStory {
             picker.set_date(now, cx);
             picker
         });
+        let date_range_picker = cx.new_view(|cx| {
+            let mut picker = DatePicker::new("date_range_picker", cx)
+                .width(px(300.))
+                .cleanable(true);
+            picker.set_date((now, now.checked_add_days(Days::new(4)).unwrap()), cx);
+            picker
+        });
 
         cx.subscribe(&date_picker, |this, _, ev, _| match ev {
+            DatePickerEvent::Change(date) => {
+                this.date_picker_value = date.format("%Y-%m-%d").map(|s| s.to_string());
+            }
+        })
+        .detach();
+        cx.subscribe(&date_range_picker, |this, _, ev, _| match ev {
             DatePickerEvent::Change(date) => {
                 this.date_picker_value = date.format("%Y-%m-%d").map(|s| s.to_string());
             }
@@ -53,6 +68,7 @@ impl CalendarStory {
             date_picker,
             date_picker_large,
             date_picker_small,
+            date_range_picker,
             date_picker_value: None,
         }
     }
@@ -65,6 +81,7 @@ impl Render for CalendarStory {
             .child(self.date_picker.clone())
             .child(self.date_picker_small.clone())
             .child(self.date_picker_large.clone())
+            .child(self.date_range_picker.clone())
             .child(format!("Date picker value: {:?}", self.date_picker_value).into_element())
     }
 }

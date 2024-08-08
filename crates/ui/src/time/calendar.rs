@@ -22,13 +22,6 @@ pub enum CalendarEvent {
     Selected(Date),
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
-pub enum Mode {
-    #[default]
-    Single,
-    Range,
-}
-
 /// The date of the calendar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Date {
@@ -57,10 +50,56 @@ impl Date {
         }
     }
 
+    fn is_single(&self) -> bool {
+        matches!(self, Self::Single(_))
+    }
+
+    fn is_in_range(&self, v: &NaiveDate) -> bool {
+        let v = *v;
+        match self {
+            Self::Range(start, end) => {
+                if let Some(start) = start {
+                    if let Some(end) = end {
+                        v >= *start && v <= *end
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+
     pub fn is_some(&self) -> bool {
         match self {
             Self::Single(Some(_)) | Self::Range(Some(_), _) => true,
             _ => false,
+        }
+    }
+
+    /// Check if the date is complete.
+    pub fn is_complete(&self) -> bool {
+        match self {
+            Self::Range(Some(_), Some(_)) => true,
+            Self::Single(Some(_)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn start(&self) -> Option<NaiveDate> {
+        match self {
+            Self::Single(Some(date)) => Some(*date),
+            Self::Range(Some(start), _) => Some(*start),
+            _ => None,
+        }
+    }
+
+    pub fn end(&self) -> Option<NaiveDate> {
+        match self {
+            Self::Range(_, Some(end)) => Some(*end),
+            _ => None,
         }
     }
 
@@ -101,7 +140,6 @@ pub struct Calendar {
     focus_handle: FocusHandle,
     date: Date,
     view_mode: ViewMode,
-    mode: Mode,
     current_year: i32,
     current_month: u8,
     years: Vec<Vec<i32>>,
@@ -113,7 +151,6 @@ impl Calendar {
         let today = Local::now().naive_local().date();
         Self {
             focus_handle: cx.focus_handle(),
-            mode: Mode::Single,
             view_mode: ViewMode::Day,
             date: Date::Single(None),
             current_month: today.month() as u8,
@@ -124,12 +161,6 @@ impl Calendar {
         .year_range((today.year() - 50, today.year() + 50))
     }
 
-    /// Set the mode of the calendar, default is `Mode::Single`.
-    pub fn mode(mut self, mode: Mode) -> Self {
-        self.mode = mode;
-        self
-    }
-
     /// Set the date of the calendar.
     ///
     /// When you set a range date, the mode will be automatically set to `Mode::Range`.
@@ -138,12 +169,10 @@ impl Calendar {
 
         match self.date {
             Date::Single(Some(date)) => {
-                self.mode = Mode::Single;
                 self.current_month = date.month() as u8;
                 self.current_year = date.year();
             }
             Date::Range(Some(start), _) => {
-                self.mode = Mode::Range;
                 self.current_month = start.month() as u8;
                 self.current_year = start.year();
             }
@@ -273,6 +302,7 @@ impl Calendar {
         id: impl Into<ElementId>,
         label: impl Into<SharedString>,
         active: bool,
+        secondary_active: bool,
         muted: bool,
         cx: &mut ViewContext<Self>,
     ) -> impl IntoElement + Styled + StatefulInteractiveElement {
@@ -285,6 +315,10 @@ impl Calendar {
             .cursor_pointer()
             .when(muted, |this| {
                 this.text_color(cx.theme().muted_foreground.opacity(0.3))
+            })
+            .when(secondary_active, |this| {
+                this.bg(cx.theme().accent)
+                    .text_color(cx.theme().accent_foreground)
             })
             .when(!active, |this| {
                 this.hover(|this| {
@@ -299,37 +333,47 @@ impl Calendar {
             .child(label.into())
     }
 
-    fn render_item(
-        &self,
-        ix: usize,
-        d: &NaiveDate,
-        cx: &mut ViewContext<Self>,
-    ) -> impl IntoElement {
+    fn render_day(&self, ix: usize, d: &NaiveDate, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let day = d.day();
         let is_current_month = d.month() == self.current_month as u32;
         let is_active = self.date.is_active(d);
+        let is_in_range = self.date.is_in_range(d);
 
         let date = *d;
 
-        self.item_button(ix, day.to_string(), is_active, !is_current_month, cx)
-            .on_click(
-                cx.listener(move |view, _: &ClickEvent, cx| match view.mode {
-                    Mode::Single => {
-                        view.set_date(date, cx);
-                        cx.emit(CalendarEvent::Selected(view.date()));
-                    }
-                    Mode::Range => {
-                        match view.date {
-                            Date::Range(Some(start), None) if start < date => {
-                                view.set_date((start, date), cx);
-                            }
-                            _ => {}
-                        }
+        self.item_button(
+            ix,
+            day.to_string(),
+            is_active,
+            is_in_range,
+            !is_current_month,
+            cx,
+        )
+        .on_click(cx.listener(move |view, _: &ClickEvent, cx| {
+            if view.date.is_single() {
+                view.set_date(date, cx);
+                cx.emit(CalendarEvent::Selected(view.date()));
+            } else {
+                let start = view.date.start();
+                let end = view.date.end();
 
-                        cx.emit(CalendarEvent::Selected(view.date()));
+                if start.is_none() && end.is_none() {
+                    view.set_date(Date::Range(Some(date), None), cx);
+                } else if start.is_some() && end.is_none() {
+                    if date < start.unwrap() {
+                        view.set_date(Date::Range(Some(date), None), cx);
+                    } else {
+                        view.set_date(Date::Range(Some(start.unwrap()), Some(date)), cx);
                     }
-                }),
-            )
+                } else {
+                    view.set_date(Date::Range(Some(date), None), cx);
+                }
+
+                if view.date.is_complete() {
+                    cx.emit(CalendarEvent::Selected(view.date()));
+                }
+            }
+        }))
     }
 
     fn set_view_mode(&mut self, mode: ViewMode, cx: &mut ViewContext<Self>) {
@@ -440,6 +484,7 @@ impl Calendar {
         ];
 
         v_flex()
+            .gap_0p5()
             .child(
                 h_flex()
                     .gap_0p5()
@@ -450,7 +495,7 @@ impl Calendar {
                 h_flex().gap_0p5().justify_between().children(
                     week.iter()
                         .enumerate()
-                        .map(|(ix, d)| self.render_item(ix, d, cx)),
+                        .map(|(ix, d)| self.render_day(ix, d, cx)),
                 )
             }))
     }
@@ -471,7 +516,7 @@ impl Calendar {
                     .map(|(ix, month)| {
                         let active = (ix + 1) as u8 == self.current_month;
 
-                        self.item_button(ix, month.to_string(), active, false, cx)
+                        self.item_button(ix, month.to_string(), active, false, false, cx)
                             .w(relative(0.3))
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.current_month = (ix + 1) as u8;
@@ -501,7 +546,7 @@ impl Calendar {
                         let year = *year;
                         let active = year == self.current_year;
 
-                        self.item_button(ix, year.to_string(), active, false, cx)
+                        self.item_button(ix, year.to_string(), active, false, false, cx)
                             .w(relative(0.2))
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.current_year = year;
