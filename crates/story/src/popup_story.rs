@@ -103,7 +103,6 @@ impl FocusableView for PopupStory {
 impl Render for PopupStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let form = self.form.clone();
-        let focus_handle = self.focus_handle.clone();
         let window_mode = self.window_mode;
 
         v_flex()
@@ -120,10 +119,8 @@ impl Render for PopupStory {
                 cx.focus(&this.focus_handle);
             }))
             .context_menu({
-                let focus_handle = focus_handle.clone();
-                move |menu, _cx| {
-                    menu.track_focus(focus_handle.clone())
-                        .menu("Cut", Box::new(Cut))
+                move |this, _cx| {
+                    this.menu("Cut", Box::new(Cut))
                         .menu("Copy", Box::new(Copy))
                         .menu("Paste", Box::new(Paste))
                         .separator()
@@ -196,20 +193,24 @@ impl Render for PopupStory {
                             .when(window_mode, |this| this.window_mode())
                             .trigger(Button::new("popup-menu-1", cx).icon(IconName::Ellipsis))
                             .content(move |cx| {
-                                let focus_handle = focus_handle.clone();
-                                PopupMenu::build(cx, |menu, _cx| {
-                                    menu.track_focus(focus_handle)
-                                        .menu("Copy", Box::new(Copy))
+                                PopupMenu::build(cx, |this, _cx| {
+                                    this.menu("Copy", Box::new(Copy))
                                         .menu("Cut", Box::new(Cut))
                                         .menu("Paste", Box::new(Paste))
                                         .separator()
                                         .menu_with_icon(
-                                            IconName::Search,
                                             "Search",
+                                            IconName::Search,
                                             Box::new(SearchAll),
                                         )
                                         .separator()
                                         .menu_with_check("Check Menu", true, Box::new(SearchAll))
+                                        .separator()
+                                        .link_with_icon(
+                                            "GitHub Repository",
+                                            IconName::GitHub,
+                                            "https://github.com/huacnlee/gpui-component",
+                                        )
                                 })
                             }),
                     )
