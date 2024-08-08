@@ -151,6 +151,16 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
+                                Button::new("button-5-text", cx)
+                                    .text()
+                                    .label("Text Button")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .when(compact, |this| this.compact())
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
                                 Button::new("button-6-custom", cx)
                                     .custom(
                                         ButtonCustomStyle::new(cx)
@@ -234,6 +244,17 @@ impl Render for ButtonStory {
                                     .link()
                                     .icon(IconName::Check)
                                     .label("Link")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .loading(loading)
+                                    .when(compact, |this| this.compact())
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-icon-6-text", cx)
+                                    .text()
+                                    .icon(IconName::Check)
+                                    .label("Text Button")
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
