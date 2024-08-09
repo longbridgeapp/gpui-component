@@ -313,6 +313,7 @@ pub struct Theme {
     pub link_hover: Hsla,
     pub link_active: Hsla,
     pub menu: Hsla,
+    pub skeleton: Hsla,
 }
 
 impl Global for Theme {}
@@ -391,6 +392,7 @@ impl From<Colors> for Theme {
             link_hover: colors.link.lighten(0.2),
             link_active: colors.link.darken(0.2),
             menu: colors.menu,
+            skeleton: hsla(colors.primary.h, colors.primary.s, colors.primary.l, 0.1),
         }
     }
 }

@@ -7,7 +7,8 @@ use crate::theme::hsl;
 use anyhow::Result;
 
 static DEFAULT_COLOR: once_cell::sync::Lazy<ShacnColors> = once_cell::sync::Lazy::new(|| {
-    serde_json::from_str(include_str!("default-colors.json")).expect("failed to parse default-json")
+    serde_json::from_str(include_str!("../default-colors.json"))
+        .expect("failed to parse default-json")
 });
 
 type ColorScales = HashMap<usize, ShacnColor>;
