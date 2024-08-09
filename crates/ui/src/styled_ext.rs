@@ -3,8 +3,8 @@ use crate::{
     theme::{ActiveTheme, Colorize},
 };
 use gpui::{
-    hsla, point, px, rems, AnyView, Axis, BoxShadow, Element, Fill, FocusHandle, Pixels,
-    SizeRefinement, Styled, WindowContext,
+    hsla, point, px, rems, AnyView, Axis, BoxShadow, Element, Fill, FocusHandle, Pixels, Styled,
+    WindowContext,
 };
 use smallvec::{smallvec, SmallVec};
 

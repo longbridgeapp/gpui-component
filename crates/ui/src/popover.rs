@@ -1,18 +1,15 @@
 use anyhow::Result;
 use gpui::{
     actions, anchored, deferred, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner,
-    Animation, AnimationExt, AnyElement, AppContext, Bounds, Context, DismissEvent, DispatchPhase,
-    Element, ElementId, EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
+    AnyElement, AppContext, Bounds, Context, DismissEvent, DispatchPhase, Element, ElementId,
+    EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
     InteractiveElement as _, IntoElement, LayoutId, ManagedView, MouseButton, MouseDownEvent,
     ParentElement, Pixels, Point, Render, Style, Styled, Subscription, View, ViewContext,
     VisualContext, WindowBackgroundAppearance, WindowContext, WindowId, WindowOptions,
 };
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{
-    theme::{ActiveTheme, Colorize},
-    Selectable, StyledExt as _,
-};
+use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
 
 actions!(popover, [Open, Dismiss]);
 
