@@ -3,35 +3,33 @@ use gpui::{
     VisualContext, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, StyledExt};
+use crate::{theme::ActiveTheme, StyledExt};
 
 pub struct Tooltip {
-    title: SharedString,
+    text: SharedString,
 }
 
 impl Tooltip {
-    pub fn new(title: impl Into<SharedString>, cx: &mut WindowContext) -> AnyView {
-        cx.new_view(|_cx| Self {
-            title: title.into(),
-        })
-        .into()
+    pub fn new(text: impl Into<SharedString>, cx: &mut WindowContext) -> AnyView {
+        cx.new_view(|_| Self { text: text.into() }).into()
     }
 }
 
 impl Render for Tooltip {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div().child(
-            v_flex()
+            // Wrap in a child, to ensure the left margin is applied to the tooltip
+            div()
                 .m_3()
                 .bg(cx.theme().popover)
-                .rounded(px(8.))
-                .border_1()
-                .border_color(cx.theme().border)
-                .elevation_2(cx)
                 .text_color(cx.theme().popover_foreground)
-                .py_1p5()
+                .elevation_1(cx)
+                .rounded(px(6.))
+                .pt_1()
+                .pb_0p5()
                 .px_2()
-                .child(h_flex().gap_4().child(self.title.clone())),
+                .text_sm()
+                .child(self.text.clone()),
         )
     }
 }
