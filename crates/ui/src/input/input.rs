@@ -112,8 +112,8 @@ pub struct TextInput {
     text: SharedString,
     history: History,
     blink_cursor: Model<BlinkCursor>,
-    prefix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
-    suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
+    prefix: Option<Box<dyn Fn(&mut ViewContext<Self>) -> AnyElement + 'static>>,
+    suffix: Option<Box<dyn Fn(&mut ViewContext<Self>) -> AnyElement + 'static>>,
     loading: bool,
     placeholder: SharedString,
     selected_range: Range<usize>,
@@ -212,7 +212,7 @@ impl TextInput {
     /// Set the prefix element of the input field.
     pub fn set_prefix<F, E>(&mut self, builder: F, cx: &mut ViewContext<Self>)
     where
-        F: Fn(&WindowContext) -> E + 'static,
+        F: Fn(&ViewContext<Self>) -> E + 'static,
         E: IntoElement,
     {
         self.prefix = Some(Box::new(move |cx| builder(cx).into_any_element()));
@@ -222,7 +222,7 @@ impl TextInput {
     /// Set the suffix element of the input field.
     pub fn set_suffix<F, E>(&mut self, builder: F, cx: &mut ViewContext<Self>)
     where
-        F: Fn(&WindowContext) -> E + 'static,
+        F: Fn(&ViewContext<Self>) -> E + 'static,
         E: IntoElement,
     {
         self.suffix = Some(Box::new(move |cx| builder(cx).into_any_element()));
@@ -238,7 +238,7 @@ impl TextInput {
     /// Set the prefix element of the input field, for example a search Icon.
     pub fn prefix<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&mut WindowContext) -> E + 'static,
+        F: Fn(&mut ViewContext<Self>) -> E + 'static,
         E: IntoElement,
     {
         self.prefix = Some(Box::new(move |cx| builder(cx).into_any_element()));
@@ -248,7 +248,7 @@ impl TextInput {
     /// Set the suffix element of the input field, for example a clear button.
     pub fn suffix<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&mut WindowContext) -> E + 'static,
+        F: Fn(&mut ViewContext<Self>) -> E + 'static,
         E: IntoElement,
     {
         self.suffix = Some(Box::new(move |cx| builder(cx).into_any_element()));
