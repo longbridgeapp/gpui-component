@@ -240,16 +240,18 @@ impl<M: ManagedView> Element for Popover<M> {
                         .into_any()
                 } else {
                     let content_view_mut = element_state.content_view.clone();
+                    let bg_color = cx.theme().popover;
+                    let anchor = view.anchor;
                     deferred(
                         anchored.child(
                             div()
                                 .size_full()
                                 .occlude()
                                 .elevation_2(cx)
-                                .bg(cx.theme().popover)
+                                .bg(bg_color)
                                 .border_1()
                                 .border_color(cx.theme().border)
-                                .map(|this| match view.anchor {
+                                .map(|this| match anchor {
                                     AnchorCorner::TopLeft | AnchorCorner::TopRight => this.top_2(),
                                     AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
                                         this.bottom_2()

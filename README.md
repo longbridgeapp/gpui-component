@@ -31,7 +31,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [ ] RadioGroup
 - [x] Switch
   - [x] With Label (Left, Right side)
-  - [ ] Toggle Animation
+  - [x] Toggle Animation
 - [x] Dropdown
 - [x] Tabs
   - [x] Tab

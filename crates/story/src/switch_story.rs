@@ -112,7 +112,7 @@ impl Render for SwitchStory {
                 )
                 .child(
                     card(cx).v_flex()
-                        .items_start().child(title("Disabled Switchs")).child(
+                        .items_start().child(title("Small Switchs")).child(
                         h_flex().items_center()
                         .gap_6()
                         .child(Switch::new("switch3").checked(self.switch3).label("Small Size").small().on_click(cx.listener(move |view, checked, cx| {

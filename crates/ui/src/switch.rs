@@ -1,11 +1,14 @@
+use std::time::Duration;
+
 use crate::{
     stack::h_flex,
     theme::{ActiveTheme, Colorize},
     Disableable, Sizable, Size,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, Div, InteractiveElement, IntoElement, ParentElement as _,
-    RenderOnce, SharedString, Stateful, Styled as _, WindowContext,
+    div, prelude::FluentBuilder as _, px, Animation, AnimationExt as _, Div, ElementId,
+    InteractiveElement, IntoElement, ParentElement as _, RenderOnce, SharedString, Stateful,
+    Styled as _, WindowContext,
 };
 
 type OnClick = Box<dyn Fn(&bool, &mut WindowContext) + 'static>;
@@ -88,6 +91,7 @@ impl RenderOnce for Switch {
     fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
         let theme = cx.theme();
         let group_id = format!("switch_group_{:?}", self.id);
+        let checked = self.checked;
 
         let (bg, toggle_bg) = match self.checked {
             true => (theme.primary, theme.background),
@@ -99,6 +103,16 @@ impl RenderOnce for Switch {
             false => (bg, toggle_bg),
         };
 
+        let (bg_width, bg_height) = match self.size {
+            Size::XSmall | Size::Small => (px(28.), px(16.)),
+            _ => (px(36.), px(20.)),
+        };
+        let bar_width = match self.size {
+            Size::XSmall | Size::Small => px(12.),
+            _ => px(16.),
+        };
+        let inset = px(2.);
+
         h_flex()
             .id(self.id)
             .group(group_id)
@@ -106,29 +120,36 @@ impl RenderOnce for Switch {
             .gap_2()
             .when(self.label_side.left(), |this| this.flex_row_reverse())
             .child(
+                // Switch Bar
                 self.base
-                    .map(|this| match self.size {
-                        Size::XSmall | Size::Small => this.w_8().h_4().rounded_lg(),
-                        _ => this.w_11().h_6().rounded_xl(),
-                    })
+                    .w(bg_width)
+                    .h(bg_height)
+                    .rounded(bg_height / 2.)
                     .flex()
                     .items_center()
-                    .border_2()
+                    .border(inset)
                     .border_color(theme.transparent)
                     .bg(bg)
                     .when(!self.disabled, |this| this.cursor_pointer())
-                    .map(|this| match self.checked {
-                        true => this.flex_row_reverse(),
-                        false => this,
-                    })
                     .child(
+                        // Switch Toggle
                         div()
                             .rounded_full()
                             .bg(toggle_bg)
-                            .map(|this| match self.size {
-                                Size::XSmall | Size::Small => this.w_3().h_3(),
-                                _ => this.w_5().h_5(),
-                            }),
+                            .size(bar_width)
+                            .with_animation(
+                                ElementId::NamedInteger("move".into(), checked as usize),
+                                Animation::new(Duration::from_secs_f64(0.15)),
+                                move |this, delta| {
+                                    let max_x = bg_width - bar_width - inset * 2;
+                                    let x = if checked {
+                                        max_x * delta
+                                    } else {
+                                        max_x - max_x * delta
+                                    };
+                                    this.left(x)
+                                },
+                            ),
                     ),
             )
             .when_some(self.label, |this, label| {
