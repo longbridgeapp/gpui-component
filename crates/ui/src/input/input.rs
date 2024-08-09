@@ -261,6 +261,11 @@ impl TextInput {
         self
     }
 
+    ///  Set the placeholder text without ownership.
+    pub fn set_placeholder(&mut self, placeholder: impl Into<SharedString>) {
+        self.placeholder = placeholder.into();
+    }
+
     /// Set true to show the clear button when the input field is not empty.
     pub fn cleanable(mut self, cleanable: bool) -> Self {
         self.cleanable = cleanable;
