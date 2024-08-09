@@ -8,6 +8,7 @@ use ui::{
     h_flex,
     indicator::Indicator,
     progress::Progress,
+    skeleton::Skeleton,
     slider::{Slider, SliderEvent},
     v_flex, Clickable, IconName, Sizable,
 };
@@ -143,6 +144,18 @@ impl Render for ProgressStory {
                     .w(px(200.))
                     .child(self.slider2.clone())
                     .child(format!("Slider 2: {}", self.slider2_value)),
+            )
+            .child(
+                h_flex()
+                    .mt_5()
+                    .gap_4()
+                    .child(Skeleton::new().size_12().rounded_full())
+                    .child(
+                        v_flex()
+                            .gap_2()
+                            .child(Skeleton::new().w(px(250.)).h_4())
+                            .child(Skeleton::new().w(px(240.)).h_4()),
+                    ),
             )
     }
 }
