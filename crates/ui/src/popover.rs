@@ -1,15 +1,18 @@
 use anyhow::Result;
 use gpui::{
     actions, anchored, deferred, div, point, prelude::FluentBuilder as _, px, size, AnchorCorner,
-    AnyElement, AppContext, Bounds, Context, DismissEvent, DispatchPhase, Element, ElementId,
-    EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
+    Animation, AnimationExt, AnyElement, AppContext, Bounds, Context, DismissEvent, DispatchPhase,
+    Element, ElementId, EventEmitter, FocusHandle, FocusableView, Global, GlobalElementId, Hitbox,
     InteractiveElement as _, IntoElement, LayoutId, ManagedView, MouseButton, MouseDownEvent,
     ParentElement, Pixels, Point, Render, Style, Styled, Subscription, View, ViewContext,
     VisualContext, WindowBackgroundAppearance, WindowContext, WindowId, WindowOptions,
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
+use crate::{
+    theme::{ActiveTheme, Colorize},
+    Selectable, StyledExt as _,
+};
 
 actions!(popover, [Open, Dismiss]);
 
@@ -240,16 +243,18 @@ impl<M: ManagedView> Element for Popover<M> {
                         .into_any()
                 } else {
                     let content_view_mut = element_state.content_view.clone();
+                    let bg_color = cx.theme().popover;
+                    let anchor = view.anchor;
                     deferred(
                         anchored.child(
                             div()
                                 .size_full()
                                 .occlude()
                                 .elevation_2(cx)
-                                .bg(cx.theme().popover)
+                                .bg(bg_color)
                                 .border_1()
                                 .border_color(cx.theme().border)
-                                .map(|this| match view.anchor {
+                                .map(|this| match anchor {
                                     AnchorCorner::TopLeft | AnchorCorner::TopRight => this.top_2(),
                                     AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
                                         this.bottom_2()
