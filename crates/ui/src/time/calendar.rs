@@ -236,11 +236,11 @@ impl Calendar {
 
     /// Returns the days of the month in a 2D vector to render on calendar.
     fn days(&self) -> Vec<Vec<NaiveDate>> {
-        days_in_month(
-            self.current_year,
-            self.current_month as u32,
-            self.number_of_months as u32,
-        )
+        (0..self.number_of_months)
+            .flat_map(|offset| {
+                days_in_month(self.current_year, self.current_month as u32 + offset as u32)
+            })
+            .collect()
     }
 
     fn has_prev_year_page(&self) -> bool {
@@ -353,7 +353,7 @@ impl Calendar {
             })
             .when(secondary_active, |this| {
                 this.bg(if muted {
-                    cx.theme().accent.opacity(0.3)
+                    cx.theme().accent.opacity(0.5)
                 } else {
                     cx.theme().accent
                 })
@@ -508,7 +508,7 @@ impl Calendar {
             })
             .when(multiple_months, |this| {
                 this.child(h_flex().flex_1().justify_around().children(
-                    (0..self.number_of_months).into_iter().map(|n| {
+                    (0..self.number_of_months).map(|n| {
                         h_flex()
                             .justify_center()
                             .gap_3()
@@ -546,7 +546,6 @@ impl Calendar {
         h_flex().gap_4().justify_between().text_sm().children(
             self.days()
                 .chunks(5)
-                .into_iter()
                 .enumerate()
                 .map(|(offset_month, days)| {
                     v_flex()
