@@ -382,7 +382,7 @@ impl Calendar {
         let (_, month) = self.offset_year_month(offset_month);
         let day = d.day();
         let is_current_month = d.month() == month;
-        let is_active = self.date.is_active(d);
+        let is_active = self.date.is_active(d) && is_current_month;
         let is_in_range = self.date.is_in_range(d);
 
         let date = *d;
