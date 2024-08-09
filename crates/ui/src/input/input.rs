@@ -1036,19 +1036,18 @@ impl Render for TextInput {
             .input_py(self.size)
             .input_h(self.size)
             .when(self.appearance, |this| {
-                this.bg(cx.theme().input)
-                    .border_color(cx.theme().input)
-                    .border_1()
-                    .rounded(px(cx.theme().radius))
-                    .shadow_sm()
-                    .when(focused, |this| this.outline(cx))
-                    .when(prefix.is_none(), |this| this.input_pl(self.size))
-                    .when(suffix.is_none(), |this| this.input_pr(self.size))
-                    .bg(if self.disabled {
-                        cx.theme().muted
-                    } else {
-                        cx.theme().background
-                    })
+                this.bg(if self.disabled {
+                    cx.theme().muted
+                } else {
+                    cx.theme().background
+                })
+                .border_color(cx.theme().input)
+                .border_1()
+                .rounded(px(cx.theme().radius))
+                .shadow_sm()
+                .when(focused, |this| this.outline(cx))
+                .when(prefix.is_none(), |this| this.input_pl(self.size))
+                .when(suffix.is_none(), |this| this.input_pr(self.size))
             })
             .children(prefix)
             .gap_1()
