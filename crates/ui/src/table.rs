@@ -521,7 +521,7 @@ where
         col_ix: usize,
         cx: &mut ViewContext<Self>,
     ) -> Option<impl IntoElement> {
-        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
+        let sort = self.delegate().col_sort(col_ix);
         if sort.is_none() {
             return None;
         }

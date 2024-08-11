@@ -5,29 +5,25 @@ use gpui::{
 };
 
 use crate::{
-    disableable::Disableable,
-    selectable::{Selectable, Selection},
-    stack::{h_flex, v_flex},
+    h_flex,
     theme::{ActiveTheme, Colorize as _},
-    IconName,
+    v_flex, Disableable, IconName, Selectable,
 };
-
-type OnClick = Box<dyn Fn(&Selection, &mut WindowContext) + 'static>;
 
 #[derive(IntoElement)]
 pub struct Checkbox {
     id: ElementId,
-    checked: Selection,
+    checked: bool,
     disabled: bool,
     label: Option<SharedString>,
-    on_click: Option<OnClick>,
+    on_click: Option<Box<dyn Fn(&bool, &mut WindowContext) + 'static>>,
 }
 
 impl Checkbox {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
-            checked: Selection::Unselected,
+            checked: false,
             disabled: false,
             label: None,
             on_click: None,
@@ -39,12 +35,12 @@ impl Checkbox {
         self
     }
 
-    pub fn checked(mut self, checked: impl Into<Selection>) -> Self {
-        self.checked = checked.into();
+    pub fn checked(mut self, checked: bool) -> Self {
+        self.checked = checked;
         self
     }
 
-    pub fn on_click(mut self, handler: impl Fn(&Selection, &mut WindowContext) + 'static) -> Self {
+    pub fn on_click(mut self, handler: impl Fn(&bool, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
         self
     }
@@ -59,11 +55,7 @@ impl Disableable for Checkbox {
 
 impl Selectable for Checkbox {
     fn selected(self, selected: bool) -> Self {
-        self.checked(if selected {
-            Selection::Selected
-        } else {
-            Selection::Unselected
-        })
+        self.checked(selected)
     }
 }
 
@@ -96,7 +88,7 @@ impl RenderOnce for Checkbox {
                     .size_4()
                     .flex_shrink_0()
                     .map(|this| match self.checked {
-                        Selection::Unselected => this.bg(theme.transparent),
+                        false => this.bg(theme.transparent),
                         _ => this.bg(color),
                     })
                     .group_hover(group_id, |this| {
@@ -114,8 +106,7 @@ impl RenderOnce for Checkbox {
                             .size_3()
                             .text_color(icon_color)
                             .map(|this| match self.checked {
-                                Selection::Selected => this.path(IconName::Check.path()),
-                                Selection::Indeterminate => this.path(IconName::Minus.path()),
+                                true => this.path(IconName::Check.path()),
                                 _ => this,
                             }),
                     ),
@@ -138,7 +129,8 @@ impl RenderOnce for Checkbox {
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_click(move |_, cx| {
-                        on_click(&self.checked.inverse(), cx);
+                        let checked = !self.checked;
+                        on_click(&checked, cx);
                         cx.refresh()
                     })
                 },

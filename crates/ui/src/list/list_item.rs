@@ -5,9 +5,7 @@ use gpui::{
 };
 use smallvec::SmallVec;
 
-use crate::{
-    h_flex, styled_ext::Sizable as _, theme::ActiveTheme, Disableable, Icon, IconName, Selectable,
-};
+use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable, Sizable as _};
 
 #[derive(IntoElement)]
 pub struct ListItem {

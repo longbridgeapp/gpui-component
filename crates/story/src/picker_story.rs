@@ -12,7 +12,7 @@ use ui::{
     h_flex,
     list::{List, ListDelegate, ListItem},
     theme::ActiveTheme as _,
-    v_flex, Clickable as _, Icon, IconName, StyledExt,
+    v_flex, Icon, IconName, StyledExt,
 };
 
 pub struct ListItemDeletegate {
@@ -272,7 +272,11 @@ impl Render for PickerStory {
                                     .occlude()
                                     .w(px(450.))
                                     .h(px(350.))
-                                    .elevation_3(cx)
+                                    .bg(cx.theme().popover)
+                                    .border_1()
+                                    .border_color(cx.theme().border)
+                                    .shadow_lg()
+                                    .rounded_lg()
                                     .child(self.list.clone())
                                     .on_mouse_down_out(cx.listener(|this, _, cx| {
                                         this.open = false;

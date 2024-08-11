@@ -7,8 +7,8 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    dropdown::Escape, h_flex, input::ClearButton, styled_ext::StyleSized as _,
-    theme::ActiveTheme as _, Clickable, Icon, IconName, Sizable, Size, StyledExt as _,
+    dropdown::Escape, h_flex, input::ClearButton, theme::ActiveTheme as _, Icon, IconName, Sizable,
+    Size, StyleSized as _, StyledExt as _,
 };
 
 use super::calendar::{Calendar, CalendarEvent, Date};
@@ -223,7 +223,10 @@ impl Render for DatePicker {
                             .rounded_lg()
                             .p_3()
                             .w(px(popover_width))
-                            .elevation_2(cx)
+                            .border_1()
+                            .border_color(cx.theme().border)
+                            .shadow_lg()
+                            .rounded_lg()
                             .on_mouse_up_out(
                                 MouseButton::Left,
                                 cx.listener(|view, _, cx| view.escape(&Escape, cx)),

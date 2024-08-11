@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{
-    stack::h_flex,
+    h_flex,
     theme::{ActiveTheme, Colorize},
     Disableable, Sizable, Size,
 };

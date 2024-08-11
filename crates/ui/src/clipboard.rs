@@ -3,7 +3,7 @@ use gpui::{
     RenderOnce, SharedString, Styled, WindowContext,
 };
 
-use crate::{button::Button, h_flex, Clickable, IconName, Sizable};
+use crate::{button::Button, h_flex, IconName, Sizable};
 
 #[derive(IntoElement)]
 pub struct Clipboard {

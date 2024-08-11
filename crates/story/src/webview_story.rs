@@ -9,7 +9,7 @@ use ui::{
     theme::ActiveTheme,
     v_flex,
     webview::WebView,
-    Clickable, IconName,
+    IconName,
 };
 
 pub struct WebViewStory {

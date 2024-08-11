@@ -3,7 +3,7 @@ use gpui::{
     VisualContext, WindowContext,
 };
 
-use crate::{theme::ActiveTheme, StyledExt};
+use crate::theme::ActiveTheme;
 
 pub struct Tooltip {
     text: SharedString,
@@ -23,7 +23,10 @@ impl Render for Tooltip {
                 .m_3()
                 .bg(cx.theme().popover)
                 .text_color(cx.theme().popover_foreground)
-                .elevation_1(cx)
+                .bg(cx.theme().popover)
+                .border_1()
+                .border_color(cx.theme().border)
+                .shadow_md()
                 .rounded(px(6.))
                 .pt_1()
                 .pb_0p5()

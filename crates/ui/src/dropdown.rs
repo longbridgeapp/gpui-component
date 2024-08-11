@@ -10,9 +10,8 @@ use crate::{
     h_flex,
     input::ClearButton,
     list::{self, List, ListDelegate, ListItem},
-    styled_ext::StyleSized,
     theme::ActiveTheme,
-    Clickable, Icon, IconName, Sizable, Size, StyledExt,
+    Icon, IconName, Sizable, Size, StyleSized, StyledExt,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);

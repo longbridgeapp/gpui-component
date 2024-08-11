@@ -9,7 +9,7 @@ use gpui::{
 };
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{theme::ActiveTheme, Selectable, StyledExt as _};
+use crate::{theme::ActiveTheme, Selectable};
 
 actions!(popover, [Open, Dismiss]);
 
@@ -247,10 +247,11 @@ impl<M: ManagedView> Element for Popover<M> {
                             div()
                                 .size_full()
                                 .occlude()
-                                .elevation_2(cx)
-                                .bg(bg_color)
                                 .border_1()
                                 .border_color(cx.theme().border)
+                                .shadow_lg()
+                                .rounded_lg()
+                                .bg(bg_color)
                                 .map(|this| match anchor {
                                     AnchorCorner::TopLeft | AnchorCorner::TopRight => this.top_2(),
                                     AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
@@ -627,7 +628,8 @@ where
                         this.bg(cx.theme().popover)
                             .border_1()
                             .border_color(cx.theme().border)
-                            .elevation_2(cx)
+                            .shadow_lg()
+                            .rounded_lg()
                     })
                     .bg(cx.theme().popover)
                     .child(self.view.clone())

@@ -14,7 +14,7 @@ use crate::{
 pub struct Radio {
     id: ElementId,
     label: Option<SharedString>,
-    selected: bool,
+    checked: bool,
     disabled: bool,
     on_click: Option<Box<dyn Fn(&bool, &mut WindowContext) + 'static>>,
 }
@@ -24,7 +24,7 @@ impl Radio {
         Self {
             id: id.into(),
             label: None,
-            selected: false,
+            checked: false,
             disabled: false,
             on_click: None,
         }
@@ -35,8 +35,8 @@ impl Radio {
         self
     }
 
-    pub fn selected(mut self, selected: bool) -> Self {
-        self.selected = selected;
+    pub fn checked(mut self, checked: bool) -> Self {
+        self.checked = checked;
         self
     }
 
@@ -73,7 +73,7 @@ impl RenderOnce for Radio {
                     .rounded_full()
                     .border_1()
                     .border_color(color)
-                    .when(self.selected, |this| this.bg(color))
+                    .when(self.checked, |this| this.bg(color))
                     .child(
                         svg()
                             .absolute()
@@ -81,10 +81,10 @@ impl RenderOnce for Radio {
                             .left_px()
                             .size_3()
                             .text_color(color)
-                            .when(self.selected, |this| {
+                            .when(self.checked, |this| {
                                 this.text_color(cx.theme().primary_foreground)
                             })
-                            .map(|this| match self.selected {
+                            .map(|this| match self.checked {
                                 true => this.path(IconName::Check.path()),
                                 false => this,
                             }),
@@ -103,7 +103,7 @@ impl RenderOnce for Radio {
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_click(move |_event, cx| {
-                        on_click(&!self.selected, cx);
+                        on_click(&!self.checked, cx);
                     })
                 },
             )

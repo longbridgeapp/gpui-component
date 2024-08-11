@@ -1,4 +1,4 @@
-use crate::{styled_ext::Sizable, theme::ActiveTheme, Size};
+use crate::{theme::ActiveTheme, Sizable, Size};
 use gpui::{
     prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
     SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,

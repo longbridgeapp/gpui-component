@@ -1,13 +1,9 @@
-mod clickable;
 mod colors;
-mod disableable;
 mod event;
 mod focusable;
 mod icon;
 
-mod selectable;
-mod stack;
-mod styled_ext;
+mod styled;
 mod svg_img;
 mod time;
 
@@ -43,17 +39,14 @@ use std::ops::Deref;
 // re-export
 pub use wry;
 
-pub use clickable::Clickable;
-pub use disableable::Disableable;
+pub use crate::Disableable;
 pub use event::InteractiveElementExt;
 pub use focusable::FocusableCycle;
-pub use selectable::{Selectable, Selection};
-pub use styled_ext::{Sizable, Size, StyledExt};
+pub use styled::*;
 pub use time::*;
 
 pub use colors::*;
 pub use icon::*;
-pub use stack::*;
 pub use svg_img::*;
 
 rust_i18n::i18n!("locales", fallback = "en");

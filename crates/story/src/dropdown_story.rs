@@ -7,7 +7,7 @@ use ui::{
     dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
-    v_flex, IconName, Selection, Sizable,
+    v_flex, IconName, Sizable,
 };
 
 struct Country {
@@ -127,11 +127,6 @@ impl DropdownStory {
                 }),
             }
         })
-    }
-
-    #[allow(unused)]
-    fn on_click(sel: &Selection, cx: &mut WindowContext) {
-        println!("Check value changed: {}", sel);
     }
 
     fn on_dropdown_event(
