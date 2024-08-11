@@ -1,4 +1,4 @@
-use crate::stack::h_flex;
+use crate::h_flex;
 use crate::theme::ActiveTheme;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{

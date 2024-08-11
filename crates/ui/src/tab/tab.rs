@@ -1,5 +1,5 @@
-use crate::selectable::Selectable;
 use crate::theme::{ActiveTheme, Colorize};
+use crate::Selectable;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     div, AnyElement, Div, ElementId, InteractiveElement, IntoElement, ParentElement as _,

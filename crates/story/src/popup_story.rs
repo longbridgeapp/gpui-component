@@ -13,7 +13,7 @@ use ui::{
     popup_menu::PopupMenuExt,
     prelude::FluentBuilder,
     switch::Switch,
-    v_flex, Clickable as _, IconName, Sizable,
+    v_flex, IconName, Sizable,
 };
 
 actions!(

@@ -11,28 +11,28 @@ use ui::{
     label::Label,
     link::Link,
     radio::Radio,
-    v_flex, Clickable, Disableable as _, IconName, Selection, StyledExt,
+    v_flex, Disableable as _, IconName, StyledExt,
 };
 
 use crate::section;
 
 pub struct TextStory {
-    check1: Selection,
-    check2: Selection,
-    check3: Selection,
-    select1: bool,
-    select2: bool,
+    check1: bool,
+    check2: bool,
+    check3: bool,
+    radio_check1: bool,
+    radio_check2: bool,
     masked: bool,
 }
 
 impl TextStory {
     pub(crate) fn new(_cx: &mut WindowContext) -> Self {
         Self {
-            check1: Selection::Unselected,
-            check2: Selection::Indeterminate,
-            check3: Selection::Selected,
-            select1: false,
-            select2: true,
+            check1: false,
+            check2: false,
+            check3: true,
+            radio_check1: false,
+            radio_check2: true,
             masked: false,
         }
     }
@@ -42,8 +42,8 @@ impl TextStory {
     }
 
     #[allow(unused)]
-    fn on_click(sel: &Selection, cx: &mut WindowContext) {
-        println!("Check value changed: {}", sel);
+    fn on_click(checked: &bool, cx: &mut WindowContext) {
+        println!("Check value changed: {}", checked);
     }
 }
 
@@ -122,7 +122,7 @@ impl Render for TextStory {
                             Checkbox::new("check1")
                                 .checked(self.check1)
                                 .on_click(cx.listener(|v, _, _| {
-                                    v.check1 = v.check1.inverse();
+                                    v.check1 = !v.check1;
                                 })),
                         )
                         .child(
@@ -130,7 +130,7 @@ impl Render for TextStory {
                                 .checked(self.check2)
                                 .label("Subscribe to newsletter")
                                 .on_click(cx.listener(|v, _, _| {
-                                    v.check2 = v.check2.inverse();
+                                    v.check2 = !v.check2;
                                 })),
                         )
                         .child(
@@ -138,7 +138,7 @@ impl Render for TextStory {
                                 .checked(self.check3)
                                 .label("Remember me")
                                 .on_click(cx.listener(|v, _, _| {
-                                    v.check3 = v.check3.inverse();
+                                    v.check3 = !v.check3;
                                 })),
                         )
                         .child(
@@ -158,21 +158,15 @@ impl Render for TextStory {
                         .child(
                             Checkbox::new("check3")
                                 .label("Disabled Checked")
-                                .checked(Selection::Selected)
+                                .checked(true)
                                 .disabled(true),
                         )
                         .child(
                             Checkbox::new("check3_1")
                                 .label("Disabled Unchecked")
-                                .checked(Selection::Unselected)
+                                .checked(false)
                                 .disabled(true),
                         )
-                        .child(
-                            Checkbox::new("check3_2")
-                                .label("Disabled Indeterminate")
-                                .checked(Selection::Indeterminate)
-                                .disabled(true),
-                        ),
                 ),
             )
             .child(
@@ -183,30 +177,30 @@ impl Render for TextStory {
                         .items_start()
                         .child(
                             Radio::new("radio1")
-                                .selected(self.select1)
+                                .checked(self.radio_check1)
                                 .on_click(cx.listener(|this, v, _cx| {
-                                    this.select1 = *v;
+                                    this.radio_check1 = *v;
                                 })),
                         )
                         .child(
                             Radio::new("radio2")
                                 .label("Radio")
-                                .selected(self.select2)
+                                .checked(self.radio_check2)
                                 .on_click(cx.listener(|this, v, _cx| {
-                                    this.select2 = *v;
+                                    this.radio_check2 = *v;
                                 })),
                         )
                         .child(
                             Radio::new("radio3")
                                 .label("Disabled Radio")
-                                .selected(true)
+                                .checked(true)
                                 .disabled(true),
                         )
                         .child(
                               div().w(px(200.)).child(
                                   Radio::new("radio3")
                                       .label("Warp: A long long long text radio label")
-                                      .selected(true)
+                                      .checked(true)
                                       .disabled(true),
                               ),
                         )

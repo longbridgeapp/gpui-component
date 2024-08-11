@@ -9,7 +9,7 @@ use ui::{
     label::Label,
     table::{ColSort, Table, TableDelegate, TableEvent},
     theme::ActiveTheme as _,
-    v_flex, Icon, IconName, Selectable, Selection,
+    v_flex, Icon, IconName, Selectable,
 };
 
 struct Customer {
@@ -328,34 +328,34 @@ impl TableStory {
         Self { table }
     }
 
-    fn toggle_loop_selection(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+    fn toggle_loop_selection(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
-            table.delegate_mut().loop_selection = s.is_selected();
+            table.delegate_mut().loop_selection = *checked;
             cx.notify();
         });
     }
 
-    fn toggle_col_resize(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+    fn toggle_col_resize(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
-            table.delegate_mut().col_resize = s.is_selected();
+            table.delegate_mut().col_resize = *checked;
             cx.notify();
         });
     }
 
-    fn toggle_col_order(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+    fn toggle_col_order(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
-            table.delegate_mut().col_order = s.is_selected();
+            table.delegate_mut().col_order = *checked;
             cx.notify();
         });
     }
 
-    fn toggle_col_sort(&mut self, s: &Selection, cx: &mut ViewContext<Self>) {
+    fn toggle_col_sort(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
-            table.delegate_mut().col_sort = s.is_selected();
+            table.delegate_mut().col_sort = *checked;
             cx.notify();
         });
     }

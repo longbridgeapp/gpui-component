@@ -46,7 +46,7 @@ impl RenderOnce for Divider {
 
         self.base
             .map(|this| match self.axis {
-                Axis::Vertical => this.v_flex().h_full(),
+                Axis::Vertical => this.flex().flex_row().items_center().h_full(),
                 Axis::Horizontal => this.h_flex().w_full(),
             })
             .child(

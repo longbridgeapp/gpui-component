@@ -8,8 +8,8 @@ use gpui::{
 };
 
 use crate::{
-    button::Button, h_flex, list::ListItem, popover::Popover, styled_ext::Sizable as _,
-    theme::ActiveTheme, v_flex, Icon, IconName, Selectable,
+    button::Button, h_flex, list::ListItem, popover::Popover, theme::ActiveTheme, v_flex, Icon,
+    IconName, Selectable, Sizable as _,
 };
 
 actions!(menu, [Confirm, Dismiss, SelectNext, SelectPrev]);

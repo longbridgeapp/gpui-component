@@ -10,7 +10,7 @@ use ui::{
     progress::Progress,
     skeleton::Skeleton,
     slider::{Slider, SliderEvent},
-    v_flex, Clickable, IconName, Sizable,
+    v_flex, IconName, Sizable,
 };
 
 pub struct ProgressStory {

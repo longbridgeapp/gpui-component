@@ -14,7 +14,7 @@ use ui::{
     popover::Popover,
     popup_menu::PopupMenu,
     theme::{ActiveTheme, Theme},
-    Clickable as _, IconName, Sizable,
+    IconName, Sizable,
 };
 
 use crate::app_state::AppState;

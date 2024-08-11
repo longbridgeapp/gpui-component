@@ -7,7 +7,7 @@ use gpui::{
     Position, Stateful, Style, Styled as _, View, WindowContext,
 };
 
-use crate::{popup_menu::PopupMenu, theme::ActiveTheme as _, StyledExt as _};
+use crate::{popup_menu::PopupMenu, theme::ActiveTheme};
 
 pub fn init(_cx: &mut AppContext) {}
 
@@ -128,10 +128,11 @@ impl Element for ContextMenu {
 
                             this.child(
                                 div()
-                                    .elevation_2(cx)
                                     .bg(cx.theme().popover)
                                     .border_1()
                                     .border_color(cx.theme().border)
+                                    .shadow_lg()
+                                    .rounded_lg()
                                     .child(menu)
                                     .on_mouse_down_out(move |_, cx| {
                                         *open.borrow_mut() = false;

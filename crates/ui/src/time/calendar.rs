@@ -12,7 +12,7 @@ use crate::{
     button::Button,
     h_flex,
     theme::{ActiveTheme, Colorize},
-    v_flex, Clickable, Disableable, IconName, Selectable,
+    v_flex, Disableable as _, IconName, Selectable,
 };
 
 use super::utils::days_in_month;

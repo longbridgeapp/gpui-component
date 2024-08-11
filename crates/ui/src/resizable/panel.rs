@@ -6,7 +6,7 @@ use gpui::{
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, styled_ext::AxisExt, theme::ActiveTheme, v_flex};
+use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));

@@ -8,7 +8,7 @@ use gpui::{
     ViewContext, VisualContext, WindowContext,
 };
 
-use ui::{h_flex, label::Label, theme::ActiveTheme, v_flex, Icon, IconName, StyledExt};
+use ui::{h_flex, label::Label, theme::ActiveTheme, v_flex, Icon, IconName};
 
 use crate::Workspace;
 
@@ -210,7 +210,11 @@ impl MessageNotification {
 impl Render for MessageNotification {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
-            .elevation_3(cx)
+            .bg(cx.theme().popover)
+            .border_1()
+            .border_color(cx.theme().border)
+            .shadow_xl()
+            .rounded_xl()
             .p_4()
             .max_w_80()
             .bg(cx.theme().background)

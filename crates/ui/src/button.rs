@@ -1,9 +1,8 @@
 use crate::{
     h_flex,
     indicator::Indicator,
-    styled_ext::Sizable,
     theme::{ActiveTheme, Colorize as _},
-    Clickable, Disableable, Icon, Selectable, Size,
+    Disableable, Icon, Selectable, Sizable, Size,
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, Div, ElementId, FocusHandle,
@@ -226,6 +225,11 @@ impl Button {
         self.compact = true;
         self
     }
+
+    pub fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
+        self.on_click = Some(Box::new(handler));
+        self
+    }
 }
 
 impl Disableable for Button {
@@ -238,13 +242,6 @@ impl Disableable for Button {
 impl Selectable for Button {
     fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
-        self
-    }
-}
-
-impl Clickable for Button {
-    fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
-        self.on_click = Some(Box::new(handler));
         self
     }
 }

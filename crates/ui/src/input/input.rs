@@ -9,10 +9,10 @@ use super::blink_cursor::BlinkCursor;
 use super::history::History;
 use super::ClearButton;
 use crate::indicator::Indicator;
-use crate::styled_ext::{Sizable, StyleSized};
 use crate::theme::ActiveTheme;
+use crate::StyledExt as _;
 use crate::{event::InteractiveElementExt as _, Size};
-use crate::{Clickable as _, StyledExt as _};
+use crate::{Sizable, StyleSized};
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, fill, point, px, relative, rems, size, AnyElement, AppContext, Bounds,

@@ -10,7 +10,7 @@ use ui::{
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
-    v_flex, Clickable, FocusableCycle, IconName, Selection, Sizable,
+    v_flex, FocusableCycle, IconName, Sizable,
 };
 
 use crate::section;
@@ -170,7 +170,7 @@ impl InputStory {
         };
     }
 
-    fn toggle_opt_masked(&mut self, _: &Selection, cx: &mut ViewContext<Self>) {
+    fn toggle_opt_masked(&mut self, _: &bool, cx: &mut ViewContext<Self>) {
         self.otp_masked = !self.otp_masked;
         self.otp_input
             .update(cx, |input, cx| input.set_masked(self.otp_masked, cx));

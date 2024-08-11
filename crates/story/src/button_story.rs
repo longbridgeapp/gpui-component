@@ -9,7 +9,7 @@ use ui::{
     h_flex,
     prelude::FluentBuilder,
     theme::ActiveTheme,
-    v_flex, Clickable, Disableable as _, Icon, IconName, Selectable as _, Sizable as _,
+    v_flex, Disableable as _, Icon, IconName, Selectable as _, Sizable as _,
 };
 
 use crate::section;

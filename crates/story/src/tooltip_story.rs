@@ -9,7 +9,7 @@ use ui::{
     h_flex,
     label::Label,
     tooltip::Tooltip,
-    v_flex, Selection,
+    v_flex,
 };
 
 pub struct TooltipStory;
@@ -51,11 +51,7 @@ impl Render for TooltipStory {
             .child(
                 div()
                     .cursor(CursorStyle::PointingHand)
-                    .child(
-                        Checkbox::new("check")
-                            .label("Remember me")
-                            .checked(Selection::Selected),
-                    )
+                    .child(Checkbox::new("check").label("Remember me").checked(true))
                     .id("tooltip-4")
                     .tooltip(|cx| Tooltip::new("Checked!", cx)),
             )
