@@ -359,18 +359,14 @@ where
     }
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        const HANDLE_SIZE: Pixels = px(3.);
+        const HANDLE_SIZE: Pixels = px(2.);
 
         if !self.delegate.can_resize_col(ix) {
             return div().into_any_element();
         }
 
-        let group_id: SharedString = format!("resizable-handle-{}", ix).into();
-        let is_resizing = self.resizing_col == Some(ix);
-
         h_flex()
             .id(("resizable-handle", ix))
-            .group(group_id.clone())
             .occlude()
             .cursor_col_resize()
             .h_full()
@@ -384,12 +380,8 @@ where
                     .h_5()
                     .justify_center()
                     .bg(cx.theme().border)
-                    .when(is_resizing, |this| this.bg(cx.theme().drag_border))
-                    .group_hover(group_id, |this| this.bg(cx.theme().drag_border))
                     .w(px(1.)),
             )
-            .hover(|this| this.bg(cx.theme().drag_border))
-            .when(is_resizing, |this| this.bg(cx.theme().drag_border))
             .on_drag_move(cx.listener(move |view, e: &DragMoveEvent<ResizeCol>, cx| {
                 match e.drag(cx) {
                     ResizeCol((entity_id, ix)) => {
@@ -562,7 +554,7 @@ where
         let col_group = self.col_groups.get(col_ix).expect("BUG: invalid col index");
 
         let name = self.delegate.col_name(col_ix);
-        self.col_wrap(col_ix, cx)
+        h_flex()
             .child(
                 self.render_cell(col_ix, cx)
                     .id(("col-header", col_ix))
