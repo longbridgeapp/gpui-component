@@ -137,7 +137,7 @@ impl EventEmitter<InputEvent> for TextInput {}
 impl TextInput {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         let focus_handle = cx.focus_handle();
-        let blink_cursor = cx.new_model(|cx| BlinkCursor::new(cx));
+        let blink_cursor = cx.new_model(|_| BlinkCursor::new());
         let history = History::new();
         let input = Self {
             focus_handle: focus_handle.clone(),

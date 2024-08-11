@@ -26,7 +26,7 @@ pub struct OtpInput {
 impl OtpInput {
     pub fn new(length: usize, cx: &mut ViewContext<Self>) -> Self {
         let focus_handle = cx.focus_handle();
-        let blink_cursor = cx.new_model(|cx| BlinkCursor::new(cx));
+        let blink_cursor = cx.new_model(|_| BlinkCursor::new());
         let input = Self {
             focus_handle: focus_handle.clone(),
             length,
