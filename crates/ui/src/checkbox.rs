@@ -10,15 +10,13 @@ use crate::{
     v_flex, Disableable, IconName, Selectable,
 };
 
-type OnClick = Box<dyn Fn(&bool, &mut WindowContext) + 'static>;
-
 #[derive(IntoElement)]
 pub struct Checkbox {
     id: ElementId,
     checked: bool,
     disabled: bool,
     label: Option<SharedString>,
-    on_click: Option<OnClick>,
+    on_click: Option<Box<dyn Fn(&bool, &mut WindowContext) + 'static>>,
 }
 
 impl Checkbox {
