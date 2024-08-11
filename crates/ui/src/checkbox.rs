@@ -130,7 +130,7 @@ impl RenderOnce for Checkbox {
                 |this, on_click| {
                     this.on_click(move |_, cx| {
                         let checked = !self.checked;
-                        on_click(&!checked, cx);
+                        on_click(&checked, cx);
                         cx.refresh()
                     })
                 },

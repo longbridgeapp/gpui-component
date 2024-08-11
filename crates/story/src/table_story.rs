@@ -226,10 +226,18 @@ impl TableDelegate for CustomerTableDelegate {
     }
 
     fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+        if !self.col_sort {
+            return None;
+        }
+
         self.columns.get(col_ix).and_then(|c| c.sort)
     }
 
     fn perform_sort(&mut self, col_ix: usize, sort: ColSort, _: &mut ViewContext<Table<Self>>) {
+        if !self.col_sort {
+            return;
+        }
+
         if let Some(col) = self.columns.get_mut(col_ix) {
             col.sort = Some(sort);
             let asc = matches!(sort, ColSort::Ascending);
@@ -355,6 +363,7 @@ impl TableStory {
     fn toggle_col_sort(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
+            println!("- toggle_col_sort: {}", checked);
             table.delegate_mut().col_sort = *checked;
             cx.notify();
         });
