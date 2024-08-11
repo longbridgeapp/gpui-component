@@ -17,7 +17,6 @@ pub enum TextAlign {
 pub struct Label {
     base: Div,
     label: SharedString,
-    multiple_lines: bool,
     align: TextAlign,
     marked: bool,
 }
@@ -27,15 +26,9 @@ impl Label {
         Self {
             base: h_flex().line_height(rems(1.25)),
             label: label.into(),
-            multiple_lines: true,
             align: TextAlign::default(),
             marked: false,
         }
-    }
-
-    pub fn multiple_lines(mut self) -> Self {
-        self.multiple_lines = true;
-        self
     }
 
     pub fn text_align(mut self, align: TextAlign) -> Self {
@@ -74,11 +67,7 @@ const MASKED: &'static str = "•";
 
 impl RenderOnce for Label {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let text = if !self.multiple_lines {
-            SharedString::from(self.label.replace('\n', "␤"))
-        } else {
-            self.label
-        };
+        let text = self.label;
 
         let text_display = if self.marked {
             MASKED.repeat(text.chars().count())
