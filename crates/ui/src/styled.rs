@@ -314,6 +314,7 @@ impl AxisExt for Axis {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Placement {
     Top,
     Bottom,

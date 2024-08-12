@@ -4,8 +4,8 @@ use std::{cell::Cell, rc::Rc};
 use crate::input::{InputEvent, TextInput};
 use crate::scroll::ScrollbarState;
 use crate::theme::ActiveTheme;
-use crate::IconName;
 use crate::{scroll::Scrollbar, v_flex};
+use crate::{IconName, StyledExt};
 use gpui::{
     actions, div, prelude::FluentBuilder, uniform_list, AppContext, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,

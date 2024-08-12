@@ -1,14 +1,15 @@
-use std::{cell::RefCell, ops::Deref, rc::Rc, time::Duration};
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    canvas, div, hsla, prelude::FluentBuilder as _, px, Animation, AnimationExt as _, AnyElement,
-    ClickEvent, DefiniteLength, DismissEvent, Div, EventEmitter, InteractiveElement as _,
-    IntoElement, ManagedView, MouseButton, ParentElement, Render, RenderOnce, Styled, View,
-    ViewContext, WindowContext,
+    anchored, deferred, div, hsla, point, prelude::FluentBuilder as _, px, AnchoredPositionMode,
+    Animation, AnimationExt as _, AnyElement, ClickEvent, DefiniteLength, DismissEvent, Div,
+    EventEmitter, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels,
+    RenderOnce, Styled, WindowContext,
 };
 
 use crate::{
-    button::Button, theme::ActiveTheme, v_flex, IconName, Placement, Selectable, StyledExt as _,
+    button::Button, h_flex, theme::ActiveTheme, v_flex, IconName, Placement, Selectable, Sizable,
+    StyledExt as _,
 };
 
 pub fn drawer() -> Drawer {
@@ -23,6 +24,8 @@ pub struct Drawer {
     resizable: bool,
     open: bool,
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
+    title: Option<AnyElement>,
+    margin_top: Pixels,
 }
 
 impl Drawer {
@@ -33,6 +36,8 @@ impl Drawer {
             size: DefiniteLength::Absolute(px(350.).into()),
             open: false,
             resizable: true,
+            title: None,
+            margin_top: px(0.),
             on_close: Rc::new(|_, _| {}),
         }
     }
@@ -42,9 +47,23 @@ impl Drawer {
         self
     }
 
+    /// Sets the title of the drawer.
+    pub fn title(mut self, title: impl IntoElement) -> Self {
+        self.title = Some(title.into_any_element());
+        self
+    }
+
     /// Sets the size of the drawer, default is 350px.
     pub fn size(mut self, size: impl Into<DefiniteLength>) -> Self {
         self.size = size.into();
+        self
+    }
+
+    /// Sets the margin top of the drawer, default is 0px.
+    ///
+    /// This is used to let Drawer be placed below a Windows Title, you can give the height of the title bar.
+    pub fn margin_top(mut self, top: Pixels) -> Self {
+        self.margin_top = top;
         self
     }
 
@@ -78,72 +97,85 @@ impl ParentElement for Drawer {
 
 impl RenderOnce for Drawer {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let bounds = cx.content_mask().bounds;
+        let placement = self.placement;
+        let titlebar_height = self.margin_top;
+        let size = cx.viewport_size();
 
-        div().when(self.open, |this| {
-            this.occlude()
-                .absolute()
-                .flex()
-                .size_full()
-                .h(bounds.size.height)
-                .w(bounds.size.width)
-                .top_0()
-                .bg(hsla(0., 0., 0., 0.25))
-                .debug_red()
-                .on_mouse_down(MouseButton::Left, {
-                    let on_close = self.on_close.clone();
-                    move |_, cx| {
-                        on_close(&ClickEvent::default(), cx);
-                    }
-                })
-                .child(
-                    v_flex()
-                        .id("")
-                        .absolute()
-                        .occlude()
-                        .bg(cx.theme().background)
-                        .border_1()
-                        .border_color(cx.theme().border)
-                        .shadow_xl()
-                        .debug_yellow()
-                        .map(|this| {
-                            // Set the size of the drawer.
-                            if self.placement.is_horizontal() {
-                                this.w_full().h(self.size)
-                            } else {
-                                this.h_full().w(self.size)
-                            }
-                        })
-                        .map(|this| match self.placement {
-                            Placement::Top => this.top_0().left_0().right_0(),
-                            Placement::Right => this.top_0().right_0().bottom_0(),
-                            Placement::Bottom => this.bottom_0().left_0().right_0(),
-                            Placement::Left => this.top_0().left_0().bottom_0(),
-                        })
-                        .child(div().absolute().top_4().right_4().child(
-                            Button::new("close", cx).icon(IconName::Close).on_click({
-                                let on_close = self.on_close.clone();
-                                move |event, cx| {
-                                    on_close(event, cx);
+        anchored()
+            .position(point(px(0.), titlebar_height))
+            .snap_to_window()
+            .child(div().when(self.open, |this| {
+                this.occlude()
+                    .w(size.width)
+                    .h(size.height - titlebar_height)
+                    .bg(hsla(0., 0., 0., 0.15))
+                    .on_mouse_down(MouseButton::Left, {
+                        let on_close = self.on_close.clone();
+                        move |_, cx| {
+                            on_close(&ClickEvent::default(), cx);
+                        }
+                    })
+                    .child(
+                        v_flex()
+                            .id("")
+                            .absolute()
+                            .occlude()
+                            .bg(cx.theme().background)
+                            .border_1()
+                            .border_color(cx.theme().border)
+                            .shadow_xl()
+                            .map(|this| {
+                                // Set the size of the drawer.
+                                if placement.is_vertical() {
+                                    this.h_full().w(self.size)
+                                } else {
+                                    this.w_full().h(self.size)
                                 }
-                            }),
-                        ))
-                        .child(self.base)
-                        .with_animation(
-                            "slide",
-                            Animation::new(Duration::from_secs_f64(0.15)),
-                            move |this, delta| {
-                                let y = px(-100.) + delta * px(100.);
-                                this.map(|this| match self.placement {
-                                    Placement::Top => this.top(y),
-                                    Placement::Right => this.right(y),
-                                    Placement::Bottom => this.bottom(y),
-                                    Placement::Left => this.left(y),
-                                })
-                                .opacity((1.0 * delta + 0.3).min(1.0))
-                            },
-                        ),
-                )
-        })
+                            })
+                            .map(|this| match self.placement {
+                                Placement::Top => this.top_0().left_0().right_0(),
+                                Placement::Right => this.top_0().right_0().bottom_0(),
+                                Placement::Bottom => this.bottom_0().left_0().right_0(),
+                                Placement::Left => this.top_0().left_0().bottom_0(),
+                            })
+                            .child(
+                                // TitleBar
+                                h_flex()
+                                    .justify_between()
+                                    .h_8()
+                                    .pt_4()
+                                    .px_4()
+                                    .w_full()
+                                    .child(self.title.unwrap_or(div().into_any_element()))
+                                    .child(
+                                        Button::new("close", cx)
+                                            .small()
+                                            .ghost()
+                                            .icon(IconName::Close)
+                                            .on_click({
+                                                let on_close = self.on_close.clone();
+                                                move |event, cx| {
+                                                    on_close(event, cx);
+                                                }
+                                            }),
+                                    ),
+                            )
+                            .child(v_flex().p_4().size_full().debug_red().child(self.base))
+                            .with_animation(
+                                "slide",
+                                Animation::new(Duration::from_secs_f64(0.15)),
+                                move |this, delta| {
+                                    let y = px(-100.) + delta * px(100.);
+                                    this.map(|this| match placement {
+                                        Placement::Top => this.top(y),
+                                        Placement::Right => this.right(y),
+                                        Placement::Bottom => this.bottom(y),
+                                        Placement::Left => this.left(y),
+                                    })
+                                    .opacity((1.0 * delta + 0.3).min(1.0))
+                                },
+                            ),
+                    )
+            }))
     }
 }

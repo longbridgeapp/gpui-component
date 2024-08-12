@@ -2,18 +2,19 @@ use std::{sync::Arc, time::Duration};
 
 use fake::Fake;
 use gpui::{
-    deferred, div, prelude::FluentBuilder as _, px, Animation, AnimationExt as _, FocusHandle,
-    FocusableView, InteractiveElement as _, IntoElement, ParentElement, Render, Styled, Task,
-    Timer, View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView, IntoElement, ParentElement,
+    Render, Styled, Task, Timer, View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
     button::{Button, ButtonStyle},
-    drawer::{drawer, Drawer},
+    date_picker::DatePicker,
+    drawer::drawer,
     h_flex,
+    input::TextInput,
     list::{List, ListDelegate, ListItem},
     theme::ActiveTheme as _,
-    v_flex, Icon, IconName, Placement, StyledExt,
+    v_flex, Icon, IconName, Placement,
 };
 
 pub struct ListItemDeletegate {
@@ -109,10 +110,7 @@ impl ListDelegate for ListItemDeletegate {
 
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
         if let Some(story) = self.story.upgrade() {
-            cx.update_view(&story, |story, cx| {
-                story.open = false;
-                cx.notify();
-            });
+            cx.update_view(&story, |story, cx| story.close_drawer(cx));
         }
     }
 
@@ -125,7 +123,7 @@ impl ListDelegate for ListItemDeletegate {
                         story.selected_value = Some(item.clone());
                     }
                 }
-                story.open = false;
+                story.drawer_placement = None;
                 cx.notify();
             });
         }
@@ -142,8 +140,10 @@ impl ListDelegate for ListItemDeletegate {
 
 pub struct ModalStory {
     list: View<List<ListItemDeletegate>>,
-    open: bool,
+    drawer_placement: Option<Placement>,
     selected_value: Option<Arc<String>>,
+    input1: View<TextInput>,
+    date_picker: View<DatePicker>,
 }
 
 impl ModalStory {
@@ -221,11 +221,28 @@ impl ModalStory {
             list
         });
 
+        let input1 = cx.new_view(|cx| TextInput::new(cx).placeholder("Your Name"));
+        let date_picker =
+            cx.new_view(|cx| DatePicker::new("birthday-picker", cx).placeholder("Date of Birth"));
+
         Self {
             list,
-            open: false,
+            drawer_placement: None,
             selected_value: None,
+            input1,
+            date_picker,
         }
+    }
+
+    fn open_drawer_at(&mut self, placement: Placement, cx: &mut ViewContext<Self>) {
+        self.drawer_placement = Some(placement);
+        self.list.focus_handle(cx).focus(cx);
+        cx.notify();
+    }
+
+    fn close_drawer(&mut self, cx: &mut ViewContext<Self>) {
+        self.drawer_placement = None;
+        cx.notify();
     }
 }
 
@@ -242,16 +259,37 @@ impl Render for ModalStory {
                 v_flex()
                     .gap_6()
                     .child(
-                        v_flex().items_start().child(
-                            Button::new("show-drawer", cx)
-                                .label("Open Drawer...")
-                                .icon(IconName::Search)
-                                .on_click(cx.listener(|this, _, cx| {
-                                    this.open = !this.open;
-                                    this.list.focus_handle(cx).focus(cx);
-                                    cx.notify();
-                                })),
-                        ),
+                        h_flex()
+                            .items_start()
+                            .gap_3()
+                            .child(
+                                Button::new("show-drawer-left", cx)
+                                    .label("Left Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.open_drawer_at(Placement::Left, cx)
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-drawer-top", cx)
+                                    .label("Top Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.open_drawer_at(Placement::Top, cx)
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-drawer", cx)
+                                    .label("Right Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.drawer_placement = Some(Placement::Right);
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-drawer", cx)
+                                    .label("Bottom Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.drawer_placement = Some(Placement::Bottom);
+                                    })),
+                            ),
                     )
                     .when_some(self.selected_value.clone(), |this, selected_value| {
                         this.child(
@@ -265,13 +303,24 @@ impl Render for ModalStory {
             )
             .child(
                 drawer()
-                    .open(self.open)
-                    .placement(Placement::Right)
-                    .on_close(cx.listener(|this, _, cx| {
-                        this.open = false;
-                        cx.notify();
-                    }))
-                    .child(self.list.clone()),
+                    .margin_top(px(32.))
+                    .open(self.drawer_placement.is_some())
+                    .when_some(self.drawer_placement, |this, placement| {
+                        this.placement(placement)
+                    })
+                    .on_close(cx.listener(|this, _, cx| this.close_drawer(cx)))
+                    .title("Select Countries")
+                    .child(
+                        v_flex()
+                            .gap_3()
+                            .size_full()
+                            .rounded_md()
+                            .border_1()
+                            .border_color(cx.theme().border)
+                            .child(self.list.clone())
+                            .child(self.input1.clone())
+                            .child(self.date_picker.clone()),
+                    ),
             )
     }
 }

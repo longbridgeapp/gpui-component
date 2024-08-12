@@ -207,30 +207,26 @@ impl StoryContainer {
 
 impl Render for StoryContainer {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        v_flex()
+        div()
             .id("story-container")
             .size_full()
             .overflow_scroll()
             .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_4()
-                    .p_4()
-                    .child(Label::new(self.name.clone()).text_size(px(24.0)))
-                    .child(Label::new(self.description.clone()).text_size(px(16.0)))
-                    .child(Divider::horizontal().label("This is a divider")),
+                v_flex()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap_4()
+                            .p_4()
+                            .child(Label::new(self.name.clone()).text_size(px(24.0)))
+                            .child(Label::new(self.description.clone()).text_size(px(16.0)))
+                            .child(Divider::horizontal().label("This is a divider")),
+                    )
+                    .when_some(self.story.clone(), |this, story| {
+                        this.child(v_flex().id("story-children").size_full().p_4().child(story))
+                    }),
             )
-            .when_some(self.story.clone(), |this, story| {
-                this.child(
-                    v_flex()
-                        .id("story-children")
-                        .overflow_scroll()
-                        .size_full()
-                        .p_4()
-                        .child(story),
-                )
-            })
     }
 }
 

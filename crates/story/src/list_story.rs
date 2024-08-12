@@ -246,7 +246,6 @@ fn random_company() -> Company {
     Company {
         name: fake::faker::company::en::CompanyName().fake(),
         industry: fake::faker::company::en::Industry().fake(),
-        // description: fake::faker::lorem::en::Paragraph(3..5).fake(),
         last_done,
         prev_close,
     }
