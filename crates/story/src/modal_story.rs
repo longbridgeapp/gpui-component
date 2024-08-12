@@ -9,14 +9,15 @@ use gpui::{
 
 use ui::{
     button::{Button, ButtonStyle},
+    drawer::{drawer, Drawer},
     h_flex,
     list::{List, ListDelegate, ListItem},
     theme::ActiveTheme as _,
-    v_flex, Icon, IconName, StyledExt,
+    v_flex, Icon, IconName, Placement, StyledExt,
 };
 
 pub struct ListItemDeletegate {
-    story: WeakView<PickerStory>,
+    story: WeakView<ModalStory>,
     confirmed_index: Option<usize>,
     selected_index: Option<usize>,
     items: Vec<Arc<String>>,
@@ -139,13 +140,13 @@ impl ListDelegate for ListItemDeletegate {
     }
 }
 
-pub struct PickerStory {
+pub struct ModalStory {
     list: View<List<ListItemDeletegate>>,
     open: bool,
     selected_value: Option<Arc<String>>,
 }
 
-impl PickerStory {
+impl ModalStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)
     }
@@ -228,71 +229,49 @@ impl PickerStory {
     }
 }
 
-impl FocusableView for PickerStory {
+impl FocusableView for ModalStory {
     fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
         self.list.focus_handle(cx)
     }
 }
 
-impl Render for PickerStory {
+impl Render for ModalStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        v_flex()
-            .gap_6()
+        div()
             .child(
-                v_flex().items_start().child(
-                    Button::new("show-picker", cx)
-                        .label("Show Picker...")
-                        .icon(IconName::Search)
-                        .on_click(cx.listener(|this, _, cx| {
-                            this.open = !this.open;
-                            this.list.focus_handle(cx).focus(cx);
-                            cx.notify();
-                        })),
-                ),
-            )
-            .when_some(self.selected_value.clone(), |this, selected_value| {
-                this.child(
-                    h_flex().gap_1().child("You have selected:").child(
-                        div()
-                            .child(selected_value.to_string())
-                            .text_color(gpui::red()),
-                    ),
-                )
-            })
-            .when(self.open, |this| {
-                this.child(deferred(
-                    div()
-                        .absolute()
-                        .size_full()
-                        .top_0()
-                        .left_0()
-                        .child(
-                            v_flex().flex().flex_col().items_center().child(
-                                v_flex()
-                                    .occlude()
-                                    .w(px(450.))
-                                    .h(px(350.))
-                                    .bg(cx.theme().popover)
-                                    .border_1()
-                                    .border_color(cx.theme().border)
-                                    .shadow_lg()
-                                    .rounded_lg()
-                                    .child(self.list.clone())
-                                    .on_mouse_down_out(cx.listener(|this, _, cx| {
-                                        this.open = false;
-                                        cx.notify();
-                                    })),
+                v_flex()
+                    .gap_6()
+                    .child(
+                        v_flex().items_start().child(
+                            Button::new("show-drawer", cx)
+                                .label("Open Drawer...")
+                                .icon(IconName::Search)
+                                .on_click(cx.listener(|this, _, cx| {
+                                    this.open = !this.open;
+                                    this.list.focus_handle(cx).focus(cx);
+                                    cx.notify();
+                                })),
+                        ),
+                    )
+                    .when_some(self.selected_value.clone(), |this, selected_value| {
+                        this.child(
+                            h_flex().gap_1().child("You have selected:").child(
+                                div()
+                                    .child(selected_value.to_string())
+                                    .text_color(gpui::red()),
                             ),
                         )
-                        .with_animation(
-                            "slide-down",
-                            Animation::new(Duration::from_secs_f64(0.15)),
-                            move |this, delta| {
-                                let y = px(-10.) + delta * px(10.);
-                                this.top(y).opacity((1.0 * delta + 0.3).min(1.0))
-                            },
-                        ),
-                ))
-            })
+                    }),
+            )
+            .child(
+                drawer()
+                    .open(self.open)
+                    .placement(Placement::Right)
+                    .on_close(cx.listener(|this, _, cx| {
+                        this.open = false;
+                        cx.notify();
+                    }))
+                    .child(self.list.clone()),
+            )
     }
 }

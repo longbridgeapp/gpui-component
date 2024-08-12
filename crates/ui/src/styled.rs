@@ -313,3 +313,26 @@ impl AxisExt for Axis {
         self == Axis::Vertical
     }
 }
+
+pub enum Placement {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
+impl Placement {
+    pub fn is_horizontal(&self) -> bool {
+        match self {
+            Placement::Top | Placement::Bottom => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_vertical(&self) -> bool {
+        match self {
+            Placement::Left | Placement::Right => true,
+            _ => false,
+        }
+    }
+}

@@ -3,7 +3,7 @@ use prelude::FluentBuilder as _;
 use private::serde::Deserialize;
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
-    PickerStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
+    ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
     SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use workspace::{TitleBar, Workspace};
@@ -96,9 +96,9 @@ impl StoryWorkspace {
         .detach();
 
         StoryContainer::add_pane(
-            "Picker",
-            "Picker is a component that allows the user to select an item from a list of options.",
-            PickerStory::view(cx).into(),
+            "Modal",
+            "Modal & Drawer use examples",
+            ModalStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
