@@ -227,6 +227,7 @@ impl Render for DatePicker {
                             .border_color(cx.theme().border)
                             .shadow_lg()
                             .rounded_lg()
+                            .bg(cx.theme().background)
                             .on_mouse_up_out(
                                 MouseButton::Left,
                                 cx.listener(|view, _, cx| view.escape(&Escape, cx)),
