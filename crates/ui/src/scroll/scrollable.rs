@@ -2,7 +2,7 @@ use std::{cell::Cell, rc::Rc};
 
 use super::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use gpui::{
-    canvas, div, relative, AnyElement, AnyView, Div, Element, ElementId, GlobalElementId,
+    canvas, div, relative, AnyElement, Div, Element, ElementId, EntityId, GlobalElementId,
     InteractiveElement, IntoElement, ParentElement, Pixels, Position, ScrollHandle, SharedString,
     Size, Stateful, StatefulInteractiveElement, Style, StyleRefinement, Styled, WindowContext,
 };
@@ -11,7 +11,7 @@ use gpui::{
 pub struct Scrollable<E> {
     id: ElementId,
     element: Option<E>,
-    view: AnyView,
+    view_id: EntityId,
     axis: ScrollbarAxis,
     /// This is a fake element to handle Styled, InteractiveElement, not used.
     _element: Stateful<Div>,
@@ -21,11 +21,10 @@ impl<E> Scrollable<E>
 where
     E: Element,
 {
-    pub(crate) fn new(element: E, view: impl Into<AnyView>, axis: ScrollbarAxis) -> Self {
-        let view: AnyView = view.into();
+    pub(crate) fn new(view_id: EntityId, element: E, axis: ScrollbarAxis) -> Self {
         let id = ElementId::Name(SharedString::from(format!(
             "ScrollView:{}-{:?}",
-            view.entity_id(),
+            view_id,
             element.id(),
         )));
 
@@ -33,7 +32,7 @@ where
             element: Some(element),
             _element: div().id("fake"),
             id,
-            view,
+            view_id,
             axis,
         }
     }
@@ -158,7 +157,7 @@ where
         style.size.height = relative(1.0).into();
 
         let axis = self.axis;
-        let view = self.view.clone();
+        let view_id = self.view_id;
 
         let scroll_id = self.id.clone();
         let content = self.element.take().map(|c| c.into_any_element());
@@ -171,6 +170,7 @@ where
             let mut element = div()
                 .relative()
                 .size_full()
+                .overflow_hidden()
                 .child(
                     div()
                         .id(scroll_id)
@@ -193,7 +193,7 @@ where
                         .right_0()
                         .bottom_0()
                         .child(
-                            Scrollbar::both(view, state, handle.clone(), scroll_size.get())
+                            Scrollbar::both(view_id, state, handle.clone(), scroll_size.get())
                                 .axis(axis),
                         ),
                 )

@@ -8,7 +8,7 @@ use crate::{
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
-    DragMoveEvent, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
+    DragMoveEvent, Entity, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
     IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, ScrollHandle,
     SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
     VisualContext as _, WindowContext,
@@ -339,7 +339,6 @@ where
     }
 
     fn render_scrollbar(&self, cx: &mut ViewContext<Self>) -> Option<impl IntoElement> {
-        let view = cx.view().clone();
         let state = self.scrollbar_state.clone();
 
         Some(
@@ -350,7 +349,7 @@ where
                 .right_0()
                 .bottom_0()
                 .child(Scrollbar::uniform_scroll(
-                    view,
+                    cx.view().entity_id(),
                     state,
                     self.vertical_scroll_handle.clone(),
                     self.delegate.rows_count(),

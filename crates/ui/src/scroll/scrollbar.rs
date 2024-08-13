@@ -2,7 +2,7 @@ use std::{cell::Cell, rc::Rc};
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    fill, point, px, relative, size, AnyView, Bounds, ContentMask, Edges, Element, Hitbox,
+    fill, point, px, relative, size, Bounds, ContentMask, Edges, Element, EntityId, Hitbox,
     IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position,
     ScrollHandle, Style, UniformListScrollHandle,
 };
@@ -140,7 +140,7 @@ impl ScrollbarAxis {
 
 /// Scrollbar control for scroll-area or a uniform-list.
 pub struct Scrollbar {
-    view: AnyView,
+    view_id: EntityId,
     axis: ScrollbarAxis,
     /// When is vertical, this is the height of the scrollbar.
     width: Pixels,
@@ -151,14 +151,14 @@ pub struct Scrollbar {
 
 impl Scrollbar {
     fn new(
-        view: AnyView,
+        view_id: EntityId,
         state: Rc<Cell<ScrollbarState>>,
         axis: ScrollbarAxis,
         scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self {
-            view,
+            view_id,
             state,
             axis,
             scroll_size,
@@ -169,13 +169,13 @@ impl Scrollbar {
 
     /// Create with vertical and horizontal scrollbar.
     pub fn both(
-        view: impl Into<AnyView>,
+        view_id: EntityId,
         state: Rc<Cell<ScrollbarState>>,
         scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self::new(
-            view.into(),
+            view_id,
             state,
             ScrollbarAxis::Both,
             scroll_handle,
@@ -185,13 +185,13 @@ impl Scrollbar {
 
     /// Create with horizontal scrollbar.
     pub fn horizontal(
-        view: impl Into<AnyView>,
+        view_id: EntityId,
         state: Rc<Cell<ScrollbarState>>,
         scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self::new(
-            view.into(),
+            view_id,
             state,
             ScrollbarAxis::Horizontal,
             scroll_handle,
@@ -201,13 +201,13 @@ impl Scrollbar {
 
     /// Create with vertical scrollbar.
     pub fn vertical(
-        view: impl Into<AnyView>,
+        view_id: EntityId,
         state: Rc<Cell<ScrollbarState>>,
         scroll_handle: impl ScrollHandleOffsetable + 'static,
         scroll_size: gpui::Size<Pixels>,
     ) -> Self {
         Self::new(
-            view.into(),
+            view_id,
             state,
             ScrollbarAxis::Vertical,
             scroll_handle,
@@ -217,7 +217,7 @@ impl Scrollbar {
 
     /// Create vertical scrollbar for uniform list.
     pub fn uniform_scroll(
-        view: impl Into<AnyView>,
+        view_id: EntityId,
         state: Rc<Cell<ScrollbarState>>,
         scroll_handle: UniformListScrollHandle,
         items_count: usize,
@@ -227,7 +227,7 @@ impl Scrollbar {
         let scroll_size = size(px(0.), max_height);
 
         Self::new(
-            view.into(),
+            view_id,
             state,
             ScrollbarAxis::Vertical,
             scroll_handle,
@@ -436,7 +436,7 @@ impl Element for Scrollbar {
 
                     cx.on_mouse_event({
                         let state = self.state.clone();
-                        let view_id = self.view.entity_id();
+                        let view_id = self.view_id;
                         let scroll_handle = self.scroll_handle.clone();
 
                         move |event: &MouseDownEvent, phase, cx| {
@@ -448,6 +448,7 @@ impl Element for Scrollbar {
                                     let pos = event.position - thumb_bounds.origin;
 
                                     state.set(state.get().with_drag_pos(axis, pos));
+
                                     cx.notify(view_id);
                                 } else {
                                     // click on the scrollbar, jump to the position
@@ -481,18 +482,20 @@ impl Element for Scrollbar {
                     cx.on_mouse_event({
                         let scroll_handle = self.scroll_handle.clone();
                         let state = self.state.clone();
-                        let view_id = self.view.entity_id();
+                        let view_id = self.view_id;
 
                         move |event: &MouseMoveEvent, _, cx| {
                             if bounds.contains(&event.position) {
                                 if state.get().hovered_axis != Some(axis) {
                                     state.set(state.get().with_hovered(Some(axis)));
+
                                     cx.notify(view_id);
                                 }
                             } else {
                                 if state.get().hovered_axis == Some(axis) {
                                     if state.get().hovered_axis.is_some() {
                                         state.set(state.get().with_hovered(None));
+
                                         cx.notify(view_id);
                                     }
                                 }
@@ -541,12 +544,13 @@ impl Element for Scrollbar {
                     });
 
                     cx.on_mouse_event({
-                        let view_id = self.view.entity_id();
+                        let view_id = self.view_id;
                         let state = self.state.clone();
 
                         move |_event: &MouseUpEvent, phase, cx| {
                             if phase.bubble() {
                                 state.set(state.get().with_unset_drag_pos());
+
                                 cx.notify(view_id);
                             }
                         }

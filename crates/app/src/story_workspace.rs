@@ -3,7 +3,7 @@ use prelude::FluentBuilder as _;
 use private::serde::Deserialize;
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
-    PickerStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
+    ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
     SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use workspace::{TitleBar, Workspace};
@@ -14,7 +14,7 @@ use ui::{
     popover::Popover,
     popup_menu::PopupMenu,
     theme::{ActiveTheme, Theme},
-    IconName, Sizable,
+    IconName, Root, Sizable,
 };
 
 use crate::app_state::AppState;
@@ -96,9 +96,9 @@ impl StoryWorkspace {
         .detach();
 
         StoryContainer::add_pane(
-            "Picker",
-            "Picker is a component that allows the user to select an item from a list of options.",
-            PickerStory::view(cx).into(),
+            "Modal",
+            "Modal & Drawer use examples",
+            ModalStory::view(cx).into(),
             workspace.clone(),
             cx,
         )
@@ -212,7 +212,7 @@ impl StoryWorkspace {
     pub fn new_local(
         app_state: Arc<AppState>,
         cx: &mut AppContext,
-    ) -> Task<anyhow::Result<WindowHandle<Self>>> {
+    ) -> Task<anyhow::Result<WindowHandle<Root>>> {
         let window_bounds = Bounds::centered(None, size(px(1600.0), px(1200.0)), cx);
 
         cx.spawn(|mut cx| async move {
@@ -233,7 +233,8 @@ impl StoryWorkspace {
 
             let window = cx.open_window(options, |cx| {
                 let workspace = cx.new_view(|cx| Workspace::new(None, cx));
-                cx.new_view(|cx| Self::new(app_state.clone(), workspace, cx))
+                let story_view = cx.new_view(|cx| Self::new(app_state.clone(), workspace, cx));
+                cx.new_view(|cx| Root::new(story_view.into(), cx))
             })?;
 
             window
@@ -256,14 +257,13 @@ impl StoryWorkspace {
 pub fn open_new(
     app_state: Arc<AppState>,
     cx: &mut AppContext,
-    init: impl FnOnce(&mut StoryWorkspace, &mut ViewContext<StoryWorkspace>) + 'static + Send,
+    init: impl FnOnce(&mut Root, &mut ViewContext<Root>) + 'static + Send,
 ) -> Task<()> {
-    let task: Task<std::result::Result<WindowHandle<StoryWorkspace>, anyhow::Error>> =
+    let task: Task<std::result::Result<WindowHandle<Root>, anyhow::Error>> =
         StoryWorkspace::new_local(app_state, cx);
     cx.spawn(|mut cx| async move {
-        if let Some(workspace) = task.await.ok() {
-            workspace
-                .update(&mut cx, |workspace, cx| init(workspace, cx))
+        if let Some(root) = task.await.ok() {
+            root.update(&mut cx, |workspace, cx| init(workspace, cx))
                 .expect("failed to init workspace");
         }
     })

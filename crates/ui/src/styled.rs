@@ -3,7 +3,7 @@ use crate::{
     theme::{ActiveTheme, Colorize},
 };
 use gpui::{
-    div, px, rems, AnyView, Axis, Div, Element, Fill, FocusHandle, Pixels, Styled, WindowContext,
+    div, px, rems, Axis, Div, Element, EntityId, Fill, FocusHandle, Pixels, Styled, WindowContext,
 };
 
 /// Returns a `Div` as horizontal flex layout.
@@ -103,11 +103,11 @@ pub trait StyledExt: Styled + Sized {
     /// Wraps the element in a ScrollView.
     ///
     /// Current this is only have a vertical scrollbar.
-    fn scrollable(self, view: impl Into<AnyView>, axis: ScrollbarAxis) -> Scrollable<Self>
+    fn scrollable(self, view_id: EntityId, axis: ScrollbarAxis) -> Scrollable<Self>
     where
         Self: Element,
     {
-        Scrollable::new(self, view, axis)
+        Scrollable::new(view_id, self, axis)
     }
 
     font_weight!(font_thin, THIN);
@@ -311,5 +311,29 @@ impl AxisExt for Axis {
 
     fn is_vertical(self) -> bool {
         self == Axis::Vertical
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Placement {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
+impl Placement {
+    pub fn is_horizontal(&self) -> bool {
+        match self {
+            Placement::Top | Placement::Bottom => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_vertical(&self) -> bool {
+        match self {
+            Placement::Left | Placement::Right => true,
+            _ => false,
+        }
     }
 }

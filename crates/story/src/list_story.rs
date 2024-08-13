@@ -246,7 +246,6 @@ fn random_company() -> Company {
     Company {
         name: fake::faker::company::en::CompanyName().fake(),
         industry: fake::faker::company::en::Industry().fake(),
-        // description: fake::faker::lorem::en::Paragraph(3..5).fake(),
         last_done,
         prev_close,
     }
@@ -260,15 +259,14 @@ impl FocusableView for ListStory {
 
 impl Render for ListStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        h_flex()
+        div()
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::selected_company))
             .size_full()
             .gap_4()
-            .mb_4()
             .border_1()
             .border_color(cx.theme().border)
             .rounded_md()
-            .child(v_flex().h_full().w_full().child(self.company_list.clone()))
+            .child(self.company_list.clone())
     }
 }
