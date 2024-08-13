@@ -1,15 +1,15 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, div, hsla, point, prelude::FluentBuilder as _, px, Animation, AnimationExt as _,
+    anchored, div, point, prelude::FluentBuilder as _, px, Animation, AnimationExt as _,
     AnyElement, ClickEvent, DefiniteLength, DismissEvent, Div, EventEmitter, FocusHandle,
     InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, Styled,
     WindowContext,
 };
 
 use crate::{
-    button::Button, h_flex, root::ContextModal as _, scroll::ScrollbarAxis, theme::ActiveTheme,
-    v_flex, IconName, Placement, Sizable, StyledExt as _,
+    button::Button, h_flex, modal::overlay_color, root::ContextModal as _, scroll::ScrollbarAxis,
+    theme::ActiveTheme, v_flex, IconName, Placement, Sizable, StyledExt as _,
 };
 
 #[derive(IntoElement)]
@@ -23,6 +23,7 @@ pub struct Drawer {
     footer: Option<AnyElement>,
     content: Div,
     margin_top: Pixels,
+    overlay: bool,
 }
 
 impl Drawer {
@@ -36,6 +37,7 @@ impl Drawer {
             footer: None,
             content: v_flex(),
             margin_top: px(0.),
+            overlay: true,
             on_close: Rc::new(|_, _| {}),
         }
     }
@@ -83,6 +85,12 @@ impl Drawer {
         self
     }
 
+    /// Set whether the drawer should have an overlay, default is `true`.
+    pub fn overlay(mut self, overlay: bool) -> Self {
+        self.overlay = overlay;
+        self
+    }
+
     /// Listen to the close event of the drawer.
     pub fn on_close(
         mut self,
@@ -113,12 +121,6 @@ impl RenderOnce for Drawer {
         let size = cx.viewport_size();
         let on_close = self.on_close.clone();
 
-        let overlay_color = if cx.theme().mode.is_dark() {
-            hsla(0., 1., 1., 0.06)
-        } else {
-            hsla(0., 0., 0., 0.06)
-        };
-
         anchored()
             .position(point(px(0.), titlebar_height))
             .snap_to_window()
@@ -127,13 +129,15 @@ impl RenderOnce for Drawer {
                     .occlude()
                     .w(size.width)
                     .h(size.height - titlebar_height)
-                    .bg(overlay_color)
-                    .on_mouse_down(MouseButton::Left, {
-                        let on_close = self.on_close.clone();
-                        move |_, cx| {
-                            on_close(&ClickEvent::default(), cx);
-                            cx.close_drawer();
-                        }
+                    .bg(overlay_color(self.overlay, cx))
+                    .when(self.overlay, |this| {
+                        this.on_mouse_down(MouseButton::Left, {
+                            let on_close = self.on_close.clone();
+                            move |_, cx| {
+                                on_close(&ClickEvent::default(), cx);
+                                cx.close_drawer();
+                            }
+                        })
                     })
                     .child(
                         v_flex()

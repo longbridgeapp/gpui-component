@@ -3,11 +3,13 @@ use std::{sync::Arc, time::Duration};
 use fake::Fake;
 use gpui::{
     div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView, IntoElement, ParentElement,
-    Render, Styled, Task, Timer, View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    Render, SharedString, Styled, Task, Timer, View, ViewContext, VisualContext as _, WeakView,
+    WindowContext,
 };
 
 use ui::{
     button::{Button, ButtonStyle},
+    checkbox::Checkbox,
     date_picker::DatePicker,
     h_flex,
     input::TextInput,
@@ -119,7 +121,7 @@ impl ListDelegate for ListItemDeletegate {
                 if let Some(ix) = ix {
                     self.confirmed_index = Some(ix);
                     if let Some(item) = self.matches.get(ix) {
-                        story.selected_value = Some(item.clone());
+                        story.selected_value = Some(SharedString::from(item.to_string()));
                     }
                 }
                 cx.close_drawer();
@@ -139,10 +141,11 @@ impl ListDelegate for ListItemDeletegate {
 pub struct ModalStory {
     focus_handle: FocusHandle,
     drawer_placement: Option<Placement>,
-    selected_value: Option<Arc<String>>,
+    selected_value: Option<SharedString>,
     list: View<List<ListItemDeletegate>>,
     input1: View<TextInput>,
     date_picker: View<DatePicker>,
+    modal_overlay: bool,
 }
 
 impl ModalStory {
@@ -231,6 +234,7 @@ impl ModalStory {
             list,
             input1,
             date_picker,
+            modal_overlay: true,
         }
     }
 
@@ -244,9 +248,11 @@ impl ModalStory {
             Placement::Top | Placement::Bottom => px(160.),
         };
 
+        let overlay = self.modal_overlay;
         cx.open_drawer(move |this, cx| {
             this.margin_top(px(33.))
                 .placement(placement)
+                .overlay(overlay)
                 .size(px(400.))
                 .title("Drawer Title")
                 .gap_4()
@@ -299,6 +305,15 @@ impl Render for ModalStory {
             v_flex()
                 .gap_6()
                 .child(
+                    Checkbox::new("modal-overlay")
+                        .label("Modal Overlay")
+                        .checked(self.modal_overlay)
+                        .on_click(cx.listener(|view, _, cx| {
+                            view.modal_overlay = !view.modal_overlay;
+                            cx.notify();
+                        })),
+                )
+                .child(
                     h_flex()
                         .items_start()
                         .gap_3()
@@ -339,7 +354,68 @@ impl Render for ModalStory {
                                 .text_color(gpui::red()),
                         ),
                     )
-                }),
+                })
+                .child(
+                    Button::new("show-modal", cx)
+                        .label("Open Modal...")
+                        .on_click(cx.listener(|this, _, cx| {
+                            let overlay = this.modal_overlay;
+                            let input1 = this.input1.clone();
+                            let date_picker = this.date_picker.clone();
+                            let view = cx.view().clone();
+
+                            cx.open_modal(move |modal, cx| {
+                                modal
+                                    .title("Form Modal")
+                                    .overlay(overlay)
+                                    .child(
+                                        v_flex()
+                                            .gap_3()
+                                            .child("This is a modal dialog.")
+                                            .child("You can put anything here.")
+                                            .child(input1.clone())
+                                            .child(date_picker.clone()),
+                                    )
+                                    .footer(
+                                        h_flex()
+                                            .gap_6()
+                                            .items_center()
+                                            .child(
+                                                Button::new("confirm", cx)
+                                                    .primary()
+                                                    .label("Confirm")
+                                                    .on_click({
+                                                        let view = view.clone();
+                                                        let input1 = input1.clone();
+                                                        let date_picker = date_picker.clone();
+
+                                                        move |_, cx| {
+                                                            cx.close_modal();
+
+                                                            view.update(cx, |view, cx| {
+                                                                view.selected_value = Some(
+                                                                    format!(
+                                                                        "Hello, {}, date: {}",
+                                                                        input1.read(cx).text(),
+                                                                        date_picker.read(cx).date()
+                                                                    )
+                                                                    .into(),
+                                                                )
+                                                            });
+                                                        }
+                                                    }),
+                                            )
+                                            .child(
+                                                Button::new("cancel", cx).label("Cancel").on_click(
+                                                    |_, cx| {
+                                                        cx.close_modal();
+                                                    },
+                                                ),
+                                            ),
+                                    )
+                            })
+                        })),
+                ),
         )
     }
 }

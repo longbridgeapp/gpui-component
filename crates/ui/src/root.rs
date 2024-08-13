@@ -4,17 +4,25 @@ use gpui::{
 };
 use std::{ops::DerefMut, rc::Rc};
 
-use crate::{drawer::Drawer, theme::ActiveTheme};
+use crate::{drawer::Drawer, modal::Modal, theme::ActiveTheme};
 
 /// Extension trait for [`WindowContext`] and [`ViewContext`] to add drawer functionality.
 pub trait ContextModal: Sized {
-    /// Opens a drawer.
+    /// Opens a Drawer.
     fn open_drawer<F>(&mut self, build: F)
     where
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static;
 
-    /// Closes the active drawer.
+    /// Closes the active Drawer.
     fn close_drawer(&mut self);
+
+    /// Opens a Modal.
+    fn open_modal<F>(&mut self, build: F)
+    where
+        F: Fn(Modal, &mut WindowContext) -> Modal + 'static;
+
+    /// Closes the active Modal.
+    fn close_modal(&mut self);
 }
 
 impl<'a> ContextModal for WindowContext<'a> {
@@ -34,6 +42,23 @@ impl<'a> ContextModal for WindowContext<'a> {
             cx.notify();
         })
     }
+
+    fn open_modal<F>(&mut self, build: F)
+    where
+        F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
+    {
+        Root::update_root(self, move |root, cx| {
+            root.active_modal = Some(Rc::new(build));
+            cx.notify();
+        })
+    }
+
+    fn close_modal(&mut self) {
+        Root::update_root(self, |root, cx| {
+            root.active_modal = None;
+            cx.notify();
+        })
+    }
 }
 impl<'a, V> ContextModal for ViewContext<'a, V> {
     fn open_drawer<F>(&mut self, build: F)
@@ -46,10 +71,22 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
     fn close_drawer(&mut self) {
         self.deref_mut().close_drawer()
     }
+
+    fn open_modal<F>(&mut self, build: F)
+    where
+        F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
+    {
+        self.deref_mut().open_modal(build)
+    }
+
+    fn close_modal(&mut self) {
+        self.deref_mut().close_modal()
+    }
 }
 
 pub struct Root {
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
+    active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     root_view: AnyView,
 }
 
@@ -57,6 +94,7 @@ impl Root {
     pub fn new(root_view: AnyView, _cx: &mut ViewContext<Self>) -> Self {
         Self {
             active_drawer: None,
+            active_modal: None,
             root_view,
         }
     }
@@ -77,13 +115,21 @@ impl Root {
 
 impl Render for Root {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+        let has_modal = self.active_modal.is_some();
+
         div()
             .size_full()
             .text_color(cx.theme().foreground)
             .child(self.root_view.clone())
-            .when_some(self.active_drawer.clone(), |this, build| {
-                let drawer = Drawer::new(cx);
-                this.child(build(drawer, cx))
+            .when(!has_modal, |this| {
+                this.when_some(self.active_drawer.clone(), |this, build| {
+                    let drawer = Drawer::new(cx);
+                    this.child(build(drawer, cx))
+                })
+            })
+            .when_some(self.active_modal.clone(), |this, build| {
+                let modal = Modal::new(cx);
+                this.child(build(modal, cx))
             })
     }
 }
