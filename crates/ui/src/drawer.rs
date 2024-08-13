@@ -8,8 +8,8 @@ use gpui::{
 };
 
 use crate::{
-    button::Button, h_flex, root::ContextModal as _, theme::ActiveTheme, v_flex, IconName,
-    Placement, Sizable, StyledExt as _,
+    button::Button, h_flex, root::ContextModal as _, scroll::ScrollbarAxis, theme::ActiveTheme,
+    v_flex, IconName, Placement, Sizable, StyledExt as _,
 };
 
 #[derive(IntoElement)]
@@ -151,8 +151,7 @@ impl RenderOnce for Drawer {
                                 h_flex()
                                     .justify_between()
                                     .h_8()
-                                    .pt_4()
-                                    .px_4()
+                                    .p_4()
                                     .w_full()
                                     .child(self.title.unwrap_or(div().into_any_element()))
                                     .child(
@@ -166,7 +165,17 @@ impl RenderOnce for Drawer {
                                             }),
                                     ),
                             )
-                            .child(v_flex().p_4().size_full().child(self.content))
+                            .child(
+                                v_flex()
+                                    .p_4()
+                                    .pt_0()
+                                    .size_full()
+                                    .scrollable(
+                                        cx.parent_view_id().unwrap_or_default(),
+                                        ScrollbarAxis::Vertical,
+                                    )
+                                    .child(self.content),
+                            )
                             .with_animation(
                                 "slide",
                                 Animation::new(Duration::from_secs_f64(0.15)),

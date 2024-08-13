@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, px, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
+    canvas, div, px, Entity, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
     StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::button::Button;
@@ -170,7 +170,7 @@ impl Render for ScrollableStory {
                                     .bottom_0()
                                     .child(
                                         Scrollbar::both(
-                                            view,
+                                            view.entity_id(),
                                             self.scroll_state.clone(),
                                             self.scroll_handle.clone(),
                                             self.scroll_size,
@@ -193,7 +193,7 @@ impl Render for ScrollableStory {
                     .child(
                         v_flex()
                             .id("test-1")
-                            .scrollable(cx.view().clone(), ScrollbarAxis::Vertical)
+                            .scrollable(cx.view().entity_id(), ScrollbarAxis::Vertical)
                             .focusable()
                             .p_3()
                             .w(test_width)

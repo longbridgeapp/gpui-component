@@ -11,7 +11,7 @@ use gpui::{
     InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
     ParentElement, Render, Styled, Task, UniformListScrollHandle, View, ViewContext, VisualContext,
 };
-use gpui::{SharedString, WindowContext};
+use gpui::{Entity, SharedString, WindowContext};
 use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -167,7 +167,7 @@ where
         }
 
         Some(Scrollbar::uniform_scroll(
-            cx.view().clone(),
+            cx.view().entity_id(),
             self.scrollbar_state.clone(),
             self.vertical_scroll_handle.clone(),
             self.delegate.items_count(),
