@@ -1,50 +1,41 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, deferred, div, hsla, point, prelude::FluentBuilder as _, px, AnchoredPositionMode,
-    Animation, AnimationExt as _, AnyElement, ClickEvent, DefiniteLength, DismissEvent, Div,
-    EventEmitter, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels,
-    RenderOnce, Styled, WindowContext,
+    anchored, div, hsla, point, prelude::FluentBuilder as _, px, Animation, AnimationExt as _,
+    AnyElement, ClickEvent, DefiniteLength, DismissEvent, Div, EventEmitter, FocusHandle,
+    InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, Styled,
+    WindowContext,
 };
 
 use crate::{
-    button::Button, h_flex, theme::ActiveTheme, v_flex, IconName, Placement, Selectable, Sizable,
-    StyledExt as _,
+    button::Button, h_flex, root::ContextModal as _, theme::ActiveTheme, v_flex, IconName,
+    Placement, Sizable, StyledExt as _,
 };
-
-pub fn drawer() -> Drawer {
-    Drawer::new()
-}
 
 #[derive(IntoElement)]
 pub struct Drawer {
-    base: Div,
+    focus_handle: FocusHandle,
     placement: Placement,
     size: DefiniteLength,
     resizable: bool,
-    open: bool,
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
     title: Option<AnyElement>,
+    content: Div,
     margin_top: Pixels,
 }
 
 impl Drawer {
-    pub fn new() -> Self {
+    pub fn new(cx: &mut WindowContext) -> Self {
         Self {
-            base: div(),
+            focus_handle: cx.focus_handle(),
             placement: Placement::Right,
             size: DefiniteLength::Absolute(px(350.).into()),
-            open: false,
             resizable: true,
             title: None,
+            content: div(),
             margin_top: px(0.),
             on_close: Rc::new(|_, _| {}),
         }
-    }
-
-    pub fn open(mut self, open: bool) -> Self {
-        self.open = open;
-        self
     }
 
     /// Sets the title of the drawer.
@@ -73,12 +64,18 @@ impl Drawer {
         self
     }
 
+    /// Sets the placement of the drawer, default is `Placement::Right`.
+    pub fn set_placement(&mut self, placement: Placement) {
+        self.placement = placement;
+    }
+
     /// Sets whether the drawer is resizable, default is `true`.
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
     }
 
+    /// Listen to the close event of the drawer.
     pub fn on_close(
         mut self,
         on_close: impl Fn(&ClickEvent, &mut WindowContext) + 'static,
@@ -91,33 +88,44 @@ impl Drawer {
 impl EventEmitter<DismissEvent> for Drawer {}
 impl ParentElement for Drawer {
     fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
-        self.base.extend(elements);
+        self.content.extend(elements);
     }
 }
 
 impl RenderOnce for Drawer {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let focus_handle = self.focus_handle.clone();
         let placement = self.placement;
         let titlebar_height = self.margin_top;
         let size = cx.viewport_size();
+        let on_close = self.on_close.clone();
+
+        let overlay_color = if cx.theme().mode.is_dark() {
+            hsla(0., 1., 1., 0.06)
+        } else {
+            hsla(0., 0., 0., 0.06)
+        };
 
         anchored()
             .position(point(px(0.), titlebar_height))
             .snap_to_window()
-            .child(div().when(self.open, |this| {
-                this.occlude()
+            .child(
+                div()
+                    .occlude()
                     .w(size.width)
                     .h(size.height - titlebar_height)
-                    .bg(hsla(0., 0., 0., 0.15))
+                    .bg(overlay_color)
                     .on_mouse_down(MouseButton::Left, {
                         let on_close = self.on_close.clone();
                         move |_, cx| {
                             on_close(&ClickEvent::default(), cx);
+                            cx.close_drawer();
                         }
                     })
                     .child(
                         v_flex()
                             .id("")
+                            .track_focus(&focus_handle)
                             .absolute()
                             .occlude()
                             .bg(cx.theme().background)
@@ -152,15 +160,13 @@ impl RenderOnce for Drawer {
                                             .small()
                                             .ghost()
                                             .icon(IconName::Close)
-                                            .on_click({
-                                                let on_close = self.on_close.clone();
-                                                move |event, cx| {
-                                                    on_close(event, cx);
-                                                }
+                                            .on_click(move |_, cx| {
+                                                on_close(&ClickEvent::default(), cx);
+                                                cx.close_drawer();
                                             }),
                                     ),
                             )
-                            .child(v_flex().p_4().size_full().debug_red().child(self.base))
+                            .child(v_flex().p_4().size_full().child(self.content))
                             .with_animation(
                                 "slide",
                                 Animation::new(Duration::from_secs_f64(0.15)),
@@ -175,7 +181,7 @@ impl RenderOnce for Drawer {
                                     .opacity((1.0 * delta + 0.3).min(1.0))
                                 },
                             ),
-                    )
-            }))
+                    ),
+            )
     }
 }

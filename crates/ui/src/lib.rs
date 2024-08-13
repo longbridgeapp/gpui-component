@@ -3,6 +3,7 @@ mod event;
 mod focusable;
 mod icon;
 
+mod root;
 mod styled;
 mod svg_img;
 mod time;
@@ -35,22 +36,19 @@ pub mod theme;
 pub mod tooltip;
 pub mod webview;
 
-use std::ops::Deref;
-
 // re-export
 pub use wry;
 
 pub use crate::Disableable;
 pub use event::InteractiveElementExt;
 pub use focusable::FocusableCycle;
+pub use root::{ContextModal, Root};
 pub use styled::*;
 pub use time::*;
 
 pub use colors::*;
 pub use icon::*;
 pub use svg_img::*;
-
-rust_i18n::i18n!("locales", fallback = "en");
 
 /// Initialize the UI module.
 pub fn init(cx: &mut gpui::AppContext) {
@@ -65,6 +63,8 @@ pub fn init(cx: &mut gpui::AppContext) {
     webview::init(cx)
 }
 
+rust_i18n::i18n!("locales", fallback = "en");
+use std::ops::Deref;
 pub fn locale() -> impl Deref<Target = str> {
     rust_i18n::locale()
 }

@@ -9,12 +9,11 @@ use gpui::{
 use ui::{
     button::{Button, ButtonStyle},
     date_picker::DatePicker,
-    drawer::drawer,
     h_flex,
     input::TextInput,
     list::{List, ListDelegate, ListItem},
     theme::ActiveTheme as _,
-    v_flex, Icon, IconName, Placement,
+    v_flex, ContextModal as _, Icon, IconName, Placement,
 };
 
 pub struct ListItemDeletegate {
@@ -123,8 +122,7 @@ impl ListDelegate for ListItemDeletegate {
                         story.selected_value = Some(item.clone());
                     }
                 }
-                story.drawer_placement = None;
-                cx.notify();
+                cx.close_drawer();
             });
         }
     }
@@ -139,9 +137,10 @@ impl ListDelegate for ListItemDeletegate {
 }
 
 pub struct ModalStory {
-    list: View<List<ListItemDeletegate>>,
+    focus_handle: FocusHandle,
     drawer_placement: Option<Placement>,
     selected_value: Option<Arc<String>>,
+    list: View<List<ListItemDeletegate>>,
     input1: View<TextInput>,
     date_picker: View<DatePicker>,
 }
@@ -226,18 +225,58 @@ impl ModalStory {
             cx.new_view(|cx| DatePicker::new("birthday-picker", cx).placeholder("Date of Birth"));
 
         Self {
-            list,
+            focus_handle: cx.focus_handle(),
             drawer_placement: None,
             selected_value: None,
+            list,
             input1,
             date_picker,
         }
     }
 
     fn open_drawer_at(&mut self, placement: Placement, cx: &mut ViewContext<Self>) {
-        self.drawer_placement = Some(placement);
-        self.list.focus_handle(cx).focus(cx);
-        cx.notify();
+        let input = self.input1.clone();
+        let date_picker = self.date_picker.clone();
+        let list = self.list.clone();
+
+        cx.open_drawer(move |this, cx| {
+            this.margin_top(px(32.))
+                .placement(placement)
+                .size(px(400.))
+                .title("Drawer Title")
+                .child(
+                    v_flex()
+                        .gap_6()
+                        .child(input.clone())
+                        .child(date_picker.clone())
+                        .child(
+                            div()
+                                .border_1()
+                                .border_color(cx.theme().border)
+                                .rounded_md()
+                                .min_h(px(450.))
+                                .child(list.clone()),
+                        )
+                        .child(
+                            h_flex()
+                                .gap_6()
+                                .items_center()
+                                .child(
+                                    Button::new("confirm", cx)
+                                        .primary()
+                                        .label("Confirm")
+                                        .on_click(|_, cx| {
+                                            cx.close_drawer();
+                                        }),
+                                )
+                                .child(Button::new("cancel", cx).label("Cancel").on_click(
+                                    |_, cx| {
+                                        cx.close_drawer();
+                                    },
+                                )),
+                        ),
+                )
+        });
     }
 
     fn close_drawer(&mut self, cx: &mut ViewContext<Self>) {
@@ -247,80 +286,58 @@ impl ModalStory {
 }
 
 impl FocusableView for ModalStory {
-    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
-        self.list.focus_handle(cx)
+    fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
+        self.focus_handle.clone()
     }
 }
 
 impl Render for ModalStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
-            .child(
-                v_flex()
-                    .gap_6()
-                    .child(
-                        h_flex()
-                            .items_start()
-                            .gap_3()
-                            .child(
-                                Button::new("show-drawer-left", cx)
-                                    .label("Left Drawer...")
-                                    .on_click(cx.listener(|this, _, cx| {
-                                        this.open_drawer_at(Placement::Left, cx)
-                                    })),
-                            )
-                            .child(
-                                Button::new("show-drawer-top", cx)
-                                    .label("Top Drawer...")
-                                    .on_click(cx.listener(|this, _, cx| {
-                                        this.open_drawer_at(Placement::Top, cx)
-                                    })),
-                            )
-                            .child(
-                                Button::new("show-drawer", cx)
-                                    .label("Right Drawer...")
-                                    .on_click(cx.listener(|this, _, cx| {
-                                        this.drawer_placement = Some(Placement::Right);
-                                    })),
-                            )
-                            .child(
-                                Button::new("show-drawer", cx)
-                                    .label("Bottom Drawer...")
-                                    .on_click(cx.listener(|this, _, cx| {
-                                        this.drawer_placement = Some(Placement::Bottom);
-                                    })),
-                            ),
-                    )
-                    .when_some(self.selected_value.clone(), |this, selected_value| {
-                        this.child(
-                            h_flex().gap_1().child("You have selected:").child(
-                                div()
-                                    .child(selected_value.to_string())
-                                    .text_color(gpui::red()),
-                            ),
+        div().child(
+            v_flex()
+                .gap_6()
+                .child(
+                    h_flex()
+                        .items_start()
+                        .gap_3()
+                        .child(
+                            Button::new("show-drawer-left", cx)
+                                .label("Left Drawer...")
+                                .on_click(cx.listener(|this, _, cx| {
+                                    this.open_drawer_at(Placement::Left, cx)
+                                })),
                         )
-                    }),
-            )
-            .child(
-                drawer()
-                    .margin_top(px(32.))
-                    .open(self.drawer_placement.is_some())
-                    .when_some(self.drawer_placement, |this, placement| {
-                        this.placement(placement)
-                    })
-                    .on_close(cx.listener(|this, _, cx| this.close_drawer(cx)))
-                    .title("Select Countries")
-                    .child(
-                        v_flex()
-                            .gap_3()
-                            .size_full()
-                            .rounded_md()
-                            .border_1()
-                            .border_color(cx.theme().border)
-                            .child(self.list.clone())
-                            .child(self.input1.clone())
-                            .child(self.date_picker.clone()),
-                    ),
-            )
+                        .child(
+                            Button::new("show-drawer-top", cx)
+                                .label("Top Drawer...")
+                                .on_click(cx.listener(|this, _, cx| {
+                                    this.open_drawer_at(Placement::Top, cx)
+                                })),
+                        )
+                        .child(
+                            Button::new("show-drawer", cx)
+                                .label("Right Drawer...")
+                                .on_click(cx.listener(|this, _, cx| {
+                                    this.open_drawer_at(Placement::Right, cx)
+                                })),
+                        )
+                        .child(
+                            Button::new("show-drawer", cx)
+                                .label("Bottom Drawer...")
+                                .on_click(cx.listener(|this, _, cx| {
+                                    this.open_drawer_at(Placement::Bottom, cx)
+                                })),
+                        ),
+                )
+                .when_some(self.selected_value.clone(), |this, selected_value| {
+                    this.child(
+                        h_flex().gap_1().child("You have selected:").child(
+                            div()
+                                .child(selected_value.to_string())
+                                .text_color(gpui::red()),
+                        ),
+                    )
+                }),
+        )
     }
 }
