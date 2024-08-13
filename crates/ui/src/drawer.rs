@@ -20,6 +20,7 @@ pub struct Drawer {
     resizable: bool,
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
     title: Option<AnyElement>,
+    footer: Option<AnyElement>,
     content: Div,
     margin_top: Pixels,
 }
@@ -32,7 +33,8 @@ impl Drawer {
             size: DefiniteLength::Absolute(px(350.).into()),
             resizable: true,
             title: None,
-            content: div(),
+            footer: None,
+            content: v_flex(),
             margin_top: px(0.),
             on_close: Rc::new(|_, _| {}),
         }
@@ -41,6 +43,12 @@ impl Drawer {
     /// Sets the title of the drawer.
     pub fn title(mut self, title: impl IntoElement) -> Self {
         self.title = Some(title.into_any_element());
+        self
+    }
+
+    /// Set the footer of the drawer.
+    pub fn footer(mut self, footer: impl IntoElement) -> Self {
+        self.footer = Some(footer.into_any_element());
         self
     }
 
@@ -91,6 +99,11 @@ impl ParentElement for Drawer {
         self.content.extend(elements);
     }
 }
+impl Styled for Drawer {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.content.style()
+    }
+}
 
 impl RenderOnce for Drawer {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
@@ -129,7 +142,6 @@ impl RenderOnce for Drawer {
                             .absolute()
                             .occlude()
                             .bg(cx.theme().background)
-                            .border_1()
                             .border_color(cx.theme().border)
                             .shadow_xl()
                             .map(|this| {
@@ -141,17 +153,19 @@ impl RenderOnce for Drawer {
                                 }
                             })
                             .map(|this| match self.placement {
-                                Placement::Top => this.top_0().left_0().right_0(),
-                                Placement::Right => this.top_0().right_0().bottom_0(),
-                                Placement::Bottom => this.bottom_0().left_0().right_0(),
-                                Placement::Left => this.top_0().left_0().bottom_0(),
+                                Placement::Top => this.top_0().left_0().right_0().border_b_1(),
+                                Placement::Right => this.top_0().right_0().bottom_0().border_l_1(),
+                                Placement::Bottom => {
+                                    this.bottom_0().left_0().right_0().border_t_1()
+                                }
+                                Placement::Left => this.top_0().left_0().bottom_0().border_r_1(),
                             })
                             .child(
                                 // TitleBar
                                 h_flex()
                                     .justify_between()
-                                    .h_8()
-                                    .p_4()
+                                    .px_4()
+                                    .py_3()
                                     .w_full()
                                     .child(self.title.unwrap_or(div().into_any_element()))
                                     .child(
@@ -166,16 +180,27 @@ impl RenderOnce for Drawer {
                                     ),
                             )
                             .child(
-                                v_flex()
-                                    .p_4()
-                                    .pt_0()
-                                    .size_full()
-                                    .scrollable(
-                                        cx.parent_view_id().unwrap_or_default(),
-                                        ScrollbarAxis::Vertical,
-                                    )
-                                    .child(self.content),
+                                div().flex_1().overflow_hidden().child(
+                                    v_flex()
+                                        .p_4()
+                                        .pt_0()
+                                        .scrollable(
+                                            cx.parent_view_id().unwrap_or_default(),
+                                            ScrollbarAxis::Vertical,
+                                        )
+                                        .child(self.content),
+                                ),
                             )
+                            .when_some(self.footer, |this, footer| {
+                                this.child(
+                                    h_flex()
+                                        .justify_between()
+                                        .px_4()
+                                        .py_3()
+                                        .w_full()
+                                        .child(footer),
+                                )
+                            })
                             .with_animation(
                                 "slide",
                                 Animation::new(Duration::from_secs_f64(0.15)),
@@ -187,7 +212,6 @@ impl RenderOnce for Drawer {
                                         Placement::Bottom => this.bottom(y),
                                         Placement::Left => this.left(y),
                                     })
-                                    .opacity((1.0 * delta + 0.3).min(1.0))
                                 },
                             ),
                     ),

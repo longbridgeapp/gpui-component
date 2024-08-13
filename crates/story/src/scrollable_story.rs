@@ -65,6 +65,7 @@ impl Render for ScrollableStory {
         let view = cx.view().clone();
 
         v_flex()
+            .size_full()
             .gap_4()
             .child(
                 h_flex()
@@ -189,7 +190,8 @@ impl Render for ScrollableStory {
                     .border_1()
                     .border_color(cx.theme().border)
                     .w_full()
-                    .h(px(200.))
+                    .flex_1()
+                    .overflow_hidden()
                     .child(
                         v_flex()
                             .id("test-1")

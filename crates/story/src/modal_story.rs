@@ -239,42 +239,44 @@ impl ModalStory {
         let date_picker = self.date_picker.clone();
         let list = self.list.clone();
 
+        let list_h = match placement {
+            Placement::Left | Placement::Right => px(400.),
+            Placement::Top | Placement::Bottom => px(160.),
+        };
+
         cx.open_drawer(move |this, cx| {
-            this.margin_top(px(32.))
+            this.margin_top(px(33.))
                 .placement(placement)
                 .size(px(400.))
                 .title("Drawer Title")
+                .gap_4()
+                .child(input.clone())
+                .child(date_picker.clone())
                 .child(
-                    v_flex()
+                    div()
+                        .border_1()
+                        .border_color(cx.theme().border)
+                        .rounded_md()
+                        .size_full()
+                        .flex_1()
+                        .h(list_h)
+                        .child(list.clone()),
+                )
+                .footer(
+                    h_flex()
                         .gap_6()
-                        .child(input.clone())
-                        .child(date_picker.clone())
+                        .items_center()
                         .child(
-                            div()
-                                .border_1()
-                                .border_color(cx.theme().border)
-                                .rounded_md()
-                                .min_h(px(450.))
-                                .child(list.clone()),
+                            Button::new("confirm", cx)
+                                .primary()
+                                .label("Confirm")
+                                .on_click(|_, cx| {
+                                    cx.close_drawer();
+                                }),
                         )
-                        .child(
-                            h_flex()
-                                .gap_6()
-                                .items_center()
-                                .child(
-                                    Button::new("confirm", cx)
-                                        .primary()
-                                        .label("Confirm")
-                                        .on_click(|_, cx| {
-                                            cx.close_drawer();
-                                        }),
-                                )
-                                .child(Button::new("cancel", cx).label("Cancel").on_click(
-                                    |_, cx| {
-                                        cx.close_drawer();
-                                    },
-                                )),
-                        ),
+                        .child(Button::new("cancel", cx).label("Cancel").on_click(|_, cx| {
+                            cx.close_drawer();
+                        })),
                 )
         });
     }
