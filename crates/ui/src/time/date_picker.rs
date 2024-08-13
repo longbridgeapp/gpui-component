@@ -1,5 +1,5 @@
 use gpui::{
-    deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
+    anchored, deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement as _, KeyBinding, Length, MouseButton,
     ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _, View,
     ViewContext, VisualContext as _,
@@ -214,25 +214,27 @@ impl Render for DatePicker {
             .when(self.open, |this| {
                 this.child(
                     deferred(
-                        div()
-                            .track_focus(&self.focus_handle)
-                            .occlude()
-                            .absolute()
-                            .mt_2()
-                            .overflow_hidden()
-                            .rounded_lg()
-                            .p_3()
-                            .w(px(popover_width))
-                            .border_1()
-                            .border_color(cx.theme().border)
-                            .shadow_lg()
-                            .rounded_lg()
-                            .bg(cx.theme().background)
-                            .on_mouse_up_out(
-                                MouseButton::Left,
-                                cx.listener(|view, _, cx| view.escape(&Escape, cx)),
-                            )
-                            .child(self.calendar.clone()),
+                        anchored().snap_to_window().child(
+                            div()
+                                .track_focus(&self.focus_handle)
+                                .occlude()
+                                .absolute()
+                                .mt_2()
+                                .overflow_hidden()
+                                .rounded_lg()
+                                .p_3()
+                                .w(px(popover_width))
+                                .border_1()
+                                .border_color(cx.theme().border)
+                                .shadow_lg()
+                                .rounded_lg()
+                                .bg(cx.theme().background)
+                                .on_mouse_up_out(
+                                    MouseButton::Left,
+                                    cx.listener(|view, _, cx| view.escape(&Escape, cx)),
+                                )
+                                .child(self.calendar.clone()),
+                        ),
                     )
                     .with_priority(2),
                 )
