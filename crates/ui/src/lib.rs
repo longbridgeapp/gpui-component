@@ -20,6 +20,7 @@ pub mod input;
 pub mod label;
 pub mod link;
 pub mod list;
+pub mod modal;
 pub mod popover;
 pub mod popup_menu;
 pub mod prelude;

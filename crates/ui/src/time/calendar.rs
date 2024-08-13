@@ -29,6 +29,19 @@ pub enum Date {
     Range(Option<NaiveDate>, Option<NaiveDate>),
 }
 
+impl std::fmt::Display for Date {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Single(Some(date)) => write!(f, "{}", date),
+            Self::Single(None) => write!(f, "nil"),
+            Self::Range(Some(start), Some(end)) => write!(f, "{} - {}", start, end),
+            Self::Range(None, None) => write!(f, "nil"),
+            Self::Range(Some(start), None) => write!(f, "{} - nil", start),
+            Self::Range(None, Some(end)) => write!(f, "nil - {}", end),
+        }
+    }
+}
+
 impl From<NaiveDate> for Date {
     fn from(date: NaiveDate) -> Self {
         Self::Single(Some(date))
@@ -645,5 +658,36 @@ impl Render for Calendar {
                         this.child(self.render_years(cx))
                     }),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::NaiveDate;
+
+    use super::Date;
+
+    #[test]
+    fn test_date_to_string() {
+        let date = Date::Single(Some(NaiveDate::from_ymd_opt(2024, 8, 3).unwrap()));
+        assert_eq!(date.to_string(), "2024-08-03");
+
+        let date = Date::Single(None);
+        assert_eq!(date.to_string(), "nil");
+
+        let date = Date::Range(
+            Some(NaiveDate::from_ymd_opt(2024, 8, 3).unwrap()),
+            Some(NaiveDate::from_ymd_opt(2024, 8, 5).unwrap()),
+        );
+        assert_eq!(date.to_string(), "2024-08-03 - 2024-08-05");
+
+        let date = Date::Range(Some(NaiveDate::from_ymd_opt(2024, 8, 3).unwrap()), None);
+        assert_eq!(date.to_string(), "2024-08-03 - nil");
+
+        let date = Date::Range(None, Some(NaiveDate::from_ymd_opt(2024, 8, 5).unwrap()));
+        assert_eq!(date.to_string(), "nil - 2024-08-05");
+
+        let date = Date::Range(None, None);
+        assert_eq!(date.to_string(), "nil");
     }
 }

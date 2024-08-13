@@ -67,8 +67,10 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Menu
   - [x] Popup Menu
   - [x] Context Menu
-- [ ] Drawer
-- [ ] Modal
+- [x] Drawer
+- [x] Modal
+- [ ] Notification
+- [ ] Toast
 
 ## Showcase
 
