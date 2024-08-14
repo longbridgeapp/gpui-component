@@ -1,9 +1,9 @@
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, div, hsla, prelude::FluentBuilder, px, AnyElement, Bounds, ClickEvent, Div,
-    FocusHandle, Hsla, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels,
-    Point, RenderOnce, Styled, WindowContext,
+    anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _, AnyElement,
+    Bounds, ClickEvent, Div, FocusHandle, Hsla, InteractiveElement as _, IntoElement, MouseButton,
+    ParentElement, Pixels, Point, RenderOnce, Styled, WindowContext,
 };
 
 use crate::{
@@ -162,7 +162,15 @@ impl RenderOnce for Modal {
                                 }),
                         )
                         .child(self.content)
-                        .children(self.footer),
+                        .children(self.footer)
+                        .with_animation(
+                            "slide-down",
+                            Animation::new(Duration::from_secs_f64(0.1)),
+                            move |this, delta| {
+                                let y_offset = px(-30.) + delta * px(30.);
+                                this.top(y + y_offset)
+                            },
+                        ),
                 ),
         )
     }
