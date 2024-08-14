@@ -113,21 +113,21 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
 }
 
 pub struct Root {
-    /// Used to store the focus handle of the previus focused view.
-    /// When the Modal, Drawer closes, we will focus the preview view.
+    /// Used to store the focus handle of the previus revious view.
+    /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
     active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
-    root_view: AnyView,
+    child: AnyView,
 }
 
 impl Root {
-    pub fn new(root_view: AnyView, _: &mut ViewContext<Self>) -> Self {
+    pub fn new(child: AnyView, _: &mut ViewContext<Self>) -> Self {
         Self {
             previous_focus_handle: None,
             active_drawer: None,
             active_modal: None,
-            root_view,
+            child,
         }
     }
 
@@ -166,6 +166,6 @@ impl Render for Root {
         div()
             .size_full()
             .text_color(cx.theme().foreground)
-            .child(self.root_view.clone())
+            .child(self.child.clone())
     }
 }
