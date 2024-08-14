@@ -85,7 +85,6 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
 }
 
 pub struct Root {
-    focus_handle: FocusHandle,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
     active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     root_view: AnyView,
@@ -94,7 +93,6 @@ pub struct Root {
 impl Root {
     pub fn new(root_view: AnyView, cx: &mut ViewContext<Self>) -> Self {
         Self {
-            focus_handle: cx.focus_handle(),
             active_drawer: None,
             active_modal: None,
             root_view,
@@ -120,9 +118,7 @@ impl Render for Root {
         let has_modal = self.active_modal.is_some();
 
         div()
-            .track_focus(&self.focus_handle)
             .size_full()
-            .debug_focused(&self.focus_handle, cx)
             .text_color(cx.theme().foreground)
             .child(self.root_view.clone())
             .when(!has_modal, |this| {
