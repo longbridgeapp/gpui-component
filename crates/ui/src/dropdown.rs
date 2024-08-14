@@ -10,7 +10,7 @@ use crate::{
     h_flex,
     input::ClearButton,
     list::{self, List, ListDelegate, ListItem},
-    theme::ActiveTheme,
+    theme::{ActiveTheme, Colorize},
     v_flex, Icon, IconName, Sizable, Size, StyleSized, StyledExt,
 };
 
@@ -197,7 +197,7 @@ where
             h_flex()
                 .justify_center()
                 .py_6()
-                .text_color(cx.theme().muted)
+                .text_color(cx.theme().muted_foreground.opacity(0.6))
                 .child(Icon::new(IconName::Inbox).size(px(28.)))
                 .into_any_element()
         }
