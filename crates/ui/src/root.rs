@@ -1,10 +1,10 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, AnyView, FocusHandle, InteractiveElement, ParentElement as _,
-    Render, Styled, ViewContext, WindowContext,
+    div, prelude::FluentBuilder as _, AnyView, FocusHandle, ParentElement as _, Render, Styled,
+    ViewContext, WindowContext,
 };
 use std::{ops::DerefMut, rc::Rc};
 
-use crate::{drawer::Drawer, modal::Modal, theme::ActiveTheme, StyledExt};
+use crate::{drawer::Drawer, modal::Modal, theme::ActiveTheme};
 
 /// Extension trait for [`WindowContext`] and [`ViewContext`] to add drawer functionality.
 pub trait ContextModal: Sized {
@@ -31,6 +31,7 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
     {
         Root::update_root(self, move |root, cx| {
+            root.previus_focus_handle = cx.focused();
             root.active_drawer = Some(Rc::new(build));
             cx.notify();
         })
@@ -38,6 +39,7 @@ impl<'a> ContextModal for WindowContext<'a> {
 
     fn close_drawer(&mut self) {
         Root::update_root(self, |root, cx| {
+            root.focus_back(cx);
             root.active_drawer = None;
             cx.notify();
         })
@@ -48,6 +50,7 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
         Root::update_root(self, move |root, cx| {
+            root.previus_focus_handle = cx.focused();
             root.active_modal = Some(Rc::new(build));
             cx.notify();
         })
@@ -55,6 +58,7 @@ impl<'a> ContextModal for WindowContext<'a> {
 
     fn close_modal(&mut self) {
         Root::update_root(self, |root, cx| {
+            root.focus_back(cx);
             root.active_modal = None;
             cx.notify();
         })
@@ -85,14 +89,16 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
 }
 
 pub struct Root {
+    previus_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
     active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     root_view: AnyView,
 }
 
 impl Root {
-    pub fn new(root_view: AnyView, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(root_view: AnyView, _: &mut ViewContext<Self>) -> Self {
         Self {
+            previus_focus_handle: None,
             active_drawer: None,
             active_modal: None,
             root_view,
@@ -110,6 +116,12 @@ impl Root {
             .expect("The window root view should be of type `ui::Root`.");
 
         root.update(cx, |root, cx| f(root, cx))
+    }
+
+    fn focus_back(&mut self, cx: &mut ViewContext<Self>) {
+        if let Some(handle) = self.previus_focus_handle.take() {
+            handle.focus(cx)
+        }
     }
 }
 
