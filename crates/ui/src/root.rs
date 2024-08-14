@@ -1,8 +1,8 @@
-use gpui::{
-    div, prelude::FluentBuilder as _, AnyView, FocusHandle, ParentElement as _, Render, Styled,
-    ViewContext, WindowContext,
+use gpui::{div, AnyView, ParentElement as _, Render, Styled, ViewContext, WindowContext};
+use std::{
+    ops::{Deref, DerefMut},
+    rc::Rc,
 };
-use std::{ops::DerefMut, rc::Rc};
 
 use crate::{drawer::Drawer, modal::Modal, theme::ActiveTheme};
 
@@ -13,6 +13,9 @@ pub trait ContextModal: Sized {
     where
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static;
 
+    /// Return the active Drawer builder, you must add the Drawer to the view.
+    fn active_drawer(&self) -> Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>;
+
     /// Closes the active Drawer.
     fn close_drawer(&mut self);
 
@@ -20,6 +23,9 @@ pub trait ContextModal: Sized {
     fn open_modal<F>(&mut self, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static;
+
+    /// Return the active Modal builder, you must add the Modal to the view.
+    fn active_modal(&self) -> Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>;
 
     /// Closes the active Modal.
     fn close_modal(&mut self);
@@ -31,15 +37,17 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
     {
         Root::update_root(self, move |root, cx| {
-            root.previus_focus_handle = cx.focused();
             root.active_drawer = Some(Rc::new(build));
             cx.notify();
         })
     }
 
+    fn active_drawer(&self) -> Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>> {
+        Root::read_root(&self).active_drawer.clone()
+    }
+
     fn close_drawer(&mut self) {
         Root::update_root(self, |root, cx| {
-            root.focus_back(cx);
             root.active_drawer = None;
             cx.notify();
         })
@@ -50,15 +58,17 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
         Root::update_root(self, move |root, cx| {
-            root.previus_focus_handle = cx.focused();
             root.active_modal = Some(Rc::new(build));
             cx.notify();
         })
     }
 
+    fn active_modal(&self) -> Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>> {
+        Root::read_root(&self).active_modal.clone()
+    }
+
     fn close_modal(&mut self) {
         Root::update_root(self, |root, cx| {
-            root.focus_back(cx);
             root.active_modal = None;
             cx.notify();
         })
@@ -72,6 +82,10 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().open_drawer(build)
     }
 
+    fn active_modal(&self) -> Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>> {
+        self.deref().active_modal()
+    }
+
     fn close_drawer(&mut self) {
         self.deref_mut().close_drawer()
     }
@@ -83,13 +97,16 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().open_modal(build)
     }
 
+    fn active_drawer(&self) -> Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>> {
+        self.deref().active_drawer()
+    }
+
     fn close_modal(&mut self) {
         self.deref_mut().close_modal()
     }
 }
 
 pub struct Root {
-    previus_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
     active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     root_view: AnyView,
@@ -98,7 +115,6 @@ pub struct Root {
 impl Root {
     pub fn new(root_view: AnyView, _: &mut ViewContext<Self>) -> Self {
         Self {
-            previus_focus_handle: None,
             active_drawer: None,
             active_modal: None,
             root_view,
@@ -118,30 +134,22 @@ impl Root {
         root.update(cx, |root, cx| f(root, cx))
     }
 
-    fn focus_back(&mut self, cx: &mut ViewContext<Self>) {
-        if let Some(handle) = self.previus_focus_handle.take() {
-            handle.focus(cx)
-        }
+    fn read_root<'a>(cx: &'a WindowContext) -> &'a Self {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        root.read(cx)
     }
 }
 
 impl Render for Root {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
-        let has_modal = self.active_modal.is_some();
-
         div()
             .size_full()
             .text_color(cx.theme().foreground)
             .child(self.root_view.clone())
-            .when(!has_modal, |this| {
-                this.when_some(self.active_drawer.clone(), |this, build| {
-                    let drawer = Drawer::new(cx);
-                    this.child(build(drawer, cx))
-                })
-            })
-            .when_some(self.active_modal.clone(), |this, build| {
-                let modal = Modal::new(cx);
-                this.child(build(modal, cx))
-            })
     }
 }

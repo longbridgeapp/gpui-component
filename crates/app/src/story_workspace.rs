@@ -11,10 +11,12 @@ use workspace::{TitleBar, Workspace};
 use std::sync::Arc;
 use ui::{
     button::{Button, ButtonStyle},
+    drawer::Drawer,
+    modal::Modal,
     popover::Popover,
     popup_menu::PopupMenu,
     theme::{ActiveTheme, Theme},
-    IconName, Root, Sizable,
+    ContextModal as _, IconName, Root, Sizable,
 };
 
 use crate::app_state::AppState;
@@ -271,6 +273,10 @@ pub fn open_new(
 
 impl Render for StoryWorkspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let active_modal = cx.active_modal();
+        let active_drawer = cx.active_drawer();
+        let has_active_modal = active_modal.is_some();
+
         div()
             .relative()
             .size_full()
@@ -331,6 +337,16 @@ impl Render for StoryWorkspace {
                     ),
             )
             .child(self.workspace.clone())
+            .when(!has_active_modal, |this| {
+                this.when_some(active_drawer, |this, builder| {
+                    let drawer = Drawer::new(cx);
+                    this.child(builder(drawer, cx))
+                })
+            })
+            .when_some(active_modal, |this, builder| {
+                let modal = Modal::new(cx);
+                this.child(builder(modal, cx))
+            })
     }
 }
 
