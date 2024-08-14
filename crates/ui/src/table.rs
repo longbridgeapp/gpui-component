@@ -3,7 +3,7 @@ use std::{cell::Cell, rc::Rc};
 use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
-    theme::ActiveTheme,
+    theme::{ActiveTheme, Colorize},
     v_flex, Icon, IconName,
 };
 use gpui::{
@@ -180,6 +180,17 @@ pub trait TableDelegate: Sized + 'static {
 
     /// Move the column at the given `col_ix` to insert before the column at the given `to_ix`.
     fn move_col(&mut self, col_ix: usize, to_ix: usize) {}
+
+    /// Return a Element to show when table is empty.
+    fn render_empty(&self, cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
+        h_flex()
+            .size_full()
+            .justify_center()
+            .py_6()
+            .text_color(cx.theme().muted_foreground.opacity(0.6))
+            .child(Icon::new(IconName::Inbox).size_16())
+            .into_any_element()
+    }
 }
 
 impl<D> Table<D>
@@ -704,72 +715,83 @@ where
                         .size_full(),
                     ),
             )
-            .child(
-                h_flex().id("table-body").flex_grow().size_full().child(
-                    uniform_list(view, "table-uniform-list", rows_count, {
-                        let horizontal_scroll_handle = horizontal_scroll_handle.clone();
-                        move |table, visible_range, cx| {
-                            visible_range
-                                .map(|row_ix| {
-                                    table
-                                        .delegate
-                                        .render_tr(row_ix, cx)
-                                        .id(("table-row", row_ix))
-                                        .w_full()
-                                        .when(row_ix > 0, |this| {
-                                            this.border_t_1().border_color(cx.theme().border)
-                                        })
-                                        .when(table.stripe && row_ix % 2 != 0, |this| {
-                                            this.bg(cx.theme().table_even)
-                                        })
-                                        .hover(|this| {
-                                            if table.selected_row == Some(row_ix) {
-                                                this
-                                            } else {
-                                                this.bg(cx.theme().table_hover)
-                                            }
-                                        })
-                                        .children((0..cols_count).map(|col_ix| {
+            .map(|this| {
+                if rows_count == 0 {
+                    this.child(div().size_full().child(self.delegate.render_empty(cx)))
+                } else {
+                    this.child(
+                        h_flex().id("table-body").flex_grow().size_full().child(
+                            uniform_list(view, "table-uniform-list", rows_count, {
+                                let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                                move |table, visible_range, cx| {
+                                    visible_range
+                                        .map(|row_ix| {
                                             table
-                                                .col_wrap(col_ix, cx) // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
-                                                .left(horizontal_scroll_handle.offset().x)
-                                                .child(
+                                                .delegate
+                                                .render_tr(row_ix, cx)
+                                                .id(("table-row", row_ix))
+                                                .w_full()
+                                                .when(row_ix > 0, |this| {
+                                                    this.border_t_1()
+                                                        .border_color(cx.theme().border)
+                                                })
+                                                .when(table.stripe && row_ix % 2 != 0, |this| {
+                                                    this.bg(cx.theme().table_even)
+                                                })
+                                                .hover(|this| {
+                                                    if table.selected_row == Some(row_ix) {
+                                                        this
+                                                    } else {
+                                                        this.bg(cx.theme().table_hover)
+                                                    }
+                                                })
+                                                .children((0..cols_count).map(|col_ix| {
                                                     table
-                                                        .render_cell(col_ix, cx)
-                                                        .flex_shrink_0()
+                                                        .col_wrap(col_ix, cx) // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
+                                                        .left(horizontal_scroll_handle.offset().x)
                                                         .child(
                                                             table
-                                                                .delegate
-                                                                .render_td(row_ix, col_ix, cx),
-                                                        ),
+                                                                .render_cell(col_ix, cx)
+                                                                .flex_shrink_0()
+                                                                .child(
+                                                                    table.delegate.render_td(
+                                                                        row_ix, col_ix, cx,
+                                                                    ),
+                                                                ),
+                                                        )
+                                                }))
+                                                .child(last_empty_col(cx))
+                                                // Row selected style
+                                                .when_some(
+                                                    table.selected_row,
+                                                    |this, selected_row| {
+                                                        this.when(
+                                                            row_ix == selected_row
+                                                                && table.selection_state
+                                                                    == SelectionState::Row,
+                                                            |this| this.bg(cx.theme().table_active),
+                                                        )
+                                                    },
                                                 )
-                                        }))
-                                        .child(last_empty_col(cx))
-                                        // Row selected style
-                                        .when_some(table.selected_row, |this, selected_row| {
-                                            this.when(
-                                                row_ix == selected_row
-                                                    && table.selection_state == SelectionState::Row,
-                                                |this| this.bg(cx.theme().table_active),
-                                            )
+                                                .on_mouse_down(
+                                                    MouseButton::Left,
+                                                    cx.listener(move |this, _, cx| {
+                                                        this.on_row_click(row_ix, cx);
+                                                    }),
+                                                )
                                         })
-                                        .on_mouse_down(
-                                            MouseButton::Left,
-                                            cx.listener(move |this, _, cx| {
-                                                this.on_row_click(row_ix, cx);
-                                            }),
-                                        )
-                                })
-                                .collect::<Vec<_>>()
-                        }
-                    })
-                    .flex_grow()
-                    .size_full()
-                    .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
-                    .track_scroll(vertical_scroll_handle)
-                    .into_any_element(),
-                ),
-            );
+                                        .collect::<Vec<_>>()
+                                }
+                            })
+                            .flex_grow()
+                            .size_full()
+                            .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
+                            .track_scroll(vertical_scroll_handle)
+                            .into_any_element(),
+                        ),
+                    )
+                }
+            });
 
         let view = cx.view().clone();
         div()
