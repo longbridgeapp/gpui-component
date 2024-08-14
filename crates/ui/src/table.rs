@@ -188,7 +188,7 @@ pub trait TableDelegate: Sized + 'static {
             .justify_center()
             .py_6()
             .text_color(cx.theme().muted_foreground.opacity(0.6))
-            .child(Icon::new(IconName::Inbox).size_16())
+            .child(Icon::new(IconName::Inbox).size_12())
             .into_any_element()
     }
 }
@@ -801,7 +801,6 @@ where
             .border_color(cx.theme().border)
             .bg(cx.theme().table)
             .child(inner_table)
-            .children(self.render_scrollbar(cx))
             .child(ScrollableMask::new(
                 cx.view().clone(),
                 ScrollableAxis::Horizontal,
@@ -811,5 +810,8 @@ where
                 move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
                 |_, _, _| {},
             ))
+            .when(rows_count > 0, |this| {
+                this.children(self.render_scrollbar(cx))
+            })
     }
 }
