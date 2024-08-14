@@ -536,7 +536,9 @@ impl ButtonStyle {
             _ => cx.theme().secondary.darken(0.2).grayscale(),
         };
         let fg = match self {
-            ButtonStyle::Link | ButtonStyle::Text => cx.theme().link.grayscale(),
+            ButtonStyle::Link | ButtonStyle::Text | ButtonStyle::Ghost => {
+                cx.theme().link.grayscale()
+            }
             _ => cx.theme().secondary_foreground.darken(0.2).grayscale(),
         };
 
