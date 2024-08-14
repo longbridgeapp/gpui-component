@@ -46,7 +46,7 @@ use workspace::{
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex};
+use ui::{divider::Divider, h_flex, label::Label, v_flex, StyledExt};
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
@@ -206,7 +206,7 @@ impl StoryContainer {
 }
 
 impl Render for StoryContainer {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .id("story-container")
             .size_full()

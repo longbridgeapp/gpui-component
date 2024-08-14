@@ -2,9 +2,9 @@ use std::{sync::Arc, time::Duration};
 
 use fake::Fake;
 use gpui::{
-    div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView, IntoElement, ParentElement,
-    Render, SharedString, Styled, Task, Timer, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Render, SharedString, Styled, Task, Timer,
+    View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
@@ -15,7 +15,7 @@ use ui::{
     input::TextInput,
     list::{List, ListDelegate, ListItem},
     theme::ActiveTheme as _,
-    v_flex, ContextModal as _, Icon, IconName, Placement,
+    v_flex, ContextModal as _, Icon, IconName, Placement, StyledExt as _,
 };
 
 pub struct ListItemDeletegate {
@@ -25,6 +25,8 @@ pub struct ListItemDeletegate {
     items: Vec<Arc<String>>,
     matches: Vec<Arc<String>>,
 }
+
+actions!(modal_story, [TestAction]);
 
 impl ListDelegate for ListItemDeletegate {
     type Item = ListItem;
@@ -146,6 +148,8 @@ pub struct ModalStory {
     input1: View<TextInput>,
     date_picker: View<DatePicker>,
     modal_overlay: bool,
+    model_show_close: bool,
+    model_padding: bool,
 }
 
 impl ModalStory {
@@ -235,6 +239,8 @@ impl ModalStory {
             input1,
             date_picker,
             modal_overlay: true,
+            model_show_close: true,
+            model_padding: true,
         }
     }
 
@@ -291,6 +297,12 @@ impl ModalStory {
         self.drawer_placement = None;
         cx.notify();
     }
+
+    fn on_test_action(&mut self, _: &TestAction, cx: &mut ViewContext<Self>) {
+        cx.close_modal();
+        self.selected_value = Some("You clicked Test Action.".into());
+        cx.notify();
+    }
 }
 
 impl FocusableView for ModalStory {
@@ -301,17 +313,40 @@ impl FocusableView for ModalStory {
 
 impl Render for ModalStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().child(
+        div().id("modal-story").size_full().child(
             v_flex()
                 .gap_6()
                 .child(
-                    Checkbox::new("modal-overlay")
-                        .label("Modal Overlay")
-                        .checked(self.modal_overlay)
-                        .on_click(cx.listener(|view, _, cx| {
-                            view.modal_overlay = !view.modal_overlay;
-                            cx.notify();
-                        })),
+                    h_flex()
+                        .items_center()
+                        .gap_3()
+                        .child(
+                            Checkbox::new("modal-overlay")
+                                .label("Modal Overlay")
+                                .checked(self.modal_overlay)
+                                .on_click(cx.listener(|view, _, cx| {
+                                    view.modal_overlay = !view.modal_overlay;
+                                    cx.notify();
+                                })),
+                        )
+                        .child(
+                            Checkbox::new("modal-show-close")
+                                .label("Model Close Button")
+                                .checked(self.model_show_close)
+                                .on_click(cx.listener(|view, _, cx| {
+                                    view.model_show_close = !view.model_show_close;
+                                    cx.notify();
+                                })),
+                        )
+                        .child(
+                            Checkbox::new("modal-padding")
+                                .label("Model Padding")
+                                .checked(self.model_padding)
+                                .on_click(cx.listener(|view, _, cx| {
+                                    view.model_padding = !view.model_padding;
+                                    cx.notify();
+                                })),
+                        ),
                 )
                 .child(
                     h_flex()
@@ -360,6 +395,8 @@ impl Render for ModalStory {
                         .label("Open Modal...")
                         .on_click(cx.listener(|this, _, cx| {
                             let overlay = this.modal_overlay;
+                            let modal_show_close = this.model_show_close;
+                            let modal_padding = this.model_padding;
                             let input1 = this.input1.clone();
                             let date_picker = this.date_picker.clone();
                             let view = cx.view().clone();
@@ -368,6 +405,8 @@ impl Render for ModalStory {
                                 modal
                                     .title("Form Modal")
                                     .overlay(overlay)
+                                    .show_close(modal_show_close)
+                                    .when(!modal_padding, |this| this.p(px(0.)))
                                     .child(
                                         v_flex()
                                             .gap_3()
@@ -411,6 +450,14 @@ impl Render for ModalStory {
                                                         cx.close_modal();
                                                     },
                                                 ),
+                                            )
+                                            .child(
+                                                Button::new("test-action", cx)
+                                                    .label("Test Action")
+                                                    .on_click(|_, cx| {
+                                                        println!("-------- dispatch TestAction");
+                                                        cx.dispatch_action(Box::new(TestAction))
+                                                    }),
                                             ),
                                     )
                             })
