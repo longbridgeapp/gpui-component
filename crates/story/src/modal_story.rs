@@ -146,6 +146,8 @@ pub struct ModalStory {
     input1: View<TextInput>,
     date_picker: View<DatePicker>,
     modal_overlay: bool,
+    model_show_close: bool,
+    model_padding: bool,
 }
 
 impl ModalStory {
@@ -235,6 +237,8 @@ impl ModalStory {
             input1,
             date_picker,
             modal_overlay: true,
+            model_show_close: true,
+            model_padding: true,
         }
     }
 
@@ -291,6 +295,64 @@ impl ModalStory {
         self.drawer_placement = None;
         cx.notify();
     }
+
+    fn show_modal(&mut self, cx: &mut ViewContext<Self>) {
+        let overlay = self.modal_overlay;
+        let modal_show_close = self.model_show_close;
+        let modal_padding = self.model_padding;
+        let input1 = self.input1.clone();
+        let date_picker = self.date_picker.clone();
+        let view = cx.view().clone();
+
+        cx.open_modal(move |modal, cx| {
+            modal
+                .title("Form Modal")
+                .overlay(overlay)
+                .show_close(modal_show_close)
+                .when(!modal_padding, |this| this.p(px(0.)))
+                .child(
+                    v_flex()
+                        .gap_3()
+                        .child("This is a modal dialog.")
+                        .child("You can put anything here.")
+                        .child(input1.clone())
+                        .child(date_picker.clone()),
+                )
+                .footer(
+                    h_flex()
+                        .gap_6()
+                        .items_center()
+                        .child(
+                            Button::new("confirm", cx)
+                                .primary()
+                                .label("Confirm")
+                                .on_click({
+                                    let view = view.clone();
+                                    let input1 = input1.clone();
+                                    let date_picker = date_picker.clone();
+
+                                    move |_, cx| {
+                                        cx.close_modal();
+
+                                        view.update(cx, |view, cx| {
+                                            view.selected_value = Some(
+                                                format!(
+                                                    "Hello, {}, date: {}",
+                                                    input1.read(cx).text(),
+                                                    date_picker.read(cx).date()
+                                                )
+                                                .into(),
+                                            )
+                                        });
+                                    }
+                                }),
+                        )
+                        .child(Button::new("cancel", cx).label("Cancel").on_click(|_, cx| {
+                            cx.close_modal();
+                        })),
+                )
+        })
+    }
 }
 
 impl FocusableView for ModalStory {
@@ -301,17 +363,40 @@ impl FocusableView for ModalStory {
 
 impl Render for ModalStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().child(
+        div().size_full().child(
             v_flex()
                 .gap_6()
                 .child(
-                    Checkbox::new("modal-overlay")
-                        .label("Modal Overlay")
-                        .checked(self.modal_overlay)
-                        .on_click(cx.listener(|view, _, cx| {
-                            view.modal_overlay = !view.modal_overlay;
-                            cx.notify();
-                        })),
+                    h_flex()
+                        .items_center()
+                        .gap_3()
+                        .child(
+                            Checkbox::new("modal-overlay")
+                                .label("Modal Overlay")
+                                .checked(self.modal_overlay)
+                                .on_click(cx.listener(|view, _, cx| {
+                                    view.modal_overlay = !view.modal_overlay;
+                                    cx.notify();
+                                })),
+                        )
+                        .child(
+                            Checkbox::new("modal-show-close")
+                                .label("Model Close Button")
+                                .checked(self.model_show_close)
+                                .on_click(cx.listener(|view, _, cx| {
+                                    view.model_show_close = !view.model_show_close;
+                                    cx.notify();
+                                })),
+                        )
+                        .child(
+                            Checkbox::new("modal-padding")
+                                .label("Model Padding")
+                                .checked(self.model_padding)
+                                .on_click(cx.listener(|view, _, cx| {
+                                    view.model_padding = !view.model_padding;
+                                    cx.notify();
+                                })),
+                        ),
                 )
                 .child(
                     h_flex()
@@ -358,63 +443,7 @@ impl Render for ModalStory {
                 .child(
                     Button::new("show-modal", cx)
                         .label("Open Modal...")
-                        .on_click(cx.listener(|this, _, cx| {
-                            let overlay = this.modal_overlay;
-                            let input1 = this.input1.clone();
-                            let date_picker = this.date_picker.clone();
-                            let view = cx.view().clone();
-
-                            cx.open_modal(move |modal, cx| {
-                                modal
-                                    .title("Form Modal")
-                                    .overlay(overlay)
-                                    .child(
-                                        v_flex()
-                                            .gap_3()
-                                            .child("This is a modal dialog.")
-                                            .child("You can put anything here.")
-                                            .child(input1.clone())
-                                            .child(date_picker.clone()),
-                                    )
-                                    .footer(
-                                        h_flex()
-                                            .gap_6()
-                                            .items_center()
-                                            .child(
-                                                Button::new("confirm", cx)
-                                                    .primary()
-                                                    .label("Confirm")
-                                                    .on_click({
-                                                        let view = view.clone();
-                                                        let input1 = input1.clone();
-                                                        let date_picker = date_picker.clone();
-
-                                                        move |_, cx| {
-                                                            cx.close_modal();
-
-                                                            view.update(cx, |view, cx| {
-                                                                view.selected_value = Some(
-                                                                    format!(
-                                                                        "Hello, {}, date: {}",
-                                                                        input1.read(cx).text(),
-                                                                        date_picker.read(cx).date()
-                                                                    )
-                                                                    .into(),
-                                                                )
-                                                            });
-                                                        }
-                                                    }),
-                                            )
-                                            .child(
-                                                Button::new("cancel", cx).label("Cancel").on_click(
-                                                    |_, cx| {
-                                                        cx.close_modal();
-                                                    },
-                                                ),
-                                            ),
-                                    )
-                            })
-                        })),
+                        .on_click(cx.listener(|this, _, cx| this.show_modal(cx))),
                 ),
         )
     }

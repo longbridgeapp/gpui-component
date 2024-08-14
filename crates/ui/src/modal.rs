@@ -1,9 +1,9 @@
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, div, hsla, prelude::FluentBuilder, px, AnyElement, Bounds, ClickEvent, Div,
-    FocusHandle, Hsla, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels,
-    Point, RenderOnce, Styled, WindowContext,
+    anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _, AnyElement,
+    Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    Pixels, Point, RenderOnce, Styled, WindowContext,
 };
 
 use crate::{
@@ -12,7 +12,7 @@ use crate::{
 
 #[derive(IntoElement)]
 pub struct Modal {
-    focus_handle: FocusHandle,
+    base: Div,
     title: Option<AnyElement>,
     footer: Option<AnyElement>,
     content: Div,
@@ -20,6 +20,7 @@ pub struct Modal {
     max_width: Option<Pixels>,
     margin_top: Option<Pixels>,
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
+    show_close: bool,
     overlay: bool,
 }
 
@@ -37,8 +38,18 @@ pub(crate) fn overlay_color(overlay: bool, cx: &WindowContext) -> Hsla {
 
 impl Modal {
     pub fn new(cx: &mut WindowContext) -> Self {
+        let base = v_flex()
+            .bg(cx.theme().background)
+            .border_1()
+            .border_color(cx.theme().border)
+            .rounded_lg()
+            .shadow_xl()
+            .min_h_48()
+            .p_4()
+            .gap_4();
+
         Self {
-            focus_handle: cx.focus_handle(),
+            base,
             title: None,
             footer: None,
             content: v_flex(),
@@ -47,6 +58,7 @@ impl Modal {
             max_width: None,
             overlay: true,
             on_close: Rc::new(|_, _| {}),
+            show_close: true,
         }
     }
 
@@ -68,6 +80,12 @@ impl Modal {
         on_close: impl Fn(&ClickEvent, &mut WindowContext) + 'static,
     ) -> Self {
         self.on_close = Rc::new(on_close);
+        self
+    }
+
+    /// Sets the false to hide close icon, default: true
+    pub fn show_close(mut self, show_close: bool) -> Self {
+        self.show_close = show_close;
         self
     }
 
@@ -102,6 +120,12 @@ impl ParentElement for Modal {
     }
 }
 
+impl Styled for Modal {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for Modal {
     fn render(self, cx: &mut WindowContext) -> impl gpui::IntoElement {
         let on_close = self.on_close.clone();
@@ -129,40 +153,41 @@ impl RenderOnce for Modal {
                     })
                 })
                 .child(
-                    v_flex()
+                    self.base
                         .id("modal")
                         .absolute()
-                        .track_focus(&self.focus_handle)
                         .occlude()
                         .relative()
                         .left(x)
                         .top(y)
-                        .bg(cx.theme().background)
-                        .border_1()
-                        .border_color(cx.theme().border)
-                        .rounded_lg()
-                        .shadow_xl()
-                        .min_h_48()
                         .w(self.width)
                         .when_some(self.max_width, |this, w| this.max_w(w))
-                        .p_4()
-                        .gap_4()
                         .children(self.title)
-                        .child(
-                            Button::new("close", cx)
-                                .absolute()
-                                .top_2()
-                                .right_2()
-                                .small()
-                                .ghost()
-                                .icon(IconName::Close)
-                                .on_click(move |_, cx| {
-                                    on_close(&ClickEvent::default(), cx);
-                                    cx.close_modal();
-                                }),
-                        )
+                        .when(self.show_close, |this| {
+                            this.child(
+                                Button::new("close", cx)
+                                    .absolute()
+                                    .top_2()
+                                    .right_2()
+                                    .small()
+                                    .ghost()
+                                    .icon(IconName::Close)
+                                    .on_click(move |_, cx| {
+                                        on_close(&ClickEvent::default(), cx);
+                                        cx.close_modal();
+                                    }),
+                            )
+                        })
                         .child(self.content)
-                        .children(self.footer),
+                        .children(self.footer)
+                        .with_animation(
+                            "slide-down",
+                            Animation::new(Duration::from_secs_f64(0.1)),
+                            move |this, delta| {
+                                let y_offset = px(-30.) + delta * px(30.);
+                                this.top(y + y_offset)
+                            },
+                        ),
                 ),
         )
     }

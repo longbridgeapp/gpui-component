@@ -206,7 +206,7 @@ impl StoryContainer {
 }
 
 impl Render for StoryContainer {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .id("story-container")
             .size_full()
