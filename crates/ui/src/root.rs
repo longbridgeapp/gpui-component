@@ -64,7 +64,6 @@ impl<'a> ContextModal for WindowContext<'a> {
         Root::update_root(self, move |root, cx| {
             root.previous_focus_handle = cx.focused();
             root.active_modal = Some(Rc::new(build));
-            root.focus_back(cx);
             cx.notify();
         })
     }
@@ -76,6 +75,7 @@ impl<'a> ContextModal for WindowContext<'a> {
     fn close_modal(&mut self) {
         Root::update_root(self, |root, cx| {
             root.active_modal = None;
+            root.focus_back(cx);
             cx.notify();
         })
     }
