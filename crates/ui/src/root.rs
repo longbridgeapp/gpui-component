@@ -1,4 +1,6 @@
-use gpui::{div, AnyView, ParentElement as _, Render, Styled, ViewContext, WindowContext};
+use gpui::{
+    div, AnyView, FocusHandle, ParentElement as _, Render, Styled, ViewContext, WindowContext,
+};
 use std::{
     ops::{Deref, DerefMut},
     rc::Rc,
@@ -37,6 +39,7 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
     {
         Root::update_root(self, move |root, cx| {
+            root.previous_focus_handle = cx.focused();
             root.active_drawer = Some(Rc::new(build));
             cx.notify();
         })
@@ -49,6 +52,7 @@ impl<'a> ContextModal for WindowContext<'a> {
     fn close_drawer(&mut self) {
         Root::update_root(self, |root, cx| {
             root.active_drawer = None;
+            root.focus_back(cx);
             cx.notify();
         })
     }
@@ -58,6 +62,7 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
         Root::update_root(self, move |root, cx| {
+            root.previous_focus_handle = cx.focused();
             root.active_modal = Some(Rc::new(build));
             cx.notify();
         })
@@ -70,6 +75,7 @@ impl<'a> ContextModal for WindowContext<'a> {
     fn close_modal(&mut self) {
         Root::update_root(self, |root, cx| {
             root.active_modal = None;
+            root.focus_back(cx);
             cx.notify();
         })
     }
@@ -107,17 +113,21 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
 }
 
 pub struct Root {
+    /// Used to store the focus handle of the previus revious view.
+    /// When the Modal, Drawer closes, we will focus back to the previous view.
+    previous_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
     active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
-    root_view: AnyView,
+    child: AnyView,
 }
 
 impl Root {
-    pub fn new(root_view: AnyView, _: &mut ViewContext<Self>) -> Self {
+    pub fn new(child: AnyView, _: &mut ViewContext<Self>) -> Self {
         Self {
+            previous_focus_handle: None,
             active_drawer: None,
             active_modal: None,
-            root_view,
+            child,
         }
     }
 
@@ -143,6 +153,12 @@ impl Root {
 
         root.read(cx)
     }
+
+    fn focus_back(&mut self, cx: &mut WindowContext) {
+        if let Some(handle) = self.previous_focus_handle.take() {
+            cx.focus(&handle);
+        }
+    }
 }
 
 impl Render for Root {
@@ -150,6 +166,6 @@ impl Render for Root {
         div()
             .size_full()
             .text_color(cx.theme().foreground)
-            .child(self.root_view.clone())
+            .child(self.child.clone())
     }
 }
