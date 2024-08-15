@@ -1,7 +1,7 @@
 use std::{any::TypeId, sync::Arc, time::Duration};
 
 use gpui::{
-    div, prelude::FluentBuilder, px, Animation, AnimationExt, ClickEvent, DismissEvent,
+    div, prelude::FluentBuilder, px, Animation, AnimationExt, ClickEvent, DismissEvent, ElementId,
     EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Render, SharedString,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext, WindowContext,
 };
@@ -21,25 +21,19 @@ pub enum NotificationType {
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum NotificationId {
-    Type(TypeId),
-    Id(SharedString),
+    Id(TypeId),
+    TypeId(TypeId, ElementId),
 }
 
 impl From<TypeId> for NotificationId {
     fn from(type_id: TypeId) -> Self {
-        Self::Type(type_id)
+        Self::Id(type_id)
     }
 }
 
-impl From<SharedString> for NotificationId {
-    fn from(id: SharedString) -> Self {
-        Self::Id(id)
-    }
-}
-
-impl From<&'static str> for NotificationId {
-    fn from(id: &'static str) -> Self {
-        Self::Id(id.into())
+impl From<(TypeId, ElementId)> for NotificationId {
+    fn from((type_id, id): (TypeId, ElementId)) -> Self {
+        Self::TypeId(type_id, id)
     }
 }
 
@@ -81,12 +75,14 @@ impl From<(NotificationType, SharedString)> for Notification {
     }
 }
 
+struct DefaultIdType;
 impl Notification {
     /// Create a new notification with the given content.
     ///
     /// default width is 320px.
     pub fn new(message: impl Into<SharedString>) -> Self {
         let id: SharedString = uuid::Uuid::new_v4().to_string().into();
+        let id = (TypeId::of::<DefaultIdType>(), id.into());
 
         Self {
             id: id.into(),
@@ -115,22 +111,22 @@ impl Notification {
         Self::new(message).with_type(NotificationType::Error)
     }
 
-    /// Set the id of the notification, used to uniquely identify the notification.
-    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        let id: SharedString = id.into();
-        self.id = id.into();
-        self
-    }
-
-    /// Set the type id of the notification, used to uniquely identify the notification.
+    /// Set the type for unique identification of the notification.
     ///
     /// ```rs
     /// struct MyNotificationKind;
-    /// let notification = Notification::new("Hello").type_id::<MyNotificationKind>();
+    /// let notification = Notification::new("Hello").id::<MyNotificationKind>();
     /// ```
-    pub fn type_id<T: Sized + 'static>(mut self) -> Self {
+    pub fn id<T: Sized + 'static>(mut self) -> Self {
         let type_id = TypeId::of::<T>();
         self.id = type_id.into();
+        self
+    }
+
+    /// Set the type and id of the notification, used to uniquely identify the notification.
+    pub fn id1<T: Sized + 'static>(mut self, key: impl Into<ElementId>) -> Self {
+        let type_id = TypeId::of::<T>();
+        self.id = NotificationId::TypeId(type_id, key.into());
         self
     }
 

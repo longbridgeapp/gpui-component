@@ -485,10 +485,10 @@ impl Render for ModalStory {
                             Button::new("show-notify-warning", cx)
                                 .label("Warning Notify...")
                                 .on_click(cx.listener(|_, _, cx| {
-                                    cx.push_notification((
-                                        NotificationType::Warning,
+                                    struct WarningNotification;
+                                    cx.push_notification(Notification::warning(
                                         "The network is not stable, please check your connection.",
-                                    ))
+                                    ).id1::<WarningNotification>("test"))
                                 })),
                         )
                         .child(
@@ -501,7 +501,7 @@ impl Render for ModalStory {
                                         Notification::new(
                                             "你已经成功保存了文件，但是有一些警告信息需要你注意。",
                                         )
-                                        .type_id::<TestNotification>()
+                                        .id::<TestNotification>()
                                         .title("保存成功")
                                         .icon(IconName::Inbox)
                                         .autohide(false)
