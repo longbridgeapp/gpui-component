@@ -11,6 +11,7 @@ pub enum IconName {
     ArrowRight,
     ArrowUp,
     Asterisk,
+    Bell,
     Calendar,
     Check,
     ChevronDown,
@@ -18,6 +19,7 @@ pub enum IconName {
     ChevronRight,
     ChevronUp,
     ChevronsUpDown,
+    CircleCheck,
     CircleX,
     Close,
     Copy,
@@ -50,7 +52,6 @@ pub enum IconName {
     ThumbsDown,
     ThumbsUp,
     TriangleAlert,
-    CircleCheck,
 }
 
 impl IconName {
@@ -61,6 +62,7 @@ impl IconName {
             IconName::ArrowRight => "icons/arrow-right.svg",
             IconName::ArrowUp => "icons/arrow-up.svg",
             IconName::Asterisk => "icons/asterisk.svg",
+            IconName::Bell => "icons/bell.svg",
             IconName::Calendar => "icons/calendar.svg",
             IconName::Check => "icons/check.svg",
             IconName::ChevronDown => "icons/chevron-down.svg",
@@ -68,6 +70,7 @@ impl IconName {
             IconName::ChevronRight => "icons/chevron-right.svg",
             IconName::ChevronUp => "icons/chevron-up.svg",
             IconName::ChevronsUpDown => "icons/chevrons-up-down.svg",
+            IconName::CircleCheck => "icons/circle-check.svg",
             IconName::CircleX => "icons/circle-x.svg",
             IconName::Close => "icons/close.svg",
             IconName::Copy => "icons/copy.svg",
@@ -100,7 +103,6 @@ impl IconName {
             IconName::ThumbsDown => "icons/thumbs-down.svg",
             IconName::ThumbsUp => "icons/thumbs-up.svg",
             IconName::TriangleAlert => "icons/triangle-alert.svg",
-            IconName::CircleCheck => "icons/circle-check.svg",
         }
         .into()
     }

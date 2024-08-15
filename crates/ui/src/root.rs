@@ -21,8 +21,8 @@ pub trait ContextModal: Sized {
     where
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static;
 
-    /// Return the active Drawer builder, you must add the Drawer to the view.
-    fn active_drawer(&self) -> Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>;
+    /// Return true, if there is an active Drawer.
+    fn has_active_drawer(&self) -> bool;
 
     /// Closes the active Drawer.
     fn close_drawer(&mut self);
@@ -32,8 +32,8 @@ pub trait ContextModal: Sized {
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static;
 
-    /// Return the active Modal builder, you must add the Modal to the view.
-    fn active_modal(&self) -> Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>;
+    /// Return true, if there is an active Modal.
+    fn has_active_modal(&self) -> bool;
 
     /// Closes the active Modal.
     fn close_modal(&mut self);
@@ -41,8 +41,8 @@ pub trait ContextModal: Sized {
     /// Pushes a notification to the notification list.
     fn push_notification(&mut self, note: impl Into<Notification>);
     fn clear_notifications(&mut self);
-    /// Returns the notification list view.
-    fn notification_view(&self) -> AnyView;
+    /// Returns number of notifications.
+    fn notifications(&self) -> Rc<Vec<View<Notification>>>;
 }
 
 impl<'a> ContextModal for WindowContext<'a> {
@@ -50,19 +50,19 @@ impl<'a> ContextModal for WindowContext<'a> {
     where
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
     {
-        Root::update_root(self, move |root, cx| {
+        Root::update(self, move |root, cx| {
             root.previous_focus_handle = cx.focused();
             root.active_drawer = Some(Rc::new(build));
             cx.notify();
         })
     }
 
-    fn active_drawer(&self) -> Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>> {
-        Root::read_root(&self).active_drawer.clone()
+    fn has_active_drawer(&self) -> bool {
+        Root::read(&self).active_drawer.is_some()
     }
 
     fn close_drawer(&mut self) {
-        Root::update_root(self, |root, cx| {
+        Root::update(self, |root, cx| {
             root.active_drawer = None;
             root.focus_back(cx);
             cx.notify();
@@ -73,19 +73,19 @@ impl<'a> ContextModal for WindowContext<'a> {
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
-        Root::update_root(self, move |root, cx| {
+        Root::update(self, move |root, cx| {
             root.previous_focus_handle = cx.focused();
             root.active_modal = Some(Rc::new(build));
             cx.notify();
         })
     }
 
-    fn active_modal(&self) -> Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>> {
-        Root::read_root(&self).active_modal.clone()
+    fn has_active_modal(&self) -> bool {
+        Root::read(&self).active_modal.is_some()
     }
 
     fn close_modal(&mut self) {
-        Root::update_root(self, |root, cx| {
+        Root::update(self, |root, cx| {
             root.active_modal = None;
             root.focus_back(cx);
             cx.notify();
@@ -94,22 +94,27 @@ impl<'a> ContextModal for WindowContext<'a> {
 
     fn push_notification(&mut self, note: impl Into<Notification>) {
         let note = note.into();
-        Root::update_root(self, move |root, cx| {
-            root.notification_list
-                .update(cx, |view, cx| view.push(note, cx));
+        Root::update(self, move |root, cx| {
+            root.notification.update(cx, |view, cx| view.push(note, cx));
             cx.notify();
         })
     }
 
     fn clear_notifications(&mut self) {
-        Root::update_root(self, move |root, cx| {
-            root.notification_list.update(cx, |view, cx| view.clear(cx));
+        Root::update(self, move |root, cx| {
+            root.notification.update(cx, |view, cx| view.clear(cx));
             cx.notify();
         })
     }
 
-    fn notification_view(&self) -> AnyView {
-        Root::read_root(&self).notification_list.clone().into()
+    fn notifications(&self) -> Rc<Vec<View<Notification>>> {
+        Rc::new(
+            Root::read(&self)
+                .notification
+                .read(&self)
+                .notifications
+                .clone(),
+        )
     }
 }
 impl<'a, V> ContextModal for ViewContext<'a, V> {
@@ -120,8 +125,8 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().open_drawer(build)
     }
 
-    fn active_modal(&self) -> Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>> {
-        self.deref().active_modal()
+    fn has_active_modal(&self) -> bool {
+        self.deref().has_active_modal()
     }
 
     fn close_drawer(&mut self) {
@@ -135,8 +140,8 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().open_modal(build)
     }
 
-    fn active_drawer(&self) -> Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>> {
-        self.deref().active_drawer()
+    fn has_active_drawer(&self) -> bool {
+        self.deref().has_active_drawer()
     }
 
     fn close_modal(&mut self) {
@@ -151,8 +156,8 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().clear_notifications()
     }
 
-    fn notification_view(&self) -> AnyView {
-        self.deref().notification_view()
+    fn notifications(&self) -> Rc<Vec<View<Notification>>> {
+        self.deref().notifications()
     }
 }
 
@@ -163,9 +168,9 @@ pub struct Root {
     /// Used to store the focus handle of the previus revious view.
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
-    active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
-    active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
-    notification_list: View<NotificationList>,
+    pub active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
+    pub active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
+    pub notification: View<NotificationList>,
     child: AnyView,
 }
 
@@ -175,12 +180,12 @@ impl Root {
             previous_focus_handle: None,
             active_drawer: None,
             active_modal: None,
-            notification_list: cx.new_view(NotificationList::new),
+            notification: cx.new_view(NotificationList::new),
             child,
         }
     }
 
-    fn update_root<F>(cx: &mut WindowContext, f: F)
+    pub fn update<F>(cx: &mut WindowContext, f: F)
     where
         F: FnOnce(&mut Self, &mut ViewContext<Self>) + 'static,
     {
@@ -193,7 +198,7 @@ impl Root {
         root.update(cx, |root, cx| f(root, cx))
     }
 
-    fn read_root<'a>(cx: &'a WindowContext) -> &'a Self {
+    pub fn read<'a>(cx: &'a WindowContext) -> &'a Self {
         let root = cx
             .window_handle()
             .downcast::<Root>()

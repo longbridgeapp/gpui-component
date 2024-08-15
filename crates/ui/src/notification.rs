@@ -247,7 +247,7 @@ impl Render for Notification {
 
 /// A list of notifications.
 pub struct NotificationList {
-    notifications: Vec<View<Notification>>,
+    pub(crate) notifications: Vec<View<Notification>>,
 }
 
 impl NotificationList {
