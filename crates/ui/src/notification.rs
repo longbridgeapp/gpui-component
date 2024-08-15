@@ -100,7 +100,7 @@ impl Notification {
     }
 
     /// Set the id of the notification, used to uniquely identify the notification.
-    pub fn with_id(mut self, id: impl Into<SharedString>) -> Self {
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
         let id: SharedString = id.into();
         self.id = id.into();
         self
@@ -110,9 +110,9 @@ impl Notification {
     ///
     /// ```rs
     /// struct MyNotificationKind;
-    /// let notification = Notification::new("Hello").with_type_id::<MyNotificationKind>();
+    /// let notification = Notification::new("Hello").type_id::<MyNotificationKind>();
     /// ```
-    pub fn with_type_id<T: Sized + 'static>(mut self) -> Self {
+    pub fn type_id<T: Sized + 'static>(mut self) -> Self {
         let type_id = TypeId::of::<T>();
         self.id = type_id.into();
         self
@@ -134,7 +134,7 @@ impl Notification {
         self
     }
 
-    pub fn with_type(mut self, type_: NotificationType) -> Self {
+    fn with_type(mut self, type_: NotificationType) -> Self {
         self.type_ = type_;
         self
     }
