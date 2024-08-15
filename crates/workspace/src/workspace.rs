@@ -7,8 +7,6 @@ use std::{
 
 use crate::{
     dock::{Panel, PanelHandle},
-    model_layer::ModalLayer,
-    notification::{NotificationHandle, NotificationId},
     pane_group,
 };
 use anyhow::Result;
@@ -33,7 +31,6 @@ actions!(
     [
         ActivateNextPane,
         ActivatePreviousPane,
-        ClearAllNotifications,
         CloseAllDocks,
         ToggleBottomDock,
         ToggleCenteredLayout,
@@ -83,8 +80,6 @@ pub struct Workspace {
     pub(crate) zoomed_position: Option<DockPosition>,
     database_id: Option<WorkspaceId>,
     bounds: Bounds<Pixels>,
-    pub(crate) notifications: Vec<(NotificationId, Box<dyn NotificationHandle>)>,
-    modal_layer: View<ModalLayer>,
     workspace_actions: Vec<Box<dyn Fn(Div, &mut ViewContext<Self>) -> Div>>,
     bounds_save_task_queued: Option<Task<()>>,
     _subscriptions: Vec<Subscription>,
@@ -243,9 +238,7 @@ impl Render for Workspace {
                             Some(DockPosition::Bottom) => div.top_2().border_t_1(),
                             None => div.top_2().bottom_2().left_2().right_2().border_1(),
                         })
-                    }))
-                    .child(self.modal_layer.clone())
-                    .children(self.render_notifications(cx)),
+                    })),
             )
     }
 }
@@ -274,8 +267,6 @@ impl Workspace {
         // let left_dock_buttons = cx.new_view(|cx| PanelButtons::new(left_dock.clone(), cx));
         // let bottom_dock_buttons = cx.new_view(|cx| PanelButtons::new(bottom_dock.clone(), cx));
         // let right_dock_buttons = cx.new_view(|cx| PanelButtons::new(right_dock.clone(), cx));
-
-        let modal_layer = cx.new_view(|_| ModalLayer::new());
 
         let subscriptions = vec![
             cx.observe_window_activation(Self::on_window_activation_changed),
@@ -337,8 +328,6 @@ impl Workspace {
             panes_by_item: Default::default(),
             active_pane: center_pane.clone(),
             last_active_center_pane: Some(center_pane.downgrade()),
-            modal_layer,
-            notifications: Default::default(),
             left_dock,
             bottom_dock,
             right_dock,
@@ -423,11 +412,6 @@ impl Workspace {
             .on_action(
                 cx.listener(|workspace: &mut Workspace, _: &CloseAllDocks, cx| {
                     workspace.close_all_docks(cx);
-                }),
-            )
-            .on_action(
-                cx.listener(|workspace: &mut Workspace, _: &ClearAllNotifications, cx| {
-                    workspace.clear_all_notifications(cx);
                 }),
             )
             .on_action(cx.listener(Workspace::activate_pane_at_index))
@@ -1019,28 +1003,5 @@ impl Workspace {
         //         .log_err();
         //     }));
         // }
-    }
-
-    fn render_notifications(&self, _cx: &ViewContext<Self>) -> Option<Div> {
-        if self.notifications.is_empty() {
-            None
-        } else {
-            Some(
-                div()
-                    .absolute()
-                    .right_3()
-                    .bottom_3()
-                    .h_full()
-                    .flex()
-                    .flex_col()
-                    .justify_end()
-                    .gap_2()
-                    .children(
-                        self.notifications
-                            .iter()
-                            .map(|(_, notification)| notification.to_any()),
-                    ),
-            )
-        }
     }
 }

@@ -1,7 +1,7 @@
 use std::{any::TypeId, sync::Arc, time::Duration};
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Animation, AnimationExt, ClickEvent, DismissEvent,
+    div, prelude::FluentBuilder, px, Animation, AnimationExt, ClickEvent, DismissEvent, ElementId,
     EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Render, SharedString,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext, WindowContext,
 };
@@ -21,25 +21,19 @@ pub enum NotificationType {
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum NotificationId {
-    Type(TypeId),
-    Id(SharedString),
+    Id(TypeId),
+    IdAndElementId(TypeId, ElementId),
 }
 
 impl From<TypeId> for NotificationId {
     fn from(type_id: TypeId) -> Self {
-        Self::Type(type_id)
+        Self::Id(type_id)
     }
 }
 
-impl From<SharedString> for NotificationId {
-    fn from(id: SharedString) -> Self {
-        Self::Id(id)
-    }
-}
-
-impl From<&'static str> for NotificationId {
-    fn from(id: &'static str) -> Self {
-        Self::Id(id.into())
+impl From<(TypeId, ElementId)> for NotificationId {
+    fn from((type_id, id): (TypeId, ElementId)) -> Self {
+        Self::IdAndElementId(type_id, id)
     }
 }
 
@@ -51,7 +45,7 @@ pub struct Notification {
     id: NotificationId,
     type_: NotificationType,
     title: Option<SharedString>,
-    content: SharedString,
+    message: SharedString,
     icon: Option<Icon>,
     autohide: bool,
     on_click: Option<Arc<dyn Fn(&ClickEvent, &mut WindowContext)>>,
@@ -81,17 +75,19 @@ impl From<(NotificationType, SharedString)> for Notification {
     }
 }
 
+struct DefaultIdType;
 impl Notification {
     /// Create a new notification with the given content.
     ///
     /// default width is 320px.
-    pub fn new(content: impl Into<SharedString>) -> Self {
+    pub fn new(message: impl Into<SharedString>) -> Self {
         let id: SharedString = uuid::Uuid::new_v4().to_string().into();
+        let id = (TypeId::of::<DefaultIdType>(), id.into());
 
         Self {
             id: id.into(),
             title: None,
-            content: content.into(),
+            message: message.into(),
             type_: NotificationType::Info,
             icon: None,
             autohide: true,
@@ -99,22 +95,36 @@ impl Notification {
         }
     }
 
-    /// Set the id of the notification, used to uniquely identify the notification.
-    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
-        let id: SharedString = id.into();
-        self.id = id.into();
-        self
+    pub fn info(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Info)
     }
 
-    /// Set the type id of the notification, used to uniquely identify the notification.
+    pub fn success(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Success)
+    }
+
+    pub fn warning(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Warning)
+    }
+
+    pub fn error(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Error)
+    }
+
+    /// Set the type for unique identification of the notification.
     ///
     /// ```rs
     /// struct MyNotificationKind;
-    /// let notification = Notification::new("Hello").type_id::<MyNotificationKind>();
+    /// let notification = Notification::new("Hello").id::<MyNotificationKind>();
     /// ```
-    pub fn type_id<T: Sized + 'static>(mut self) -> Self {
-        let type_id = TypeId::of::<T>();
-        self.id = type_id.into();
+    pub fn id<T: Sized + 'static>(mut self) -> Self {
+        self.id = TypeId::of::<T>().into();
+        self
+    }
+
+    /// Set the type and id of the notification, used to uniquely identify the notification.
+    pub fn id1<T: Sized + 'static>(mut self, key: impl Into<ElementId>) -> Self {
+        self.id = (TypeId::of::<T>(), key.into()).into();
         self
     }
 
@@ -134,28 +144,9 @@ impl Notification {
         self
     }
 
-    fn with_type(mut self, type_: NotificationType) -> Self {
+    /// Set the type of the notification, default is NotificationType::Info.
+    pub fn with_type(mut self, type_: NotificationType) -> Self {
         self.type_ = type_;
-        self
-    }
-
-    pub fn info(mut self) -> Self {
-        self.type_ = NotificationType::Info;
-        self
-    }
-
-    pub fn success(mut self) -> Self {
-        self.type_ = NotificationType::Success;
-        self
-    }
-
-    pub fn warning(mut self) -> Self {
-        self.type_ = NotificationType::Warning;
-        self
-    }
-
-    pub fn error(mut self) -> Self {
-        self.type_ = NotificationType::Error;
         self
     }
 
@@ -192,7 +183,7 @@ impl Notification {
     }
 }
 impl EventEmitter<DismissEvent> for Notification {}
-
+impl FluentBuilder for Notification {}
 impl Render for Notification {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let group_id = "notification-group";
@@ -245,7 +236,7 @@ impl Render for Notification {
                         this.child(div().text_sm().font_semibold().child(title))
                     })
                     .overflow_hidden()
-                    .child(div().text_sm().child(self.content.clone())),
+                    .child(div().text_sm().child(self.message.clone())),
             )
             .when_some(self.on_click.clone(), |this, on_click| {
                 this.cursor_pointer()
