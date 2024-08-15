@@ -25,7 +25,7 @@ impl CalendarStory {
         let now = chrono::Local::now().naive_local().date();
         let date_picker = cx.new_view(|cx| {
             let mut picker = DatePicker::new("date_picker_medium", cx)
-                .cleanable(true)
+                .cleanable()
                 .width(px(220.));
             picker.set_date(now, cx);
             picker
@@ -47,7 +47,7 @@ impl CalendarStory {
             let mut picker = DatePicker::new("date_range_picker", cx)
                 .width(px(300.))
                 .number_of_months(2)
-                .cleanable(true);
+                .cleanable();
             picker.set_date((now, now.checked_add_days(Days::new(4)).unwrap()), cx);
             picker
         });
