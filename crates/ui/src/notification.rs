@@ -51,7 +51,7 @@ pub struct Notification {
     id: NotificationId,
     type_: NotificationType,
     title: Option<SharedString>,
-    content: SharedString,
+    message: SharedString,
     icon: Option<Icon>,
     autohide: bool,
     on_click: Option<Arc<dyn Fn(&ClickEvent, &mut WindowContext)>>,
@@ -85,18 +85,34 @@ impl Notification {
     /// Create a new notification with the given content.
     ///
     /// default width is 320px.
-    pub fn new(content: impl Into<SharedString>) -> Self {
+    pub fn new(message: impl Into<SharedString>) -> Self {
         let id: SharedString = uuid::Uuid::new_v4().to_string().into();
 
         Self {
             id: id.into(),
             title: None,
-            content: content.into(),
+            message: message.into(),
             type_: NotificationType::Info,
             icon: None,
             autohide: true,
             on_click: None,
         }
+    }
+
+    pub fn info(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Info)
+    }
+
+    pub fn success(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Success)
+    }
+
+    pub fn warning(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Warning)
+    }
+
+    pub fn error(message: impl Into<SharedString>) -> Self {
+        Self::new(message).with_type(NotificationType::Error)
     }
 
     /// Set the id of the notification, used to uniquely identify the notification.
@@ -137,26 +153,6 @@ impl Notification {
     /// Set the type of the notification, default is NotificationType::Info.
     pub fn with_type(mut self, type_: NotificationType) -> Self {
         self.type_ = type_;
-        self
-    }
-
-    pub fn info(mut self) -> Self {
-        self.type_ = NotificationType::Info;
-        self
-    }
-
-    pub fn success(mut self) -> Self {
-        self.type_ = NotificationType::Success;
-        self
-    }
-
-    pub fn warning(mut self) -> Self {
-        self.type_ = NotificationType::Warning;
-        self
-    }
-
-    pub fn error(mut self) -> Self {
-        self.type_ = NotificationType::Error;
         self
     }
 
@@ -246,7 +242,7 @@ impl Render for Notification {
                         this.child(div().text_sm().font_semibold().child(title))
                     })
                     .overflow_hidden()
-                    .child(div().text_sm().child(self.content.clone())),
+                    .child(div().text_sm().child(self.message.clone())),
             )
             .when_some(self.on_click.clone(), |this, on_click| {
                 this.cursor_pointer()
