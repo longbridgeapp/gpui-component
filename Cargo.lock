@@ -5503,6 +5503,7 @@ dependencies = [
  "smol",
  "unicode-segmentation",
  "usvg",
+ "uuid",
  "wry",
 ]
 

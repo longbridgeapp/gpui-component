@@ -21,6 +21,7 @@ pub mod label;
 pub mod link;
 pub mod list;
 pub mod modal;
+pub mod notification;
 pub mod popover;
 pub mod popup_menu;
 pub mod prelude;
