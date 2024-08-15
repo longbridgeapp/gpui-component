@@ -1,12 +1,18 @@
 use gpui::{
-    div, AnyView, FocusHandle, ParentElement as _, Render, Styled, ViewContext, WindowContext,
+    div, AnyView, FocusHandle, ParentElement as _, Render, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 use std::{
     ops::{Deref, DerefMut},
     rc::Rc,
 };
 
-use crate::{drawer::Drawer, modal::Modal, theme::ActiveTheme};
+use crate::{
+    drawer::Drawer,
+    modal::Modal,
+    notification::{Notification, NotificationList},
+    theme::ActiveTheme,
+};
 
 /// Extension trait for [`WindowContext`] and [`ViewContext`] to add drawer functionality.
 pub trait ContextModal: Sized {
@@ -31,6 +37,12 @@ pub trait ContextModal: Sized {
 
     /// Closes the active Modal.
     fn close_modal(&mut self);
+
+    /// Pushes a notification to the notification list.
+    fn push_notification(&mut self, note: impl Into<Notification>);
+    fn clear_notifications(&mut self);
+    /// Returns the notification list view.
+    fn notification_view(&self) -> AnyView;
 }
 
 impl<'a> ContextModal for WindowContext<'a> {
@@ -79,6 +91,26 @@ impl<'a> ContextModal for WindowContext<'a> {
             cx.notify();
         })
     }
+
+    fn push_notification(&mut self, note: impl Into<Notification>) {
+        let note = note.into();
+        Root::update_root(self, move |root, cx| {
+            root.notification_list
+                .update(cx, |view, cx| view.push(note, cx));
+            cx.notify();
+        })
+    }
+
+    fn clear_notifications(&mut self) {
+        Root::update_root(self, move |root, cx| {
+            root.notification_list.update(cx, |view, cx| view.clear(cx));
+            cx.notify();
+        })
+    }
+
+    fn notification_view(&self) -> AnyView {
+        Root::read_root(&self).notification_list.clone().into()
+    }
 }
 impl<'a, V> ContextModal for ViewContext<'a, V> {
     fn open_drawer<F>(&mut self, build: F)
@@ -110,23 +142,40 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
     fn close_modal(&mut self) {
         self.deref_mut().close_modal()
     }
+
+    fn push_notification(&mut self, note: impl Into<Notification>) {
+        self.deref_mut().push_notification(note)
+    }
+
+    fn clear_notifications(&mut self) {
+        self.deref_mut().clear_notifications()
+    }
+
+    fn notification_view(&self) -> AnyView {
+        self.deref().notification_view()
+    }
 }
 
+/// Root is a view for the App window for as the top level view (Must be the first view in the window).
+///
+/// It is used to manage the Drawer, Modal, and Notification.
 pub struct Root {
     /// Used to store the focus handle of the previus revious view.
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
     active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
+    notification_list: View<NotificationList>,
     child: AnyView,
 }
 
 impl Root {
-    pub fn new(child: AnyView, _: &mut ViewContext<Self>) -> Self {
+    pub fn new(child: AnyView, cx: &mut ViewContext<Self>) -> Self {
         Self {
             previous_focus_handle: None,
             active_drawer: None,
             active_modal: None,
+            notification_list: cx.new_view(NotificationList::new),
             child,
         }
     }

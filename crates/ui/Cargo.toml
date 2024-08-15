@@ -25,6 +25,7 @@ wry = "0"
 smol = "1"
 regex = "1"
 rust-i18n = "3"
+uuid = "1.10"
 
 # Calendar
 chrono = "0.4.38"

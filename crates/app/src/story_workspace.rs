@@ -276,6 +276,7 @@ impl Render for StoryWorkspace {
         let active_modal = cx.active_modal();
         let active_drawer = cx.active_drawer();
         let has_active_modal = active_modal.is_some();
+        let notification_view = cx.notification_view();
 
         div()
             .relative()
@@ -347,6 +348,7 @@ impl Render for StoryWorkspace {
                 let modal = Modal::new(cx);
                 this.child(builder(modal, cx))
             })
+            .child(div().absolute().top_8().child(notification_view))
     }
 }
 

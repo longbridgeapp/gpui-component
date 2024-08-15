@@ -14,6 +14,7 @@ use ui::{
     h_flex,
     input::TextInput,
     list::{List, ListDelegate, ListItem},
+    notification::{Notification, NotificationType},
     theme::ActiveTheme as _,
     v_flex, ContextModal as _, Icon, IconName, Placement,
 };
@@ -254,8 +255,7 @@ impl ModalStory {
 
         let overlay = self.modal_overlay;
         cx.open_drawer(move |this, cx| {
-            this.margin_top(px(33.))
-                .placement(placement)
+            this.placement(placement)
                 .overlay(overlay)
                 .size(px(400.))
                 .title("Drawer Title")
@@ -306,6 +306,7 @@ impl ModalStory {
 
         cx.open_modal(move |modal, cx| {
             modal
+                .margin_top(px(33.))
                 .title("Form Modal")
                 .overlay(overlay)
                 .show_close(modal_show_close)
@@ -444,6 +445,68 @@ impl Render for ModalStory {
                     Button::new("show-modal", cx)
                         .label("Open Modal...")
                         .on_click(cx.listener(|this, _, cx| this.show_modal(cx))),
+                )
+                .child(
+                    h_flex()
+                        .gap_3()
+                        .child(
+                            Button::new("show-notify-info", cx)
+                                .label("Info Notify...")
+                                .on_click(cx.listener(|_, _, cx| {
+                                    cx.push_notification("You have been saved file successfully.")
+                                })),
+                        )
+                        .child(
+                            Button::new("show-notify-error", cx)
+                                .label("Error Notify...")
+                                .on_click(cx.listener(|_, _, cx| {
+                                    cx.push_notification((
+                                        NotificationType::Error,
+                                        "There have some error occurred. Please try again later.",
+                                    ))
+                                })),
+                        )
+                        .child(
+                            Button::new("show-notify-success", cx)
+                                .label("Success Notify...")
+                                .on_click(cx.listener(|_, _, cx| {
+                                    cx.push_notification((
+                                        NotificationType::Success,
+                                        "We have received your payment successfully.",
+                                    ))
+                                })),
+                        )
+                        .child(
+                            Button::new("show-notify-warning", cx)
+                                .label("Warning Notify...")
+                                .on_click(cx.listener(|_, _, cx| {
+                                    cx.push_notification((
+                                        NotificationType::Warning,
+                                        "The network is not stable, please check your connection.",
+                                    ))
+                                })),
+                        )
+                        .child(
+                            Button::new("show-notify-warning", cx)
+                                .label("Notification with Title")
+                                .on_click(cx.listener(|_, _, cx| {
+                                    cx.push_notification(
+                                        Notification::new(
+                                            "你已经成功保存了文件，但是有一些警告信息需要你注意。",
+                                        )
+                                        .title("保存成功")
+                                        .icon(IconName::Inbox)
+                                        .autohide(false)
+                                        .on_click(
+                                            cx.listener(|view, _, cx| {
+                                                view.selected_value =
+                                                    Some("Notification clicked".into());
+                                                cx.notify();
+                                            }),
+                                        ),
+                                    )
+                                })),
+                        ),
                 ),
         )
     }
