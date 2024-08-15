@@ -495,10 +495,13 @@ impl Render for ModalStory {
                             Button::new("show-notify-warning", cx)
                                 .label("Notification with Title")
                                 .on_click(cx.listener(|_, _, cx| {
+                                    struct TestNotification;
+
                                     cx.push_notification(
                                         Notification::new(
                                             "你已经成功保存了文件，但是有一些警告信息需要你注意。",
                                         )
+                                        .with_type_id::<TestNotification>()
                                         .title("保存成功")
                                         .icon(IconName::Inbox)
                                         .autohide(false)
