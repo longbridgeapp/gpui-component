@@ -1,7 +1,7 @@
 use std::{any::TypeId, sync::Arc, time::Duration};
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Animation, AnimationExt, ClickEvent, DismissEvent,
+    div, prelude::FluentBuilder, px, Animation, AnimationExt, ClickEvent, DismissEvent,
     EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Render, SharedString,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext, WindowContext,
 };
@@ -134,7 +134,8 @@ impl Notification {
         self
     }
 
-    fn with_type(mut self, type_: NotificationType) -> Self {
+    /// Set the type of the notification, default is NotificationType::Info.
+    pub fn with_type(mut self, type_: NotificationType) -> Self {
         self.type_ = type_;
         self
     }
@@ -192,7 +193,7 @@ impl Notification {
     }
 }
 impl EventEmitter<DismissEvent> for Notification {}
-
+impl FluentBuilder for Notification {}
 impl Render for Notification {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let group_id = "notification-group";
