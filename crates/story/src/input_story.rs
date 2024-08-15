@@ -49,7 +49,7 @@ impl InputStory {
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
         let input1 = cx.new_view(|cx| {
-            let mut input = TextInput::new(cx).cleanable(true);
+            let mut input = TextInput::new(cx).cleanable();
             input.set_text(
                 "Hello 世界，this is GPUI component, this is a long text.",
                 cx,
@@ -64,7 +64,7 @@ impl InputStory {
         cx.subscribe(&input2, Self::on_input_event).detach();
 
         let mask_input = cx.new_view(|cx| {
-            let mut input = TextInput::new(cx).cleanable(true);
+            let mut input = TextInput::new(cx).cleanable();
             input.set_masked(true, cx);
             input.set_text("this-is-password", cx);
             input
@@ -74,20 +74,20 @@ impl InputStory {
             TextInput::new(cx)
                 .prefix(|_| div().child(IconName::Search).ml_3())
                 .placeholder("Search some thing...")
-                .cleanable(true)
+                .cleanable()
         });
         let suffix_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
                 .suffix(|_| div().child(IconName::Info).mr_3())
                 .placeholder("This input only support [a-zA-Z0-9] characters.")
                 .pattern(regex::Regex::new(r"^[a-zA-Z0-9]*$").unwrap())
-                .cleanable(true)
+                .cleanable()
         });
         let both_input1 = cx.new_view(|cx| {
             TextInput::new(cx)
                 .prefix(|_| div().child(IconName::Search).ml_3())
                 .suffix(|_| div().child(IconName::Info).mr_3())
-                .cleanable(true)
+                .cleanable()
                 .placeholder("This input have prefix and suffix.")
         });
 

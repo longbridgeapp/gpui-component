@@ -91,7 +91,7 @@ where
                 .appearance(false)
                 .prefix(|_| IconName::Search)
                 .placeholder("Search...")
-                .cleanable(true)
+                .cleanable()
         });
 
         cx.subscribe(&query_input, Self::on_query_input_event)

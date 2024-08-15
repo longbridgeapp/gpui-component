@@ -371,8 +371,8 @@ where
     }
 
     /// Set true to show the clear button when the input field is not empty.
-    pub fn cleanable(mut self, cleanable: bool) -> Self {
-        self.cleanable = cleanable;
+    pub fn cleanable(mut self) -> Self {
+        self.cleanable = true;
         self
     }
 
@@ -468,7 +468,8 @@ where
     }
 
     fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
-        self.set_selected_index(None, cx)
+        self.set_selected_index(None, cx);
+        cx.emit(DropdownEvent::Confirm(None));
     }
 
     fn display_title(&self, cx: &WindowContext) -> impl IntoElement {
