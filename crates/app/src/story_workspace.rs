@@ -10,13 +10,14 @@ use workspace::{TitleBar, Workspace};
 
 use std::sync::Arc;
 use ui::{
-    button::{Button, ButtonStyle},
+    button::Button,
     drawer::Drawer,
+    h_flex,
     modal::Modal,
     popover::Popover,
     popup_menu::PopupMenu,
     theme::{ActiveTheme, Theme},
-    ContextModal as _, IconName, Root, Sizable,
+    ContextModal, IconName, Root, Sizable,
 };
 
 use crate::app_state::AppState;
@@ -273,10 +274,11 @@ pub fn open_new(
 
 impl Render for StoryWorkspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let active_modal = cx.active_modal();
-        let active_drawer = cx.active_drawer();
+        let active_modal = Root::read(cx).active_modal.clone();
+        let active_drawer = Root::read(cx).active_drawer.clone();
         let has_active_modal = active_modal.is_some();
-        let notification_view = cx.notification_view();
+        let notification_view = Root::read(cx).notification.clone();
+        let notifications_count = cx.notifications().len();
 
         div()
             .relative()
@@ -303,7 +305,6 @@ impl Render for StoryWorkspace {
                             .items_center()
                             .justify_end()
                             .px_2()
-                            .mr_3()
                             .gap_2()
                             .child(self.locale_selector.clone())
                             .child(
@@ -330,9 +331,37 @@ impl Render for StoryWorkspace {
                                 Button::new("github", cx)
                                     .icon(IconName::GitHub)
                                     .small()
-                                    .style(ButtonStyle::Ghost)
+                                    .ghost()
                                     .on_click(|_, cx| {
                                         cx.open_url("https://github.com/huacnlee/gpui-component")
+                                    }),
+                            )
+                            .child(
+                                div()
+                                    .relative()
+                                    .child(
+                                        Button::new("bell", cx)
+                                            .small()
+                                            .ghost()
+                                            .compact()
+                                            .icon(IconName::Bell),
+                                    )
+                                    .when(notifications_count > 0, |this| {
+                                        this.child(
+                                            h_flex()
+                                                .absolute()
+                                                .rounded_full()
+                                                .top(px(-2.))
+                                                .right(px(-2.))
+                                                .p(px(1.))
+                                                .min_w(px(12.))
+                                                .bg(ui::red_500())
+                                                .text_color(ui::white())
+                                                .justify_center()
+                                                .text_size(px(10.))
+                                                .line_height(relative(1.))
+                                                .child(format!("{}", notifications_count.min(99))),
+                                        )
                                     }),
                             ),
                     ),
