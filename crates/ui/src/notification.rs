@@ -22,7 +22,7 @@ pub enum NotificationType {
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum NotificationId {
     Id(TypeId),
-    TypeId(TypeId, ElementId),
+    IdAndElementId(TypeId, ElementId),
 }
 
 impl From<TypeId> for NotificationId {
@@ -33,7 +33,7 @@ impl From<TypeId> for NotificationId {
 
 impl From<(TypeId, ElementId)> for NotificationId {
     fn from((type_id, id): (TypeId, ElementId)) -> Self {
-        Self::TypeId(type_id, id)
+        Self::IdAndElementId(type_id, id)
     }
 }
 
@@ -118,15 +118,13 @@ impl Notification {
     /// let notification = Notification::new("Hello").id::<MyNotificationKind>();
     /// ```
     pub fn id<T: Sized + 'static>(mut self) -> Self {
-        let type_id = TypeId::of::<T>();
-        self.id = type_id.into();
+        self.id = TypeId::of::<T>().into();
         self
     }
 
     /// Set the type and id of the notification, used to uniquely identify the notification.
     pub fn id1<T: Sized + 'static>(mut self, key: impl Into<ElementId>) -> Self {
-        let type_id = TypeId::of::<T>();
-        self.id = NotificationId::TypeId(type_id, key.into());
+        self.id = (TypeId::of::<T>(), key.into()).into();
         self
     }
 
