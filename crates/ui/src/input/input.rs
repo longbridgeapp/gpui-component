@@ -299,6 +299,7 @@ impl TextInput {
         self.disabled
     }
 
+    /// Focus the input field.
     pub fn focus(&self, cx: &mut ViewContext<Self>) {
         self.focus_handle.focus(cx);
     }
