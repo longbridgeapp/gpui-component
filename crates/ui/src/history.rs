@@ -1,32 +1,28 @@
 use std::{
     fmt::Debug,
-    ops::Range,
     time::{Duration, Instant},
 };
 
-const MAX_UNDO: usize = 1000;
-/// Group interval in milliseconds
-const GROUP_INTERVAL: u64 = 1000;
+pub trait HistoryItem: Clone {
+    fn version(&self) -> usize;
+    fn set_version(&mut self, version: usize);
+}
 
 #[derive(Debug)]
-pub struct History {
-    undos: Vec<Change>,
-    redos: Vec<Change>,
+pub struct History<I: HistoryItem> {
+    undos: Vec<I>,
+    redos: Vec<I>,
     last_changed_at: Instant,
     version: usize,
     pub(crate) ignore: bool,
+    max_undo: usize,
+    group_interval: Option<Duration>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Change {
-    pub(crate) old_range: Range<usize>,
-    pub(crate) old_text: String,
-    pub(crate) new_range: Range<usize>,
-    pub(crate) new_text: String,
-    version: usize,
-}
-
-impl History {
+impl<I> History<I>
+where
+    I: HistoryItem,
+{
     pub fn new() -> Self {
         Self {
             undos: Default::default(),
@@ -34,15 +30,27 @@ impl History {
             ignore: false,
             last_changed_at: Instant::now(),
             version: 0,
+            max_undo: 1000,
+            group_interval: None,
         }
+    }
+
+    /// Set the maximum number of undo steps to keep, defaults to 1000.
+    pub fn max_undo(mut self, max_undo: usize) -> Self {
+        self.max_undo = max_undo;
+        self
+    }
+
+    /// Set the interval in milliseconds to group changes, defaults to None.
+    pub fn group_interval(mut self, group_interval: Duration) -> Self {
+        self.group_interval = Some(group_interval);
+        self
     }
 
     /// Increment the version number if the last change was made more than `GROUP_INTERVAL` milliseconds ago.
     fn inc_version(&mut self) -> usize {
         let t = Instant::now();
-        if self.last_changed_at.elapsed().as_millis()
-            > Duration::from_millis(GROUP_INTERVAL).as_millis()
-        {
+        if Some(self.last_changed_at.elapsed()) > self.group_interval {
             self.version += 1;
         }
 
@@ -50,35 +58,31 @@ impl History {
         self.version
     }
 
-    pub fn push(
-        &mut self,
-        old_range: Range<usize>,
-        old_text: &str,
-        new_range: Range<usize>,
-        new_text: &str,
-    ) {
-        let version = self.inc_version();
-
-        if self.undos.len() >= MAX_UNDO {
-            self.undos.remove(0);
-        }
-        self.undos.push(Change {
-            old_range,
-            old_text: old_text.to_string(),
-            new_range,
-            new_text: new_text.to_string(),
-            version,
-        });
+    /// Get the current version number.
+    pub fn version(&self) -> usize {
+        self.version
     }
 
-    pub fn undo(&mut self) -> Option<Vec<Change>> {
+    pub fn push(&mut self, item: I) {
+        let version = self.inc_version();
+
+        if self.undos.len() >= self.max_undo {
+            self.undos.remove(0);
+        }
+
+        let mut item = item;
+        item.set_version(version);
+        self.undos.push(item);
+    }
+
+    pub fn undo(&mut self) -> Option<Vec<I>> {
         if let Some(first_change) = self.undos.pop() {
             let mut changes = vec![first_change.clone()];
             // pick the next all changes with the same version
             while self
                 .undos
                 .iter()
-                .filter(|c| c.version == first_change.version)
+                .filter(|c| c.version() == first_change.version())
                 .count()
                 > 0
             {
@@ -93,14 +97,14 @@ impl History {
         }
     }
 
-    pub fn redo(&mut self) -> Option<Vec<Change>> {
+    pub fn redo(&mut self) -> Option<Vec<I>> {
         if let Some(first_change) = self.redos.pop() {
             let mut changes = vec![first_change.clone()];
             // pick the next all changes with the same version
             while self
                 .redos
                 .iter()
-                .filter(|c| c.version == first_change.version)
+                .filter(|c| c.version() == first_change.version())
                 .count()
                 > 0
             {

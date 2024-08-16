@@ -2,7 +2,6 @@ mod colors;
 mod event;
 mod focusable;
 mod icon;
-
 mod root;
 mod styled;
 mod svg_img;
@@ -15,6 +14,7 @@ pub mod context_menu;
 pub mod divider;
 pub mod drawer;
 pub mod dropdown;
+pub mod history;
 pub mod indicator;
 pub mod input;
 pub mod label;

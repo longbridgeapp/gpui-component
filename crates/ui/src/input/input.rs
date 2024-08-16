@@ -6,8 +6,9 @@
 use std::ops::Range;
 
 use super::blink_cursor::BlinkCursor;
-use super::history::History;
+use super::change::Change;
 use super::ClearButton;
+use crate::history::History;
 use crate::indicator::Indicator;
 use crate::theme::ActiveTheme;
 use crate::StyledExt as _;
@@ -110,7 +111,7 @@ pub fn init(cx: &mut AppContext) {
 pub struct TextInput {
     focus_handle: FocusHandle,
     text: SharedString,
-    history: History,
+    history: History<Change>,
     blink_cursor: Model<BlinkCursor>,
     prefix: Option<Box<dyn Fn(&mut ViewContext<Self>) -> AnyElement + 'static>>,
     suffix: Option<Box<dyn Fn(&mut ViewContext<Self>) -> AnyElement + 'static>>,
@@ -138,7 +139,7 @@ impl TextInput {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         let blink_cursor = cx.new_model(|_| BlinkCursor::new());
-        let history = History::new();
+        let history = History::new().group_interval(std::time::Duration::from_secs(1));
         let input = Self {
             focus_handle: focus_handle.clone(),
             text: "".into(),
@@ -445,8 +446,12 @@ impl TextInput {
 
         let new_range = range.start..range.start + new_text.len();
 
-        self.history
-            .push(range.clone(), &old_text, new_range, new_text);
+        self.history.push(Change::new(
+            range.clone(),
+            &old_text,
+            new_range.clone(),
+            new_text,
+        ));
     }
 
     fn undo(&mut self, _: &Undo, cx: &mut ViewContext<Self>) {
