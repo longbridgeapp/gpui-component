@@ -1,6 +1,6 @@
 use gpui::{
     actions, div, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
+    FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton, MouseDownEvent,
     ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 use ui::{
@@ -20,6 +20,15 @@ actions!(
     popover_story,
     [Copy, Paste, Cut, SearchAll, ToggleWindowMode]
 );
+
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([
+        KeyBinding::new("cmd-c", Copy, None),
+        KeyBinding::new("cmd-v", Paste, None),
+        KeyBinding::new("cmd-x", Cut, None),
+        KeyBinding::new("cmd-shift-f", SearchAll, None),
+    ])
+}
 
 struct Form {
     input1: View<TextInput>,
@@ -80,17 +89,25 @@ impl PopupStory {
         }
     }
 
-    fn on_copy(&mut self, _: &Copy, _: &mut ViewContext<Self>) {
+    fn on_copy(&mut self, _: &Copy, cx: &mut ViewContext<Self>) {
         self.message = "You have clicked copy".to_string();
+        cx.notify()
     }
-    fn on_cut(&mut self, _: &Cut, _: &mut ViewContext<Self>) {
+    fn on_cut(&mut self, _: &Cut, cx: &mut ViewContext<Self>) {
         self.message = "You have clicked cut".to_string();
+        cx.notify()
     }
-    fn on_paste(&mut self, _: &Paste, _: &mut ViewContext<Self>) {
+    fn on_paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
         self.message = "You have clicked paste".to_string();
+        cx.notify()
     }
-    fn on_search_all(&mut self, _: &SearchAll, _: &mut ViewContext<Self>) {
+    fn on_search_all(&mut self, _: &SearchAll, cx: &mut ViewContext<Self>) {
         self.message = "You have clicked search all".to_string();
+        cx.notify()
+    }
+    fn on_toggle_window_mode(&mut self, _: &ToggleWindowMode, cx: &mut ViewContext<Self>) {
+        self.window_mode = !self.window_mode;
+        cx.notify()
     }
 }
 
@@ -111,6 +128,7 @@ impl Render for PopupStory {
             .on_action(cx.listener(Self::on_cut))
             .on_action(cx.listener(Self::on_paste))
             .on_action(cx.listener(Self::on_search_all))
+            .on_action(cx.listener(Self::on_toggle_window_mode))
             .p_4()
             .mb_5()
             .size_full()
@@ -191,14 +209,18 @@ impl Render for PopupStory {
                     .child(
                         Button::new("popup-menu-1", cx)
                             .icon(IconName::Ellipsis)
-                            .popup_menu(|this, _| {
+                            .popup_menu(move |this, _| {
                                 this.menu("Copy", Box::new(Copy))
                                     .menu("Cut", Box::new(Cut))
                                     .menu("Paste", Box::new(Paste))
                                     .separator()
                                     .menu_with_icon("Search", IconName::Search, Box::new(SearchAll))
                                     .separator()
-                                    .menu_with_check("Check Menu", true, Box::new(SearchAll))
+                                    .menu_with_check(
+                                        "Window Mode",
+                                        window_mode,
+                                        Box::new(ToggleWindowMode),
+                                    )
                                     .separator()
                                     .link_with_icon(
                                         "GitHub Repository",

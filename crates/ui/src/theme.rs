@@ -162,7 +162,6 @@ struct Colors {
     pub list_active: Hsla,
     pub list_head: Hsla,
     pub link: Hsla,
-    pub menu: Hsla,
 }
 
 impl Colors {
@@ -204,7 +203,6 @@ impl Colors {
             list_active: hsl(240.0, 7., 88.0).opacity(0.75),
             list_head: hsl(0.0, 0.0, 100.),
             link: hsl(221.0, 83.0, 53.0),
-            menu: hsl(0.0, 0.0, 97.0),
         }
     }
 
@@ -246,7 +244,6 @@ impl Colors {
             list_active: hsl(240.0, 3.7, 15.0),
             list_head: hsl(0.0, 0.0, 6.0),
             link: hsl(221.0, 83.0, 53.0),
-            menu: hsl(300.0, 2.0, 12.),
         }
     }
 }
@@ -312,7 +309,6 @@ pub struct Theme {
     pub link: Hsla,
     pub link_hover: Hsla,
     pub link_active: Hsla,
-    pub menu: Hsla,
     pub skeleton: Hsla,
 }
 
@@ -391,7 +387,6 @@ impl From<Colors> for Theme {
             link: colors.link,
             link_hover: colors.link.lighten(0.2),
             link_active: colors.link.darken(0.2),
-            menu: colors.menu,
             skeleton: hsla(colors.primary.h, colors.primary.s, colors.primary.l, 0.1),
         }
     }
