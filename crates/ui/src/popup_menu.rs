@@ -1,11 +1,12 @@
+use std::ops::Deref;
 use std::rc::Rc;
 
-use gpui::FocusableView;
 use gpui::{
     actions, div, prelude::FluentBuilder, px, Action, AppContext, DismissEvent, EventEmitter,
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
+use gpui::{rems, FocusableView};
 
 use crate::{
     button::Button, h_flex, list::ListItem, popover::Popover, theme::ActiveTheme, v_flex, Icon,
@@ -41,6 +42,7 @@ enum PopupMenuItem {
     Item {
         icon: Option<Icon>,
         label: SharedString,
+        action: Option<Box<dyn Action>>,
         handler: Rc<dyn Fn(&mut WindowContext)>,
     },
 }
@@ -114,6 +116,7 @@ impl PopupMenu {
         self.menu_items.push(PopupMenuItem::Item {
             icon: None,
             label: label.into(),
+            action: None,
             handler: Rc::new(move |cx| cx.open_url(&href)),
         });
         self
@@ -130,6 +133,7 @@ impl PopupMenu {
         self.menu_items.push(PopupMenuItem::Item {
             icon: Some(icon.into()),
             label: label.into(),
+            action: None,
             handler: Rc::new(move |cx| cx.open_url(&href)),
         });
         self
@@ -174,6 +178,7 @@ impl PopupMenu {
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
+            action: Some(action.boxed_clone()),
             handler: Rc::new(move |cx| {
                 cx.activate_window();
                 cx.dispatch_action(action.boxed_clone());
@@ -246,6 +251,26 @@ impl PopupMenu {
     fn dismiss(&mut self, _: &Dismiss, cx: &mut ViewContext<Self>) {
         cx.emit(DismissEvent);
     }
+
+    fn render_keybinding(
+        action: Option<Box<dyn Action>>,
+        cx: &ViewContext<Self>,
+    ) -> Option<impl IntoElement> {
+        if let Some(action) = action {
+            if let Some(keybinding) = cx.bindings_for_action(action.deref()).first() {
+                let el = div().text_color(cx.theme().muted_foreground).children(
+                    keybinding
+                        .keystrokes()
+                        .into_iter()
+                        .map(|keystroke| format!("{}", keystroke)),
+                );
+
+                return Some(el);
+            }
+        }
+
+        return None;
+    }
 }
 
 impl FluentBuilder for PopupMenu {}
@@ -278,7 +303,8 @@ impl Render for PopupMenu {
             .min_w(self.min_width)
             .p_1()
             .gap_y_0p5()
-            .bg(cx.theme().menu)
+            .min_w(rems(8.))
+            .text_color(cx.theme().popover_foreground)
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
                 let this = ListItem::new(("menu-item", ix))
                     .p_0()
@@ -287,31 +313,57 @@ impl Render for PopupMenu {
                     PopupMenuItem::Separator => this.disabled(true).child(
                         div()
                             .h(px(1.))
-                            .w_full()
+                            .mx_neg_1()
                             .my_px()
                             .border_0()
-                            .bg(cx.theme().border),
+                            .bg(cx.theme().muted),
                     ),
-                    PopupMenuItem::Item { icon, label, .. } => {
-                        this.py(px(2.)).px_2().rounded_md().text_sm().child(
-                            h_flex()
-                                .size_full()
-                                .items_center()
-                                .map(|this| {
-                                    this.child(div().absolute().text_sm().map(|this| {
-                                        if let Some(icon) = icon {
-                                            this.child(icon.clone().small().clone())
-                                        } else {
-                                            this.children(icon_placeholder.clone())
-                                        }
-                                    }))
-                                })
-                                .child(
-                                    div()
-                                        .when(has_icon, |this| this.pl(px(19.)).pr_2())
-                                        .child(label.clone()),
-                                ),
-                        )
+                    PopupMenuItem::Item {
+                        icon,
+                        label,
+                        action,
+                        ..
+                    } => {
+                        let action = action.as_ref().map(|action| action.boxed_clone());
+                        let key = Self::render_keybinding(action, cx);
+
+                        this.relative()
+                            .py_1p5()
+                            .px_2()
+                            .rounded_md()
+                            .text_sm()
+                            .line_height(rems(1.25))
+                            .items_center()
+                            .child(
+                                h_flex()
+                                    .items_center()
+                                    .gap_x_1p5()
+                                    .when(has_icon, |this| {
+                                        this.child(
+                                            h_flex()
+                                                .w_3p5()
+                                                .h_3p5()
+                                                .items_center()
+                                                .justify_center()
+                                                .text_sm()
+                                                .map(|this| {
+                                                    if let Some(icon) = icon {
+                                                        this.child(icon.clone().small().clone())
+                                                    } else {
+                                                        this.children(icon_placeholder.clone())
+                                                    }
+                                                }),
+                                        )
+                                    })
+                                    .child(
+                                        h_flex()
+                                            .flex_1()
+                                            .items_center()
+                                            .justify_between()
+                                            .child(label.clone())
+                                            .children(key),
+                                    ),
+                            )
                     }
                 }
             }))
