@@ -57,7 +57,7 @@ impl Default for ScrollbarState {
             hovered_axis: None,
             dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
-            visible: true,
+            visible: false,
         }
     }
 }
