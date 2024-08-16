@@ -137,12 +137,18 @@ impl Render for PopupStory {
                 cx.focus(&this.focus_handle);
             }))
             .context_menu({
-                move |this, _cx| {
+                move |this, cx| {
                     this.menu("Cut", Box::new(Cut))
                         .menu("Copy", Box::new(Copy))
                         .menu("Paste", Box::new(Paste))
                         .separator()
-                        .menu("About", Box::new(SearchAll))
+                        .sub_menu("Settings", cx, |menu, _| {
+                            menu.menu("Toggle Window Mode", Box::new(ToggleWindowMode))
+                                .separator()
+                                .menu("Search All", Box::new(SearchAll))
+                        })
+                        .separator()
+                        .menu("Search All", Box::new(SearchAll))
                 }
             })
             .gap_6()

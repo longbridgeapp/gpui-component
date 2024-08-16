@@ -8,6 +8,7 @@ use gpui::{
 };
 use gpui::{rems, FocusableView};
 
+use crate::context_menu::ContextMenu;
 use crate::{
     button::Button, h_flex, list::ListItem, popover::Popover, theme::ActiveTheme, v_flex, Icon,
     IconName, Selectable, Sizable as _,
@@ -44,6 +45,11 @@ enum PopupMenuItem {
         label: SharedString,
         action: Option<Box<dyn Action>>,
         handler: Rc<dyn Fn(&mut WindowContext)>,
+    },
+    SubMenu {
+        icon: Option<Icon>,
+        label: SharedString,
+        menu: Rc<dyn Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static>,
     },
 }
 
@@ -193,6 +199,31 @@ impl PopupMenu {
         self
     }
 
+    pub fn sub_menu(
+        self,
+        label: impl Into<SharedString>,
+        cx: &mut WindowContext,
+        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+    ) -> Self {
+        self.sub_menu_with_icon(None, label, cx, f)
+    }
+
+    /// Add a SubMenu item with icon
+    pub fn sub_menu_with_icon(
+        mut self,
+        icon: Option<Icon>,
+        label: impl Into<SharedString>,
+        cx: &mut WindowContext,
+        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+    ) -> Self {
+        self.menu_items.push(PopupMenuItem::SubMenu {
+            icon,
+            label: label.into(),
+            menu: Rc::new(f),
+        });
+        self
+    }
+
     fn clickable_menu_items(&self) -> impl Iterator<Item = (usize, &PopupMenuItem)> {
         self.menu_items
             .iter()
@@ -271,6 +302,34 @@ impl PopupMenu {
 
         return None;
     }
+
+    fn render_icon(
+        has_icon: bool,
+        icon: Option<Icon>,
+        _: &ViewContext<Self>,
+    ) -> Option<impl IntoElement> {
+        let icon_placeholder = if has_icon { Some(Icon::empty()) } else { None };
+
+        if !has_icon {
+            return None;
+        }
+
+        let icon = h_flex()
+            .w_3p5()
+            .h_3p5()
+            .items_center()
+            .justify_center()
+            .text_sm()
+            .map(|this| {
+                if let Some(icon) = icon {
+                    this.child(icon.clone().small().clone())
+                } else {
+                    this.children(icon_placeholder.clone())
+                }
+            });
+
+        Some(icon)
+    }
 }
 
 impl FluentBuilder for PopupMenu {}
@@ -283,12 +342,6 @@ impl FocusableView for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
-        let icon_placeholder = if self.has_icon {
-            Some(Icon::empty())
-        } else {
-            None
-        };
-
         let has_icon = self.menu_items.iter().any(|item| item.has_icon());
 
         v_flex()
@@ -308,10 +361,19 @@ impl Render for PopupMenu {
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
                 let this = ListItem::new(("menu-item", ix))
                     .p_0()
+                    .relative()
+                    .py_1p5()
+                    .px_2()
+                    .rounded_md()
+                    .text_sm()
+                    .line_height(rems(1.25))
+                    .items_center()
                     .on_click(cx.listener(move |this, _, cx| this.on_click(ix, cx)));
                 match item {
                     PopupMenuItem::Separator => this.disabled(true).child(
                         div()
+                            .p_0()
+                            .rounded_none()
                             .h(px(1.))
                             .mx_neg_1()
                             .my_px()
@@ -327,43 +389,44 @@ impl Render for PopupMenu {
                         let action = action.as_ref().map(|action| action.boxed_clone());
                         let key = Self::render_keybinding(action, cx);
 
-                        this.relative()
-                            .py_1p5()
-                            .px_2()
-                            .rounded_md()
-                            .text_sm()
-                            .line_height(rems(1.25))
-                            .items_center()
-                            .child(
-                                h_flex()
-                                    .items_center()
-                                    .gap_x_1p5()
-                                    .when(has_icon, |this| {
-                                        this.child(
-                                            h_flex()
-                                                .w_3p5()
-                                                .h_3p5()
-                                                .items_center()
-                                                .justify_center()
-                                                .text_sm()
-                                                .map(|this| {
-                                                    if let Some(icon) = icon {
-                                                        this.child(icon.clone().small().clone())
-                                                    } else {
-                                                        this.children(icon_placeholder.clone())
-                                                    }
-                                                }),
-                                        )
-                                    })
-                                    .child(
-                                        h_flex()
-                                            .flex_1()
-                                            .items_center()
-                                            .justify_between()
-                                            .child(label.clone())
-                                            .children(key),
-                                    ),
-                            )
+                        this.child(
+                            h_flex()
+                                .items_center()
+                                .gap_x_1p5()
+                                .children(Self::render_icon(has_icon, icon.clone(), cx))
+                                .child(
+                                    h_flex()
+                                        .flex_1()
+                                        .gap_2()
+                                        .items_center()
+                                        .justify_between()
+                                        .child(label.clone())
+                                        .children(key),
+                                ),
+                        )
+                    }
+                    PopupMenuItem::SubMenu { icon, label, menu } => {
+                        let key = Self::render_keybinding(None, cx);
+                        let f = menu.clone();
+
+                        this.child(
+                            h_flex()
+                                .items_center()
+                                .gap_x_1p5()
+                                .children(Self::render_icon(has_icon, icon.clone(), cx))
+                                .child(
+                                    h_flex()
+                                        .flex_1()
+                                        .gap_2()
+                                        .items_center()
+                                        .justify_between()
+                                        .child(label.clone())
+                                        .child(IconName::ChevronRight)
+                                        .child(Popover::new("popup-menu").content(move |cx| {
+                                            PopupMenu::build(cx, |menu, cx| f(menu, cx))
+                                        })),
+                                ),
+                        )
                     }
                 }
             }))
