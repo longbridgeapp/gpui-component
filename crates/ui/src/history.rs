@@ -118,3 +118,75 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone)]
+    struct TabIndex {
+        tab_index: usize,
+        version: usize,
+    }
+
+    impl From<usize> for TabIndex {
+        fn from(value: usize) -> Self {
+            TabIndex {
+                tab_index: value,
+                version: 0,
+            }
+        }
+    }
+
+    impl HistoryItem for TabIndex {
+        fn version(&self) -> usize {
+            self.version
+        }
+        fn set_version(&mut self, version: usize) {
+            self.version = version;
+        }
+    }
+
+    #[test]
+    fn test_history() {
+        let mut history: History<TabIndex> = History::new().max_undo(100);
+        history.push(0.into());
+        history.push(3.into());
+        history.push(2.into());
+        history.push(1.into());
+
+        assert_eq!(history.version(), 4);
+        let changes = history.undo().unwrap();
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].tab_index, 1);
+
+        let changes = history.undo().unwrap();
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].tab_index, 2);
+
+        history.push(5.into());
+
+        let changes = history.redo().unwrap();
+        assert_eq!(changes[0].tab_index, 2);
+
+        let changes = history.redo().unwrap();
+        assert_eq!(changes[0].tab_index, 1);
+
+        let changes = history.undo().unwrap();
+        assert_eq!(changes[0].tab_index, 1);
+
+        let changes = history.undo().unwrap();
+        assert_eq!(changes[0].tab_index, 2);
+
+        let changes = history.undo().unwrap();
+        assert_eq!(changes[0].tab_index, 5);
+
+        let changes = history.undo().unwrap();
+        assert_eq!(changes[0].tab_index, 3);
+
+        let changes = history.undo().unwrap();
+        assert_eq!(changes[0].tab_index, 0);
+
+        assert_eq!(history.undo().is_none(), true);
+    }
+}
