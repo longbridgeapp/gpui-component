@@ -1,14 +1,24 @@
 use gpui::{
-    px, IntoElement, ParentElement, Render, SharedString, Styled, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, px, AppContext, InteractiveElement, IntoElement, KeyBinding, ParentElement, Render,
+    SharedString, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
     dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
-    v_flex, IconName, Sizable,
+    v_flex, FocusableCycle, IconName, Sizable,
 };
+
+actions!(dropdown_story, [Tab, TabPrev]);
+
+const CONTEXT: &str = "DropdownStory";
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([
+        KeyBinding::new("shift-tab", TabPrev, Some(CONTEXT)),
+        KeyBinding::new("tab", Tab, Some(CONTEXT)),
+    ])
+}
 
 struct Country {
     name: SharedString,
@@ -138,11 +148,39 @@ impl DropdownStory {
             DropdownEvent::Confirm(value) => println!("Selected country: {:?}", value),
         }
     }
+
+    fn on_key_tab(&mut self, _: &Tab, cx: &mut ViewContext<Self>) {
+        self.cycle_focus(true, cx);
+        cx.notify();
+    }
+
+    fn on_key_shift_tab(&mut self, _: &TabPrev, cx: &mut ViewContext<Self>) {
+        self.cycle_focus(false, cx);
+        cx.notify();
+    }
+}
+
+impl FocusableCycle for DropdownStory {
+    fn cycle_focus_handles(&self, cx: &mut ViewContext<Self>) -> Vec<gpui::FocusHandle>
+    where
+        Self: Sized,
+    {
+        vec![
+            self.country_dropdown.focus_handle(cx),
+            self.fruit_dropdown.focus_handle(cx),
+            self.simple_dropdown1.focus_handle(cx),
+            self.simple_dropdown2.focus_handle(cx),
+            self.simple_dropdown3.focus_handle(cx),
+        ]
+    }
 }
 
 impl Render for DropdownStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
+            .key_context(CONTEXT)
+            .on_action(cx.listener(Self::on_key_tab))
+            .on_action(cx.listener(Self::on_key_shift_tab))
             .size_full()
             .gap_4()
             .child(

@@ -5,6 +5,7 @@ use gpui::{
     Render, SharedString, StatefulInteractiveElement, Styled, Task, View, ViewContext,
     VisualContext, WeakView, WindowContext,
 };
+use rust_i18n::t;
 
 use crate::{
     h_flex,
@@ -16,13 +17,14 @@ use crate::{
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
 
+const CONTEXT: &str = "Dropdown";
+
 pub fn init(cx: &mut AppContext) {
-    let context = Some("Dropdown");
     cx.bind_keys([
-        KeyBinding::new("up", Up, context),
-        KeyBinding::new("down", Down, context),
-        KeyBinding::new("enter", Enter, context),
-        KeyBinding::new("escape", Escape, context),
+        KeyBinding::new("up", Up, Some(CONTEXT)),
+        KeyBinding::new("down", Down, Some(CONTEXT)),
+        KeyBinding::new("enter", Enter, Some(CONTEXT)),
+        KeyBinding::new("escape", Escape, Some(CONTEXT)),
     ])
 }
 
@@ -301,6 +303,7 @@ where
         selected_index: Option<usize>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
+        let focus_handle = cx.focus_handle();
         let delegate = DropdownListDelegate {
             delegate,
             dropdown: cx.view().downgrade(),
@@ -316,10 +319,14 @@ where
             }
             list
         });
+
+        cx.on_blur(&list.focus_handle(cx), Self::on_blur).detach();
+        cx.on_blur(&focus_handle, Self::on_blur).detach();
+
         let mut this = Self {
             id: id.into(),
-            focus_handle: cx.focus_handle(),
-            placeholder: "Select...".into(),
+            focus_handle,
+            placeholder: t!("Dropdown.placeholder").into(),
             list,
             size: Size::Medium,
             icon: None,
@@ -427,6 +434,16 @@ where
         self.focus_handle.focus(cx);
     }
 
+    fn on_blur(&mut self, cx: &mut ViewContext<Self>) {
+        // When the dropdown and dropdown menu are both not focused, close the dropdown menu.
+        if self.list.focus_handle(cx).is_focused(cx) || self.focus_handle.is_focused(cx) {
+            return;
+        }
+
+        self.open = false;
+        cx.notify();
+    }
+
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
         if !self.open {
             return;
@@ -514,8 +531,12 @@ impl<D> FocusableView for Dropdown<D>
 where
     D: DropdownDelegate + 'static,
 {
-    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
-        self.focus_handle.clone()
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        if self.open {
+            self.list.focus_handle(cx)
+        } else {
+            self.focus_handle.clone()
+        }
     }
 }
 
@@ -531,7 +552,7 @@ where
 
         div()
             .id(self.id.clone())
-            .key_context("Dropdown")
+            .key_context(CONTEXT)
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::up))
             .on_action(cx.listener(Self::down))
