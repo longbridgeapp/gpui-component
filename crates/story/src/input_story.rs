@@ -17,10 +17,12 @@ use crate::section;
 
 actions!(input_story, [Tab, TabPrev]);
 
+const CONTEXT: &str = "InputStory";
+
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
-        KeyBinding::new("shift-tab", TabPrev, Some("InputStory")),
-        KeyBinding::new("tab", Tab, Some("InputStory")),
+        KeyBinding::new("shift-tab", TabPrev, Some(CONTEXT)),
+        KeyBinding::new("tab", Tab, Some(CONTEXT)),
     ])
 }
 
@@ -204,7 +206,7 @@ impl FocusableCycle for InputStory {
 impl Render for InputStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
-            .key_context("InputStory")
+            .key_context(CONTEXT)
             .on_action(cx.listener(Self::tab))
             .on_action(cx.listener(Self::tab_prev))
             .size_full()

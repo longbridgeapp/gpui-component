@@ -50,6 +50,7 @@ use ui::{divider::Divider, h_flex, label::Label, v_flex};
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
+    dropdown_story::init(cx);
 }
 
 pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {

@@ -81,3 +81,8 @@ DatePicker:
     en: Select date
     zh-CN: 选择日期
     zh-HK: 選擇日期
+Dropdown:
+  placeholder:
+    en: "Please select"
+    zh-CN: "请选择"
+    zh-HK: "請選擇"
