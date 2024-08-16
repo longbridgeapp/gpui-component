@@ -113,6 +113,8 @@ pub struct Table<D: TableDelegate> {
 
     /// Set stripe style of the table.
     stripe: bool,
+    /// Set to use border style of the table.
+    border: bool,
 }
 
 #[allow(unused)]
@@ -128,6 +130,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Returns whether the column at the given index can be resized. Default: true
     fn can_resize_col(&self, col_ix: usize) -> bool {
         true
+    }
+
+    /// Returns whether the column at the given index can be selected. Default: false
+    fn can_select_col(&self, col_ix: usize) -> bool {
+        false
     }
 
     /// Returns the width of the column at the given index.
@@ -210,7 +217,8 @@ where
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
-            stripe: true,
+            stripe: false,
+            border: true,
         };
 
         this.prepare_col_groups(cx);
@@ -225,8 +233,15 @@ where
         &mut self.delegate
     }
 
+    /// Set to use stripe style of the table, default to false.
     pub fn stripe(mut self, stripe: bool) -> Self {
         self.stripe = stripe;
+        self
+    }
+
+    /// Set to use border style of the table, default to true.
+    pub fn border(mut self, border: bool) -> Self {
+        self.border = border;
         self
     }
 
@@ -266,6 +281,10 @@ where
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
+        if !self.delegate.can_select_col(col_ix) {
+            return;
+        }
+
         self.set_selected_col(col_ix, cx)
     }
 
@@ -342,7 +361,10 @@ where
 
     /// Show Column selection style, when the column is selected and the selection state is Column.
     fn col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
-        if self.selected_col == Some(col_ix) && self.selection_state == SelectionState::Column {
+        if self.delegate().can_select_col(col_ix)
+            && self.selected_col == Some(col_ix)
+            && self.selection_state == SelectionState::Column
+        {
             h_flex().bg(cx.theme().table_active)
         } else {
             h_flex()
@@ -796,9 +818,9 @@ where
         let view = cx.view().clone();
         div()
             .size_full()
-            .rounded_md()
-            .border_1()
-            .border_color(cx.theme().border)
+            .when(self.border, |this| {
+                this.rounded_md().border_1().border_color(cx.theme().border)
+            })
             .bg(cx.theme().table)
             .child(inner_table)
             .child(ScrollableMask::new(
