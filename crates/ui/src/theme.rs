@@ -202,7 +202,7 @@ impl Colors {
             list: hsl(0.0, 0.0, 100.),
             list_even: hsl(240.0, 5.0, 96.0),
             list_active: hsl(240.0, 7., 88.0).opacity(0.75),
-            list_head: hsl(240.0, 0., 94.),
+            list_head: hsl(0.0, 0.0, 100.),
             link: hsl(221.0, 83.0, 53.0),
             menu: hsl(0.0, 0.0, 97.0),
         }
@@ -244,7 +244,7 @@ impl Colors {
             list: hsl(0.0, 0.0, 6.0),
             list_even: hsl(240.0, 3.7, 8.0),
             list_active: hsl(240.0, 3.7, 15.0),
-            list_head: hsl(240.0, 3.7, 10.9),
+            list_head: hsl(0.0, 0.0, 6.0),
             link: hsl(221.0, 83.0, 53.0),
             menu: hsl(300.0, 2.0, 12.),
         }

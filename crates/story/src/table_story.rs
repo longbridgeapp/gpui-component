@@ -83,6 +83,7 @@ struct CustomerTableDelegate {
     col_resize: bool,
     col_order: bool,
     col_sort: bool,
+    col_selection: bool,
 }
 
 impl CustomerTableDelegate {
@@ -109,6 +110,7 @@ impl CustomerTableDelegate {
             col_resize: true,
             col_order: true,
             col_sort: true,
+            col_selection: true,
         }
     }
 }
@@ -159,6 +161,10 @@ impl TableDelegate for CustomerTableDelegate {
 
     fn can_resize_col(&self, col_ix: usize) -> bool {
         return self.col_resize && col_ix > 1;
+    }
+
+    fn can_select_col(&self, _: usize) -> bool {
+        return self.col_selection;
     }
 
     fn render_td(
@@ -363,8 +369,15 @@ impl TableStory {
     fn toggle_col_sort(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
-            println!("- toggle_col_sort: {}", checked);
             table.delegate_mut().col_sort = *checked;
+            cx.notify();
+        });
+    }
+
+    fn toggle_col_selection(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
+        let table = self.table.clone();
+        table.update(cx, |table, cx| {
+            table.delegate_mut().col_selection = *checked;
             cx.notify();
         });
     }
@@ -419,6 +432,12 @@ impl Render for TableStory {
                             .label("Column Sort")
                             .selected(delegate.col_sort)
                             .on_click(cx.listener(Self::toggle_col_sort)),
+                    )
+                    .child(
+                        Checkbox::new("col-selection")
+                            .label("Column Selection")
+                            .selected(delegate.col_selection)
+                            .on_click(cx.listener(Self::toggle_col_selection)),
                     ),
             )
             .child(self.table.clone())
