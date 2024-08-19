@@ -7,7 +7,7 @@ use gpui::{
     Style, View, ViewContext, WindowContext,
 };
 
-use crate::{popup_menu::PopupMenu, StyledExt as _};
+use crate::popup_menu::PopupMenu;
 
 pub fn init(_cx: &mut AppContext) {}
 
@@ -126,7 +126,7 @@ impl Element for ContextMenu {
                             // Focus the menu, so that can be handle the action.
                             menu.focus_handle(cx).focus(cx);
 
-                            this.child(div().popover_style(cx).child(menu.clone()))
+                            this.child(div().child(menu.clone()))
                         }),
                 )
                 .with_priority(1)

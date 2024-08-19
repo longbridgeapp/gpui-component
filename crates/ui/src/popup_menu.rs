@@ -32,7 +32,7 @@ pub trait PopupMenuExt: Selectable + IntoElement + 'static {
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
         Popover::new("popup-menu")
-            .click_out_to_dismiss(false)
+            .no_style()
             .trigger(self)
             .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
     }
@@ -399,6 +399,7 @@ impl Render for PopupMenu {
             .p_1()
             .gap_y_0p5()
             .min_w(rems(8.))
+            .popover_style(cx)
             .text_color(cx.theme().popover_foreground)
             .relative()
             .child({
@@ -500,16 +501,9 @@ impl Render for PopupMenu {
                                     };
 
                                     if hovered_ix == ix {
-                                        this.child(
-                                            anchored().anchor(anchor).child(
-                                                div()
-                                                    .occlude()
-                                                    .top(top)
-                                                    .left(left)
-                                                    .popover_style(cx)
-                                                    .child(menu.clone()),
-                                            ),
-                                        )
+                                        this.child(anchored().anchor(anchor).child(
+                                            div().occlude().top(top).left(left).child(menu.clone()),
+                                        ))
                                     } else {
                                         this
                                     }

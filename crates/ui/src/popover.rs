@@ -53,7 +53,7 @@ pub struct Popover<M: ManagedView> {
     trigger: Option<Box<dyn FnOnce(bool, &WindowContext) -> AnyElement + 'static>>,
     content: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
     mouse_button: MouseButton,
-    click_out_to_dismiss: bool,
+    no_style: bool,
 }
 
 impl<M> Popover<M>
@@ -68,7 +68,7 @@ where
             trigger: None,
             content: None,
             mouse_button: MouseButton::Left,
-            click_out_to_dismiss: true,
+            no_style: false,
         }
     }
 
@@ -104,9 +104,14 @@ where
         self
     }
 
-    /// Set whether the popover should be dismissed when clicking outside of it, default: true.
-    pub fn click_out_to_dismiss(mut self, click_out_to_dismiss: bool) -> Self {
-        self.click_out_to_dismiss = click_out_to_dismiss;
+    /// Set whether the popover no style, default is `false`.
+    ///
+    /// If no style:
+    ///
+    /// - The popover will not have a bg, border, shadow, or padding.
+    /// - The click out of the popover will not dismiss it.
+    pub fn no_style(mut self) -> Self {
+        self.no_style = true;
         self
     }
 
@@ -218,13 +223,13 @@ impl<M: ManagedView> Element for Popover<M> {
                 let mut element = {
                     let content_view_mut = element_state.content_view.clone();
                     let anchor = view.anchor;
-                    let click_out_to_dismiss = view.click_out_to_dismiss;
+                    let no_style = view.no_style;
                     deferred(
                         anchored.child(
                             div()
                                 .size_full()
                                 .occlude()
-                                .popover_style(cx)
+                                .when(!no_style, |this| this.popover_style(cx))
                                 .map(|this| match anchor {
                                     AnchorCorner::TopLeft | AnchorCorner::TopRight => this.top_2(),
                                     AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
@@ -232,7 +237,7 @@ impl<M: ManagedView> Element for Popover<M> {
                                     }
                                 })
                                 .child(content_view.clone())
-                                .when(click_out_to_dismiss, |this| {
+                                .when(!no_style, |this| {
                                     this.on_mouse_down_out(move |_, cx| {
                                         // Update the element_state.content_view to `None`,
                                         // so that the `paint`` method will not paint it.
