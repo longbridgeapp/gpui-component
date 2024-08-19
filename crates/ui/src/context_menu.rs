@@ -3,8 +3,8 @@ use std::{cell::RefCell, rc::Rc};
 use gpui::{
     anchored, deferred, div, prelude::FluentBuilder, relative, AnchorCorner, AnyElement,
     AppContext, DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
-    InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
-    Position, Stateful, Style, View, ViewContext, WindowContext,
+    IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Position, Stateful,
+    Style, View, ViewContext, WindowContext,
 };
 
 use crate::{popup_menu::PopupMenu, StyledExt as _};
@@ -126,12 +126,7 @@ impl Element for ContextMenu {
                             // Focus the menu, so that can be handle the action.
                             menu.focus_handle(cx).focus(cx);
 
-                            this.child(div().popover_style(cx).child(menu).on_mouse_down_out(
-                                move |_, cx| {
-                                    *open.borrow_mut() = false;
-                                    cx.refresh();
-                                },
-                            ))
+                            this.child(div().popover_style(cx).child(menu.clone()))
                         }),
                 )
                 .with_priority(1)

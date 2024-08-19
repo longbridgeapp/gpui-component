@@ -6,7 +6,7 @@ use gpui::{
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
-use gpui::{anchored, canvas, rems, AnchorCorner, Bounds, FocusableView};
+use gpui::{anchored, canvas, rems, AnchorCorner, Bounds, FocusableView, WeakView};
 
 use crate::StyledExt;
 use crate::{
@@ -29,9 +29,10 @@ pub fn init(cx: &mut AppContext) {
 pub trait PopupMenuExt: Selectable + IntoElement + 'static {
     fn popup_menu(
         self,
-        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
         Popover::new("popup-menu")
+            .click_out_to_dismiss(false)
             .trigger(self)
             .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
     }
@@ -46,7 +47,7 @@ enum PopupMenuItem {
         action: Option<Box<dyn Action>>,
         handler: Rc<dyn Fn(&mut WindowContext)>,
     },
-    SubMenu {
+    Submenu {
         icon: Option<Icon>,
         label: SharedString,
         menu: View<PopupMenu>,
@@ -64,6 +65,8 @@ impl PopupMenuItem {
 }
 
 pub struct PopupMenu {
+    /// The parent menu of this menu, if this is a submenu
+    parent_menu: Option<WeakView<Self>>,
     focus_handle: FocusHandle,
     menu_items: Vec<PopupMenuItem>,
     has_icon: bool,
@@ -88,6 +91,7 @@ impl PopupMenu {
 
             let menu = Self {
                 focus_handle,
+                parent_menu: None,
                 menu_items: Vec::new(),
                 selected_index: None,
                 min_width: px(120.),
@@ -148,6 +152,7 @@ impl PopupMenu {
         });
         self
     }
+
     /// Add Menu Item with Icon
     pub fn menu_with_icon(
         mut self,
@@ -203,29 +208,48 @@ impl PopupMenu {
         self
     }
 
-    pub fn sub_menu(
+    pub fn submenu(
         self,
         label: impl Into<SharedString>,
         cx: &mut ViewContext<Self>,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
-        self.sub_menu_with_icon(None, label, cx, f)
+        self.submenu_with_icon(None, label, cx, f)
     }
 
-    /// Add a SubMenu item with icon
-    pub fn sub_menu_with_icon(
+    /// Add a Submenu item with icon
+    pub fn submenu_with_icon(
         mut self,
         icon: Option<Icon>,
         label: impl Into<SharedString>,
         cx: &mut ViewContext<Self>,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
-        self.menu_items.push(PopupMenuItem::SubMenu {
+        let submenu = PopupMenu::build(cx, f);
+        let parent_menu = cx.view().downgrade();
+        submenu.update(cx, |view, _| {
+            view.parent_menu = Some(parent_menu);
+        });
+
+        self.menu_items.push(PopupMenuItem::Submenu {
             icon,
             label: label.into(),
-            menu: PopupMenu::build(cx, f),
+            menu: submenu,
         });
         self
+    }
+
+    pub(crate) fn active_submenu(&self) -> Option<View<PopupMenu>> {
+        if let Some(ix) = self.hovered_menu_ix {
+            if let Some(item) = self.menu_items.get(ix) {
+                return match item {
+                    PopupMenuItem::Submenu { menu, .. } => Some(menu.clone()),
+                    _ => None,
+                };
+            }
+        }
+
+        None
     }
 
     fn clickable_menu_items(&self) -> impl Iterator<Item = (usize, &PopupMenuItem)> {
@@ -284,7 +308,18 @@ impl PopupMenu {
     }
 
     fn dismiss(&mut self, _: &Dismiss, cx: &mut ViewContext<Self>) {
+        if self.active_submenu().is_some() {
+            return;
+        }
+
         cx.emit(DismissEvent);
+        // Dismiss parent menu, when this menu is dismissed
+        if let Some(parent_menu) = self.parent_menu.clone().and_then(|menu| menu.upgrade()) {
+            parent_menu.update(cx, |view, cx| {
+                view.hovered_menu_ix = None;
+                view.dismiss(&Dismiss, cx);
+            })
+        }
     }
 
     fn render_keybinding(
@@ -339,7 +374,7 @@ impl PopupMenu {
 impl FluentBuilder for PopupMenu {}
 impl EventEmitter<DismissEvent> for PopupMenu {}
 impl FocusableView for PopupMenu {
-    fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
+    fn focus_handle(&self, _: &gpui::AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
@@ -427,7 +462,7 @@ impl Render for PopupMenu {
                                     ),
                             )
                     }
-                    PopupMenuItem::SubMenu { icon, label, menu } => this
+                    PopupMenuItem::Submenu { icon, label, menu } => this
                         .when(self.hovered_menu_ix == Some(ix), |this| this.selected(true))
                         .child(
                             h_flex()

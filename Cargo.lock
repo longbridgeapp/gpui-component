@@ -4913,6 +4913,7 @@ dependencies = [
  "fake",
  "gpui",
  "regex",
+ "serde",
  "ui",
  "workspace",
 ]

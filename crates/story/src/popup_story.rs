@@ -1,8 +1,10 @@
 use gpui::{
-    actions, div, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton, MouseDownEvent,
-    ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
+    FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton,
+    MouseDownEvent, ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
+use serde::Deserialize;
 use ui::{
     button::Button,
     context_menu::ContextMenuExt,
@@ -11,15 +13,18 @@ use ui::{
     input::TextInput,
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenuExt,
-    prelude::FluentBuilder,
     switch::Switch,
     v_flex, IconName, Sizable,
 };
+
+#[derive(Clone, PartialEq, Deserialize)]
+struct Info(usize);
 
 actions!(
     popover_story,
     [Copy, Paste, Cut, SearchAll, ToggleWindowMode]
 );
+impl_actions!(popover_story, [Info]);
 
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
@@ -109,6 +114,10 @@ impl PopupStory {
         self.window_mode = !self.window_mode;
         cx.notify()
     }
+    fn on_action_info(&mut self, info: &Info, cx: &mut ViewContext<Self>) {
+        self.message = format!("You have clicked info: {}", info.0);
+        cx.notify()
+    }
 }
 
 impl FocusableView for PopupStory {
@@ -129,6 +138,7 @@ impl Render for PopupStory {
             .on_action(cx.listener(Self::on_paste))
             .on_action(cx.listener(Self::on_search_all))
             .on_action(cx.listener(Self::on_toggle_window_mode))
+            .on_action(cx.listener(Self::on_action_info))
             .p_4()
             .mb_5()
             .size_full()
@@ -142,14 +152,20 @@ impl Render for PopupStory {
                         .menu("Copy", Box::new(Copy))
                         .menu("Paste", Box::new(Paste))
                         .separator()
-                        .sub_menu("Settings", cx, move |menu, _| {
+                        .submenu("Settings", cx, move |menu, cx| {
                             menu.menu_with_check(
                                 "Toggle Window Mode",
                                 window_mode,
                                 Box::new(ToggleWindowMode),
                             )
                             .separator()
-                            .menu("Search All", Box::new(SearchAll))
+                            .menu("Info 0", Box::new(Info(0)))
+                            .submenu("Others", cx, |menu, _| {
+                                menu.menu("Item 1", Box::new(Info(1)))
+                                    .menu("Item 2", Box::new(Info(2)))
+                                    .menu("Item 3", Box::new(Info(3)))
+                                    .menu("Item 4", Box::new(Info(4)))
+                            })
                         })
                         .separator()
                         .menu("Search All", Box::new(SearchAll))
@@ -171,7 +187,6 @@ impl Render for PopupStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
-                                .when(window_mode, |this| this.window_mode())
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
                                     PopoverContent::new(cx, |cx| {
@@ -192,7 +207,6 @@ impl Render for PopupStory {
                     )
                     .child(
                         Popover::new("info-top-right")
-                            .when(window_mode, |this| this.window_mode())
                             .anchor(AnchorCorner::TopRight)
                             .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
@@ -219,7 +233,7 @@ impl Render for PopupStory {
                     .child(
                         Button::new("popup-menu-1", cx)
                             .icon(IconName::Ellipsis)
-                            .popup_menu(move |this, _| {
+                            .popup_menu(move |this, cx| {
                                 this.menu("Copy", Box::new(Copy))
                                     .menu("Cut", Box::new(Cut))
                                     .menu("Paste", Box::new(Paste))
@@ -232,11 +246,16 @@ impl Render for PopupStory {
                                         Box::new(ToggleWindowMode),
                                     )
                                     .separator()
-                                    .link_with_icon(
-                                        "GitHub Repository",
-                                        IconName::GitHub,
-                                        "https://github.com/huacnlee/gpui-component",
-                                    )
+                                    .submenu("Links", cx, |menu, _| {
+                                        menu.link_with_icon(
+                                            "GitHub Repository",
+                                            IconName::GitHub,
+                                            "https://github.com/huacnlee/gpui-component",
+                                        )
+                                        .separator()
+                                        .link("GPUI", "https://gpui.rs")
+                                        .link("Zed", "https://zed.dev")
+                                    })
                             }),
                     )
                     .child(self.message.clone()),
@@ -249,7 +268,6 @@ impl Render for PopupStory {
                         .justify_between()
                         .child(
                             Popover::new("info-bottom-left")
-                                .when(window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomLeft)
                                 .trigger(
                                     Button::new("pop", cx).label("Popup with Form").w(px(300.)),
@@ -258,7 +276,6 @@ impl Render for PopupStory {
                         )
                         .child(
                             Popover::new("info-bottom-right")
-                                .when(window_mode, |this| this.window_mode())
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(
