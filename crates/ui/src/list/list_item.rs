@@ -1,6 +1,6 @@
 use gpui::{
     div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, Stateful,
+    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, SharedString, Stateful,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use smallvec::SmallVec;
@@ -14,6 +14,7 @@ pub struct ListItem {
     selected: bool,
     confirmed: bool,
     check_icon: Option<Icon>,
+    group_id: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
     suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
@@ -31,8 +32,15 @@ impl ListItem {
             on_secondary_mouse_down: None,
             check_icon: None,
             suffix: None,
+            group_id: None,
             children: SmallVec::new(),
         }
+    }
+
+    /// Set group_id
+    pub fn group(mut self, group_id: impl Into<SharedString>) -> Self {
+        self.group_id = Some(group_id.into());
+        self
     }
 
     /// Set to show check icon, default is None.
@@ -113,6 +121,7 @@ impl RenderOnce for ListItem {
         let is_active = self.selected || self.confirmed;
 
         self.base
+            .when_some(self.group_id, |this, group_id| this.group(group_id))
             .text_color(cx.theme().foreground)
             .relative()
             .items_center()
@@ -142,7 +151,7 @@ impl RenderOnce for ListItem {
                     .items_center()
                     .justify_between()
                     .gap_x_1()
-                    .child(div().w_full().overflow_hidden().children(self.children))
+                    .child(div().w_full().children(self.children))
                     .when_some(self.check_icon, |this, icon| {
                         this.child(
                             div().w_5().items_center().justify_center().when(

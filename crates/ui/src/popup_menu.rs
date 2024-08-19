@@ -6,7 +6,7 @@ use gpui::{
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
-use gpui::{rems, FocusableView};
+use gpui::{anchored, rems, AnchorCorner, FocusableView};
 
 use crate::context_menu::ContextMenu;
 use crate::{
@@ -359,7 +359,9 @@ impl Render for PopupMenu {
             .min_w(rems(8.))
             .text_color(cx.theme().popover_foreground)
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
+                let group_id = format!("item:{}", ix);
                 let this = ListItem::new(("menu-item", ix))
+                    .group(group_id.clone())
                     .p_0()
                     .relative()
                     .py_1p5()
@@ -421,10 +423,30 @@ impl Render for PopupMenu {
                                         .items_center()
                                         .justify_between()
                                         .child(label.clone())
-                                        .child(IconName::ChevronRight)
-                                        .child(Popover::new("popup-menu").content(move |cx| {
-                                            PopupMenu::build(cx, |menu, cx| f(menu, cx))
-                                        })),
+                                        .child(IconName::ChevronRight),
+                                ),
+                        )
+                        .child(
+                            div()
+                                .invisible()
+                                .group_hover(group_id, |this| this.visible())
+                                .child(
+                                    anchored()
+                                        .snap_to_window()
+                                        .anchor(AnchorCorner::TopLeft)
+                                        .child(
+                                            div()
+                                                .top_neg_7()
+                                                .left_24()
+                                                .border_1()
+                                                .border_color(cx.theme().border)
+                                                .bg(cx.theme().popover)
+                                                .shadow_md()
+                                                .rounded_lg()
+                                                .child(PopupMenu::build(cx, |menu, cx| {
+                                                    f(menu, cx)
+                                                })),
+                                        ),
                                 ),
                         )
                     }
