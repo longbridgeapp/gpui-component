@@ -17,7 +17,6 @@ pub struct ListItem {
     group_id: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_mouse_enter: Option<Box<dyn Fn(&MouseMoveEvent, &mut WindowContext) + 'static>>,
-    on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
     suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
     children: SmallVec<[AnyElement; 2]>,
 }
@@ -30,7 +29,6 @@ impl ListItem {
             selected: false,
             confirmed: false,
             on_click: None,
-            on_secondary_mouse_down: None,
             on_mouse_enter: None,
             check_icon: None,
             suffix: None,
@@ -80,14 +78,6 @@ impl ListItem {
 
     pub fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
-        self
-    }
-
-    pub fn on_secondary_mouse_down(
-        mut self,
-        handler: impl Fn(&MouseDownEvent, &mut WindowContext) + 'static,
-    ) -> Self {
-        self.on_secondary_mouse_down = Some(Box::new(handler));
         self
     }
 
@@ -146,14 +136,6 @@ impl RenderOnce for ListItem {
             .when(is_active, |this| this.bg(cx.theme().list_active))
             .when(!is_active && !self.disabled, |this| {
                 this.hover(|this| this.bg(cx.theme().list_hover))
-            })
-            // Right click
-            .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {
-                if !self.disabled {
-                    this.on_mouse_down(MouseButton::Right, move |ev, cx| (on_mouse_down)(ev, cx))
-                } else {
-                    this
-                }
             })
             // Mouse enter
             .when_some(self.on_mouse_enter, |this, on_mouse_enter| {
