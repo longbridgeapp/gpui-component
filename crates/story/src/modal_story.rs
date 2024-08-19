@@ -254,6 +254,7 @@ impl ModalStory {
         };
 
         let overlay = self.modal_overlay;
+        input.focus_handle(cx).focus(cx);
         cx.open_drawer(move |this, cx| {
             this.margin_top(px(33.))
                 .placement(placement)
@@ -305,6 +306,7 @@ impl ModalStory {
         let date_picker = self.date_picker.clone();
         let view = cx.view().clone();
 
+        input1.focus_handle(cx).focus(cx);
         cx.open_modal(move |modal, cx| {
             modal
                 .margin_top(px(33.))
@@ -353,7 +355,7 @@ impl ModalStory {
                             cx.close_modal();
                         })),
                 )
-        })
+        });
     }
 }
 
