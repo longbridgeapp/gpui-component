@@ -3,7 +3,7 @@ use core::time;
 use fake::Fake;
 use gpui::{
     actions, div, px, ElementId, FocusHandle, FocusableView, InteractiveElement, IntoElement,
-    ParentElement, Render, RenderOnce, Styled, Timer, View, ViewContext, VisualContext,
+    ParentElement, Render, RenderOnce, Styled, Task, Timer, View, ViewContext, VisualContext,
     WindowContext,
 };
 
@@ -133,25 +133,38 @@ impl RenderOnce for CompanyListItem {
 
 struct CompanyListDelegate {
     companies: Vec<Company>,
+    matched_companies: Vec<Company>,
     selected_index: usize,
+    confirmed_index: Option<usize>,
 }
 
 impl ListDelegate for CompanyListDelegate {
     type Item = CompanyListItem;
 
     fn items_count(&self) -> usize {
-        self.companies.len()
+        self.matched_companies.len()
     }
 
     fn confirmed_index(&self) -> Option<usize> {
-        Some(self.selected_index)
+        self.confirmed_index
+    }
+
+    fn perform_search(&mut self, query: &str, _: &mut ViewContext<List<Self>>) -> Task<()> {
+        self.matched_companies = self
+            .companies
+            .iter()
+            .filter(|company| company.name.to_lowercase().contains(&query.to_lowercase()))
+            .cloned()
+            .collect();
+
+        Task::Ready(Some(()))
     }
 
     fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
-        if let Some(ix) = ix {
-            self.selected_index = ix;
+        self.confirmed_index = ix;
+        if let Some(_) = ix {
+            cx.dispatch_action(Box::new(SelectedCompany));
         }
-        cx.dispatch_action(Box::new(SelectedCompany));
     }
 
     fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
@@ -162,8 +175,8 @@ impl ListDelegate for CompanyListDelegate {
     }
 
     fn render_item(&self, ix: usize, _cx: &mut ViewContext<List<Self>>) -> Option<Self::Item> {
-        let selected = ix == self.selected_index;
-        if let Some(company) = self.companies.get(ix) {
+        let selected = ix == self.selected_index || Some(ix) == self.confirmed_index;
+        if let Some(company) = self.matched_companies.get(ix) {
             return Some(CompanyListItem::new(ix, company.clone(), ix, selected));
         }
 
@@ -196,12 +209,13 @@ impl ListStory {
         let company_list = cx.new_view(|cx| {
             List::new(
                 CompanyListDelegate {
+                    matched_companies: companies.clone(),
                     companies,
                     selected_index: 0,
+                    confirmed_index: None,
                 },
                 cx,
             )
-            .no_query()
         });
 
         // Spawn a background to random refresh the list
