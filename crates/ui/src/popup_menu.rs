@@ -408,7 +408,6 @@ impl Render for PopupMenu {
                         )
                     }
                     PopupMenuItem::SubMenu { icon, label, menu } => {
-                        let key = Self::render_keybinding(None, cx);
                         let f = menu.clone();
 
                         this.child(
