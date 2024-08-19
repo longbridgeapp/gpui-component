@@ -306,8 +306,6 @@ impl ModalStory {
         let view = cx.view().clone();
 
         cx.open_modal(move |modal, cx| {
-            input1.focus_handle(cx).focus(cx);
-
             modal
                 .margin_top(px(33.))
                 .title("Form Modal")
