@@ -26,7 +26,7 @@ impl LabelSide {
 
 #[derive(IntoElement)]
 pub struct Switch {
-    id: SharedString,
+    id: ElementId,
     base: Stateful<Div>,
     checked: bool,
     disabled: bool,
@@ -37,9 +37,8 @@ pub struct Switch {
 }
 
 impl Switch {
-    pub fn new(id: impl Into<SharedString>) -> Self {
-        let id: SharedString = id.into();
-
+    pub fn new(id: impl Into<ElementId>) -> Self {
+        let id: ElementId = id.into();
         Self {
             id: id.clone(),
             base: div().id(id),
@@ -90,7 +89,6 @@ impl Disableable for Switch {
 impl RenderOnce for Switch {
     fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
         let theme = cx.theme();
-        let group_id = format!("switch_group_{:?}", self.id);
         let checked = self.checked;
 
         let (bg, toggle_bg) = match self.checked {
@@ -115,7 +113,6 @@ impl RenderOnce for Switch {
 
         h_flex()
             .id(self.id)
-            .group(group_id)
             .items_center()
             .gap_2()
             .when(self.label_side.left(), |this| this.flex_row_reverse())
