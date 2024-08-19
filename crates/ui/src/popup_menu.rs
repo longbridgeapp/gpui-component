@@ -220,17 +220,10 @@ impl PopupMenu {
         cx: &mut ViewContext<Self>,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
-        let sub_menu = PopupMenu::build(cx, f);
-        // Subscribe the SubMenu DismissEvent to dissmiss the parent menu
-        cx.subscribe(&sub_menu, |parent, _, _: &DismissEvent, cx| {
-            parent.dismiss(&Dismiss, cx);
-        })
-        .detach();
-
         self.menu_items.push(PopupMenuItem::SubMenu {
             icon,
             label: label.into(),
-            menu: sub_menu,
+            menu: PopupMenu::build(cx, f),
         });
         self
     }
@@ -356,7 +349,7 @@ impl Render for PopupMenu {
         let view = cx.view().clone();
         let has_icon = self.menu_items.iter().any(|item| item.has_icon());
         let max_width = self.max_width;
-        let bounds = self.bounds.clone();
+        let bounds = self.bounds;
 
         v_flex()
             .key_context("PopupMenu")
@@ -393,12 +386,10 @@ impl Render for PopupMenu {
                     .text_sm()
                     .line_height(rems(1.25))
                     .items_center()
-                    .selected(self.hovered_menu_ix == Some(ix))
                     .on_mouse_enter(cx.listener(move |this, _, cx| {
                         this.hovered_menu_ix = Some(ix);
                         cx.notify();
-                    }))
-                    .on_click(cx.listener(move |this, _, cx| this.on_click(ix, cx)));
+                    }));
                 match item {
                     PopupMenuItem::Separator => this.disabled(true).child(
                         div()
@@ -419,28 +410,9 @@ impl Render for PopupMenu {
                         let action = action.as_ref().map(|action| action.boxed_clone());
                         let key = Self::render_keybinding(action, cx);
 
-                        this.child(
-                            h_flex()
-                                .items_center()
-                                .gap_x_1p5()
-                                .children(Self::render_icon(has_icon, icon.clone(), cx))
-                                .child(
-                                    h_flex()
-                                        .flex_1()
-                                        .gap_2()
-                                        .items_center()
-                                        .justify_between()
-                                        .child(label.clone())
-                                        .children(key),
-                                ),
-                        )
-                    }
-                    PopupMenuItem::SubMenu { icon, label, menu } => this.child(
-                        h_flex()
-                            .items_start()
+                        this.on_click(cx.listener(move |this, _, cx| this.on_click(ix, cx)))
                             .child(
                                 h_flex()
-                                    .size_full()
                                     .items_center()
                                     .gap_x_1p5()
                                     .children(Self::render_icon(has_icon, icon.clone(), cx))
@@ -451,40 +423,63 @@ impl Render for PopupMenu {
                                             .items_center()
                                             .justify_between()
                                             .child(label.clone())
-                                            .child(IconName::ChevronRight),
+                                            .children(key),
                                     ),
                             )
-                            .when_some(self.hovered_menu_ix, |this, hovered_ix| {
-                                let (anchor, left) =
-                                    if cx.bounds().size.width - bounds.origin.x < max_width {
-                                        (AnchorCorner::TopRight, -px(15.))
+                    }
+                    PopupMenuItem::SubMenu { icon, label, menu } => this
+                        .when(self.hovered_menu_ix == Some(ix), |this| this.selected(true))
+                        .child(
+                            h_flex()
+                                .items_start()
+                                .child(
+                                    h_flex()
+                                        .size_full()
+                                        .items_center()
+                                        .gap_x_1p5()
+                                        .children(Self::render_icon(has_icon, icon.clone(), cx))
+                                        .child(
+                                            h_flex()
+                                                .flex_1()
+                                                .gap_2()
+                                                .items_center()
+                                                .justify_between()
+                                                .child(label.clone())
+                                                .child(IconName::ChevronRight),
+                                        ),
+                                )
+                                .when_some(self.hovered_menu_ix, |this, hovered_ix| {
+                                    let (anchor, left) =
+                                        if cx.bounds().size.width - bounds.origin.x < max_width {
+                                            (AnchorCorner::TopRight, -px(15.))
+                                        } else {
+                                            (AnchorCorner::TopLeft, bounds.size.width - px(10.))
+                                        };
+
+                                    let top = if bounds.origin.y + bounds.size.height
+                                        > cx.bounds().size.height
+                                    {
+                                        px(32.)
                                     } else {
-                                        (AnchorCorner::TopLeft, bounds.size.width - px(10.))
+                                        -px(10.)
                                     };
 
-                                let top = if bounds.origin.y + bounds.size.height
-                                    > cx.bounds().size.height
-                                {
-                                    px(32.)
-                                } else {
-                                    -px(8.)
-                                };
-
-                                if hovered_ix == ix {
-                                    this.child(
-                                        anchored().anchor(anchor).child(
-                                            div()
-                                                .top(top)
-                                                .left(left)
-                                                .popover_style(cx)
-                                                .child(menu.clone()),
-                                        ),
-                                    )
-                                } else {
-                                    this
-                                }
-                            }),
-                    ),
+                                    if hovered_ix == ix {
+                                        this.child(
+                                            anchored().anchor(anchor).child(
+                                                div()
+                                                    .occlude()
+                                                    .top(top)
+                                                    .left(left)
+                                                    .popover_style(cx)
+                                                    .child(menu.clone()),
+                                            ),
+                                        )
+                                    } else {
+                                        this
+                                    }
+                                }),
+                        ),
                 }
             }))
     }
