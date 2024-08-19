@@ -6,7 +6,7 @@ use gpui::{
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
-use gpui::{anchored, rems, AnchorCorner, FocusableView};
+use gpui::{anchored, canvas, rems, AnchorCorner, Bounds, FocusableView};
 
 use crate::StyledExt;
 use crate::{
@@ -70,6 +70,8 @@ pub struct PopupMenu {
     selected_index: Option<usize>,
     min_width: Pixels,
     max_width: Pixels,
+    hovered_menu_ix: Option<usize>,
+    bounds: Bounds<Pixels>,
     _subscriptions: [gpui::Subscription; 1],
 }
 
@@ -91,6 +93,8 @@ impl PopupMenu {
                 min_width: px(120.),
                 max_width: px(500.),
                 has_icon: false,
+                hovered_menu_ix: None,
+                bounds: Bounds::default(),
                 _subscriptions: [_on_blur_subscription],
             };
             cx.refresh();
@@ -349,7 +353,10 @@ impl FocusableView for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+        let view = cx.view().clone();
         let has_icon = self.menu_items.iter().any(|item| item.has_icon());
+        let max_width = self.max_width;
+        let bounds = self.bounds.clone();
 
         v_flex()
             .key_context("PopupMenu")
@@ -365,6 +372,15 @@ impl Render for PopupMenu {
             .gap_y_0p5()
             .min_w(rems(8.))
             .text_color(cx.theme().popover_foreground)
+            .relative()
+            .child({
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full()
+            })
             .children(self.menu_items.iter_mut().enumerate().map(|(ix, item)| {
                 let group_id = format!("item:{}", ix);
                 let this = ListItem::new(("menu-item", ix))
@@ -377,6 +393,11 @@ impl Render for PopupMenu {
                     .text_sm()
                     .line_height(rems(1.25))
                     .items_center()
+                    .selected(self.hovered_menu_ix == Some(ix))
+                    .on_mouse_enter(cx.listener(move |this, _, cx| {
+                        this.hovered_menu_ix = Some(ix);
+                        cx.notify();
+                    }))
                     .on_click(cx.listener(move |this, _, cx| this.on_click(ix, cx)));
                 match item {
                     PopupMenuItem::Separator => this.disabled(true).child(
@@ -414,39 +435,56 @@ impl Render for PopupMenu {
                                 ),
                         )
                     }
-                    PopupMenuItem::SubMenu { icon, label, menu } => this
-                        .child(
-                            h_flex()
-                                .items_center()
-                                .gap_x_1p5()
-                                .children(Self::render_icon(has_icon, icon.clone(), cx))
-                                .child(
-                                    h_flex()
-                                        .flex_1()
-                                        .gap_2()
-                                        .items_center()
-                                        .justify_between()
-                                        .child(label.clone())
-                                        .child(IconName::ChevronRight),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .invisible()
-                                .group_hover(group_id, |this| this.visible())
-                                .child(
-                                    anchored()
-                                        .snap_to_window()
-                                        .anchor(AnchorCorner::TopLeft)
-                                        .child(
+                    PopupMenuItem::SubMenu { icon, label, menu } => this.child(
+                        h_flex()
+                            .items_start()
+                            .child(
+                                h_flex()
+                                    .size_full()
+                                    .items_center()
+                                    .gap_x_1p5()
+                                    .children(Self::render_icon(has_icon, icon.clone(), cx))
+                                    .child(
+                                        h_flex()
+                                            .flex_1()
+                                            .gap_2()
+                                            .items_center()
+                                            .justify_between()
+                                            .child(label.clone())
+                                            .child(IconName::ChevronRight),
+                                    ),
+                            )
+                            .when_some(self.hovered_menu_ix, |this, hovered_ix| {
+                                let (anchor, left) =
+                                    if cx.bounds().size.width - bounds.origin.x < max_width {
+                                        (AnchorCorner::TopRight, -px(15.))
+                                    } else {
+                                        (AnchorCorner::TopLeft, bounds.size.width - px(10.))
+                                    };
+
+                                let top = if bounds.origin.y + bounds.size.height
+                                    > cx.bounds().size.height
+                                {
+                                    px(32.)
+                                } else {
+                                    -px(8.)
+                                };
+
+                                if hovered_ix == ix {
+                                    this.child(
+                                        anchored().anchor(anchor).child(
                                             div()
-                                                .top_neg_7()
-                                                .left_24()
+                                                .top(top)
+                                                .left(left)
                                                 .popover_style(cx)
                                                 .child(menu.clone()),
                                         ),
-                                ),
-                        ),
+                                    )
+                                } else {
+                                    this
+                                }
+                            }),
+                    ),
                 }
             }))
     }

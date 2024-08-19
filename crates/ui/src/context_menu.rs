@@ -4,10 +4,10 @@ use gpui::{
     anchored, deferred, div, prelude::FluentBuilder, relative, AnchorCorner, AnyElement,
     AppContext, DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
-    Position, Stateful, Style, Styled as _, View, ViewContext, WindowContext,
+    Position, Stateful, Style, View, ViewContext, WindowContext,
 };
 
-use crate::{popup_menu::PopupMenu, theme::ActiveTheme, StyledExt as _};
+use crate::{popup_menu::PopupMenu, StyledExt as _};
 
 pub fn init(_cx: &mut AppContext) {}
 

@@ -1,7 +1,7 @@
 use gpui::{
     div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, SharedString, Stateful,
-    StatefulInteractiveElement as _, Styled, WindowContext,
+    IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, ParentElement, RenderOnce,
+    SharedString, Stateful, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use smallvec::SmallVec;
 
@@ -16,6 +16,7 @@ pub struct ListItem {
     check_icon: Option<Icon>,
     group_id: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
+    on_mouse_enter: Option<Box<dyn Fn(&MouseMoveEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
     suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
     children: SmallVec<[AnyElement; 2]>,
@@ -30,6 +31,7 @@ impl ListItem {
             confirmed: false,
             on_click: None,
             on_secondary_mouse_down: None,
+            on_mouse_enter: None,
             check_icon: None,
             suffix: None,
             group_id: None,
@@ -88,6 +90,14 @@ impl ListItem {
         self.on_secondary_mouse_down = Some(Box::new(handler));
         self
     }
+
+    pub fn on_mouse_enter(
+        mut self,
+        handler: impl Fn(&MouseMoveEvent, &mut WindowContext) + 'static,
+    ) -> Self {
+        self.on_mouse_enter = Some(Box::new(handler));
+        self
+    }
 }
 
 impl Disableable for ListItem {
@@ -141,6 +151,14 @@ impl RenderOnce for ListItem {
             .when_some(self.on_secondary_mouse_down, |this, on_mouse_down| {
                 if !self.disabled {
                     this.on_mouse_down(MouseButton::Right, move |ev, cx| (on_mouse_down)(ev, cx))
+                } else {
+                    this
+                }
+            })
+            // Mouse enter
+            .when_some(self.on_mouse_enter, |this, on_mouse_enter| {
+                if !self.disabled {
+                    this.on_mouse_move(move |ev, cx| (on_mouse_enter)(ev, cx))
                 } else {
                     this
                 }
