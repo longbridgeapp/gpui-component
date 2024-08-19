@@ -1,7 +1,7 @@
 use gpui::{
     div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, ParentElement, RenderOnce,
-    SharedString, Stateful, StatefulInteractiveElement as _, Styled, WindowContext,
+    IntoElement, MouseMoveEvent, ParentElement, RenderOnce, SharedString, Stateful,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use smallvec::SmallVec;
 
