@@ -1,7 +1,7 @@
 use gpui::{
     div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, MouseDownEvent, ParentElement, RenderOnce, Stateful,
-    StatefulInteractiveElement as _, Styled, WindowContext,
+    IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, ParentElement, RenderOnce,
+    SharedString, Stateful, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use smallvec::SmallVec;
 
@@ -14,7 +14,9 @@ pub struct ListItem {
     selected: bool,
     confirmed: bool,
     check_icon: Option<Icon>,
+    group_id: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
+    on_mouse_enter: Option<Box<dyn Fn(&MouseMoveEvent, &mut WindowContext) + 'static>>,
     on_secondary_mouse_down: Option<Box<dyn Fn(&MouseDownEvent, &mut WindowContext) + 'static>>,
     suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
     children: SmallVec<[AnyElement; 2]>,
@@ -29,10 +31,18 @@ impl ListItem {
             confirmed: false,
             on_click: None,
             on_secondary_mouse_down: None,
+            on_mouse_enter: None,
             check_icon: None,
             suffix: None,
+            group_id: None,
             children: SmallVec::new(),
         }
+    }
+
+    /// Set group_id
+    pub fn group(mut self, group_id: impl Into<SharedString>) -> Self {
+        self.group_id = Some(group_id.into());
+        self
     }
 
     /// Set to show check icon, default is None.
@@ -80,6 +90,14 @@ impl ListItem {
         self.on_secondary_mouse_down = Some(Box::new(handler));
         self
     }
+
+    pub fn on_mouse_enter(
+        mut self,
+        handler: impl Fn(&MouseMoveEvent, &mut WindowContext) + 'static,
+    ) -> Self {
+        self.on_mouse_enter = Some(Box::new(handler));
+        self
+    }
 }
 
 impl Disableable for ListItem {
@@ -113,6 +131,7 @@ impl RenderOnce for ListItem {
         let is_active = self.selected || self.confirmed;
 
         self.base
+            .when_some(self.group_id, |this, group_id| this.group(group_id))
             .text_color(cx.theme().foreground)
             .relative()
             .items_center()
@@ -136,13 +155,21 @@ impl RenderOnce for ListItem {
                     this
                 }
             })
+            // Mouse enter
+            .when_some(self.on_mouse_enter, |this, on_mouse_enter| {
+                if !self.disabled {
+                    this.on_mouse_move(move |ev, cx| (on_mouse_enter)(ev, cx))
+                } else {
+                    this
+                }
+            })
             .child(
                 h_flex()
                     .w_full()
                     .items_center()
                     .justify_between()
                     .gap_x_1()
-                    .child(div().w_full().overflow_hidden().children(self.children))
+                    .child(div().w_full().children(self.children))
                     .when_some(self.check_icon, |this, icon| {
                         this.child(
                             div().w_5().items_center().justify_center().when(
