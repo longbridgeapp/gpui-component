@@ -4,17 +4,17 @@ use gpui::{
     anchored, deferred, div, prelude::FluentBuilder, relative, AnchorCorner, AnyElement,
     AppContext, DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
-    Position, Stateful, Style, Styled as _, View, WindowContext,
+    Position, Stateful, Style, Styled as _, View, ViewContext, WindowContext,
 };
 
-use crate::{popup_menu::PopupMenu, theme::ActiveTheme};
+use crate::{popup_menu::PopupMenu, theme::ActiveTheme, StyledExt as _};
 
 pub fn init(_cx: &mut AppContext) {}
 
 pub trait ContextMenuExt: ParentElement + Sized {
     fn context_menu(
         self,
-        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
         self.child(ContextMenu::new("context_menu").menu(f))
     }
@@ -25,7 +25,7 @@ impl<E> ContextMenuExt for Focusable<E> where E: ParentElement {}
 
 pub struct ContextMenu {
     id: ElementId,
-    menu: Option<Box<dyn Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static>>,
+    menu: Option<Box<dyn Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static>>,
     anchor: AnchorCorner,
 }
 
@@ -41,7 +41,7 @@ impl ContextMenu {
     #[must_use]
     pub fn menu<F>(mut self, builder: F) -> Self
     where
-        F: Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        F: Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     {
         self.menu = Some(Box::new(builder));
         self
@@ -126,19 +126,12 @@ impl Element for ContextMenu {
                             // Focus the menu, so that can be handle the action.
                             menu.focus_handle(cx).focus(cx);
 
-                            this.child(
-                                div()
-                                    .bg(cx.theme().popover)
-                                    .border_1()
-                                    .border_color(cx.theme().border)
-                                    .shadow_lg()
-                                    .rounded_lg()
-                                    .child(menu)
-                                    .on_mouse_down_out(move |_, cx| {
-                                        *open.borrow_mut() = false;
-                                        cx.refresh();
-                                    }),
-                            )
+                            this.child(div().popover_style(cx).child(menu).on_mouse_down_out(
+                                move |_, cx| {
+                                    *open.borrow_mut() = false;
+                                    cx.refresh();
+                                },
+                            ))
                         }),
                 )
                 .with_priority(1)

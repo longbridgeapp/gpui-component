@@ -151,6 +151,15 @@ pub trait StyledExt: Styled + Sized {
 
         this
     }
+
+    /// Set as Popover style
+    fn popover_style(self, cx: &mut WindowContext) -> Self {
+        self.bg(cx.theme().popover)
+            .border_1()
+            .border_color(cx.theme().border)
+            .shadow_lg()
+            .rounded_lg()
+    }
 }
 
 impl<E: Styled> StyledExt for E {}

@@ -8,7 +8,7 @@ use gpui::{
 };
 use gpui::{anchored, rems, AnchorCorner, FocusableView};
 
-use crate::context_menu::ContextMenu;
+use crate::StyledExt;
 use crate::{
     button::Button, h_flex, list::ListItem, popover::Popover, theme::ActiveTheme, v_flex, Icon,
     IconName, Selectable, Sizable as _,
@@ -49,7 +49,7 @@ enum PopupMenuItem {
     SubMenu {
         icon: Option<Icon>,
         label: SharedString,
-        menu: Rc<dyn Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static>,
+        menu: View<PopupMenu>,
     },
 }
 
@@ -76,7 +76,7 @@ pub struct PopupMenu {
 impl PopupMenu {
     pub fn build(
         cx: &mut WindowContext,
-        f: impl FnOnce(Self, &mut WindowContext) -> Self,
+        f: impl FnOnce(Self, &mut ViewContext<PopupMenu>) -> Self,
     ) -> View<Self> {
         cx.new_view(|cx| {
             let focus_handle = cx.focus_handle();
@@ -202,8 +202,8 @@ impl PopupMenu {
     pub fn sub_menu(
         self,
         label: impl Into<SharedString>,
-        cx: &mut WindowContext,
-        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        cx: &mut ViewContext<Self>,
+        f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
         self.sub_menu_with_icon(None, label, cx, f)
     }
@@ -213,13 +213,20 @@ impl PopupMenu {
         mut self,
         icon: Option<Icon>,
         label: impl Into<SharedString>,
-        cx: &mut WindowContext,
-        f: impl Fn(PopupMenu, &mut WindowContext) -> PopupMenu + 'static,
+        cx: &mut ViewContext<Self>,
+        f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
+        let sub_menu = PopupMenu::build(cx, f);
+        // Subscribe the SubMenu DismissEvent to dissmiss the parent menu
+        cx.subscribe(&sub_menu, |parent, _, _: &DismissEvent, cx| {
+            parent.dismiss(&Dismiss, cx);
+        })
+        .detach();
+
         self.menu_items.push(PopupMenuItem::SubMenu {
             icon,
             label: label.into(),
-            menu: Rc::new(f),
+            menu: sub_menu,
         });
         self
     }
@@ -235,7 +242,7 @@ impl PopupMenu {
         cx.stop_propagation();
         cx.prevent_default();
         self.selected_index = Some(ix);
-        self.confirm(&Confirm, cx)
+        self.confirm(&Confirm, cx);
     }
 
     fn confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
@@ -407,10 +414,8 @@ impl Render for PopupMenu {
                                 ),
                         )
                     }
-                    PopupMenuItem::SubMenu { icon, label, menu } => {
-                        let f = menu.clone();
-
-                        this.child(
+                    PopupMenuItem::SubMenu { icon, label, menu } => this
+                        .child(
                             h_flex()
                                 .items_center()
                                 .gap_x_1p5()
@@ -437,18 +442,11 @@ impl Render for PopupMenu {
                                             div()
                                                 .top_neg_7()
                                                 .left_24()
-                                                .border_1()
-                                                .border_color(cx.theme().border)
-                                                .bg(cx.theme().popover)
-                                                .shadow_md()
-                                                .rounded_lg()
-                                                .child(PopupMenu::build(cx, |menu, cx| {
-                                                    f(menu, cx)
-                                                })),
+                                                .popover_style(cx)
+                                                .child(menu.clone()),
                                         ),
                                 ),
-                        )
-                    }
+                        ),
                 }
             }))
     }

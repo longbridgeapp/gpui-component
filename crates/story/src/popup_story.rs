@@ -142,10 +142,14 @@ impl Render for PopupStory {
                         .menu("Copy", Box::new(Copy))
                         .menu("Paste", Box::new(Paste))
                         .separator()
-                        .sub_menu("Settings", cx, |menu, _| {
-                            menu.menu("Toggle Window Mode", Box::new(ToggleWindowMode))
-                                .separator()
-                                .menu("Search All", Box::new(SearchAll))
+                        .sub_menu("Settings", cx, move |menu, _| {
+                            menu.menu_with_check(
+                                "Toggle Window Mode",
+                                window_mode,
+                                Box::new(ToggleWindowMode),
+                            )
+                            .separator()
+                            .menu("Search All", Box::new(SearchAll))
                         })
                         .separator()
                         .menu("Search All", Box::new(SearchAll))
