@@ -255,8 +255,6 @@ impl ModalStory {
 
         let overlay = self.modal_overlay;
         cx.open_drawer(move |this, cx| {
-            input.focus_handle(cx).focus(cx);
-
             this.margin_top(px(33.))
                 .placement(placement)
                 .overlay(overlay)
