@@ -931,7 +931,7 @@ impl Element for TextElement {
                 Some(fill(
                     Bounds::new(
                         point(bounds.left() + cursor_pos, bounds.top() + inset),
-                        size(px(1.5), bounds.bottom() - bounds.top() - inset * 2),
+                        size(px(2.), bounds.bottom() - bounds.top() - inset * 2),
                     ),
                     crate::blue_500(),
                 )),
