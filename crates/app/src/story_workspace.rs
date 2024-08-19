@@ -11,6 +11,7 @@ use workspace::{TitleBar, Workspace};
 use std::sync::Arc;
 use ui::{
     button::Button,
+    dock::StackPanel,
     drawer::Drawer,
     h_flex,
     modal::Modal,
@@ -38,26 +39,24 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 }
 
 pub struct StoryWorkspace {
-    workspace: View<Workspace>,
     locale_selector: View<LocaleSelector>,
+    stack_panel: View<StackPanel>,
 }
 
 impl StoryWorkspace {
-    pub fn new(
-        _app_state: Arc<AppState>,
-        workspace: View<Workspace>,
-        cx: &mut ViewContext<Self>,
-    ) -> Self {
+    pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
         cx.observe_window_appearance(|_workspace, cx| {
             Theme::sync_system_appearance(cx);
         })
         .detach();
 
+        let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+
         StoryContainer::add_pane(
             "Buttons",
             "Displays a button or a component that looks like a button.",
             ButtonStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -66,7 +65,7 @@ impl StoryWorkspace {
             "Input",
             "A control that allows the user to input text.",
             InputStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -75,7 +74,7 @@ impl StoryWorkspace {
             "Text",
             "Links, paragraphs, checkboxes, and more.",
             TextStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -84,7 +83,7 @@ impl StoryWorkspace {
             "Switch",
             "A control that allows the user to toggle between two states.",
             SwitchStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -93,7 +92,7 @@ impl StoryWorkspace {
             "Dropdowns",
             "Displays a list of options for the user to pick from—triggered by a button.",
             DropdownStory::new(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -102,7 +101,7 @@ impl StoryWorkspace {
             "Modal",
             "Modal & Drawer use examples",
             ModalStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -111,7 +110,7 @@ impl StoryWorkspace {
             "Popup",
             "A popup displays content on top of the main page.",
             PopupStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -120,7 +119,7 @@ impl StoryWorkspace {
             "Tooltip",
             "Displays a short message when users hover over an element.",
             TooltipStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -129,7 +128,7 @@ impl StoryWorkspace {
             "List",
             "A list displays a series of items.",
             ListStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -138,7 +137,7 @@ impl StoryWorkspace {
             "Icon",
             "Icon use examples",
             IconStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -147,14 +146,14 @@ impl StoryWorkspace {
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
 
         // StoryContainer::add_panel(
         //     WebViewStory::view(cx).into(),
-        //     workspace.clone(),
+        //     stack_panel.clone(),
         //     DockPosition::Right,
         //     px(450.),
         //     cx,
@@ -164,7 +163,7 @@ impl StoryWorkspace {
             "Table",
             "Powerful table and datagrids built.",
             TableStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -173,7 +172,7 @@ impl StoryWorkspace {
             "Progress",
             "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
             ProgressStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -182,7 +181,7 @@ impl StoryWorkspace {
             "Resizable",
             "Accessible resizable panel groups and layouts with keyboard support.",
             ResizableStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -191,7 +190,7 @@ impl StoryWorkspace {
             "Scrollable",
             "A scrollable area with scroll bar.",
             ScrollableStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
@@ -200,14 +199,15 @@ impl StoryWorkspace {
             "Calendar",
             "A calendar component.",
             CalendarStory::view(cx).into(),
-            workspace.clone(),
+            stack_panel.clone(),
             cx,
         )
         .detach();
 
         let locale_selector = cx.new_view(LocaleSelector::new);
+
         Self {
-            workspace,
+            stack_panel,
             locale_selector,
         }
     }
@@ -235,8 +235,7 @@ impl StoryWorkspace {
             };
 
             let window = cx.open_window(options, |cx| {
-                let workspace = cx.new_view(|cx| Workspace::new(None, cx));
-                let story_view = cx.new_view(|cx| Self::new(app_state.clone(), workspace, cx));
+                let story_view = cx.new_view(|cx| Self::new(app_state.clone(), cx));
                 cx.new_view(|cx| Root::new(story_view.into(), cx))
             })?;
 
@@ -366,7 +365,7 @@ impl Render for StoryWorkspace {
                             ),
                     ),
             )
-            .child(self.workspace.clone())
+            .child(self.stack_panel.clone())
             .when(!has_active_modal, |this| {
                 this.when_some(active_drawer, |this, builder| {
                     let drawer = Drawer::new(cx);

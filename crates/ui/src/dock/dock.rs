@@ -1,32 +1,53 @@
-use crate::h_flex;
-use gpui::{
-    prelude::FluentBuilder as _, AnyElement, IntoElement, ParentElement as _, Render, View,
-    ViewContext,
-};
+use gpui::{Render, RenderOnce};
 
-use super::Pane;
+use crate::Placement;
 
-pub struct DockArea<P: Pane> {
-    panels: Vec<P>,
+pub struct Dock {
+    placement: Placement,
 }
 
-impl<P> DockArea<P>
-where
-    P: Pane,
-{
-    pub fn new() -> Self {
-        Self { panels: Vec::new() }
+impl Dock {
+    pub fn new(placement: Placement) -> Self {
+        Self { placement }
     }
 }
 
-impl<P> Render for DockArea<P>
-where
-    P: Pane,
-{
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        h_flex()
-            .when_some(self.left.clone(), |this, panel| this.child(panel))
-            .child
-            .when_some(self.right.clone(), |this, panel| this.child(panel))
-    }
-}
+// pub struct DockArea {
+//     top: Option<Dock>,
+//     right: Option<Dock>,
+//     bottom: Option<Dock>,
+//     left: Option<Dock>,
+// }
+
+// impl DockArea {
+//     pub fn new() -> Self {
+//         Self {
+//             top: None,
+//             right: None,
+//             bottom: None,
+//             left: None,
+//         }
+//     }
+
+//     pub fn set_top(&mut self, dock: Dock) {
+//         self.top = Some(dock);
+//     }
+
+//     pub fn set_right(&mut self, dock: Dock) {
+//         self.right = Some(dock);
+//     }
+
+//     pub fn set_bottom(&mut self, dock: Dock) {
+//         self.bottom = Some(dock);
+//     }
+
+//     pub fn set_left(&mut self, dock: Dock) {
+//         self.left = Some(dock);
+//     }
+// }
+
+// impl RenderOnce for DockArea {
+//     fn render(self, cx: &mut gpui::WindowContext) -> impl gpui::IntoElement {
+
+//     }
+// }
