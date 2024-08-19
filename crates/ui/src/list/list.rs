@@ -211,7 +211,7 @@ where
                     });
                 });
             }
-            InputEvent::PressEnter => self.action_confirm(&Confirm, cx),
+            InputEvent::PressEnter => self.on_action_confirm(&Confirm, cx),
             _ => {}
         }
     }
@@ -224,13 +224,13 @@ where
         cx.notify();
     }
 
-    fn action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
+    fn on_action_cancel(&mut self, _: &Cancel, cx: &mut ViewContext<Self>) {
         self.set_selected_index(None, cx);
         self.delegate.cancel(cx);
         cx.notify();
     }
 
-    fn action_confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
+    fn on_action_confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
         if self.delegate.items_count() == 0 {
             return;
         }
@@ -239,7 +239,7 @@ where
         cx.notify();
     }
 
-    fn action_select_prev(&mut self, _: &SelectPrev, cx: &mut ViewContext<Self>) {
+    fn on_action_select_prev(&mut self, _: &SelectPrev, cx: &mut ViewContext<Self>) {
         if self.delegate.items_count() == 0 {
             return;
         }
@@ -255,7 +255,7 @@ where
         cx.notify();
     }
 
-    fn action_select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
+    fn on_action_select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
         if self.delegate.items_count() == 0 {
             return;
         }
@@ -311,10 +311,10 @@ where
             .size_full()
             .relative()
             .overflow_hidden()
-            .on_action(cx.listener(Self::action_cancel))
-            .on_action(cx.listener(Self::action_confirm))
-            .on_action(cx.listener(Self::action_select_next))
-            .on_action(cx.listener(Self::action_select_prev))
+            .on_action(cx.listener(Self::on_action_cancel))
+            .on_action(cx.listener(Self::on_action_confirm))
+            .on_action(cx.listener(Self::on_action_select_next))
+            .on_action(cx.listener(Self::on_action_select_prev))
             .when_some(self.query_input.clone(), |this, input| {
                 this.child(
                     div()
@@ -357,7 +357,7 @@ where
                                                     cx.listener(move |this, _, cx| {
                                                         cx.stop_propagation();
                                                         this.selected_index = Some(ix);
-                                                        this.action_confirm(&Confirm, cx);
+                                                        this.on_action_confirm(&Confirm, cx);
                                                     }),
                                                 )
                                         })
