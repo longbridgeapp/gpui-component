@@ -49,10 +49,7 @@ impl ResizablePanelGroup {
 
     /// Add a resizable panel to the group.
     pub fn child(mut self, panel: ResizablePanel, cx: &mut WindowContext) -> Self {
-        let mut panel = panel;
-        panel.axis = self.axis;
-        self.sizes.push(panel.size);
-        self.panels.push(cx.new_view(|_| panel));
+        self.add_child(panel, cx);
         self
     }
 
@@ -74,6 +71,13 @@ impl ResizablePanelGroup {
     pub fn size(mut self, size: Pixels) -> Self {
         self.size = size;
         self
+    }
+
+    pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut WindowContext) {
+        let mut panel = panel;
+        panel.axis = self.axis;
+        self.sizes.push(panel.size);
+        self.panels.push(cx.new_view(|_| panel));
     }
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {

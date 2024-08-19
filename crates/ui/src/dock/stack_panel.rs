@@ -1,35 +1,50 @@
 use std::sync::Arc;
 
-use crate::{h_flex, v_flex, Placement, StyledExt};
+use crate::{
+    h_flex,
+    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
+    theme::ActiveTheme,
+    v_flex, Placement, StyledExt,
+};
 
 use super::{Panel, PanelView};
 use gpui::{
-    Axis, IntoElement, ParentElement, Pixels, Render, SharedString, View, ViewContext,
-    WindowContext,
+    div, Axis, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext,
 };
 use smallvec::SmallVec;
 
 pub struct StackPanel {
     axis: Axis,
     children: SmallVec<[Arc<dyn PanelView>; 2]>,
+    panel_group: View<ResizablePanelGroup>,
     placement: Placement,
 }
 
 impl StackPanel {
-    pub fn new(axis: Axis, cx: &ViewContext<Self>) -> Self {
+    pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
         Self {
             axis,
             children: SmallVec::new(),
+            panel_group: cx.new_view(|_| {
+                if axis == Axis::Horizontal {
+                    h_resizable()
+                } else {
+                    v_resizable()
+                }
+            }),
             placement: Placement::Left,
         }
     }
 
     /// Add a panel at the end of the stack.
-    pub fn add_panel<P>(&mut self, panel: View<P>)
+    pub fn add_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
     where
         P: Panel,
     {
-        self.children.push(Arc::new(panel));
+        self.panel_group.update(cx, |view, cx| {
+            view.add_child(resizable_panel().content_view(panel.into_any()), cx)
+        });
+        // self.children.push(Arc::new(panel));
     }
 
     /// Insert a panel at the index.
@@ -51,11 +66,11 @@ impl StackPanel {
 
 impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        match self.axis {
-            Axis::Horizontal => h_flex(),
-            Axis::Vertical => v_flex(),
-        }
-        .debug_red()
-        .children(self.children.clone().into_iter().map(|c| c.into_any()))
+        div()
+            .size_full()
+            .flex_1()
+            .overflow_hidden()
+            .bg(cx.theme().tab_bar)
+            .child(self.panel_group.clone())
     }
 }

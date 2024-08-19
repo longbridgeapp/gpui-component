@@ -1,6 +1,4 @@
-use gpui::{
-    px, AnyView, FocusableView, Pixels, Render, SharedString, View, ViewContext, WindowContext,
-};
+use gpui::{px, AnyView, FocusableView, Pixels, SharedString, View, WindowContext};
 
 use crate::Placement;
 

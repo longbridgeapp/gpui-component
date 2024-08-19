@@ -17,10 +17,10 @@ pub struct Tab {
 }
 
 impl Tab {
-    pub fn new(id: impl Into<ElementId>, label: impl Into<AnyElement>) -> Self {
+    pub fn new(id: impl Into<ElementId>, label: impl IntoElement) -> Self {
         Self {
             base: div().id(id.into()).gap_1().py_1p5().px_3().h_8(),
-            label: label.into(),
+            label: label.into_any_element(),
             disabled: false,
             selected: false,
             prefix: None,

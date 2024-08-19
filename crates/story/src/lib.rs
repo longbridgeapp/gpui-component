@@ -43,7 +43,7 @@ use gpui::{
 use anyhow::Result;
 use ui::{
     divider::Divider,
-    dock::{Panel, StackPanel},
+    dock::{Panel, StackPanel, TabPanel},
     h_flex,
     label::Label,
     v_flex, Placement,
@@ -118,16 +118,16 @@ impl StoryContainer {
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
         story: AnyView,
-        stack_panel: View<StackPanel>,
+        tab_panel: View<TabPanel>,
         cx: &mut WindowContext,
     ) -> Task<Result<View<Self>>> {
         let name = name.into();
         let description = description.into();
 
         cx.spawn(|mut cx| async move {
-            stack_panel.update(&mut cx, |stack, cx| {
+            tab_panel.update(&mut cx, |panel, cx| {
                 let view = cx.new_view(|cx| Self::new(name, description, cx).story(story));
-                stack.add_panel(view.clone());
+                panel.add_panel(view.clone());
                 view
             })
         })
@@ -150,6 +150,10 @@ impl StoryContainer {
 }
 
 impl Panel for StoryContainer {
+    fn title(&self, cx: &WindowContext) -> Option<SharedString> {
+        Some(self.name.clone())
+    }
+
     fn set_size(&mut self, size: Pixels, cx: &mut WindowContext) {}
 
     fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext) {}
@@ -167,7 +171,6 @@ impl Render for StoryContainer {
                     .flex_col()
                     .gap_4()
                     .p_4()
-                    .child(Label::new(self.name.clone()).text_size(px(24.0)))
                     .child(Label::new(self.description.clone()).text_size(px(16.0)))
                     .child(Divider::horizontal().label("This is a divider")),
             )
@@ -181,84 +184,5 @@ impl Render for StoryContainer {
                         .child(story),
                 )
             })
-    }
-}
-
-struct MyPanel {
-    focus_handle: gpui::FocusHandle,
-    view: AnyView,
-    placement: Placement,
-    width: Option<Pixels>,
-    height: Option<Pixels>,
-}
-
-impl MyPanel {
-    fn new(view: AnyView, placement: Placement, size: Pixels, cx: &mut WindowContext) -> Self {
-        let mut this = Self {
-            focus_handle: cx.focus_handle(),
-            view,
-            placement,
-            width: None,
-            height: None,
-        };
-        this.update_size(size);
-        this
-    }
-
-    fn update_size(&mut self, size: Pixels) {
-        match self.placement {
-            Placement::Bottom | Placement::Top => self.height = Some(size),
-            Placement::Left | Placement::Right => self.width = Some(size),
-        }
-    }
-}
-
-// impl Panel for MyPanel {
-//     fn persistent_name() -> &'static str {
-//         "my-panel"
-//     }
-
-//     fn can_position(&self, position: DockPosition) -> bool {
-//         match self._position {
-//             DockPosition::Bottom => matches!(position, DockPosition::Bottom),
-//             DockPosition::Left | DockPosition::Right => {
-//                 matches!(position, DockPosition::Left | DockPosition::Right)
-//             }
-//         }
-//     }
-
-//     fn position(&self, _cx: &WindowContext) -> DockPosition {
-//         self._position
-//     }
-
-//     fn set_position(&mut self, position: DockPosition, cx: &mut ViewContext<Self>) {
-//         self._position = position;
-//         cx.notify()
-//     }
-
-//     fn size(&self, _cx: &WindowContext) -> gpui::Pixels {
-//         match self._position {
-//             DockPosition::Bottom => self.height.unwrap_or(px(100.)),
-//             DockPosition::Left | DockPosition::Right => self.width.unwrap_or(px(100.)),
-//         }
-//     }
-
-//     fn set_size(&mut self, size: Option<gpui::Pixels>, cx: &mut ViewContext<Self>) {
-//         if let Some(size) = size {
-//             self.update_size(size)
-//         }
-//         cx.notify();
-//     }
-// }
-
-// impl EventEmitter<PanelEvent> for MyPanel {}
-impl FocusableView for MyPanel {
-    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
-        self.focus_handle.clone()
-    }
-}
-impl Render for MyPanel {
-    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
-        div().id("my-panel").size_full().child(self.view.clone())
     }
 }
