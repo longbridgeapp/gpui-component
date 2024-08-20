@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, px, rems, AppContext, DragMoveEvent, Empty, FocusHandle, FocusableView,
+    div, px, rems, AppContext, DragMoveEvent, Empty, Entity, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, ParentElement, Pixels, Render,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WeakView,
     WindowContext,
@@ -19,7 +19,9 @@ use super::{Panel, PanelView, StackPanel};
 
 #[derive(Clone)]
 pub(crate) struct DragPanel {
+    pub(crate) ix: usize,
     pub(crate) panel: Arc<dyn PanelView>,
+    pub(crate) tab_panel: View<TabPanel>,
 }
 
 impl Render for DragPanel {
@@ -30,6 +32,7 @@ impl Render for DragPanel {
             .px_3()
             .w_24()
             .overflow_hidden()
+            .whitespace_nowrap()
             .border_1()
             .border_color(cx.theme().border)
             .rounded_md()
@@ -80,7 +83,32 @@ impl TabPanel {
         self.panels.get(self.active_ix).cloned()
     }
 
+    fn remove_panel(&mut self, panel: &dyn PanelView, cx: &mut ViewContext<Self>) {
+        let entity_id = panel.view().entity_id();
+
+        self.panels.retain(|p| p.view().entity_id() != entity_id);
+        if self.active_ix >= self.panels.len() {
+            self.active_ix = self.panels.len().saturating_sub(1);
+        }
+
+        self.check_to_remove_self(cx)
+    }
+
+    /// Check to remove self from the parent StackPanel, if there is no panel left
+    fn check_to_remove_self(&self, cx: &mut ViewContext<Self>) {
+        let tab_view = cx.view().clone();
+        if self.panels.is_empty() {
+            if let Some(stack_panel) = self.stack_panel.as_ref() {
+                stack_panel.update(cx, |view, cx| {
+                    view.remove_panel(tab_view);
+                })
+            }
+        }
+    }
+
     fn render_tabs(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let view = cx.view().clone();
+
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
 
@@ -100,7 +128,9 @@ impl TabPanel {
                 )
                 .on_drag(
                     DragPanel {
+                        ix: 0,
                         panel: panel.clone(),
+                        tab_panel: view,
                     },
                     |drag, cx| {
                         cx.stop_propagation();
@@ -124,7 +154,9 @@ impl TabPanel {
                             }))
                             .on_drag(
                                 DragPanel {
+                                    ix,
                                     panel: panel.clone(),
+                                    tab_panel: view.clone(),
                                 },
                                 |drag, cx| {
                                     cx.stop_propagation();
@@ -173,13 +205,21 @@ impl TabPanel {
     }
 
     fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {
-        let panel = drag.panel.clone();
-        // let ix = self.active_ix;
-        // self.panels.insert(ix, drag.panel.clone());
-        // let stack_panel = self.stack_panel.upgrade().unwrap();
+        if drag.tab_panel.entity_id() == cx.view().entity_id() {
+            return;
+        }
 
-        // stack_panel.update(cx, |view, cx| view.add_panel(panel, None, cx))
-        // stack_panel.add_panel(drag.panel.clone());
+        let panel = drag.panel.clone();
+
+        // Remove from old tabs
+        let _ = drag.tab_panel.update(cx, |tab_panel, cx| {
+            tab_panel.remove_panel(panel.as_ref(), cx);
+        });
+
+        // Insert into new tabs
+        self.panels.push(drag.panel.clone());
+        self.active_ix = self.panels.len() - 1;
+        cx.notify()
     }
 }
 

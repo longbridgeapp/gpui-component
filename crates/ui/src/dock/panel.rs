@@ -1,4 +1,4 @@
-use gpui::{px, AnyView, FocusableView, Pixels, SharedString, View, WindowContext};
+use gpui::{px, AnyView, EntityId, FocusableView, Pixels, SharedString, View, WindowContext};
 
 use crate::Placement;
 
@@ -80,5 +80,11 @@ impl<T: Panel> PanelView for View<T> {
 impl From<&dyn PanelView> for AnyView {
     fn from(handle: &dyn PanelView) -> Self {
         handle.view()
+    }
+}
+
+impl<T: Panel> From<&dyn PanelView> for View<T> {
+    fn from(value: &dyn PanelView) -> Self {
+        value.view().downcast::<T>().unwrap()
     }
 }

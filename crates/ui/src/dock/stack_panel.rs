@@ -9,8 +9,8 @@ use crate::{
 
 use super::{Panel, PanelView, TabPanel};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, FocusHandle, FocusableView, IntoElement,
-    ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
+    div, prelude::FluentBuilder as _, px, Axis, Element, Entity, FocusHandle, FocusableView,
+    IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
 };
 use smallvec::SmallVec;
 
@@ -87,6 +87,14 @@ impl StackPanel {
         P: Panel,
     {
         self.children.insert(ix + 1, Arc::new(panel));
+    }
+
+    pub fn remove_panel<P>(&mut self, panel: View<P>)
+    where
+        P: Panel,
+    {
+        let entity_id = panel.entity_id();
+        self.children.retain(|p| p.view().entity_id() != entity_id);
     }
 }
 
