@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, px, rems, AppContext, DragMoveEvent, Empty, Entity, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render,
-    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    div, prelude::FluentBuilder, px, relative, rems, AppContext, DefiniteLength, DragMoveEvent,
+    Empty, Entity, FocusHandle, FocusableView, InteractiveElement as _, IntoElement, ParentElement,
+    Pixels, Render, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    WeakView, WindowContext,
 };
 
 use crate::{
@@ -183,9 +183,18 @@ impl TabPanel {
                         div()
                             .invisible()
                             .absolute()
-                            .top_0()
-                            .left_0()
-                            .size_full()
+                            .when_some(self.will_split_placement, |this, placement| {
+                                let size = DefiniteLength::Fraction(0.25);
+                                match placement {
+                                    Placement::Left => this.left_0().top_0().bottom_0().w(size),
+                                    Placement::Right => this.right_0().top_0().bottom_0().w(size),
+                                    Placement::Top => this.top_0().left_0().right_0().h(size),
+                                    Placement::Bottom => this.bottom_0().left_0().right_0().h(size),
+                                }
+                            })
+                            .when(self.will_split_placement.is_none(), |this| {
+                                this.top_0().left_0().size_full()
+                            })
                             .bg(cx.theme().drop_target)
                             .group_drag_over::<DragPanel>("", |this| this.visible())
                             .on_drop(cx.listener(Self::on_drop)),
@@ -196,12 +205,23 @@ impl TabPanel {
     }
 
     /// Calculate the split direction based on the current mouse position
-    fn on_panel_drag_move(
-        &mut self,
-        event: &DragMoveEvent<DragPanel>,
-        _cx: &mut ViewContext<Self>,
-    ) {
-        let bounds = event.bounds;
+    fn on_panel_drag_move(&mut self, drag: &DragMoveEvent<DragPanel>, cx: &mut ViewContext<Self>) {
+        let bounds = drag.bounds;
+        let position = drag.event.position;
+
+        // Check the mouse position to determine the split direction
+        if position.x < bounds.left() + bounds.size.width * 0.25 {
+            self.will_split_placement = Some(Placement::Left);
+        } else if position.x > bounds.left() + bounds.size.width * 0.75 {
+            self.will_split_placement = Some(Placement::Right);
+        } else if position.y < bounds.top() + bounds.size.height * 0.25 {
+            self.will_split_placement = Some(Placement::Top);
+        } else if position.y > bounds.top() + bounds.size.height * 0.75 {
+            self.will_split_placement = Some(Placement::Bottom);
+        } else {
+            self.will_split_placement = None;
+        }
+        cx.notify()
     }
 
     fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {

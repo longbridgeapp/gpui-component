@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use crate::{
     scroll::{Scrollable, ScrollbarAxis},
     theme::{ActiveTheme, Colorize},
@@ -329,6 +331,17 @@ pub enum Placement {
     Bottom,
     Left,
     Right,
+}
+
+impl Display for Placement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Placement::Top => write!(f, "Top"),
+            Placement::Bottom => write!(f, "Bottom"),
+            Placement::Left => write!(f, "Left"),
+            Placement::Right => write!(f, "Right"),
+        }
+    }
 }
 
 impl Placement {
