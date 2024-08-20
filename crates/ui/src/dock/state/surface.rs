@@ -1,4 +1,4 @@
-use crate::dock::tree::{Node, NodeIndex, Tree};
+use super::tree::{Node, NodeIndex, Tree};
 
 use super::WindowState;
 

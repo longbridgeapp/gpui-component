@@ -12,12 +12,11 @@ use std::{
     slice::{Iter, IterMut},
 };
 
-use gpui::{Bounds, Pixels, Size};
+use gpui::{Bounds, Pixels};
 
-use serde::{Deserialize, Serialize};
 use tab_iter::TabIter;
 
-use super::state::SurfaceIndex;
+use super::SurfaceIndex;
 
 /// The direction in which to split.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

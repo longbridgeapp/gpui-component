@@ -1,14 +1,15 @@
-use gpui::{Bounds, Pixels, Size};
+use gpui::{Bounds, Pixels};
 
 mod surface;
 mod surface_index;
+mod tree;
 mod window_state;
 
 pub use surface::Surface;
 pub use surface_index::SurfaceIndex;
 pub use window_state::WindowState;
 
-use super::{Node, NodeIndex, Split, TabDestination, TabInsert, Tree};
+use tree::{Node, NodeIndex, Split, TabDestination, TabInsert, Tree};
 
 /// This structure holds a collection of surfaces, each of which stores a tree in which tabs are arranged.
 ///

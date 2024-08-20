@@ -3,9 +3,8 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
-mod tree;
 
-pub(crate) use tree::*;
+pub(crate) use state::*;
 
 pub use dock::*;
 pub use panel::*;
