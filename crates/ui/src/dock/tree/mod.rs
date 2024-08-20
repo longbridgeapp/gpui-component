@@ -2,6 +2,9 @@ mod node;
 mod node_index;
 mod tab_iter;
 
+pub use node::Node;
+pub use node_index::NodeIndex;
+
 use std::{
     collections::HashSet,
     fmt,
@@ -10,10 +13,11 @@ use std::{
 };
 
 use gpui::{Bounds, Pixels, Size};
-use node::Node;
-use node_index::NodeIndex;
+
 use serde::{Deserialize, Serialize};
 use tab_iter::TabIter;
+
+use super::state::SurfaceIndex;
 
 /// The direction in which to split.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -46,9 +50,9 @@ pub enum TabDestination {
     /// Move to new window with this bounds.
     Window(Bounds<Pixels>),
     /// Move to an existing node with this insert.
-    Node(usize, usize, TabInsert),
+    Node(SurfaceIndex, NodeIndex, TabInsert),
     /// Move to an empty panel.
-    EmptyPanel(usize),
+    EmptySurface(SurfaceIndex),
 }
 
 impl TabDestination {
@@ -74,7 +78,7 @@ impl TabDestination {
 /// For "Vertical" nodes:
 ///  - left child contains Top node.
 ///  - right child contains Bottom node.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone)]
 pub struct Tree<Tab> {
     // Binary tree vector
     pub(super) nodes: Vec<Node<Tab>>,
@@ -126,16 +130,16 @@ impl<Tab> Tree<Tab> {
     /// Returns the viewport [`Rect`] and the `Tab` inside the first leaf node,
     /// or `None` if no leaf exists in the [`Tree`].
     #[inline]
-    pub fn find_active(&mut self) -> Option<(Size<Pixels>, &mut Tab)> {
+    pub fn find_active(&mut self) -> Option<(Bounds<Pixels>, &mut Tab)> {
         self.nodes.iter_mut().find_map(|node| match node {
             Node::Leaf {
                 tabs,
                 active,
-                content_size,
+                content_bounds,
                 ..
             } => tabs
                 .get_mut(*active)
-                .map(|tab| (content_size.to_owned(), tab)),
+                .map(|tab| (content_bounds.to_owned(), tab)),
             _ => None,
         })
     }
@@ -503,14 +507,14 @@ impl<Tab> Tree<Tab> {
 
     /// Returns the viewport [`Rect`] and the `Tab` inside the focused leaf node or [`None`] if it does not exist.
     #[inline]
-    pub fn find_active_focused(&mut self) -> Option<(Size<Pixels>, &mut Tab)> {
+    pub fn find_active_focused(&mut self) -> Option<(Bounds<Pixels>, &mut Tab)> {
         match self.focused_node.and_then(|idx| self.nodes.get_mut(idx.0)) {
             Some(Node::Leaf {
                 tabs,
                 active,
-                content_size,
+                content_bounds,
                 ..
-            }) => tabs.get_mut(*active).map(|tab| (*content_size, tab)),
+            }) => tabs.get_mut(*active).map(|tab| (*content_bounds, tab)),
             _ => None,
         }
     }

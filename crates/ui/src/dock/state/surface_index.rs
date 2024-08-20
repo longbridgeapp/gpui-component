@@ -1,6 +1,5 @@
 /// Wrapper around indices to the collection of Surfaces inside a [`DockState`](crate::DockState).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
 pub struct SurfaceIndex(pub usize);
 
 impl From<usize> for SurfaceIndex {

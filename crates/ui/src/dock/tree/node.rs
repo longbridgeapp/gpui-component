@@ -1,28 +1,27 @@
-use gpui::{Pixels, Size};
-use serde::{Deserialize, Serialize};
+use gpui::{Bounds, Pixels};
 
 use super::Split;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub enum Node<Tab> {
     Empty,
     Leaf {
         /// TabBar + Content bounds
-        size: Size<Pixels>,
+        bounds: Bounds<Pixels>,
         /// Content view bounds
-        content_size: Size<Pixels>,
+        content_bounds: Bounds<Pixels>,
         tabs: Vec<Tab>,
         active: usize,
     },
     Vertical {
         /// TabBar + Content bounds
-        size: Size<Pixels>,
+        bounds: Bounds<Pixels>,
         /// The fraction taken by the top child of this node.
         fraction: f32,
     },
     Horizontal {
         /// TabBar + Content bounds
-        size: Size<Pixels>,
+        bounds: Bounds<Pixels>,
         /// The fraction taken by the left child of this node.
         fraction: f32,
     },
@@ -31,8 +30,8 @@ pub enum Node<Tab> {
 impl<Tab> Node<Tab> {
     pub fn leaf(tab: Tab) -> Self {
         Self::Leaf {
-            size: Size::default(),
-            content_size: Size::default(),
+            bounds: Bounds::default(),
+            content_bounds: Bounds::default(),
             tabs: vec![tab],
             active: 0,
         }
@@ -40,34 +39,40 @@ impl<Tab> Node<Tab> {
 
     pub fn leaf_with(tabs: Vec<Tab>) -> Self {
         Self::Leaf {
-            size: Size::default(),
-            content_size: Size::default(),
+            bounds: Bounds::default(),
+            content_bounds: Bounds::default(),
             tabs,
             active: 0,
         }
     }
 
-    pub fn set_size(&mut self, size: Size<Pixels>) {
+    pub fn set_bounds(&mut self, bounds: Bounds<Pixels>) {
         match self {
             Self::Empty => {}
-            Self::Leaf { size: old_size, .. } => {
-                *old_size = size;
+            Self::Leaf {
+                bounds: old_bounds, ..
+            } => {
+                *old_bounds = bounds;
             }
-            Self::Vertical { size: old_size, .. } => {
-                *old_size = size;
+            Self::Vertical {
+                bounds: old_bounds, ..
+            } => {
+                *old_bounds = bounds;
             }
-            Self::Horizontal { size: old_size, .. } => {
-                *old_size = size;
+            Self::Horizontal {
+                bounds: old_bounds, ..
+            } => {
+                *old_bounds = bounds;
             }
         }
     }
 
-    pub fn size(&self) -> Size<Pixels> {
+    pub fn bounds(&self) -> Bounds<Pixels> {
         match self {
-            Self::Empty => Size::default(),
-            Self::Leaf { size, .. } => *size,
-            Self::Vertical { size, .. } => *size,
-            Self::Horizontal { size, .. } => *size,
+            Self::Empty => Bounds::default(),
+            Self::Leaf { bounds, .. } => *bounds,
+            Self::Vertical { bounds, .. } => *bounds,
+            Self::Horizontal { bounds, .. } => *bounds,
         }
     }
 
@@ -105,10 +110,10 @@ impl<Tab> Node<Tab> {
     #[inline]
     pub fn split(&mut self, split: Split, fraction: f32) -> Self {
         assert!((0.0..=1.0).contains(&fraction));
-        let size = Size::default();
+        let bounds = Bounds::default();
         let src = match split {
-            Split::Left | Split::Right => Node::Horizontal { fraction, size },
-            Split::Above | Split::Below => Node::Vertical { fraction, size },
+            Split::Left | Split::Right => Node::Horizontal { fraction, bounds },
+            Split::Above | Split::Below => Node::Vertical { fraction, bounds },
         };
         std::mem::replace(self, src)
     }
@@ -182,8 +187,8 @@ impl<Tab> Node<Tab> {
     {
         match self {
             Node::Leaf {
-                size,
-                content_size,
+                bounds,
+                content_bounds,
                 tabs,
                 active,
             } => {
@@ -192,20 +197,20 @@ impl<Tab> Node<Tab> {
                     Node::Empty
                 } else {
                     Node::Leaf {
-                        size: *size,
-                        content_size: *content_size,
+                        bounds: *bounds,
+                        content_bounds: *content_bounds,
                         tabs,
                         active: *active,
                     }
                 }
             }
             Node::Empty => Node::Empty,
-            Node::Vertical { size, fraction } => Node::Vertical {
-                size: *size,
+            Node::Vertical { bounds, fraction } => Node::Vertical {
+                bounds: *bounds,
                 fraction: *fraction,
             },
-            Node::Horizontal { size, fraction } => Node::Horizontal {
-                size: *size,
+            Node::Horizontal { bounds, fraction } => Node::Horizontal {
+                bounds: *bounds,
                 fraction: *fraction,
             },
         }

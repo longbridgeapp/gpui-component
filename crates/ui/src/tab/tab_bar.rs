@@ -3,7 +3,7 @@ use crate::theme::ActiveTheme;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     div, AnyElement, Div, ElementId, IntoElement, ParentElement, RenderOnce, ScrollHandle,
-    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use gpui::{px, InteractiveElement};
 use smallvec::SmallVec;

@@ -35,15 +35,15 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyView, AppContext, Axis, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
+    div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter, FocusableView,
+    InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
     StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 
 use anyhow::Result;
 use ui::{
     divider::Divider,
-    dock::{Panel, StackPanel, TabPanel},
+    dock::{Panel, TabPanel},
     h_flex,
     label::Label,
     v_flex, Placement,
