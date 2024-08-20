@@ -140,6 +140,22 @@ impl<Tab> Node<Tab> {
         self.tabs_mut().into_iter().flat_map(|tabs| tabs.iter_mut())
     }
 
+    pub fn set_active_tab(&mut self, ix: usize) {
+        match self {
+            Node::Leaf { active, .. } => {
+                *active = ix;
+            }
+            _ => {}
+        }
+    }
+
+    pub fn active_tab_ix(&self) -> Option<usize> {
+        match self {
+            Node::Leaf { active, .. } => Some(*active),
+            _ => None,
+        }
+    }
+
     pub fn append_tab(&mut self, tab: Tab) {
         match self {
             Node::Leaf { tabs, active, .. } => {

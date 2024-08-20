@@ -19,6 +19,11 @@ pub trait Panel: FocusableView {
     }
     /// Called when the placement of the panel is changed.
     fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext);
+
+    /// Whether the panel can be closed, default is `true`.
+    fn closeable(&self, cx: &WindowContext) -> bool {
+        true
+    }
 }
 
 pub(crate) trait PanelView: Send + Sync {

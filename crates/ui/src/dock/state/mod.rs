@@ -7,9 +7,8 @@ mod window_state;
 
 pub use surface::Surface;
 pub use surface_index::SurfaceIndex;
+pub use tree::{Node, NodeIndex, Split, TabDestination, TabInsert, Tree};
 pub use window_state::WindowState;
-
-use tree::{Node, NodeIndex, Split, TabDestination, TabInsert, Tree};
 
 /// This structure holds a collection of surfaces, each of which stores a tree in which tabs are arranged.
 ///
