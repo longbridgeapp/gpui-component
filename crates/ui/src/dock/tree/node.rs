@@ -1,8 +1,9 @@
-use gpui::{Bounds, Pixels, Size};
+use gpui::{Pixels, Size};
+use serde::{Deserialize, Serialize};
 
 use super::Split;
-use crate::tab::Tab;
 
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Node<Tab> {
     Empty,
     Leaf {
@@ -107,7 +108,7 @@ impl<Tab> Node<Tab> {
         let size = Size::default();
         let src = match split {
             Split::Left | Split::Right => Node::Horizontal { fraction, size },
-            Split::Top | Split::Bottom => Node::Vertical { fraction, size },
+            Split::Above | Split::Below => Node::Vertical { fraction, size },
         };
         std::mem::replace(self, src)
     }
@@ -154,15 +155,15 @@ impl<Tab> Node<Tab> {
         }
     }
 
-    pub fn remove_tab(&mut self, ix: usize) {
+    pub fn remove_tab(&mut self, ix: usize) -> Option<Tab> {
         match self {
             Node::Leaf { tabs, active, .. } => {
-                tabs.remove(ix);
-                if *active >= tabs.len() {
-                    *active = tabs.len().saturating_sub(1);
+                if ix == *active {
+                    *active = 0;
                 }
+                tabs.remove(ix).into()
             }
-            _ => unreachable!(),
+            _ => None,
         }
     }
 
