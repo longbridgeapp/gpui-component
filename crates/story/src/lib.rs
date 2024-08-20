@@ -16,6 +16,8 @@ mod text_story;
 mod tooltip_story;
 mod webview_story;
 
+use std::sync::Arc;
+
 pub use button_story::ButtonStory;
 pub use calendar_story::CalendarStory;
 pub use dropdown_story::DropdownStory;
@@ -127,7 +129,7 @@ impl StoryContainer {
         cx.spawn(|mut cx| async move {
             tab_panel.update(&mut cx, |panel, cx| {
                 let view = cx.new_view(|cx| Self::new(name, description, cx).story(story));
-                panel.add_panel(view.clone());
+                panel.add_panel(Arc::new(view.clone()), cx);
                 view
             })
         })
@@ -155,8 +157,6 @@ impl Panel for StoryContainer {
     }
 
     fn set_size(&mut self, size: Pixels, cx: &mut WindowContext) {}
-
-    fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext) {}
 }
 
 impl Render for StoryContainer {

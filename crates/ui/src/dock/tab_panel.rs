@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder, px, relative, rems, AppContext, DefiniteLength, DragMoveEvent,
-    Empty, Entity, FocusHandle, FocusableView, InteractiveElement as _, IntoElement, ParentElement,
-    Pixels, Render, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
-    WeakView, WindowContext,
+    div, prelude::FluentBuilder, px, relative, rems, AppContext, Axis, DefiniteLength,
+    DragMoveEvent, Empty, Entity, FocusHandle, FocusableView, InteractiveElement as _, IntoElement,
+    ParentElement, Pixels, Render, StatefulInteractiveElement, Styled, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 
 use crate::{
@@ -47,7 +47,6 @@ pub struct TabPanel {
     stack_panel: Option<View<StackPanel>>,
     panels: Vec<Arc<dyn PanelView>>,
     active_ix: usize,
-    placement: Placement,
     size: Pixels,
 
     /// When drag move, will get the placement of the panel to be split
@@ -61,7 +60,6 @@ impl TabPanel {
             stack_panel: None,
             panels: Vec::new(),
             active_ix: 0,
-            placement: Placement::Left,
             size: px(50.),
             will_split_placement: None,
         }
@@ -71,19 +69,13 @@ impl TabPanel {
         self.stack_panel = Some(parent);
     }
 
-    pub fn add_panel<D>(&mut self, panel: View<D>)
-    where
-        D: Panel,
-    {
-        self.panels.push(Arc::new(panel));
+    pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        self.panels.push(panel);
+        self.active_ix = self.panels.len() - 1;
+        cx.notify();
     }
 
-    /// Return current active_panel View
-    pub fn active_panel(&self, cx: &AppContext) -> Option<Arc<dyn PanelView>> {
-        self.panels.get(self.active_ix).cloned()
-    }
-
-    fn remove_panel(&mut self, panel: &dyn PanelView, cx: &mut ViewContext<Self>) {
+    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         let entity_id = panel.view().entity_id();
 
         self.panels.retain(|p| p.view().entity_id() != entity_id);
@@ -94,13 +86,18 @@ impl TabPanel {
         self.check_to_remove_self(cx)
     }
 
+    /// Return current active_panel View
+    pub fn active_panel(&self, cx: &AppContext) -> Option<Arc<dyn PanelView>> {
+        self.panels.get(self.active_ix).cloned()
+    }
+
     /// Check to remove self from the parent StackPanel, if there is no panel left
     fn check_to_remove_self(&self, cx: &mut ViewContext<Self>) {
         let tab_view = cx.view().clone();
         if self.panels.is_empty() {
             if let Some(stack_panel) = self.stack_panel.as_ref() {
                 stack_panel.update(cx, |view, cx| {
-                    view.remove_panel(tab_view);
+                    view.remove_panel(tab_view, cx);
                 })
             }
         }
@@ -219,27 +216,75 @@ impl TabPanel {
         } else if position.y > bounds.top() + bounds.size.height * 0.75 {
             self.will_split_placement = Some(Placement::Bottom);
         } else {
+            // center to merge into the current tab
             self.will_split_placement = None;
         }
         cx.notify()
     }
 
     fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {
-        if drag.tab_panel.entity_id() == cx.view().entity_id() {
-            return;
-        }
-
         let panel = drag.panel.clone();
 
-        // Remove from old tabs
-        let _ = drag.tab_panel.update(cx, |tab_panel, cx| {
-            tab_panel.remove_panel(panel.as_ref(), cx);
-        });
+        if drag.tab_panel.entity_id() == cx.view().entity_id() {
+            self.remove_panel(panel.clone(), cx);
+        } else {
+            let _ = drag.tab_panel.update(cx, |view, cx| {
+                view.remove_panel(panel.clone(), cx);
+            });
+        }
 
         // Insert into new tabs
-        self.panels.push(drag.panel.clone());
-        self.active_ix = self.panels.len() - 1;
-        cx.notify()
+        if let Some(placement) = self.will_split_placement {
+            self.split_panel(panel, placement, cx);
+        } else {
+            self.add_panel(panel, cx);
+        }
+    }
+
+    fn split_panel(
+        &self,
+        panel: Arc<dyn PanelView>,
+        placement: Placement,
+        cx: &mut ViewContext<Self>,
+    ) {
+        // wrap the panel in a TabPanel
+        let tab_panel = cx.new_view(|cx| Self::new(cx));
+        tab_panel.update(cx, |tab_panel, cx| {
+            tab_panel.add_panel(panel, cx);
+        });
+
+        let stock_panel = self.stack_panel.as_ref().unwrap();
+        let parent_axis = stock_panel.read(cx).axis;
+        let ix = stock_panel
+            .read(cx)
+            .index_of_panel(cx.view().clone())
+            .unwrap_or_default();
+
+        if parent_axis == Axis::Vertical
+            && (placement == Placement::Top || placement == Placement::Bottom)
+        {
+            stock_panel.update(cx, |stack_panel, cx| {
+                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
+            });
+        } else if parent_axis == Axis::Horizontal
+            && (placement == Placement::Left || placement == Placement::Right)
+        {
+            stock_panel.update(cx, |stack_panel, cx| {
+                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
+            });
+        } else {
+            // let new_tab_panel = cx.new_view(|cx| Self::new(cx));
+            // new_tab_panel.update(cx, |new_tab_panel, cx| {
+            //     new_tab_panel.add_panel(tab_panel, cx);
+            // });
+
+            // stock_panel.update(cx, |stack_panel, cx| {
+            //     stack_panel.add_panel(new_tab_panel, Some(placement), cx);
+            // });
+
+            // TODO: Wrap parent into a new StockPanel with new axis
+            unimplemented!();
+        }
     }
 }
 
@@ -250,14 +295,6 @@ impl Panel for TabPanel {
 
     fn size(&self, cx: &WindowContext) -> Pixels {
         self.size
-    }
-
-    fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext) {
-        self.placement = placement;
-    }
-
-    fn placement(&self, cx: &WindowContext) -> Placement {
-        self.placement
     }
 }
 

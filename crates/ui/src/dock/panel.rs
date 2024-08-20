@@ -13,12 +13,6 @@ pub trait Panel: FocusableView {
     }
     /// Called when the size of the panel is changed.
     fn set_size(&mut self, size: Pixels, cx: &mut WindowContext);
-    /// The placement of the panel, default is `Placement::Left`.
-    fn placement(&self, cx: &WindowContext) -> Placement {
-        Placement::Left
-    }
-    /// Called when the placement of the panel is changed.
-    fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext);
 
     /// Whether the panel can be closed, default is `true`.
     fn closeable(&self, cx: &WindowContext) -> bool {
@@ -26,7 +20,7 @@ pub trait Panel: FocusableView {
     }
 }
 
-pub(crate) trait PanelView: Send + Sync {
+pub trait PanelView: Send + Sync {
     /// The title of the panel, default is `None`.
     fn title(&self, cx: &WindowContext) -> SharedString {
         "Unnamed".into()
@@ -37,12 +31,6 @@ pub(crate) trait PanelView: Send + Sync {
     }
     /// Called when the size of the panel is changed.
     fn set_size(&mut self, size: Pixels, cx: &mut WindowContext);
-    /// The placement of the panel, default is `Placement::Left`.
-    fn placement(&self, cx: &WindowContext) -> Placement {
-        Placement::Left
-    }
-    /// Called when the placement of the panel is changed.
-    fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext);
 
     fn view(&self) -> AnyView;
 }
@@ -60,16 +48,6 @@ impl<T: Panel> PanelView for View<T> {
         self.update(cx, |view, cx| {
             view.set_size(size, cx);
         })
-    }
-
-    fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext) {
-        self.update(cx, |view, cx| {
-            view.set_placement(placement, cx);
-        })
-    }
-
-    fn placement(&self, cx: &WindowContext) -> Placement {
-        self.read(cx).placement(cx)
     }
 
     fn view(&self) -> AnyView {

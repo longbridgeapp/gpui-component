@@ -80,6 +80,21 @@ impl ResizablePanelGroup {
         self.panels.push(cx.new_view(|_| panel));
     }
 
+    pub fn insert_child(&mut self, panel: ResizablePanel, ix: usize, cx: &mut ViewContext<Self>) {
+        let mut panel = panel;
+        panel.axis = self.axis;
+        self.sizes.insert(ix, panel.size);
+        self.panels.insert(ix, cx.new_view(|_| panel));
+        cx.notify()
+    }
+
+    pub fn remove_child(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
+        println!("---------- ResizePanelGroup remove_child ----------");
+        self.sizes.remove(ix);
+        self.panels.remove(ix);
+        cx.notify()
+    }
+
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
         let handle_size = self.handle_size;

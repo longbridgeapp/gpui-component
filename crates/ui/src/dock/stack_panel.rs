@@ -10,36 +10,29 @@ use crate::{
 use super::{Panel, PanelView, TabPanel};
 use gpui::{
     div, prelude::FluentBuilder as _, px, Axis, Element, Entity, FocusHandle, FocusableView,
-    IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
+    IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext, WeakView,
 };
 use smallvec::SmallVec;
 
 pub struct StackPanel {
-    axis: Axis,
+    parent: Option<WeakView<StackPanel>>,
+    pub(super) axis: Axis,
     focus_handle: FocusHandle,
-    children: SmallVec<[Arc<dyn PanelView>; 2]>,
+    pub(super) panels: SmallVec<[Arc<dyn PanelView>; 2]>,
     panel_group: View<ResizablePanelGroup>,
-    placement: Placement,
 }
 
 impl Panel for StackPanel {
     fn set_size(&mut self, size: Pixels, cx: &mut gpui::WindowContext) {}
-
-    fn set_placement(&mut self, placement: Placement, cx: &mut gpui::WindowContext) {
-        self.placement = placement;
-    }
-
-    fn placement(&self, cx: &gpui::WindowContext) -> Placement {
-        self.placement
-    }
 }
 
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
         Self {
             axis,
+            parent: None,
             focus_handle: cx.focus_handle(),
-            children: SmallVec::new(),
+            panels: SmallVec::new(),
             panel_group: cx.new_view(|_| {
                 if axis == Axis::Horizontal {
                     h_resizable()
@@ -47,7 +40,6 @@ impl StackPanel {
                     v_resizable()
                 }
             }),
-            placement: Placement::Left,
         }
     }
 
@@ -56,9 +48,56 @@ impl StackPanel {
     where
         P: Panel,
     {
+        self.insert_panel(panel, self.panels.len(), size, cx);
+    }
+
+    /// Return the index of the panel.
+    pub fn index_of_panel<P>(&self, panel: View<P>) -> Option<usize>
+    where
+        P: Panel,
+    {
+        let entity_id = panel.entity_id();
+        self.panels
+            .iter()
+            .position(|p| p.view().entity_id() == entity_id)
+    }
+
+    pub fn add_panel_at<P>(
+        &mut self,
+        panel: View<P>,
+        ix: usize,
+        placement: Placement,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+    {
+        match placement {
+            Placement::Top | Placement::Left => self.insert_panel_before(panel, ix, cx),
+            Placement::Right | Placement::Bottom => self.insert_panel_after(panel, ix, cx),
+        }
+    }
+
+    fn insert_panel<P>(
+        &mut self,
+        panel: View<P>,
+        ix: usize,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+    {
         let view = cx.view().clone();
+
+        // Uf the panel is a TabPanel, set its parent to this.
         if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
+            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.clone()));
+        }
+
+        // If the panel is a StackPanel, set its parent to this.
+        if let Ok(stack_panel) = panel.view().downcast::<StackPanel>() {
+            stack_panel.update(cx, move |stack_panel, _| {
+                stack_panel.parent = Some(view.downgrade());
+            });
         }
 
         self.panel_group.update(cx, |view, cx| {
@@ -68,33 +107,50 @@ impl StackPanel {
                 .when_some(size, |this, size| this.size(size))
                 .when(size.is_none(), |this| this.grow());
 
-            view.add_child(size_panel, cx)
+            view.insert_child(size_panel, ix, cx)
         });
-        // self.children.push(Arc::new(panel));
+
+        cx.notify();
     }
 
     /// Insert a panel at the index.
-    pub fn insert_panel_before<P>(&mut self, panel: View<P>, ix: usize)
+    pub fn insert_panel_before<P>(&mut self, panel: View<P>, ix: usize, cx: &mut ViewContext<Self>)
     where
         P: Panel,
     {
-        self.children.insert(ix, Arc::new(panel));
+        self.insert_panel(panel, ix, None, cx);
     }
 
     /// Insert a panel after the index.
-    pub fn insert_panel_after<P>(&mut self, panel: View<P>, ix: usize)
+    pub fn insert_panel_after<P>(&mut self, panel: View<P>, ix: usize, cx: &mut ViewContext<Self>)
     where
         P: Panel,
     {
-        self.children.insert(ix + 1, Arc::new(panel));
+        self.insert_panel(panel, ix + 1, None, cx);
     }
 
-    pub fn remove_panel<P>(&mut self, panel: View<P>)
+    pub fn remove_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
     where
         P: Panel,
     {
-        let entity_id = panel.entity_id();
-        self.children.retain(|p| p.view().entity_id() != entity_id);
+        if let Some(ix) = self.index_of_panel(panel) {
+            self.panels.remove(ix);
+            self.panel_group.update(cx, |view, cx| {
+                view.remove_child(ix, cx);
+            });
+
+            // If children is empty, remove self from parent view.
+            if self.panels.is_empty() {
+                let view = cx.view().clone();
+                if let Some(parent) = self.parent.as_ref().and_then(|p| p.upgrade()) {
+                    parent.update(cx, |parent, cx| {
+                        parent.remove_panel(view, cx);
+                    });
+                }
+
+                cx.notify();
+            }
+        }
     }
 }
 
