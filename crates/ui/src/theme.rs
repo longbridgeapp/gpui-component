@@ -365,7 +365,7 @@ impl From<Colors> for Theme {
             panel: colors.panel,
             selection: colors.selection,
             drag_border: crate::blue_500(),
-            drop_target: hsl(240.0, 65., 44.0).opacity(0.15),
+            drop_target: hsl(220.0, 65., 44.0).opacity(0.15),
             tab_bar: colors.tab_bar,
             tab: gpui::transparent_black(),
             tab_active: colors.background,

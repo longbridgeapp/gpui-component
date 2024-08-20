@@ -113,22 +113,20 @@ impl<Tab: Panel> DockArea<Tab> {
 
         if tabs.len() == 1 {
             let tab = tabs.get(0).unwrap();
-            if let Some(title) = tab.title(cx) {
-                return h_flex()
-                    .justify_between()
-                    .items_center()
-                    .py_2()
-                    .px_3()
-                    .line_height(rems(1.0))
-                    .child(title)
-                    .child(
-                        Button::new("menu", cx)
-                            .icon(IconName::Ellipsis)
-                            .xsmall()
-                            .ghost(),
-                    )
-                    .into_any_element();
-            }
+            return h_flex()
+                .justify_between()
+                .items_center()
+                .py_2()
+                .px_3()
+                .line_height(rems(1.0))
+                .child(tab.title(cx))
+                .child(
+                    Button::new("menu", cx)
+                        .icon(IconName::Ellipsis)
+                        .xsmall()
+                        .ghost(),
+                )
+                .into_any_element();
 
             return Empty {}.into_any_element();
         }
@@ -140,9 +138,8 @@ impl<Tab: Panel> DockArea<Tab> {
                     .map(|(ix, tab)| {
                         let active =
                             self.dock_state[surface_index][node_index].active_tab_ix() == Some(ix);
-                        let title = tab.title(cx).unwrap_or("Unnamed".into());
 
-                        crate::tab::Tab::new(("tab", ix), title)
+                        crate::tab::Tab::new(("tab", ix), tab.title(cx))
                             .selected(active)
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.dock_state[surface_index][node_index].set_active_tab(ix);

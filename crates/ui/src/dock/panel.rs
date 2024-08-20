@@ -4,8 +4,8 @@ use crate::Placement;
 
 pub trait Panel: FocusableView {
     /// The title of the panel, default is `None`.
-    fn title(&self, cx: &WindowContext) -> Option<SharedString> {
-        None
+    fn title(&self, cx: &WindowContext) -> SharedString {
+        "Unnamed".into()
     }
     /// The size of the panel, default is `50px`.
     fn size(&self, cx: &WindowContext) -> Pixels {
@@ -28,8 +28,8 @@ pub trait Panel: FocusableView {
 
 pub(crate) trait PanelView: Send + Sync {
     /// The title of the panel, default is `None`.
-    fn title(&self, cx: &WindowContext) -> Option<SharedString> {
-        None
+    fn title(&self, cx: &WindowContext) -> SharedString {
+        "Unnamed".into()
     }
     /// The size of the panel, default is `50px`.
     fn size(&self, cx: &WindowContext) -> Pixels {
@@ -48,7 +48,7 @@ pub(crate) trait PanelView: Send + Sync {
 }
 
 impl<T: Panel> PanelView for View<T> {
-    fn title(&self, cx: &WindowContext) -> Option<SharedString> {
+    fn title(&self, cx: &WindowContext) -> SharedString {
         self.read(cx).title(cx)
     }
 

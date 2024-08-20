@@ -150,8 +150,8 @@ impl StoryContainer {
 }
 
 impl Panel for StoryContainer {
-    fn title(&self, cx: &WindowContext) -> Option<SharedString> {
-        Some(self.name.clone())
+    fn title(&self, cx: &WindowContext) -> SharedString {
+        self.name.clone()
     }
 
     fn set_size(&mut self, size: Pixels, cx: &mut WindowContext) {}

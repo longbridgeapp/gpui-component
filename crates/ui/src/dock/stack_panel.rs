@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, thread::panicking};
 
 use crate::{
     h_flex,
@@ -7,7 +7,7 @@ use crate::{
     v_flex, Placement, StyledExt,
 };
 
-use super::{Panel, PanelView};
+use super::{Panel, PanelView, TabPanel};
 use gpui::{
     div, prelude::FluentBuilder as _, px, Axis, Element, FocusHandle, FocusableView, IntoElement,
     ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
@@ -34,16 +34,6 @@ impl Panel for StackPanel {
     }
 }
 
-// impl PanelView for View<StackPanel> {
-//     fn set_size(&mut self, size: gpui::Pixels, cx: &mut gpui::WindowContext) {}
-
-//     fn set_placement(&mut self, placement: Placement, cx: &mut gpui::WindowContext) {}
-
-//     fn view(&self) -> gpui::AnyView {
-//         self.clone().into()
-//     }
-// }
-
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
         Self {
@@ -66,6 +56,11 @@ impl StackPanel {
     where
         P: Panel,
     {
+        let view = cx.view().clone();
+        if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
+            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
+        }
+
         self.panel_group.update(cx, |view, cx| {
             let size_panel = resizable_panel()
                 .content_view(panel.view())
