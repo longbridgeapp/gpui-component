@@ -44,7 +44,7 @@ pub(crate) trait PanelView: Send + Sync {
     /// Called when the placement of the panel is changed.
     fn set_placement(&mut self, placement: Placement, cx: &mut WindowContext);
 
-    fn into_any(&self) -> AnyView;
+    fn view(&self) -> AnyView;
 }
 
 impl<T: Panel> PanelView for View<T> {
@@ -72,13 +72,13 @@ impl<T: Panel> PanelView for View<T> {
         self.read(cx).placement(cx)
     }
 
-    fn into_any(&self) -> AnyView {
+    fn view(&self) -> AnyView {
         self.clone().into()
     }
 }
 
 impl From<&dyn PanelView> for AnyView {
     fn from(handle: &dyn PanelView) -> Self {
-        handle.into_any()
+        handle.view()
     }
 }

@@ -53,11 +53,19 @@ impl StoryWorkspace {
 
         let tab_panel = cx.new_view(|cx| TabPanel::new(cx));
         let right_tab_panel = cx.new_view(|cx| TabPanel::new(cx));
+        let right_tab_panel1 = cx.new_view(|cx| TabPanel::new(cx));
 
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
         stack_panel.update(cx, |view, cx| {
-            view.add_panel(tab_panel.clone(), cx);
-            view.add_panel(right_tab_panel.clone(), cx);
+            view.add_panel(tab_panel.clone(), None, cx);
+
+            let stock_panel1 = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            view.add_panel(stock_panel1.clone(), Some(px(400.)), cx);
+
+            stock_panel1.update(cx, |view, cx| {
+                view.add_panel(right_tab_panel.clone(), None, cx);
+                view.add_panel(right_tab_panel1.clone(), None, cx);
+            })
         });
 
         StoryContainer::add_pane(
@@ -154,7 +162,7 @@ impl StoryWorkspace {
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
-            tab_panel.clone(),
+            right_tab_panel1.clone(),
             cx,
         )
         .detach();

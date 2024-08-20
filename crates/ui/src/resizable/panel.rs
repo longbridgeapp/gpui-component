@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, Axis, Bounds, DragMoveEvent,
+    canvas, div, prelude::FluentBuilder, px, AnyElement, AnyView, Axis, Bounds, DragMoveEvent,
     EntityId, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, Render,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
@@ -280,6 +280,8 @@ impl ResizablePanel {
         self
     }
 }
+
+impl FluentBuilder for ResizablePanel {}
 
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {

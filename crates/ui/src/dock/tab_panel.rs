@@ -97,7 +97,7 @@ impl TabPanel {
                     .id("tab-content")
                     .overflow_y_scroll()
                     .flex_1()
-                    .child(panel.into_any())
+                    .child(panel.view())
                     .into_any_element()
             })
             .unwrap_or(Empty {}.into_any_element())

@@ -9,21 +9,46 @@ use crate::{
 
 use super::{Panel, PanelView};
 use gpui::{
-    div, Axis, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext,
+    div, prelude::FluentBuilder as _, px, Axis, Element, FocusHandle, FocusableView, IntoElement,
+    ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
 };
 use smallvec::SmallVec;
 
 pub struct StackPanel {
     axis: Axis,
+    focus_handle: FocusHandle,
     children: SmallVec<[Arc<dyn PanelView>; 2]>,
     panel_group: View<ResizablePanelGroup>,
     placement: Placement,
 }
 
+impl Panel for StackPanel {
+    fn set_size(&mut self, size: Pixels, cx: &mut gpui::WindowContext) {}
+
+    fn set_placement(&mut self, placement: Placement, cx: &mut gpui::WindowContext) {
+        self.placement = placement;
+    }
+
+    fn placement(&self, cx: &gpui::WindowContext) -> Placement {
+        self.placement
+    }
+}
+
+// impl PanelView for View<StackPanel> {
+//     fn set_size(&mut self, size: gpui::Pixels, cx: &mut gpui::WindowContext) {}
+
+//     fn set_placement(&mut self, placement: Placement, cx: &mut gpui::WindowContext) {}
+
+//     fn view(&self) -> gpui::AnyView {
+//         self.clone().into()
+//     }
+// }
+
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
         Self {
             axis,
+            focus_handle: cx.focus_handle(),
             children: SmallVec::new(),
             panel_group: cx.new_view(|_| {
                 if axis == Axis::Horizontal {
@@ -37,12 +62,18 @@ impl StackPanel {
     }
 
     /// Add a panel at the end of the stack.
-    pub fn add_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
+    pub fn add_panel<P>(&mut self, panel: View<P>, size: Option<Pixels>, cx: &mut ViewContext<Self>)
     where
         P: Panel,
     {
         self.panel_group.update(cx, |view, cx| {
-            view.add_child(resizable_panel().content_view(panel.into_any()), cx)
+            let size_panel = resizable_panel()
+                .content_view(panel.view())
+                .min_size(px(100.))
+                .when_some(size, |this, size| this.size(size))
+                .when(size.is_none(), |this| this.grow());
+
+            view.add_child(size_panel, cx)
         });
         // self.children.push(Arc::new(panel));
     }
@@ -64,11 +95,16 @@ impl StackPanel {
     }
 }
 
+impl FocusableView for StackPanel {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+
 impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .size_full()
-            .flex_1()
             .overflow_hidden()
             .bg(cx.theme().tab_bar)
             .child(self.panel_group.clone())
