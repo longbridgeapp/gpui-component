@@ -40,6 +40,11 @@ impl StackPanel {
         }
     }
 
+    /// The first level of the stack panel is root, will not have a parent.
+    fn is_root(&self) -> bool {
+        self.parent.is_none()
+    }
+
     /// Add a panel at the end of the stack.
     pub fn add_panel<P>(&mut self, panel: View<P>, size: Option<Pixels>, cx: &mut ViewContext<Self>)
     where
@@ -192,6 +197,10 @@ impl StackPanel {
 
     /// If children is empty, remove self from parent view.
     fn remove_self_if_empty(&mut self, cx: &mut ViewContext<Self>) {
+        if self.is_root() {
+            return;
+        }
+
         if !self.panels.is_empty() {
             return;
         }

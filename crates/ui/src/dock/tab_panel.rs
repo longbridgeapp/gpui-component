@@ -162,10 +162,6 @@ impl TabPanel {
 
         let tab_view = cx.view().clone();
         if let Some(stack_panel) = self.stack_panel.as_ref() {
-            println!(
-                "--------- tab panel: remove self if empty: {} ---------",
-                tab_view.entity_id()
-            );
             stack_panel.update(cx, |view, cx| {
                 view.remove_panel(tab_view, cx);
             })
@@ -305,9 +301,6 @@ impl TabPanel {
                 view.remove_panel(panel.clone(), cx);
             });
         }
-
-        println!("----------- from tab panel: {}", drag.tab_panel.entity_id());
-        println!("----------- to tab panel: {}", cx.view().entity_id());
 
         // Insert into new tabs
         if let Some(placement) = self.will_split_placement {
