@@ -89,7 +89,6 @@ impl ResizablePanelGroup {
     }
 
     pub fn remove_child(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
-        println!("---------- ResizePanelGroup remove_child ----------");
         self.sizes.remove(ix);
         self.panels.remove(ix);
         cx.notify()
@@ -103,8 +102,8 @@ impl ResizablePanelGroup {
         div()
             .id(("resizable-handle", ix))
             .occlude()
-            .hover(|this| this.bg(cx.theme().drag_border))
-            .when(is_resizing, |this| this.bg(cx.theme().drag_border))
+            // .hover(|this| this.bg(cx.theme().drag_border))
+            // .when(is_resizing, |this| this.bg(cx.theme().drag_border))
             .when(self.axis.is_horizontal(), |this| {
                 this.cursor_col_resize().top_0().h_full().w(handle_size)
             })

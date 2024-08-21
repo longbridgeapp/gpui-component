@@ -1,36 +1,33 @@
-use std::{sync::Arc, thread::panicking};
+use std::sync::Arc;
 
 use crate::{
-    h_flex,
-    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
+    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanelGroup},
     theme::ActiveTheme,
-    v_flex, Placement, StyledExt,
+    Placement,
 };
 
 use super::{Panel, PanelView, TabPanel};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, Entity, FocusHandle, FocusableView,
-    IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext, WeakView,
+    div, prelude::FluentBuilder as _, px, Axis, Entity, FocusHandle, FocusableView, IntoElement,
+    ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
 };
 use smallvec::SmallVec;
 
 pub struct StackPanel {
-    parent: Option<WeakView<StackPanel>>,
+    parent: Option<View<StackPanel>>,
     pub(super) axis: Axis,
     focus_handle: FocusHandle,
     pub(super) panels: SmallVec<[Arc<dyn PanelView>; 2]>,
     panel_group: View<ResizablePanelGroup>,
 }
 
-impl Panel for StackPanel {
-    fn set_size(&mut self, size: Pixels, cx: &mut gpui::WindowContext) {}
-}
+impl Panel for StackPanel {}
 
 impl StackPanel {
-    pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(axis: Axis, parent: Option<View<StackPanel>>, cx: &mut ViewContext<Self>) -> Self {
         Self {
             axis,
-            parent: None,
+            parent,
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
             panel_group: cx.new_view(|_| {
@@ -77,42 +74,6 @@ impl StackPanel {
         }
     }
 
-    fn insert_panel<P>(
-        &mut self,
-        panel: View<P>,
-        ix: usize,
-        size: Option<Pixels>,
-        cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
-        let view = cx.view().clone();
-
-        // Uf the panel is a TabPanel, set its parent to this.
-        if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.clone()));
-        }
-
-        // If the panel is a StackPanel, set its parent to this.
-        if let Ok(stack_panel) = panel.view().downcast::<StackPanel>() {
-            stack_panel.update(cx, move |stack_panel, _| {
-                stack_panel.parent = Some(view.downgrade());
-            });
-        }
-
-        self.panel_group.update(cx, |view, cx| {
-            let size_panel = resizable_panel()
-                .content_view(panel.view())
-                .min_size(px(100.))
-                .when_some(size, |this, size| this.size(size))
-                .when(size.is_none(), |this| this.grow());
-
-            view.insert_child(size_panel, ix, cx)
-        });
-
-        cx.notify();
-    }
-
     /// Insert a panel at the index.
     pub fn insert_panel_before<P>(&mut self, panel: View<P>, ix: usize, cx: &mut ViewContext<Self>)
     where
@@ -129,28 +90,119 @@ impl StackPanel {
         self.insert_panel(panel, ix + 1, None, cx);
     }
 
+    /// Remove panel from the stack.
     pub fn remove_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
     where
         P: Panel,
     {
+        println!("------------ remove_panel 0: {}", panel.view().entity_id());
         if let Some(ix) = self.index_of_panel(panel) {
+            println!("------------ remove_panel 1: {}", self.panels.len());
             self.panels.remove(ix);
             self.panel_group.update(cx, |view, cx| {
                 view.remove_child(ix, cx);
             });
 
-            // If children is empty, remove self from parent view.
-            if self.panels.is_empty() {
-                let view = cx.view().clone();
-                if let Some(parent) = self.parent.as_ref().and_then(|p| p.upgrade()) {
-                    parent.update(cx, |parent, cx| {
-                        parent.remove_panel(view, cx);
-                    });
-                }
+            println!("------------ child len: {}", self.panels.len());
+            println!(
+                "--------- retain ids: {:?}",
+                self.panels
+                    .iter()
+                    .map(|p| p.view().entity_id().to_string())
+                    .collect::<Vec<_>>()
+            );
 
-                cx.notify();
-            }
+            self.remove_self_if_empty(cx);
         }
+    }
+
+    /// Wrap self into another new stack panel, replace self on parent with the new stack panel.
+    pub fn wrap_into(&mut self, new_stack_panel: View<Self>, cx: &mut ViewContext<Self>) {
+        let new_axis = new_stack_panel.read(cx).axis;
+        let new_panels = new_stack_panel.read(cx).panels.clone();
+        let new_panel_group = new_stack_panel.read(cx).panel_group.clone();
+
+        let old_panels = self.panels.clone();
+        let old_axis = self.axis;
+        let old_parent = self.parent.clone();
+        let old_panel_group = self.panel_group.clone();
+
+        new_stack_panel.update(cx, |view, _| {
+            view.panels = old_panels;
+            view.axis = old_axis;
+            view.parent = old_parent;
+            view.panel_group = old_panel_group;
+        });
+
+        self.panels = new_panels;
+        self.axis = new_axis;
+        self.parent = Some(new_stack_panel);
+        self.panel_group = new_panel_group;
+        cx.notify();
+    }
+
+    fn insert_panel<P>(
+        &mut self,
+        panel: View<P>,
+        ix: usize,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+    {
+        // If the panel is already in the stack, return.
+        if let Some(_) = self.index_of_panel(panel.clone()) {
+            return;
+        }
+
+        cx.spawn(|view, mut cx| {
+            let panel = panel.clone();
+            async move {
+                if let Some(view) = view.upgrade() {
+                    cx.update(|cx| {
+                        // If the panel is a TabPanel, set its parent to this.
+                        if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
+                            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.clone()));
+                        }
+                    })
+                } else {
+                    Ok(())
+                }
+            }
+        })
+        .detach();
+
+        self.panels.push(Arc::new(panel.clone()));
+        self.panel_group.update(cx, |view, cx| {
+            let size_panel = resizable_panel()
+                .content_view(panel.view())
+                .min_size(px(100.))
+                .when_some(size, |this, size| this.size(size))
+                .when(size.is_none(), |this| this.grow());
+
+            view.insert_child(size_panel, ix, cx)
+        });
+
+        cx.notify();
+    }
+
+    /// If children is empty, remove self from parent view.
+    fn remove_self_if_empty(&mut self, cx: &mut ViewContext<Self>) {
+        if !self.panels.is_empty() {
+            return;
+        }
+
+        let view = cx.view().clone();
+        println!("------------ remove_self_if_empty 0");
+        if let Some(parent) = self.parent.as_ref() {
+            println!("------------ remove_self_if_empty 1");
+            parent.update(cx, |parent, cx| {
+                println!("------------ remove_self_if_empty 2");
+                parent.remove_panel(view, cx);
+            });
+        }
+
+        cx.notify();
     }
 }
 

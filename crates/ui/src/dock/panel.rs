@@ -12,7 +12,7 @@ pub trait Panel: FocusableView {
         px(50.)
     }
     /// Called when the size of the panel is changed.
-    fn set_size(&mut self, size: Pixels, cx: &mut WindowContext);
+    fn set_size(&mut self, size: Pixels, cx: &mut WindowContext) {}
 
     /// Whether the panel can be closed, default is `true`.
     fn closeable(&self, cx: &WindowContext) -> bool {

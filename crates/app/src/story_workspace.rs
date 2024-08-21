@@ -55,11 +55,12 @@ impl StoryWorkspace {
         let right_tab_panel = cx.new_view(|cx| TabPanel::new(cx));
         let right_tab_panel1 = cx.new_view(|cx| TabPanel::new(cx));
 
-        let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
+        let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, None, cx));
         stack_panel.update(cx, |view, cx| {
             view.add_panel(tab_panel.clone(), None, cx);
 
-            let stock_panel1 = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            let stock_panel1 =
+                cx.new_view(|cx| StackPanel::new(Axis::Vertical, Some(stack_panel.clone()), cx));
             view.add_panel(stock_panel1.clone(), Some(px(400.)), cx);
 
             stock_panel1.update(cx, |view, cx| {

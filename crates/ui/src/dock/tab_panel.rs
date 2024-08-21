@@ -12,7 +12,7 @@ use crate::{
     h_flex,
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    v_flex, IconName, Placement, Selectable, Sizable, StyledExt,
+    v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
 };
 
 use super::{Panel, PanelView, StackPanel};
@@ -69,12 +69,27 @@ impl TabPanel {
         self.stack_panel = Some(parent);
     }
 
+    /// Return current active_panel View
+    pub fn active_panel(&self, cx: &AppContext) -> Option<Arc<dyn PanelView>> {
+        self.panels.get(self.active_ix).cloned()
+    }
+
     pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        if self
+            .panels
+            .iter()
+            .any(|p| p.view().entity_id() == panel.view().entity_id())
+        {
+            return;
+        }
+
         self.panels.push(panel);
+        // set the active panel to the new panel
         self.active_ix = self.panels.len() - 1;
         cx.notify();
     }
 
+    /// Remove a panel from the tab panel
     pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         let entity_id = panel.view().entity_id();
 
@@ -83,23 +98,78 @@ impl TabPanel {
             self.active_ix = self.panels.len().saturating_sub(1);
         }
 
-        self.check_to_remove_self(cx)
+        self.remove_self_if_empty(cx)
     }
 
-    /// Return current active_panel View
-    pub fn active_panel(&self, cx: &AppContext) -> Option<Arc<dyn PanelView>> {
-        self.panels.get(self.active_ix).cloned()
+    fn split_panel(
+        &self,
+        panel: Arc<dyn PanelView>,
+        placement: Placement,
+        cx: &mut ViewContext<Self>,
+    ) {
+        // wrap the panel in a TabPanel
+        let tab_panel = cx.new_view(|cx| Self::new(cx));
+        tab_panel.update(cx, |tab_panel, cx| {
+            tab_panel.add_panel(panel, cx);
+        });
+
+        let stack_panel = self.stack_panel.as_ref().unwrap();
+        let parent_axis = stack_panel.read(cx).axis;
+        let ix = stack_panel
+            .read(cx)
+            .index_of_panel(cx.view().clone())
+            .unwrap_or_default();
+
+        if parent_axis.is_vertical() && placement.is_vertical() {
+            stack_panel.update(cx, |stack_panel, cx| {
+                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
+            });
+        } else if parent_axis.is_horizontal() && placement.is_horizontal() {
+            stack_panel.update(cx, |stack_panel, cx| {
+                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
+            });
+        } else {
+            // 1. Create new StackPanel with new axis
+            // 2. Move cx.view() from parent StackPanel to the new StackPanel
+            // 3. Add the new TabPanel to the new StackPanel at the correct index
+            // 4. Add new StackPanel to the parent StackPanel at the correct index
+            let current_tab_panel = cx.view().clone();
+            let new_stack_panel =
+                cx.new_view(|cx| StackPanel::new(placement.axis(), Some(stack_panel.clone()), cx));
+
+            new_stack_panel.update(cx, |new_stack_panel, cx| match placement {
+                Placement::Left | Placement::Top => {
+                    new_stack_panel.add_panel(tab_panel, None, cx);
+                    new_stack_panel.add_panel(current_tab_panel.clone(), None, cx);
+                }
+                Placement::Right | Placement::Bottom => {
+                    new_stack_panel.add_panel(current_tab_panel.clone(), None, cx);
+                    new_stack_panel.add_panel(tab_panel, None, cx);
+                }
+            });
+
+            stack_panel.update(cx, |stack_panel, cx| {
+                stack_panel.add_panel_at(new_stack_panel.clone(), ix, placement, cx);
+                stack_panel.remove_panel(current_tab_panel.clone(), cx);
+            });
+        }
     }
 
     /// Check to remove self from the parent StackPanel, if there is no panel left
-    fn check_to_remove_self(&self, cx: &mut ViewContext<Self>) {
+    fn remove_self_if_empty(&self, cx: &mut ViewContext<Self>) {
+        if !self.panels.is_empty() {
+            return;
+        }
+
         let tab_view = cx.view().clone();
-        if self.panels.is_empty() {
-            if let Some(stack_panel) = self.stack_panel.as_ref() {
-                stack_panel.update(cx, |view, cx| {
-                    view.remove_panel(tab_view, cx);
-                })
-            }
+        if let Some(stack_panel) = self.stack_panel.as_ref() {
+            println!(
+                "--------- tab panel: remove self if empty: {} ---------",
+                tab_view.entity_id()
+            );
+            stack_panel.update(cx, |view, cx| {
+                view.remove_panel(tab_view, cx);
+            })
         }
     }
 
@@ -225,6 +295,10 @@ impl TabPanel {
     fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {
         let panel = drag.panel.clone();
 
+        // Here is looks like remove_panel on a same item, but it differnece.
+        //
+        // We must to split it to remove_panel, unless it will be crash by error:
+        // Cannot update ui::dock::tab_panel::TabPanel while it is already being updated
         if drag.tab_panel.entity_id() == cx.view().entity_id() {
             self.remove_panel(panel.clone(), cx);
         } else {
@@ -233,57 +307,14 @@ impl TabPanel {
             });
         }
 
+        println!("----------- from tab panel: {}", drag.tab_panel.entity_id());
+        println!("----------- to tab panel: {}", cx.view().entity_id());
+
         // Insert into new tabs
         if let Some(placement) = self.will_split_placement {
             self.split_panel(panel, placement, cx);
         } else {
             self.add_panel(panel, cx);
-        }
-    }
-
-    fn split_panel(
-        &self,
-        panel: Arc<dyn PanelView>,
-        placement: Placement,
-        cx: &mut ViewContext<Self>,
-    ) {
-        // wrap the panel in a TabPanel
-        let tab_panel = cx.new_view(|cx| Self::new(cx));
-        tab_panel.update(cx, |tab_panel, cx| {
-            tab_panel.add_panel(panel, cx);
-        });
-
-        let stock_panel = self.stack_panel.as_ref().unwrap();
-        let parent_axis = stock_panel.read(cx).axis;
-        let ix = stock_panel
-            .read(cx)
-            .index_of_panel(cx.view().clone())
-            .unwrap_or_default();
-
-        if parent_axis == Axis::Vertical
-            && (placement == Placement::Top || placement == Placement::Bottom)
-        {
-            stock_panel.update(cx, |stack_panel, cx| {
-                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
-            });
-        } else if parent_axis == Axis::Horizontal
-            && (placement == Placement::Left || placement == Placement::Right)
-        {
-            stock_panel.update(cx, |stack_panel, cx| {
-                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
-            });
-        } else {
-            // let new_tab_panel = cx.new_view(|cx| Self::new(cx));
-            // new_tab_panel.update(cx, |new_tab_panel, cx| {
-            //     new_tab_panel.add_panel(tab_panel, cx);
-            // });
-
-            // stock_panel.update(cx, |stack_panel, cx| {
-            //     stack_panel.add_panel(new_tab_panel, Some(placement), cx);
-            // });
-
-            // TODO: Wrap parent into a new StockPanel with new axis
-            unimplemented!();
         }
     }
 }

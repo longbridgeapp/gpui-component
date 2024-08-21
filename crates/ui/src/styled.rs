@@ -347,15 +347,22 @@ impl Display for Placement {
 impl Placement {
     pub fn is_horizontal(&self) -> bool {
         match self {
-            Placement::Top | Placement::Bottom => true,
+            Placement::Left | Placement::Right => true,
             _ => false,
         }
     }
 
     pub fn is_vertical(&self) -> bool {
         match self {
-            Placement::Left | Placement::Right => true,
+            Placement::Top | Placement::Bottom => true,
             _ => false,
+        }
+    }
+
+    pub fn axis(&self) -> Axis {
+        match self {
+            Placement::Top | Placement::Bottom => Axis::Vertical,
+            Placement::Left | Placement::Right => Axis::Horizontal,
         }
     }
 }
