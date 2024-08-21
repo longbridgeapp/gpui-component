@@ -134,8 +134,7 @@ impl TabPanel {
             // 3. Add the new TabPanel to the new StackPanel at the correct index
             // 4. Add new StackPanel to the parent StackPanel at the correct index
             let current_tab_panel = cx.view().clone();
-            let new_stack_panel =
-                cx.new_view(|cx| StackPanel::new(placement.axis(), Some(stack_panel.clone()), cx));
+            let new_stack_panel = cx.new_view(|cx| StackPanel::new(placement.axis(), cx));
 
             new_stack_panel.update(cx, |new_stack_panel, cx| match placement {
                 Placement::Left | Placement::Top => {

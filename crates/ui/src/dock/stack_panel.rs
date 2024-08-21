@@ -24,10 +24,10 @@ pub struct StackPanel {
 impl Panel for StackPanel {}
 
 impl StackPanel {
-    pub fn new(axis: Axis, parent: Option<View<StackPanel>>, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
         Self {
             axis,
-            parent,
+            parent: None,
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
             panel_group: cx.new_view(|_| {
@@ -163,6 +163,10 @@ impl StackPanel {
                         // If the panel is a TabPanel, set its parent to this.
                         if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
                             tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.clone()));
+                        } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
+                            stack_panel.update(cx, |stack_panel, _| {
+                                stack_panel.parent = Some(view.clone())
+                            });
                         }
                     })
                 } else {
