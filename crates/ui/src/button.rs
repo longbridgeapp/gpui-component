@@ -342,7 +342,7 @@ impl RenderOnce for Button {
             })
             .when(focused, |this| this.border_color(cx.theme().ring))
             .when_some(
-                self.on_click.filter(|_| !self.disabled),
+                self.on_click.filter(|_| !self.disabled && !self.loading),
                 |this, on_click| {
                     this.on_mouse_down(MouseButton::Left, |_, cx| {
                         cx.prevent_default();
@@ -383,6 +383,7 @@ impl RenderOnce for Button {
                     .when_some(self.label, |this, label| this.child(label))
                     .children(self.children)
             })
+            .when(self.loading, |this| this.bg(normal_style.bg.opacity(0.8)))
     }
 }
 
