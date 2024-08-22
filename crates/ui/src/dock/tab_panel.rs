@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{
     div, prelude::FluentBuilder, rems, AppContext, DefiniteLength, DragMoveEvent, Empty,
     FocusHandle, FocusableView, InteractiveElement as _, IntoElement, ParentElement, Render,
-    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    ScrollHandle, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
 };
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     h_flex,
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
+    v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
 };
 
 use super::{Panel, PanelView, StackPanel};
@@ -20,6 +20,12 @@ use super::{Panel, PanelView, StackPanel};
 pub(crate) struct DragPanel {
     pub(crate) panel: Arc<dyn PanelView>,
     pub(crate) tab_panel: View<TabPanel>,
+}
+
+impl DragPanel {
+    pub(crate) fn new(panel: Arc<dyn PanelView>, tab_panel: View<TabPanel>) -> Self {
+        Self { panel, tab_panel }
+    }
 }
 
 impl Render for DragPanel {
@@ -35,7 +41,7 @@ impl Render for DragPanel {
             .border_color(cx.theme().border)
             .rounded_md()
             .bg(cx.theme().tab_active)
-            .shadow_md()
+            .opacity(0.75)
             .child(self.panel.title(cx))
     }
 }
@@ -45,6 +51,7 @@ pub struct TabPanel {
     stack_panel: Option<View<StackPanel>>,
     panels: Vec<Arc<dyn PanelView>>,
     active_ix: usize,
+    tabbar_scroll_handle: ScrollHandle,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -57,6 +64,7 @@ impl TabPanel {
             stack_panel: None,
             panels: Vec::new(),
             active_ix: 0,
+            tabbar_scroll_handle: ScrollHandle::new(),
             will_split_placement: None,
         }
     }
@@ -83,6 +91,25 @@ impl TabPanel {
         self.panels.push(panel);
         // set the active panel to the new panel
         self.active_ix = self.panels.len() - 1;
+        cx.notify();
+    }
+
+    fn insert_panel_at(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) {
+        if self
+            .panels
+            .iter()
+            .any(|p| p.view().entity_id() == panel.view().entity_id())
+        {
+            return;
+        }
+
+        self.panels.insert(ix, panel);
+        self.active_ix = ix;
         cx.notify();
     }
 
@@ -147,30 +174,50 @@ impl TabPanel {
                 .into_any_element();
         }
 
-        TabBar::new("tabs")
-            .children(
-                self.panels
-                    .iter()
-                    .enumerate()
-                    .map(|(ix, panel)| {
-                        let active = ix == self.active_ix;
-                        Tab::new(("tab", ix), panel.title(cx))
-                            .selected(active)
-                            .on_click(cx.listener(move |view, _, _| {
-                                view.active_ix = ix;
-                            }))
-                            .on_drag(
-                                DragPanel {
-                                    panel: panel.clone(),
-                                    tab_panel: view.clone(),
-                                },
-                                |drag, cx| {
-                                    cx.stop_propagation();
-                                    cx.new_view(|_| drag.clone())
-                                },
-                            )
+        let tabs_count = self.panels.len();
+        TabBar::new("tab-bar")
+            .track_scroll(self.tabbar_scroll_handle.clone())
+            .children(self.panels.iter().enumerate().map(|(ix, panel)| {
+                let active = ix == self.active_ix;
+                Tab::new(("tab", ix), panel.title(cx))
+                    .selected(active)
+                    .on_click(cx.listener(move |view, _, _| {
+                        view.active_ix = ix;
+                    }))
+                    .on_drag(DragPanel::new(panel.clone(), view.clone()), |drag, cx| {
+                        cx.stop_propagation();
+                        cx.new_view(|_| drag.clone())
                     })
-                    .collect::<Vec<_>>(),
+                    .drag_over::<DragPanel>(|this, _, cx| {
+                        this.rounded_l_none()
+                            .border_l_2()
+                            .border_r_0()
+                            .border_color(cx.theme().drag_border)
+                    })
+                    .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
+                        this.will_split_placement = None;
+                        this.on_drop(drag, Some(ix), cx)
+                    }))
+            }))
+            .child(
+                // empty space to allow move to last tab right
+                div()
+                    .id("tab-bar-empty-space")
+                    .h_full()
+                    .flex_grow()
+                    .min_w_16()
+                    .drag_over::<DragPanel>(|this, _, cx| this.bg(cx.theme().drop_target))
+                    .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
+                        this.will_split_placement = None;
+
+                        let ix = if drag.tab_panel == view {
+                            Some(tabs_count - 1)
+                        } else {
+                            None
+                        };
+
+                        this.on_drop(drag, ix, cx)
+                    })),
             )
             .into_any_element()
     }
@@ -207,7 +254,9 @@ impl TabPanel {
                                 None => this.top_0().left_0().size_full(),
                             })
                             .group_drag_over::<DragPanel>("", |this| this.visible())
-                            .on_drop(cx.listener(Self::on_drop)),
+                            .on_drop(cx.listener(|this, drag: &DragPanel, cx| {
+                                this.on_drop(drag, None, cx)
+                            })),
                     )
                     .into_any_element()
             })
@@ -235,12 +284,12 @@ impl TabPanel {
         cx.notify()
     }
 
-    fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {
+    fn on_drop(&mut self, drag: &DragPanel, ix: Option<usize>, cx: &mut ViewContext<Self>) {
         let panel = drag.panel.clone();
         let is_same_tab = drag.tab_panel == *cx.view();
 
         // If target is same tab, and it is only one panel, do nothing.
-        if is_same_tab {
+        if is_same_tab && ix.is_none() {
             if self.will_split_placement.is_none() {
                 return;
             } else {
@@ -267,7 +316,11 @@ impl TabPanel {
         if let Some(placement) = self.will_split_placement {
             self.split_panel(panel, placement, cx);
         } else {
-            self.add_panel(panel, cx);
+            if let Some(ix) = ix {
+                self.insert_panel_at(panel, ix, cx)
+            } else {
+                self.add_panel(panel, cx)
+            }
         }
 
         self.remove_self_if_empty(cx);
