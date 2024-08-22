@@ -14,7 +14,7 @@ use gpui::{
 use smallvec::SmallVec;
 
 pub struct StackPanel {
-    parent: Option<View<StackPanel>>,
+    pub(super) parent: Option<View<StackPanel>>,
     pub(super) axis: Axis,
     focus_handle: FocusHandle,
     panels: SmallVec<[Arc<dyn PanelView>; 2]>,
@@ -153,23 +153,6 @@ impl StackPanel {
         cx.notify();
     }
 
-    pub fn replace_panel<P, P1>(
-        &mut self,
-        old_panel: View<P>,
-        new_panel: View<P1>,
-        cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-        P1: Panel,
-    {
-        if let Some(ix) = self.index_of_panel(old_panel) {
-            self.panels[ix] = Arc::new(new_panel.clone());
-            self.panel_group.update(cx, |view, cx| {
-                view.replace_child(Self::new_resizable_panel(new_panel, None), ix, cx);
-            });
-        }
-    }
-
     /// Remove panel from the stack.
     pub fn remove_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
     where
@@ -182,6 +165,25 @@ impl StackPanel {
             });
 
             self.remove_self_if_empty(cx);
+        } else {
+            println!("Panel not found in stack panel.");
+        }
+    }
+
+    /// Replace the old panel with the new panel at same index.
+    pub(super) fn replace_panel<P>(
+        &mut self,
+        old_panel: View<P>,
+        new_panel: View<StackPanel>,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+    {
+        if let Some(ix) = self.index_of_panel(old_panel) {
+            self.panels[ix] = Arc::new(new_panel.clone());
+            self.panel_group.update(cx, |view, cx| {
+                view.replace_child(Self::new_resizable_panel(new_panel.clone(), None), ix, cx);
+            });
         }
     }
 

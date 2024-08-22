@@ -6,7 +6,7 @@ use gpui::{
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt, StyledExt};
+use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
@@ -239,7 +239,13 @@ impl Render for ResizablePanelGroup {
             v_flex()
         };
 
-        container.size_full().debug_red().children(children)
+        container
+            .size_full()
+            // .map(|this| match self.axis {
+            //     Axis::Horizontal => this.debug_red(),
+            //     Axis::Vertical => this.debug_blue(),
+            // })
+            .children(children)
     }
 }
 
@@ -331,7 +337,6 @@ impl Render for ResizablePanel {
         div()
             .size_full()
             .relative()
-            .debug_green()
             .when(self.grow, |this| this.flex_grow())
             .when(self.axis.is_vertical(), |this| this.h(size))
             .when(self.axis.is_horizontal(), |this| this.w(size))

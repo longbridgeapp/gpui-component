@@ -61,7 +61,7 @@ impl TabPanel {
         }
     }
 
-    pub fn set_parent(&mut self, parent: View<StackPanel>) {
+    pub(super) fn set_parent(&mut self, parent: View<StackPanel>) {
         self.stack_panel = Some(parent);
     }
 
@@ -86,18 +86,18 @@ impl TabPanel {
         cx.notify();
     }
 
+    /// Remove a panel from the tab panel
+    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        self.detach_panel(panel, cx);
+        self.remove_self_if_empty(cx)
+    }
+
     fn detach_panel(&mut self, panel: Arc<dyn PanelView>, _cx: &mut ViewContext<Self>) {
         let panel_view = panel.view();
         self.panels.retain(|p| p.view() != panel_view);
         if self.active_ix >= self.panels.len() {
             self.active_ix = self.panels.len().saturating_sub(1);
         }
-    }
-
-    /// Remove a panel from the tab panel
-    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
-        self.detach_panel(panel, cx);
-        self.remove_self_if_empty(cx)
     }
 
     /// Check to remove self from the parent StackPanel, if there is no panel left
@@ -316,7 +316,11 @@ impl TabPanel {
                 });
                 stack_panel.clone()
             } else {
-                cx.new_view(|cx| StackPanel::new(placement.axis(), cx))
+                cx.new_view(|cx| {
+                    let mut panel = StackPanel::new(placement.axis(), cx);
+                    panel.parent = Some(stack_panel.clone());
+                    panel
+                })
             };
 
             new_stack_panel.update(cx, |view, cx| match placement {
