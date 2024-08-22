@@ -42,3 +42,9 @@ impl<T: Panel> From<&dyn PanelView> for View<T> {
         value.view().downcast::<T>().unwrap()
     }
 }
+
+impl PartialEq for dyn PanelView {
+    fn eq(&self, other: &Self) -> bool {
+        self.view() == other.view()
+    }
+}

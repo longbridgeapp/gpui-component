@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder, rems, AppContext, DefiniteLength, DragMoveEvent, Empty, Entity,
+    div, prelude::FluentBuilder, rems, AppContext, DefiniteLength, DragMoveEvent, Empty,
     FocusHandle, FocusableView, InteractiveElement as _, IntoElement, ParentElement, Render,
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
 };
@@ -87,8 +87,8 @@ impl TabPanel {
     }
 
     fn detach_panel(&mut self, panel: Arc<dyn PanelView>, _cx: &mut ViewContext<Self>) {
-        let entity_id = panel.view().entity_id();
-        self.panels.retain(|p| p.view().entity_id() != entity_id);
+        let panel_view = panel.view();
+        self.panels.retain(|p| p.view() != panel_view);
         if self.active_ix >= self.panels.len() {
             self.active_ix = self.panels.len().saturating_sub(1);
         }
@@ -237,7 +237,7 @@ impl TabPanel {
 
     fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {
         let panel = drag.panel.clone();
-        let is_same_tab = drag.tab_panel.entity_id() == cx.view().entity_id();
+        let is_same_tab = drag.tab_panel == *cx.view();
 
         // If target is same tab, and it is only one panel, do nothing.
         if is_same_tab {
@@ -269,6 +269,8 @@ impl TabPanel {
         } else {
             self.add_panel(panel, cx);
         }
+
+        self.remove_self_if_empty(cx);
     }
 
     /// Add panel with split placement
@@ -305,7 +307,17 @@ impl TabPanel {
             // 3. Add the new TabPanel to the new StackPanel at the correct index
             // 4. Add new StackPanel to the parent StackPanel at the correct index
             let tab_panel = cx.view().clone();
-            let new_stack_panel = cx.new_view(|cx| StackPanel::new(placement.axis(), cx));
+
+            // Try to use the old stack panel, not just create a new one, to avoid too many nested stack panels
+            let new_stack_panel = if stack_panel.read(cx).panels_len() <= 1 {
+                stack_panel.update(cx, |view, cx| {
+                    view.remove_all_panels(cx);
+                    view.set_axis(placement.axis(), cx);
+                });
+                stack_panel.clone()
+            } else {
+                cx.new_view(|cx| StackPanel::new(placement.axis(), cx))
+            };
 
             new_stack_panel.update(cx, |view, cx| match placement {
                 Placement::Left | Placement::Top => {
@@ -318,9 +330,11 @@ impl TabPanel {
                 }
             });
 
-            stack_panel.update(cx, |view, cx| {
-                view.replace_panel(tab_panel.clone(), new_stack_panel.clone(), cx);
-            });
+            if *stack_panel != new_stack_panel {
+                stack_panel.update(cx, |view, cx| {
+                    view.replace_panel(tab_panel.clone(), new_stack_panel.clone(), cx);
+                });
+            }
 
             cx.spawn(|_, mut cx| async move {
                 cx.update(|cx| tab_panel.update(cx, |view, cx| view.remove_self_if_empty(cx)))

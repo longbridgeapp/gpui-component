@@ -6,7 +6,7 @@ use gpui::{
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
+use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt, StyledExt};
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
@@ -37,6 +37,11 @@ impl ResizablePanelGroup {
     pub fn axis(mut self, axis: Axis) -> Self {
         self.axis = axis;
         self
+    }
+
+    pub(crate) fn set_axis(&mut self, axis: Axis, cx: &mut ViewContext<Self>) {
+        self.axis = axis;
+        cx.notify();
     }
 
     /// Set the size of the resize handle, default is 3px.
@@ -105,6 +110,12 @@ impl ResizablePanelGroup {
     pub fn remove_child(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
         self.sizes.remove(ix);
         self.panels.remove(ix);
+        cx.notify()
+    }
+
+    pub(crate) fn remove_all_children(&mut self, cx: &mut ViewContext<Self>) {
+        self.sizes.clear();
+        self.panels.clear();
         cx.notify()
     }
 
@@ -228,7 +239,7 @@ impl Render for ResizablePanelGroup {
             v_flex()
         };
 
-        container.size_full().children(children)
+        container.size_full().debug_red().children(children)
     }
 }
 
@@ -320,6 +331,7 @@ impl Render for ResizablePanel {
         div()
             .size_full()
             .relative()
+            .debug_green()
             .when(self.grow, |this| this.flex_grow())
             .when(self.axis.is_vertical(), |this| this.h(size))
             .when(self.axis.is_horizontal(), |this| this.w(size))

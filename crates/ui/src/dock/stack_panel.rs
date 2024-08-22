@@ -17,7 +17,7 @@ pub struct StackPanel {
     parent: Option<View<StackPanel>>,
     pub(super) axis: Axis,
     focus_handle: FocusHandle,
-    pub(super) panels: SmallVec<[Arc<dyn PanelView>; 2]>,
+    panels: SmallVec<[Arc<dyn PanelView>; 2]>,
     panel_group: View<ResizablePanelGroup>,
 }
 
@@ -43,6 +43,10 @@ impl StackPanel {
     /// The first level of the stack panel is root, will not have a parent.
     fn is_root(&self) -> bool {
         self.parent.is_none()
+    }
+
+    pub(super) fn panels_len(&self) -> usize {
+        self.panels.len()
     }
 
     /// Add a panel at the end of the stack.
@@ -198,6 +202,21 @@ impl StackPanel {
             });
         }
 
+        cx.notify();
+    }
+
+    /// Remove all panels from the stack.
+    pub(super) fn remove_all_panels(&mut self, cx: &mut ViewContext<Self>) {
+        self.panels.clear();
+        self.panel_group
+            .update(cx, |view, cx| view.remove_all_children(cx));
+    }
+
+    /// Change the axis of the stack panel.
+    pub(super) fn set_axis(&mut self, axis: Axis, cx: &mut ViewContext<Self>) {
+        self.axis = axis;
+        self.panel_group
+            .update(cx, |view, cx| view.set_axis(axis, cx));
         cx.notify();
     }
 }
