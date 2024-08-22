@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanelGroup},
+    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
     theme::ActiveTheme,
     Placement,
 };
@@ -95,6 +95,17 @@ impl StackPanel {
         self.insert_panel(panel, ix + 1, None, cx);
     }
 
+    fn new_resizable_panel<P>(panel: View<P>, size: Option<Pixels>) -> ResizablePanel
+    where
+        P: Panel,
+    {
+        resizable_panel()
+            .content_view(panel.view())
+            .min_size(px(100.))
+            .when_some(size, |this, size| this.size(size))
+            .when(size.is_none(), |this| this.grow())
+    }
+
     fn insert_panel<P>(
         &mut self,
         panel: View<P>,
@@ -132,16 +143,27 @@ impl StackPanel {
 
         self.panels.push(Arc::new(panel.clone()));
         self.panel_group.update(cx, |view, cx| {
-            let size_panel = resizable_panel()
-                .content_view(panel.view())
-                .min_size(px(100.))
-                .when_some(size, |this, size| this.size(size))
-                .when(size.is_none(), |this| this.grow());
-
-            view.insert_child(size_panel, ix, cx)
+            view.insert_child(Self::new_resizable_panel(panel, size), ix, cx)
         });
 
         cx.notify();
+    }
+
+    pub fn replace_panel<P, P1>(
+        &mut self,
+        old_panel: View<P>,
+        new_panel: View<P1>,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+        P1: Panel,
+    {
+        if let Some(ix) = self.index_of_panel(old_panel) {
+            self.panels[ix] = Arc::new(new_panel.clone());
+            self.panel_group.update(cx, |view, cx| {
+                view.replace_child(Self::new_resizable_panel(new_panel, None), ix, cx);
+            });
+        }
     }
 
     /// Remove panel from the stack.
@@ -170,11 +192,8 @@ impl StackPanel {
         }
 
         let view = cx.view().clone();
-        println!("------------ remove_self_if_empty 0");
         if let Some(parent) = self.parent.as_ref() {
-            println!("------------ remove_self_if_empty 1");
             parent.update(cx, |parent, cx| {
-                println!("------------ remove_self_if_empty 2");
                 parent.remove_panel(view, cx);
             });
         }

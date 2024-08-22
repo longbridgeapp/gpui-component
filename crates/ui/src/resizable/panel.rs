@@ -88,11 +88,21 @@ impl ResizablePanelGroup {
         cx.notify()
     }
 
+    /// Replace a child panel with a new panel at the given index.
+    pub(crate) fn replace_child(
+        &mut self,
+        panel: ResizablePanel,
+        ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let mut panel = panel;
+        panel.axis = self.axis;
+        self.sizes[ix] = panel.size;
+        self.panels[ix] = cx.new_view(|_| panel);
+        cx.notify()
+    }
+
     pub fn remove_child(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
-        println!(
-            "-=-------------- ResizablableGroup remove_child len: {}",
-            self.panels.len()
-        );
         self.sizes.remove(ix);
         self.panels.remove(ix);
         cx.notify()

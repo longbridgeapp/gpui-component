@@ -104,9 +104,9 @@ impl TabPanel {
         cx: &mut ViewContext<Self>,
     ) {
         // wrap the panel in a TabPanel
-        let tab_panel = cx.new_view(|cx| Self::new(cx));
-        tab_panel.update(cx, |tab_panel, cx| {
-            tab_panel.add_panel(panel, cx);
+        let new_tab_panel = cx.new_view(|cx| Self::new(cx));
+        new_tab_panel.update(cx, |view, cx| {
+            view.add_panel(panel, cx);
         });
 
         let stack_panel = self.stack_panel.as_ref().unwrap();
@@ -118,34 +118,33 @@ impl TabPanel {
 
         if parent_axis.is_vertical() && placement.is_vertical() {
             stack_panel.update(cx, |view, cx| {
-                view.add_panel_at(tab_panel, ix, placement, cx);
+                view.add_panel_at(new_tab_panel, ix, placement, cx);
             });
         } else if parent_axis.is_horizontal() && placement.is_horizontal() {
             stack_panel.update(cx, |view, cx| {
-                view.add_panel_at(tab_panel, ix, placement, cx);
+                view.add_panel_at(new_tab_panel, ix, placement, cx);
             });
         } else {
             // 1. Create new StackPanel with new axis
             // 2. Move cx.view() from parent StackPanel to the new StackPanel
             // 3. Add the new TabPanel to the new StackPanel at the correct index
             // 4. Add new StackPanel to the parent StackPanel at the correct index
-            let current_tab_panel = cx.view().clone();
+            let tab_panel = cx.view().clone();
             let new_stack_panel = cx.new_view(|cx| StackPanel::new(placement.axis(), cx));
 
             new_stack_panel.update(cx, |view, cx| match placement {
                 Placement::Left | Placement::Top => {
-                    view.add_panel(tab_panel, None, cx);
-                    view.add_panel(current_tab_panel.clone(), None, cx);
+                    view.add_panel(new_tab_panel, None, cx);
+                    view.add_panel(tab_panel.clone(), None, cx);
                 }
                 Placement::Right | Placement::Bottom => {
-                    view.add_panel(current_tab_panel.clone(), None, cx);
-                    view.add_panel(tab_panel, None, cx);
+                    view.add_panel(tab_panel.clone(), None, cx);
+                    view.add_panel(new_tab_panel, None, cx);
                 }
             });
 
             stack_panel.update(cx, |view, cx| {
-                view.add_panel_at(new_stack_panel.clone(), ix, placement, cx);
-                view.remove_panel(current_tab_panel.clone(), cx);
+                view.replace_panel(tab_panel.clone(), new_stack_panel.clone(), cx);
             });
         }
     }
