@@ -38,7 +38,7 @@ pub use webview_story::WebViewStory;
 
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter, FocusableView,
-    InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
+    InteractiveElement, IntoElement, ParentElement, Render, SharedString,
     StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 
@@ -48,7 +48,7 @@ use ui::{
     dock::{Panel, TabPanel},
     h_flex,
     label::Label,
-    v_flex, Placement,
+    v_flex,
 };
 
 pub fn init(cx: &mut AppContext) {
@@ -80,7 +80,6 @@ pub struct StoryContainer {
     description: SharedString,
     width: Option<gpui::Pixels>,
     height: Option<gpui::Pixels>,
-    active: bool,
     story: Option<AnyView>,
 }
 
@@ -111,7 +110,6 @@ impl StoryContainer {
             description: description.into(),
             width: None,
             height: None,
-            active: false,
             story: None,
         }
     }
@@ -152,11 +150,9 @@ impl StoryContainer {
 }
 
 impl Panel for StoryContainer {
-    fn title(&self, cx: &WindowContext) -> SharedString {
+    fn title(&self, _cx: &WindowContext) -> SharedString {
         self.name.clone()
     }
-
-    fn set_size(&mut self, size: Pixels, cx: &mut WindowContext) {}
 }
 
 impl Render for StoryContainer {

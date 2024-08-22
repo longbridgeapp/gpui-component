@@ -95,57 +95,6 @@ impl StackPanel {
         self.insert_panel(panel, ix + 1, None, cx);
     }
 
-    /// Remove panel from the stack.
-    pub fn remove_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
-    where
-        P: Panel,
-    {
-        println!("------------ remove_panel 0: {}", panel.view().entity_id());
-        if let Some(ix) = self.index_of_panel(panel) {
-            println!("------------ remove_panel 1: {}", self.panels.len());
-            self.panels.remove(ix);
-            self.panel_group.update(cx, |view, cx| {
-                view.remove_child(ix, cx);
-            });
-
-            println!("------------ child len: {}", self.panels.len());
-            println!(
-                "--------- retain ids: {:?}",
-                self.panels
-                    .iter()
-                    .map(|p| p.view().entity_id().to_string())
-                    .collect::<Vec<_>>()
-            );
-
-            self.remove_self_if_empty(cx);
-        }
-    }
-
-    /// Wrap self into another new stack panel, replace self on parent with the new stack panel.
-    pub fn wrap_into(&mut self, new_stack_panel: View<Self>, cx: &mut ViewContext<Self>) {
-        let new_axis = new_stack_panel.read(cx).axis;
-        let new_panels = new_stack_panel.read(cx).panels.clone();
-        let new_panel_group = new_stack_panel.read(cx).panel_group.clone();
-
-        let old_panels = self.panels.clone();
-        let old_axis = self.axis;
-        let old_parent = self.parent.clone();
-        let old_panel_group = self.panel_group.clone();
-
-        new_stack_panel.update(cx, |view, _| {
-            view.panels = old_panels;
-            view.axis = old_axis;
-            view.parent = old_parent;
-            view.panel_group = old_panel_group;
-        });
-
-        self.panels = new_panels;
-        self.axis = new_axis;
-        self.parent = Some(new_stack_panel);
-        self.panel_group = new_panel_group;
-        cx.notify();
-    }
-
     fn insert_panel<P>(
         &mut self,
         panel: View<P>,
@@ -195,6 +144,21 @@ impl StackPanel {
         cx.notify();
     }
 
+    /// Remove panel from the stack.
+    pub fn remove_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
+    where
+        P: Panel,
+    {
+        if let Some(ix) = self.index_of_panel(panel) {
+            self.panels.remove(ix);
+            self.panel_group.update(cx, |view, cx| {
+                view.remove_child(ix, cx);
+            });
+
+            self.remove_self_if_empty(cx);
+        }
+    }
+
     /// If children is empty, remove self from parent view.
     fn remove_self_if_empty(&mut self, cx: &mut ViewContext<Self>) {
         if self.is_root() {
@@ -220,7 +184,7 @@ impl StackPanel {
 }
 
 impl FocusableView for StackPanel {
-    fn focus_handle(&self, cx: &gpui::AppContext) -> FocusHandle {
+    fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }

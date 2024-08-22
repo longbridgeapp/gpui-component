@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder, px, relative, rems, AppContext, Axis, DefiniteLength,
-    DragMoveEvent, Empty, Entity, FocusHandle, FocusableView, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, Render, StatefulInteractiveElement, Styled, View, ViewContext,
-    VisualContext as _, WeakView, WindowContext,
+    div, prelude::FluentBuilder, rems, AppContext, DefiniteLength, DragMoveEvent, Empty, Entity,
+    FocusHandle, FocusableView, InteractiveElement as _, IntoElement, ParentElement, Render,
+    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
 };
 
 use crate::{
@@ -12,14 +11,13 @@ use crate::{
     h_flex,
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
+    v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
 use super::{Panel, PanelView, StackPanel};
 
 #[derive(Clone)]
 pub(crate) struct DragPanel {
-    pub(crate) ix: usize,
     pub(crate) panel: Arc<dyn PanelView>,
     pub(crate) tab_panel: View<TabPanel>,
 }
@@ -47,7 +45,6 @@ pub struct TabPanel {
     stack_panel: Option<View<StackPanel>>,
     panels: Vec<Arc<dyn PanelView>>,
     active_ix: usize,
-    size: Pixels,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -60,7 +57,6 @@ impl TabPanel {
             stack_panel: None,
             panels: Vec::new(),
             active_ix: 0,
-            size: px(50.),
             will_split_placement: None,
         }
     }
@@ -70,7 +66,7 @@ impl TabPanel {
     }
 
     /// Return current active_panel View
-    pub fn active_panel(&self, cx: &AppContext) -> Option<Arc<dyn PanelView>> {
+    pub fn active_panel(&self) -> Option<Arc<dyn PanelView>> {
         self.panels.get(self.active_ix).cloned()
     }
 
@@ -121,12 +117,12 @@ impl TabPanel {
             .unwrap_or_default();
 
         if parent_axis.is_vertical() && placement.is_vertical() {
-            stack_panel.update(cx, |stack_panel, cx| {
-                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
+            stack_panel.update(cx, |view, cx| {
+                view.add_panel_at(tab_panel, ix, placement, cx);
             });
         } else if parent_axis.is_horizontal() && placement.is_horizontal() {
-            stack_panel.update(cx, |stack_panel, cx| {
-                stack_panel.add_panel_at(tab_panel, ix, placement, cx);
+            stack_panel.update(cx, |view, cx| {
+                view.add_panel_at(tab_panel, ix, placement, cx);
             });
         } else {
             // 1. Create new StackPanel with new axis
@@ -136,20 +132,20 @@ impl TabPanel {
             let current_tab_panel = cx.view().clone();
             let new_stack_panel = cx.new_view(|cx| StackPanel::new(placement.axis(), cx));
 
-            new_stack_panel.update(cx, |new_stack_panel, cx| match placement {
+            new_stack_panel.update(cx, |view, cx| match placement {
                 Placement::Left | Placement::Top => {
-                    new_stack_panel.add_panel(tab_panel, None, cx);
-                    new_stack_panel.add_panel(current_tab_panel.clone(), None, cx);
+                    view.add_panel(tab_panel, None, cx);
+                    view.add_panel(current_tab_panel.clone(), None, cx);
                 }
                 Placement::Right | Placement::Bottom => {
-                    new_stack_panel.add_panel(current_tab_panel.clone(), None, cx);
-                    new_stack_panel.add_panel(tab_panel, None, cx);
+                    view.add_panel(current_tab_panel.clone(), None, cx);
+                    view.add_panel(tab_panel, None, cx);
                 }
             });
 
-            stack_panel.update(cx, |stack_panel, cx| {
-                stack_panel.add_panel_at(new_stack_panel.clone(), ix, placement, cx);
-                stack_panel.remove_panel(current_tab_panel.clone(), cx);
+            stack_panel.update(cx, |view, cx| {
+                view.add_panel_at(new_stack_panel.clone(), ix, placement, cx);
+                view.remove_panel(current_tab_panel.clone(), cx);
             });
         }
     }
@@ -190,7 +186,6 @@ impl TabPanel {
                 )
                 .on_drag(
                     DragPanel {
-                        ix: 0,
                         panel: panel.clone(),
                         tab_panel: view,
                     },
@@ -216,7 +211,6 @@ impl TabPanel {
                             }))
                             .on_drag(
                                 DragPanel {
-                                    ix,
                                     panel: panel.clone(),
                                     tab_panel: view.clone(),
                                 },
@@ -232,7 +226,7 @@ impl TabPanel {
     }
 
     fn render_active_panel(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        self.active_panel(cx)
+        self.active_panel()
             .map(|panel| {
                 div()
                     .id("tab-content")
@@ -311,18 +305,10 @@ impl TabPanel {
     }
 }
 
-impl Panel for TabPanel {
-    fn set_size(&mut self, size: Pixels, cx: &mut WindowContext) {
-        self.size = size;
-    }
-
-    fn size(&self, cx: &WindowContext) -> Pixels {
-        self.size
-    }
-}
+impl Panel for TabPanel {}
 
 impl FocusableView for TabPanel {
-    fn focus_handle(&self, cx: &AppContext) -> gpui::FocusHandle {
+    fn focus_handle(&self, _cx: &AppContext) -> gpui::FocusHandle {
         // FIXME: Delegate to the active panel
         self.focus_handle.clone()
     }

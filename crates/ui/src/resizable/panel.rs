@@ -6,7 +6,7 @@ use gpui::{
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
+use crate::{h_flex, v_flex, AxisExt};
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
@@ -89,6 +89,10 @@ impl ResizablePanelGroup {
     }
 
     pub fn remove_child(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
+        println!(
+            "-=-------------- ResizablableGroup remove_child len: {}",
+            self.panels.len()
+        );
         self.sizes.remove(ix);
         self.panels.remove(ix);
         cx.notify()
@@ -97,7 +101,7 @@ impl ResizablePanelGroup {
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
         let handle_size = self.handle_size;
-        let is_resizing = self.resizing_panel_ix == Some(ix);
+        // let is_resizing = self.resizing_panel_ix == Some(ix);
 
         div()
             .id(("resizable-handle", ix))
