@@ -70,6 +70,7 @@ impl TabPanel {
         self.panels.get(self.active_ix).cloned()
     }
 
+    /// Add a panel to the end of the tabs
     pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         if self
             .panels
@@ -85,68 +86,18 @@ impl TabPanel {
         cx.notify();
     }
 
-    /// Remove a panel from the tab panel
-    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+    fn detach_panel(&mut self, panel: Arc<dyn PanelView>, _cx: &mut ViewContext<Self>) {
         let entity_id = panel.view().entity_id();
-
         self.panels.retain(|p| p.view().entity_id() != entity_id);
         if self.active_ix >= self.panels.len() {
             self.active_ix = self.panels.len().saturating_sub(1);
         }
-
-        self.remove_self_if_empty(cx)
     }
 
-    fn split_panel(
-        &self,
-        panel: Arc<dyn PanelView>,
-        placement: Placement,
-        cx: &mut ViewContext<Self>,
-    ) {
-        // wrap the panel in a TabPanel
-        let new_tab_panel = cx.new_view(|cx| Self::new(cx));
-        new_tab_panel.update(cx, |view, cx| {
-            view.add_panel(panel, cx);
-        });
-
-        let stack_panel = self.stack_panel.as_ref().unwrap();
-        let parent_axis = stack_panel.read(cx).axis;
-        let ix = stack_panel
-            .read(cx)
-            .index_of_panel(cx.view().clone())
-            .unwrap_or_default();
-
-        if parent_axis.is_vertical() && placement.is_vertical() {
-            stack_panel.update(cx, |view, cx| {
-                view.add_panel_at(new_tab_panel, ix, placement, cx);
-            });
-        } else if parent_axis.is_horizontal() && placement.is_horizontal() {
-            stack_panel.update(cx, |view, cx| {
-                view.add_panel_at(new_tab_panel, ix, placement, cx);
-            });
-        } else {
-            // 1. Create new StackPanel with new axis
-            // 2. Move cx.view() from parent StackPanel to the new StackPanel
-            // 3. Add the new TabPanel to the new StackPanel at the correct index
-            // 4. Add new StackPanel to the parent StackPanel at the correct index
-            let tab_panel = cx.view().clone();
-            let new_stack_panel = cx.new_view(|cx| StackPanel::new(placement.axis(), cx));
-
-            new_stack_panel.update(cx, |view, cx| match placement {
-                Placement::Left | Placement::Top => {
-                    view.add_panel(new_tab_panel, None, cx);
-                    view.add_panel(tab_panel.clone(), None, cx);
-                }
-                Placement::Right | Placement::Bottom => {
-                    view.add_panel(tab_panel.clone(), None, cx);
-                    view.add_panel(new_tab_panel, None, cx);
-                }
-            });
-
-            stack_panel.update(cx, |view, cx| {
-                view.replace_panel(tab_panel.clone(), new_stack_panel.clone(), cx);
-            });
-        }
+    /// Remove a panel from the tab panel
+    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        self.detach_panel(panel, cx);
+        self.remove_self_if_empty(cx)
     }
 
     /// Check to remove self from the parent StackPanel, if there is no panel left
@@ -238,19 +189,23 @@ impl TabPanel {
                         div()
                             .invisible()
                             .absolute()
-                            .when_some(self.will_split_placement, |this, placement| {
-                                let size = DefiniteLength::Fraction(0.25);
-                                match placement {
-                                    Placement::Left => this.left_0().top_0().bottom_0().w(size),
-                                    Placement::Right => this.right_0().top_0().bottom_0().w(size),
-                                    Placement::Top => this.top_0().left_0().right_0().h(size),
-                                    Placement::Bottom => this.bottom_0().left_0().right_0().h(size),
-                                }
-                            })
-                            .when(self.will_split_placement.is_none(), |this| {
-                                this.top_0().left_0().size_full()
-                            })
                             .bg(cx.theme().drop_target)
+                            .map(|this| match self.will_split_placement {
+                                Some(placement) => {
+                                    let size = DefiniteLength::Fraction(0.25);
+                                    match placement {
+                                        Placement::Left => this.left_0().top_0().bottom_0().w(size),
+                                        Placement::Right => {
+                                            this.right_0().top_0().bottom_0().w(size)
+                                        }
+                                        Placement::Top => this.top_0().left_0().right_0().h(size),
+                                        Placement::Bottom => {
+                                            this.bottom_0().left_0().right_0().h(size)
+                                        }
+                                    }
+                                }
+                                None => this.top_0().left_0().size_full(),
+                            })
                             .group_drag_over::<DragPanel>("", |this| this.visible())
                             .on_drop(cx.listener(Self::on_drop)),
                     )
@@ -282,16 +237,29 @@ impl TabPanel {
 
     fn on_drop(&mut self, drag: &DragPanel, cx: &mut ViewContext<Self>) {
         let panel = drag.panel.clone();
+        let is_same_tab = drag.tab_panel.entity_id() == cx.view().entity_id();
+
+        // If target is same tab, and it is only one panel, do nothing.
+        if is_same_tab {
+            if self.will_split_placement.is_none() {
+                return;
+            } else {
+                if self.panels.len() == 1 {
+                    return;
+                }
+            }
+        }
 
         // Here is looks like remove_panel on a same item, but it differnece.
         //
         // We must to split it to remove_panel, unless it will be crash by error:
         // Cannot update ui::dock::tab_panel::TabPanel while it is already being updated
-        if drag.tab_panel.entity_id() == cx.view().entity_id() {
-            self.remove_panel(panel.clone(), cx);
+        if is_same_tab {
+            self.detach_panel(panel.clone(), cx);
         } else {
             let _ = drag.tab_panel.update(cx, |view, cx| {
-                view.remove_panel(panel.clone(), cx);
+                view.detach_panel(panel.clone(), cx);
+                view.remove_self_if_empty(cx);
             });
         }
 
@@ -300,6 +268,64 @@ impl TabPanel {
             self.split_panel(panel, placement, cx);
         } else {
             self.add_panel(panel, cx);
+        }
+    }
+
+    /// Add panel with split placement
+    fn split_panel(
+        &self,
+        panel: Arc<dyn PanelView>,
+        placement: Placement,
+        cx: &mut ViewContext<Self>,
+    ) {
+        // wrap the panel in a TabPanel
+        let new_tab_panel = cx.new_view(|cx| Self::new(cx));
+        new_tab_panel.update(cx, |view, cx| {
+            view.add_panel(panel, cx);
+        });
+
+        let stack_panel = self.stack_panel.as_ref().unwrap();
+        let parent_axis = stack_panel.read(cx).axis;
+        let ix = stack_panel
+            .read(cx)
+            .index_of_panel(cx.view().clone())
+            .unwrap_or_default();
+
+        if parent_axis.is_vertical() && placement.is_vertical() {
+            stack_panel.update(cx, |view, cx| {
+                view.add_panel_at(new_tab_panel, ix, placement, cx);
+            });
+        } else if parent_axis.is_horizontal() && placement.is_horizontal() {
+            stack_panel.update(cx, |view, cx| {
+                view.add_panel_at(new_tab_panel, ix, placement, cx);
+            });
+        } else {
+            // 1. Create new StackPanel with new axis
+            // 2. Move cx.view() from parent StackPanel to the new StackPanel
+            // 3. Add the new TabPanel to the new StackPanel at the correct index
+            // 4. Add new StackPanel to the parent StackPanel at the correct index
+            let tab_panel = cx.view().clone();
+            let new_stack_panel = cx.new_view(|cx| StackPanel::new(placement.axis(), cx));
+
+            new_stack_panel.update(cx, |view, cx| match placement {
+                Placement::Left | Placement::Top => {
+                    view.add_panel(new_tab_panel, None, cx);
+                    view.add_panel(tab_panel.clone(), None, cx);
+                }
+                Placement::Right | Placement::Bottom => {
+                    view.add_panel(tab_panel.clone(), None, cx);
+                    view.add_panel(new_tab_panel, None, cx);
+                }
+            });
+
+            stack_panel.update(cx, |view, cx| {
+                view.replace_panel(tab_panel.clone(), new_stack_panel.clone(), cx);
+            });
+
+            cx.spawn(|_, mut cx| async move {
+                cx.update(|cx| tab_panel.update(cx, |view, cx| view.remove_self_if_empty(cx)))
+            })
+            .detach()
         }
     }
 }

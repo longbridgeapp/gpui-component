@@ -141,7 +141,7 @@ impl StackPanel {
         })
         .detach();
 
-        self.panels.push(Arc::new(panel.clone()));
+        self.panels.insert(ix, Arc::new(panel.clone()));
         self.panel_group.update(cx, |view, cx| {
             view.insert_child(Self::new_resizable_panel(panel, size), ix, cx)
         });
@@ -182,7 +182,7 @@ impl StackPanel {
     }
 
     /// If children is empty, remove self from parent view.
-    fn remove_self_if_empty(&mut self, cx: &mut ViewContext<Self>) {
+    pub(crate) fn remove_self_if_empty(&mut self, cx: &mut ViewContext<Self>) {
         if self.is_root() {
             return;
         }

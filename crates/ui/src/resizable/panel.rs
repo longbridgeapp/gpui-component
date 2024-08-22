@@ -6,7 +6,7 @@ use gpui::{
     StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, v_flex, AxisExt};
+use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
@@ -27,7 +27,7 @@ impl ResizablePanelGroup {
             axis: Axis::Horizontal,
             sizes: Vec::new(),
             panels: Vec::new(),
-            handle_size: px(3.),
+            handle_size: px(1.),
             size: px(20.),
             resizing_panel_ix: None,
         }
@@ -116,6 +116,7 @@ impl ResizablePanelGroup {
         div()
             .id(("resizable-handle", ix))
             .occlude()
+            .bg(cx.theme().border)
             // .hover(|this| this.bg(cx.theme().drag_border))
             // .when(is_resizing, |this| this.bg(cx.theme().drag_border))
             .when(self.axis.is_horizontal(), |this| {
