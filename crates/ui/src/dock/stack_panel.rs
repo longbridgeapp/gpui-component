@@ -265,6 +265,8 @@ impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .size_full()
+            .flex_grow()
+            .flex_shrink()
             .overflow_hidden()
             .bg(cx.theme().tab_bar)
             .child(self.panel_group.clone())
