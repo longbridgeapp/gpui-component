@@ -207,7 +207,7 @@ impl ResizablePanelGroup {
                     cx.new_view(|_| drag_panel.clone())
                 }),
         )
-        .with_priority(1)
+        .with_priority(0)
     }
 
     fn sync_real_panel_sizes(&mut self, cx: &WindowContext) {

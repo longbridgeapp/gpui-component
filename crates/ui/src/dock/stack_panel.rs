@@ -6,10 +6,11 @@ use crate::{
     Placement,
 };
 
-use super::{Panel, PanelView, TabPanel};
+use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Entity, FocusHandle, FocusableView, IntoElement,
-    ParentElement, Pixels, Render, Styled, View, ViewContext, VisualContext,
+    div, prelude::FluentBuilder as _, px, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
+    VisualContext, WeakView,
 };
 use smallvec::SmallVec;
 
@@ -49,14 +50,6 @@ impl StackPanel {
         self.panels.len()
     }
 
-    /// Add a panel at the end of the stack.
-    pub fn add_panel<P>(&mut self, panel: View<P>, size: Option<Pixels>, cx: &mut ViewContext<Self>)
-    where
-        P: Panel,
-    {
-        self.insert_panel(panel, self.panels.len(), size, cx);
-    }
-
     /// Return the index of the panel.
     pub fn index_of_panel<P>(&self, panel: View<P>) -> Option<usize>
     where
@@ -68,35 +61,61 @@ impl StackPanel {
             .position(|p| p.view().entity_id() == entity_id)
     }
 
+    /// Add a panel at the end of the stack.
+    pub fn add_panel<P>(
+        &mut self,
+        panel: View<P>,
+        size: Option<Pixels>,
+        dock_area: WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+    {
+        self.insert_panel(panel, self.panels.len(), size, dock_area, cx);
+    }
+
     pub fn add_panel_at<P>(
         &mut self,
         panel: View<P>,
         ix: usize,
         placement: Placement,
+        dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) where
         P: Panel,
     {
         match placement {
-            Placement::Top | Placement::Left => self.insert_panel_before(panel, ix, cx),
-            Placement::Right | Placement::Bottom => self.insert_panel_after(panel, ix, cx),
+            Placement::Top | Placement::Left => self.insert_panel_before(panel, ix, dock_area, cx),
+            Placement::Right | Placement::Bottom => {
+                self.insert_panel_after(panel, ix, dock_area, cx)
+            }
         }
     }
 
     /// Insert a panel at the index.
-    pub fn insert_panel_before<P>(&mut self, panel: View<P>, ix: usize, cx: &mut ViewContext<Self>)
-    where
+    pub fn insert_panel_before<P>(
+        &mut self,
+        panel: View<P>,
+        ix: usize,
+        dock_area: WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) where
         P: Panel,
     {
-        self.insert_panel(panel, ix, None, cx);
+        self.insert_panel(panel, ix, None, dock_area, cx);
     }
 
     /// Insert a panel after the index.
-    pub fn insert_panel_after<P>(&mut self, panel: View<P>, ix: usize, cx: &mut ViewContext<Self>)
-    where
+    pub fn insert_panel_after<P>(
+        &mut self,
+        panel: View<P>,
+        ix: usize,
+        dock_area: WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) where
         P: Panel,
     {
-        self.insert_panel(panel, ix + 1, None, cx);
+        self.insert_panel(panel, ix + 1, None, dock_area, cx);
     }
 
     fn new_resizable_panel<P>(panel: View<P>, size: Option<Pixels>) -> ResizablePanel
@@ -114,6 +133,7 @@ impl StackPanel {
         panel: View<P>,
         ix: usize,
         size: Option<Pixels>,
+        dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) where
         P: Panel,
@@ -122,6 +142,18 @@ impl StackPanel {
         if let Some(_) = self.index_of_panel(panel.clone()) {
             return;
         }
+
+        let dock_area = dock_area.clone();
+        cx.subscribe(&panel, move |_, panel, event, cx| match event {
+            PanelEvent::ZoomIn | PanelEvent::ZoomOut => {
+                if let Some(dock) = dock_area.upgrade() {
+                    dock.update(cx, |dock, cx| {
+                        dock.toggle_zoom(panel.clone(), cx);
+                    });
+                }
+            }
+        })
+        .detach();
 
         cx.spawn(|view, mut cx| {
             let panel = panel.clone();
@@ -227,13 +259,12 @@ impl FocusableView for StackPanel {
         self.focus_handle.clone()
     }
 }
-
+impl EventEmitter<PanelEvent> for StackPanel {}
+impl EventEmitter<DismissEvent> for StackPanel {}
 impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .size_full()
-            .flex_grow()
-            .flex_shrink()
             .overflow_hidden()
             .bg(cx.theme().tab_bar)
             .child(self.panel_group.clone())

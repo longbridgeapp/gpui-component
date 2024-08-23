@@ -45,7 +45,7 @@ use gpui::{
 use anyhow::Result;
 use ui::{
     divider::Divider,
-    dock::{Panel, TabPanel},
+    dock::{Panel, PanelEvent, TabPanel},
     h_flex,
     label::Label,
     v_flex,
@@ -155,6 +155,7 @@ impl Panel for StoryContainer {
     }
 }
 
+impl EventEmitter<PanelEvent> for StoryContainer {}
 impl Render for StoryContainer {
     fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()

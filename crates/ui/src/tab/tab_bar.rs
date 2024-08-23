@@ -37,14 +37,14 @@ impl TabBar {
     }
 
     /// Set the prefix element of the TabBar
-    pub fn prefix(mut self, prefix: impl Into<AnyElement>) -> Self {
-        self.prefix = Some(prefix.into());
+    pub fn prefix(mut self, prefix: impl IntoElement) -> Self {
+        self.prefix = Some(prefix.into_any_element());
         self
     }
 
     /// Set the suffix element of the TabBar
-    pub fn suffix(mut self, suffix: impl Into<AnyElement>) -> Self {
-        self.suffix = Some(suffix.into());
+    pub fn suffix(mut self, suffix: impl IntoElement) -> Self {
+        self.suffix = Some(suffix.into_any_element());
         self
     }
 }
@@ -71,9 +71,9 @@ impl RenderOnce for TabBar {
             .flex()
             .flex_none()
             .items_center()
-            .bg(theme.tab_bar)
             .border_b_1()
             .border_color(cx.theme().border)
+            .bg(theme.tab_bar)
             .text_color(theme.tab_foreground)
             .when_some(self.prefix, |this, prefix| this.child(prefix))
             // The child will append to this level

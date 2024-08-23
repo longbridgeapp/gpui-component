@@ -11,7 +11,7 @@ use workspace::TitleBar;
 use std::sync::Arc;
 use ui::{
     button::Button,
-    dock::{StackPanel, TabPanel},
+    dock::{DockArea, StackPanel, TabPanel},
     drawer::Drawer,
     h_flex,
     modal::Modal,
@@ -41,7 +41,7 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 pub struct StoryWorkspace {
     locale_selector: View<LocaleSelector>,
     // stack_panel: View<StackPanel>,
-    stack_panel: View<StackPanel>,
+    dock_area: View<DockArea>,
 }
 
 impl StoryWorkspace {
@@ -51,20 +51,28 @@ impl StoryWorkspace {
         })
         .detach();
 
-        let tab_panel = cx.new_view(|cx| TabPanel::new(cx));
-        let right_tab_panel = cx.new_view(|cx| TabPanel::new(cx));
-        let right_tab_panel1 = cx.new_view(|cx| TabPanel::new(cx));
-
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
+        let dock_area = cx.new_view(|cx| DockArea::new(stack_panel.clone(), cx));
+        let weak_dock_area = dock_area.downgrade();
+
+        let tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let right_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let right_tab_panel1 = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+
         stack_panel.update(cx, |view, cx| {
-            view.add_panel(tab_panel.clone(), None, cx);
+            view.add_panel(tab_panel.clone(), None, weak_dock_area.clone(), cx);
 
             let stock_panel1 = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
-            view.add_panel(stock_panel1.clone(), Some(px(400.)), cx);
+            view.add_panel(
+                stock_panel1.clone(),
+                Some(px(400.)),
+                weak_dock_area.clone(),
+                cx,
+            );
 
             stock_panel1.update(cx, |view, cx| {
-                view.add_panel(right_tab_panel.clone(), None, cx);
-                view.add_panel(right_tab_panel1.clone(), None, cx);
+                view.add_panel(right_tab_panel.clone(), None, weak_dock_area.clone(), cx);
+                view.add_panel(right_tab_panel1.clone(), None, weak_dock_area.clone(), cx);
             })
         });
 
@@ -223,7 +231,7 @@ impl StoryWorkspace {
         let locale_selector = cx.new_view(LocaleSelector::new);
 
         Self {
-            stack_panel,
+            dock_area,
             locale_selector,
         }
     }
@@ -381,7 +389,7 @@ impl Render for StoryWorkspace {
                             ),
                     ),
             )
-            .child(self.stack_panel.clone())
+            .child(self.dock_area.clone())
             .when(!has_active_modal, |this| {
                 this.when_some(active_drawer, |this, builder| {
                     let drawer = Drawer::new(cx);

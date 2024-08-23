@@ -1,9 +1,12 @@
-use gpui::{AnyView, FocusableView, SharedString, View, WindowContext};
+use gpui::{AnyView, EventEmitter, FocusableView, SharedString, View, WindowContext};
+use rust_i18n::t;
 
-pub trait Panel: FocusableView {
+use super::PanelEvent;
+
+pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// The title of the panel, default is `None`.
     fn title(&self, _cx: &WindowContext) -> SharedString {
-        "Unnamed".into()
+        t!("Dock.Unnamed").into()
     }
 
     /// Whether the panel can be closed, default is `true`.
@@ -12,10 +15,10 @@ pub trait Panel: FocusableView {
     }
 }
 
-pub trait PanelView: Send + Sync {
+pub trait PanelView: 'static + Send + Sync {
     /// The title of the panel, default is `None`.
     fn title(&self, _cx: &WindowContext) -> SharedString {
-        "Unnamed".into()
+        t!("Dock.Unnamed").into()
     }
 
     fn view(&self) -> AnyView;
