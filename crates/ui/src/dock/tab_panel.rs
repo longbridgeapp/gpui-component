@@ -414,6 +414,8 @@ impl Render for TabPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()
             .size_full()
+            .flex_grow()
+            .flex_shrink()
             .flex_none()
             .overflow_hidden()
             .bg(cx.theme().background)

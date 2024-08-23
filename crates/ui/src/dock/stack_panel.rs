@@ -107,7 +107,6 @@ impl StackPanel {
             .content_view(panel.view())
             .min_size(px(100.))
             .when_some(size, |this, size| this.size(size))
-            .when(size.is_none(), |this| this.grow())
     }
 
     fn insert_panel<P>(
@@ -233,6 +232,8 @@ impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .size_full()
+            .flex_grow()
+            .flex_shrink()
             .overflow_hidden()
             .bg(cx.theme().tab_bar)
             .child(self.panel_group.clone())

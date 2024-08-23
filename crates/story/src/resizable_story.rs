@@ -52,7 +52,6 @@ impl ResizableStory {
                             resizable_panel()
                                 .size(px(300.))
                                 .min_size(px(100.))
-                                .grow()
                                 .content(|cx| panel_box("Right (Grow)", cx)),
                             cx,
                         ),
@@ -63,7 +62,6 @@ impl ResizableStory {
                         .size(px(150.))
                         .max_size(px(550.))
                         .min_size(px(100.))
-                        .grow()
                         .content(|cx| panel_box("Center (Grow)", cx)),
                     cx,
                 )
@@ -90,7 +88,6 @@ impl ResizableStory {
                         .size(px(400.))
                         .max_size(px(550.))
                         .min_size(px(100.))
-                        .grow()
                         .content(|cx| panel_box("Right (Grow)", cx)),
                     cx,
                 )

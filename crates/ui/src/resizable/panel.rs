@@ -276,6 +276,8 @@ impl Render for ResizablePanelGroup {
 
         container
             .size_full()
+            .flex_grow()
+            .flex_shrink()
             // .map(|this| {
             //     use crate::StyledExt as _;
             //     match self.axis {
@@ -306,8 +308,6 @@ pub struct ResizablePanel {
     /// The bounds of the resizable panel, when render the bounds will be updated.
     bounds: Bounds<Pixels>,
     resize_handle: Option<AnyElement>,
-
-    grow: bool,
 }
 
 impl ResizablePanel {
@@ -321,7 +321,6 @@ impl ResizablePanel {
             content_view: None,
             bounds: Bounds::default(),
             resize_handle: None,
-            grow: false,
         }
     }
 
@@ -368,12 +367,6 @@ impl ResizablePanel {
 
         size
     }
-
-    /// Set the panel to grow to fill the remaining space.
-    pub fn grow(mut self) -> Self {
-        self.grow = true;
-        self
-    }
 }
 
 impl FluentBuilder for ResizablePanel {}
@@ -384,9 +377,10 @@ impl Render for ResizablePanel {
         let size = self.limit_size(self.size);
 
         div()
-            .size_full()
             .relative()
-            .when(self.grow, |this| this.flex_grow())
+            .size_full()
+            .flex_grow()
+            .flex_shrink()
             .when(self.axis.is_vertical(), |this| this.h(size))
             .when(self.axis.is_horizontal(), |this| this.w(size))
             .child({
