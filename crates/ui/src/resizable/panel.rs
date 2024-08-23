@@ -9,6 +9,8 @@ use gpui::{
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
+const HANDLE_PADDING: Pixels = px(4.);
+
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
 
@@ -122,27 +124,29 @@ impl ResizablePanelGroup {
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
-        const HANDLE_PADDING: Pixels = px(4.);
+
+        let neg_offset = -HANDLE_PADDING;
 
         deferred(
             div()
                 .id(("resizable-handle", ix))
                 .occlude()
+                .absolute()
                 .flex_shrink_0()
-                // .hover(|this| this.bg(cx.theme().drag_border))
-                // .when(is_resizing, |this| this.bg(cx.theme().drag_border))
                 .when(self.axis.is_horizontal(), |this| {
                     this.cursor_col_resize()
                         .top_0()
+                        .right(neg_offset)
                         .h_full()
-                        .mx(-HANDLE_PADDING)
+                        .w(px(0.))
                         .px(HANDLE_PADDING)
                 })
                 .when(self.axis.is_vertical(), |this| {
                     this.cursor_row_resize()
+                        .bottom(neg_offset)
                         .left_0()
                         .w_full()
-                        .my(-HANDLE_PADDING)
+                        .h(px(0.))
                         .py(HANDLE_PADDING)
                 })
                 .child(
@@ -264,14 +268,6 @@ impl ResizablePanelGroup {
 
 impl Render for ResizablePanelGroup {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let mut children: Vec<AnyElement> = vec![];
-        for (ix, panel) in self.panels.iter().enumerate() {
-            children.push(panel.clone().into_any_element());
-            if ix < self.panels.len() - 1 {
-                children.push(self.render_resize_handle(ix, cx).into_any_element());
-            }
-        }
-
         let container = if self.axis.is_horizontal() {
             h_flex()
         } else {
@@ -287,7 +283,16 @@ impl Render for ResizablePanelGroup {
             //         Axis::Vertical => this.debug_blue(),
             //     }
             // })
-            .children(children)
+            .children(self.panels.iter().enumerate().map(|(ix, panel)| {
+                if ix < self.panels.len() - 1 {
+                    let handle = self.render_resize_handle(ix, cx);
+                    panel.update(cx, |view, _| {
+                        view.resize_handle = Some(handle.into_any_element())
+                    });
+                }
+
+                panel.clone()
+            }))
     }
 }
 
@@ -300,6 +305,7 @@ pub struct ResizablePanel {
     content_view: Option<AnyView>,
     /// The bounds of the resizable panel, when render the bounds will be updated.
     bounds: Bounds<Pixels>,
+    resize_handle: Option<AnyElement>,
 
     grow: bool,
 }
@@ -314,6 +320,7 @@ impl ResizablePanel {
             content_builder: None,
             content_view: None,
             bounds: Bounds::default(),
+            resize_handle: None,
             grow: false,
         }
     }
@@ -392,5 +399,6 @@ impl Render for ResizablePanel {
             })
             .when_some(self.content_builder.clone(), |this, c| this.child(c(cx)))
             .when_some(self.content_view.clone(), |this, c| this.child(c))
+            .when_some(self.resize_handle.take(), |this, c| this.child(c))
     }
 }
