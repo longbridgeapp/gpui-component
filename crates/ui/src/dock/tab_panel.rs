@@ -204,24 +204,29 @@ impl TabPanel {
             let panel = self.panels.get(0).unwrap();
 
             return h_flex()
-                .id("tab")
                 .justify_between()
                 .items_center()
-                .py_2()
-                .px_3()
                 .line_height(rems(1.0))
-                .child(panel.title(cx))
-                .child(self.render_menu_button(cx))
-                .on_drag(
-                    DragPanel {
-                        panel: panel.clone(),
-                        tab_panel: view,
-                    },
-                    |drag, cx| {
-                        cx.stop_propagation();
-                        cx.new_view(|_| drag.clone())
-                    },
+                .pr_3()
+                .child(
+                    div()
+                        .id("tab")
+                        .py_2()
+                        .px_3()
+                        .min_w_16()
+                        .child(panel.title(cx))
+                        .on_drag(
+                            DragPanel {
+                                panel: panel.clone(),
+                                tab_panel: view,
+                            },
+                            |drag, cx| {
+                                cx.stop_propagation();
+                                cx.new_view(|_| drag.clone())
+                            },
+                        ),
                 )
+                .child(self.render_menu_button(cx))
                 .into_any_element();
         }
 
