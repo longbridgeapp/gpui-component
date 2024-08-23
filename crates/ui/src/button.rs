@@ -5,9 +5,9 @@ use crate::{
     Disableable, Icon, Selectable, Sizable, Size,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, Div, ElementId, FocusHandle,
-    Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce,
-    SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Div, ElementId,
+    FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -372,6 +372,7 @@ impl RenderOnce for Button {
                         Size::Small => this.text_sm(),
                         _ => this.text_base(),
                     })
+                    .line_height(relative(1.))
                     .when(!self.loading, |this| {
                         this.when_some(self.icon, |this, icon| {
                             this.child(icon.with_size(icon_size))
@@ -456,7 +457,7 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary_hover,
             ButtonStyle::Secondary | ButtonStyle::Outline => cx.theme().secondary_hover,
             ButtonStyle::Danger => cx.theme().destructive_hover,
-            ButtonStyle::Ghost => cx.theme().secondary,
+            ButtonStyle::Ghost => cx.theme().secondary_hover,
             ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.hover,
