@@ -1,9 +1,9 @@
 use std::{hash::Hash, ops::Deref, sync::Arc};
 
 use gpui::{
-    px, size, Asset, Bounds, Element, Hitbox, ImageCacheError, ImageData, InteractiveElement,
-    Interactivity, IntoElement, IsZero, Pixels, SharedString, Size, StyleRefinement, Styled,
-    WindowContext,
+    px, size, AppContext, Asset, Bounds, Element, Hitbox, ImageCacheError, InteractiveElement,
+    Interactivity, IntoElement, IsZero, Pixels, RenderImage, SharedString, Size, StyleRefinement,
+    Styled, WindowContext,
 };
 use image::Frame;
 use smallvec::SmallVec;
@@ -69,13 +69,13 @@ impl Hash for ImageSource {
 
 impl Asset for Image {
     type Source = ImageSource;
-    type Output = Result<Arc<ImageData>, ImageCacheError>;
+    type Output = Result<Arc<RenderImage>, ImageCacheError>;
 
     fn load(
         source: Self::Source,
-        cx: &mut WindowContext,
+        cx: &mut AppContext,
     ) -> impl std::future::Future<Output = Self::Output> + Send + 'static {
-        let scale = cx.scale_factor();
+        let scale = 2.;
         let asset_source = cx.asset_source().clone();
 
         async move {
@@ -84,7 +84,7 @@ impl Asset for Image {
                 return Err(usvg::Error::InvalidSize.into());
             }
             let size = Size {
-                width: (size.width * scale).ceil(),
+                width: (size.width * 2).ceil(),
                 height: (size.height * scale).ceil(),
             };
 
@@ -126,7 +126,7 @@ impl Asset for Image {
                 pixel.swap(0, 2);
             }
 
-            Ok(Arc::new(ImageData::new(SmallVec::from_elem(
+            Ok(Arc::new(RenderImage::new(SmallVec::from_elem(
                 Frame::new(buffer),
                 1,
             ))))
@@ -227,7 +227,7 @@ impl Element for SvgImg {
                 let size = self.size;
 
                 let data = if let Some(source) = source {
-                    match cx.use_cached_asset::<Image>(&ImageSource { source, size }) {
+                    match cx.use_asset::<Image>(&ImageSource { source, size }) {
                         Some(Ok(data)) => Some(data),
                         _ => None,
                     }

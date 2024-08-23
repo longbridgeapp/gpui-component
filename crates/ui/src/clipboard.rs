@@ -61,7 +61,7 @@ impl RenderOnce for Clipboard {
                     .xsmall()
                     .on_click(move |_, cx| {
                         cx.stop_propagation();
-                        cx.write_to_clipboard(ClipboardItem::new(self.value.to_string()));
+                        cx.write_to_clipboard(ClipboardItem::new_string(self.value.to_string()));
 
                         if let Some(copied) = &self.copied_callback {
                             copied(self.value.clone(), cx);

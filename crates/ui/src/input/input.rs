@@ -415,7 +415,7 @@ impl TextInput {
         }
 
         let selected_text = self.text[self.selected_range.clone()].to_string();
-        cx.write_to_clipboard(ClipboardItem::new(selected_text));
+        cx.write_to_clipboard(ClipboardItem::new_string(selected_text));
     }
 
     fn cut(&mut self, _: &Cut, cx: &mut ViewContext<Self>) {
@@ -424,13 +424,13 @@ impl TextInput {
         }
 
         let selected_text = self.text[self.selected_range.clone()].to_string();
-        cx.write_to_clipboard(ClipboardItem::new(selected_text));
+        cx.write_to_clipboard(ClipboardItem::new_string(selected_text));
         self.replace_text_in_range(None, "", cx);
     }
 
     fn paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
         if let Some(clipboard) = cx.read_from_clipboard() {
-            let new_text = clipboard.text().replace('\n', "");
+            let new_text = clipboard.text().unwrap_or_default().replace('\n', "");
             self.replace_text_in_range(None, &new_text, cx);
         }
     }

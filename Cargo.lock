@@ -579,7 +579,7 @@ checksum = "3dcde5f311c85b8ca30c2e4198d4326bc342c76541590106f5fa4a50946ea499"
 [[package]]
 name = "blade-graphics"
 version = "0.4.0"
-source = "git+https://github.com/kvark/blade?rev=ac25c77ed8d86c386a541c935ffe0a0f6024e701#ac25c77ed8d86c386a541c935ffe0a0f6024e701"
+source = "git+https://github.com/kvark/blade?rev=7f54ddfc001edc48225e6602d3c38ebb855421aa#7f54ddfc001edc48225e6602d3c38ebb855421aa"
 dependencies = [
  "ash",
  "ash-window",
@@ -609,7 +609,7 @@ dependencies = [
 [[package]]
 name = "blade-macros"
 version = "0.2.1"
-source = "git+https://github.com/kvark/blade?rev=ac25c77ed8d86c386a541c935ffe0a0f6024e701#ac25c77ed8d86c386a541c935ffe0a0f6024e701"
+source = "git+https://github.com/kvark/blade?rev=7f54ddfc001edc48225e6602d3c38ebb855421aa#7f54ddfc001edc48225e6602d3c38ebb855421aa"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -619,7 +619,7 @@ dependencies = [
 [[package]]
 name = "blade-util"
 version = "0.1.0"
-source = "git+https://github.com/kvark/blade?rev=ac25c77ed8d86c386a541c935ffe0a0f6024e701#ac25c77ed8d86c386a541c935ffe0a0f6024e701"
+source = "git+https://github.com/kvark/blade?rev=7f54ddfc001edc48225e6602d3c38ebb855421aa#7f54ddfc001edc48225e6602d3c38ebb855421aa"
 dependencies = [
  "blade-graphics",
  "bytemuck",
@@ -966,7 +966,7 @@ dependencies = [
 [[package]]
 name = "collections"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "rustc-hash",
 ]
@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "derive_refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2230,7 +2230,7 @@ dependencies = [
 [[package]]
 name = "gpui"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "anyhow",
  "as-raw-xcb-connection",
@@ -2266,7 +2266,6 @@ dependencies = [
  "http_client",
  "image",
  "itertools 0.11.0",
- "lazy_static",
  "linkme",
  "log",
  "media",
@@ -2293,6 +2292,7 @@ dependencies = [
  "slotmap",
  "smallvec",
  "smol",
+ "strum",
  "sum_tree",
  "taffy",
  "thiserror",
@@ -2331,7 +2331,7 @@ dependencies = [
 [[package]]
 name = "gpui_macros"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2535,7 +2535,7 @@ dependencies = [
 [[package]]
 name = "http_client"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2863,9 +2863,9 @@ dependencies = [
 
 [[package]]
 name = "khronos-egl"
-version = "5.0.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1382b16c04aeb821453d6215a3c80ba78f24c6595c5aa85653378aabe0c83e3"
+checksum = "6aae1df220ece3c0ada96b8153459b67eebe9ae9212258bb0134ae60416fdf76"
 dependencies = [
  "libc",
  "libloading",
@@ -3095,7 +3095,7 @@ dependencies = [
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -4214,7 +4214,7 @@ dependencies = [
 [[package]]
 name = "refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "derive_refineable",
 ]
@@ -4409,6 +4409,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
+
+[[package]]
 name = "rustybuzz"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4543,7 +4549,7 @@ checksum = "d369a96f978623eb3dc28807c4852d6cc617fed53da5d3c400feff1ef34a714a"
 [[package]]
 name = "semantic_version"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "anyhow",
  "serde",
@@ -4953,6 +4959,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "strum"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.25.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.71",
+]
+
+[[package]]
 name = "substring"
 version = "1.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4970,7 +4998,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "sum_tree"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "arrayvec",
  "log",
@@ -5634,7 +5662,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "util"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#a0bd2bbfaf25ed71c81743438cbaa8050aa48b09"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#f5eecd7d1c1a4d6fe3a09efd0a08738ef1248121"
 dependencies = [
  "anyhow",
  "async-fs 1.6.0",
