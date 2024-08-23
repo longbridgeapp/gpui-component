@@ -150,7 +150,7 @@ impl RenderOnce for Drawer {
                             .shadow_xl()
                             .map(|this| {
                                 // Set the size of the drawer.
-                                if placement.is_vertical() {
+                                if placement.is_horizontal() {
                                     this.h_full().w(self.size)
                                 } else {
                                     this.w_full().h(self.size)
