@@ -12,6 +12,7 @@ pub mod checkbox;
 pub mod clipboard;
 pub mod context_menu;
 pub mod divider;
+pub mod dock;
 pub mod drawer;
 pub mod dropdown;
 pub mod history;

@@ -8,7 +8,6 @@ ui.workspace = true
 gpui.workspace = true
 fake = "2.9.2"
 anyhow = "1"
-workspace.workspace = true
 charts-rs = "0.3"
 regex = "1"
 chrono = "0.4"

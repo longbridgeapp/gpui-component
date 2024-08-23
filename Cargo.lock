@@ -4915,7 +4915,6 @@ dependencies = [
  "regex",
  "serde",
  "ui",
- "workspace",
 ]
 
 [[package]]

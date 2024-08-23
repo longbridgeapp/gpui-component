@@ -1,12 +1,15 @@
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, Axis, Bounds, DragMoveEvent,
-    EntityId, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, Render,
-    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
+    canvas, deferred, div, prelude::FluentBuilder, px, AnyElement, AnyView, Axis, Bounds,
+    DragMoveEvent, EntityId, InteractiveElement as _, IntoElement, MouseButton, ParentElement,
+    Pixels, Render, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
+
+const HANDLE_PADDING: Pixels = px(4.);
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
@@ -27,7 +30,7 @@ impl ResizablePanelGroup {
             axis: Axis::Horizontal,
             sizes: Vec::new(),
             panels: Vec::new(),
-            handle_size: px(3.),
+            handle_size: px(1.),
             size: px(20.),
             resizing_panel_ix: None,
         }
@@ -37,6 +40,11 @@ impl ResizablePanelGroup {
     pub fn axis(mut self, axis: Axis) -> Self {
         self.axis = axis;
         self
+    }
+
+    pub(crate) fn set_axis(&mut self, axis: Axis, cx: &mut ViewContext<Self>) {
+        self.axis = axis;
+        cx.notify();
     }
 
     /// Set the size of the resize handle, default is 3px.
@@ -49,10 +57,7 @@ impl ResizablePanelGroup {
 
     /// Add a resizable panel to the group.
     pub fn child(mut self, panel: ResizablePanel, cx: &mut WindowContext) -> Self {
-        let mut panel = panel;
-        panel.axis = self.axis;
-        self.sizes.push(panel.size);
-        self.panels.push(cx.new_view(|_| panel));
+        self.add_child(panel, cx);
         self
     }
 
@@ -76,63 +81,133 @@ impl ResizablePanelGroup {
         self
     }
 
+    pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut WindowContext) {
+        let mut panel = panel;
+        panel.axis = self.axis;
+        self.sizes.push(panel.size);
+        self.panels.push(cx.new_view(|_| panel));
+    }
+
+    pub fn insert_child(&mut self, panel: ResizablePanel, ix: usize, cx: &mut ViewContext<Self>) {
+        let mut panel = panel;
+        panel.axis = self.axis;
+        self.sizes.insert(ix, panel.size);
+        self.panels.insert(ix, cx.new_view(|_| panel));
+        cx.notify()
+    }
+
+    /// Replace a child panel with a new panel at the given index.
+    pub(crate) fn replace_child(
+        &mut self,
+        panel: ResizablePanel,
+        ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let mut panel = panel;
+        panel.axis = self.axis;
+        self.sizes[ix] = panel.size;
+        self.panels[ix] = cx.new_view(|_| panel);
+        cx.notify()
+    }
+
+    pub fn remove_child(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
+        self.sizes.remove(ix);
+        self.panels.remove(ix);
+        cx.notify()
+    }
+
+    pub(crate) fn remove_all_children(&mut self, cx: &mut ViewContext<Self>) {
+        self.sizes.clear();
+        self.panels.clear();
+        cx.notify()
+    }
+
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
-        let handle_size = self.handle_size;
-        let is_resizing = self.resizing_panel_ix == Some(ix);
 
-        div()
-            .id(("resizable-handle", ix))
-            .occlude()
-            .hover(|this| this.bg(cx.theme().drag_border))
-            .when(is_resizing, |this| this.bg(cx.theme().drag_border))
-            .when(self.axis.is_horizontal(), |this| {
-                this.cursor_col_resize().top_0().h_full().w(handle_size)
-            })
-            .when(self.axis.is_vertical(), |this| {
-                this.cursor_row_resize().left_0().w_full().h(handle_size)
-            })
-            .on_drag_move(cx.listener(
-                move |view, e: &DragMoveEvent<DragPanel>, cx| match e.drag(cx) {
-                    DragPanel((entity_id, ix, axis)) => {
-                        if cx.entity_id() != *entity_id {
+        let neg_offset = -HANDLE_PADDING;
+
+        deferred(
+            div()
+                .id(("resizable-handle", ix))
+                .occlude()
+                .absolute()
+                .flex_shrink_0()
+                .when(self.axis.is_horizontal(), |this| {
+                    this.cursor_col_resize()
+                        .top_0()
+                        .right(neg_offset)
+                        .h_full()
+                        .w(px(0.))
+                        .px(HANDLE_PADDING)
+                })
+                .when(self.axis.is_vertical(), |this| {
+                    this.cursor_row_resize()
+                        .bottom(neg_offset)
+                        .left_0()
+                        .w_full()
+                        .h(px(0.))
+                        .py(HANDLE_PADDING)
+                })
+                .child(
+                    div()
+                        .bg(cx.theme().border)
+                        .when(self.axis.is_horizontal(), |this| {
+                            this.h_full().w(self.handle_size)
+                        })
+                        .when(self.axis.is_vertical(), |this| {
+                            this.w_full().h(self.handle_size)
+                        }),
+                )
+                .on_drag_move(cx.listener(move |view, e: &DragMoveEvent<DragPanel>, cx| {
+                    match e.drag(cx) {
+                        DragPanel((entity_id, ix, axis)) => {
+                            if cx.entity_id() != *entity_id {
+                                return;
+                            }
+
+                            let ix = *ix;
+                            view.resizing_panel_ix = Some(ix);
+                            let panel = view
+                                .panels
+                                .get(ix)
+                                .expect("BUG: invalid panel index")
+                                .read(cx);
+
+                            view.sync_real_panel_sizes(cx);
+                            match axis {
+                                Axis::Horizontal => view.resize_panels(
+                                    ix,
+                                    e.event.position.x - panel.bounds.left(),
+                                    cx,
+                                ),
+                                Axis::Vertical => {
+                                    view.resize_panels(
+                                        ix,
+                                        e.event.position.y - panel.bounds.top(),
+                                        cx,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }))
+                .on_mouse_up_out(
+                    MouseButton::Left,
+                    cx.listener(|view, _, _| {
+                        if view.resizing_panel_ix.is_none() {
                             return;
                         }
 
-                        let ix = *ix;
-                        view.resizing_panel_ix = Some(ix);
-                        let panel = view
-                            .panels
-                            .get(ix)
-                            .expect("BUG: invalid panel index")
-                            .read(cx);
-
-                        view.sync_real_panel_sizes(cx);
-                        match axis {
-                            Axis::Horizontal => {
-                                view.resize_panels(ix, e.event.position.x - panel.bounds.left(), cx)
-                            }
-                            Axis::Vertical => {
-                                view.resize_panels(ix, e.event.position.y - panel.bounds.top(), cx);
-                            }
-                        }
-                    }
-                },
-            ))
-            .on_mouse_up_out(
-                MouseButton::Left,
-                cx.listener(|view, _, _| {
-                    if view.resizing_panel_ix.is_none() {
-                        return;
-                    }
-
-                    view.resizing_panel_ix = None;
+                        view.resizing_panel_ix = None;
+                    }),
+                )
+                .on_drag(DragPanel((cx.entity_id(), ix, axis)), |drag_panel, cx| {
+                    cx.stop_propagation();
+                    cx.new_view(|_| drag_panel.clone())
                 }),
-            )
-            .on_drag(DragPanel((cx.entity_id(), ix, axis)), |drag_panel, cx| {
-                cx.stop_propagation();
-                cx.new_view(|_| drag_panel.clone())
-            })
+        )
+        .with_priority(0)
     }
 
     fn sync_real_panel_sizes(&mut self, cx: &WindowContext) {
@@ -154,23 +229,35 @@ impl ResizablePanelGroup {
         }
         let size = size.floor();
 
+        // 1. The `size` is the new size for the `ix` offset panel will be.
+        // 2. Limit `size` with the panel min and max size.
+        // 3. Get the `ix` panel changed size.
+        // 4. If the changed size is less than 1px, do nothing.
+        // 5. Update the next panel size with it old size minus the changed size.
+        // 6. When the old_size is small than the min_size, get the overflow size and then reduce other panels size with the overflow size.
+
         let old_size = self.sizes[ix];
         let new_size = self.panels[ix].read(cx).limit_size(size);
         if new_size < size {
             return;
         }
-        let changed_size = new_size - old_size;
+        let changed_size = (new_size - old_size).floor();
 
         // If change size is less than 1px, do nothing.
         if changed_size > px(-1.0) && changed_size < px(1.0) {
             return;
         }
-        self.sizes[ix] = new_size;
 
-        let next_size = self.sizes[ix + 1];
-        self.sizes[ix + 1] = self.panels[ix + 1]
-            .read(cx)
-            .limit_size(next_size - changed_size);
+        let next_size = self.sizes[ix + 1] - changed_size;
+        let next_new_size = self.panels[ix + 1].read(cx).limit_size(next_size);
+        let overflow_size = next_new_size - next_size;
+        if overflow_size != px(0.) {
+            return;
+        }
+
+        self.sizes[ix] = new_size;
+        self.panels[ix].update(cx, |this, _| this.size = new_size);
+        self.sizes[ix + 1] = next_new_size;
 
         for (i, panel) in self.panels.iter_mut().enumerate() {
             let size = self.sizes[i];
@@ -181,21 +268,33 @@ impl ResizablePanelGroup {
 
 impl Render for ResizablePanelGroup {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let mut children: Vec<AnyElement> = vec![];
-        for (ix, panel) in self.panels.iter().enumerate() {
-            children.push(panel.clone().into_any_element());
-            if ix < self.panels.len() - 1 {
-                children.push(self.render_resize_handle(ix, cx).into_any_element());
-            }
-        }
-
         let container = if self.axis.is_horizontal() {
             h_flex()
         } else {
             v_flex()
         };
 
-        container.size_full().children(children)
+        container
+            .size_full()
+            .flex_grow()
+            .flex_shrink()
+            // .map(|this| {
+            //     use crate::StyledExt as _;
+            //     match self.axis {
+            //         Axis::Horizontal => this.debug_red(),
+            //         Axis::Vertical => this.debug_blue(),
+            //     }
+            // })
+            .children(self.panels.iter().enumerate().map(|(ix, panel)| {
+                if ix < self.panels.len() - 1 {
+                    let handle = self.render_resize_handle(ix, cx);
+                    panel.update(cx, |view, _| {
+                        view.resize_handle = Some(handle.into_any_element())
+                    });
+                }
+
+                panel.clone()
+            }))
     }
 }
 
@@ -208,8 +307,7 @@ pub struct ResizablePanel {
     content_view: Option<AnyView>,
     /// The bounds of the resizable panel, when render the bounds will be updated.
     bounds: Bounds<Pixels>,
-
-    grow: bool,
+    resize_handle: Option<AnyElement>,
 }
 
 impl ResizablePanel {
@@ -222,7 +320,7 @@ impl ResizablePanel {
             content_builder: None,
             content_view: None,
             bounds: Bounds::default(),
-            grow: false,
+            resize_handle: None,
         }
     }
 
@@ -269,13 +367,9 @@ impl ResizablePanel {
 
         size
     }
-
-    /// Set the panel to grow to fill the remaining space.
-    pub fn grow(mut self) -> Self {
-        self.grow = true;
-        self
-    }
 }
+
+impl FluentBuilder for ResizablePanel {}
 
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -283,9 +377,10 @@ impl Render for ResizablePanel {
         let size = self.limit_size(self.size);
 
         div()
-            .size_full()
             .relative()
-            .when(self.grow, |this| this.flex_grow())
+            .size_full()
+            .flex_grow()
+            .flex_shrink()
             .when(self.axis.is_vertical(), |this| this.h(size))
             .when(self.axis.is_horizontal(), |this| this.w(size))
             .child({
@@ -298,5 +393,6 @@ impl Render for ResizablePanel {
             })
             .when_some(self.content_builder.clone(), |this, c| this.child(c(cx)))
             .when_some(self.content_view.clone(), |this, c| this.child(c))
+            .when_some(self.resize_handle.take(), |this, c| this.child(c))
     }
 }

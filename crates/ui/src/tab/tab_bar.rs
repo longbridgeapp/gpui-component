@@ -2,7 +2,7 @@ use crate::h_flex;
 use crate::theme::ActiveTheme;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    div, AnyElement, Div, IntoElement, ParentElement, RenderOnce, ScrollHandle, SharedString,
+    div, AnyElement, Div, ElementId, IntoElement, ParentElement, RenderOnce, ScrollHandle,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use gpui::{px, InteractiveElement};
@@ -11,7 +11,7 @@ use smallvec::SmallVec;
 #[derive(IntoElement)]
 pub struct TabBar {
     base: Div,
-    id: SharedString,
+    id: ElementId,
     scroll_handle: ScrollHandle,
     prefix: Option<AnyElement>,
     suffix: Option<AnyElement>,
@@ -19,7 +19,7 @@ pub struct TabBar {
 }
 
 impl TabBar {
-    pub fn new(id: impl Into<SharedString>) -> Self {
+    pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             base: div().h_8().px(px(-1.)),
             id: id.into(),
@@ -37,14 +37,14 @@ impl TabBar {
     }
 
     /// Set the prefix element of the TabBar
-    pub fn prefix(mut self, prefix: impl Into<AnyElement>) -> Self {
-        self.prefix = Some(prefix.into());
+    pub fn prefix(mut self, prefix: impl IntoElement) -> Self {
+        self.prefix = Some(prefix.into_any_element());
         self
     }
 
     /// Set the suffix element of the TabBar
-    pub fn suffix(mut self, suffix: impl Into<AnyElement>) -> Self {
-        self.suffix = Some(suffix.into());
+    pub fn suffix(mut self, suffix: impl IntoElement) -> Self {
+        self.suffix = Some(suffix.into_any_element());
         self
     }
 }
@@ -71,9 +71,9 @@ impl RenderOnce for TabBar {
             .flex()
             .flex_none()
             .items_center()
-            .bg(theme.tab_bar)
             .border_b_1()
             .border_color(cx.theme().border)
+            .bg(theme.tab_bar)
             .text_color(theme.tab_foreground)
             .when_some(self.prefix, |this, prefix| this.child(prefix))
             // The child will append to this level

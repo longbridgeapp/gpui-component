@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use crate::{
     scroll::{Scrollable, ScrollbarAxis},
     theme::{ActiveTheme, Colorize},
@@ -331,18 +333,36 @@ pub enum Placement {
     Right,
 }
 
+impl Display for Placement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Placement::Top => write!(f, "Top"),
+            Placement::Bottom => write!(f, "Bottom"),
+            Placement::Left => write!(f, "Left"),
+            Placement::Right => write!(f, "Right"),
+        }
+    }
+}
+
 impl Placement {
     pub fn is_horizontal(&self) -> bool {
         match self {
-            Placement::Top | Placement::Bottom => true,
+            Placement::Left | Placement::Right => true,
             _ => false,
         }
     }
 
     pub fn is_vertical(&self) -> bool {
         match self {
-            Placement::Left | Placement::Right => true,
+            Placement::Top | Placement::Bottom => true,
             _ => false,
+        }
+    }
+
+    pub fn axis(&self) -> Axis {
+        match self {
+            Placement::Top | Placement::Bottom => Axis::Vertical,
+            Placement::Left | Placement::Right => Axis::Horizontal,
         }
     }
 }

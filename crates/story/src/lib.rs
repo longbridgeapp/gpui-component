@@ -16,6 +16,8 @@ mod text_story;
 mod tooltip_story;
 mod webview_story;
 
+use std::sync::Arc;
+
 pub use button_story::ButtonStory;
 pub use calendar_story::CalendarStory;
 pub use dropdown_story::DropdownStory;
@@ -35,18 +37,19 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
+    div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter, FocusableView,
+    InteractiveElement, IntoElement, ParentElement, Render, SharedString,
     StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
-};
-use workspace::{
-    dock::{DockPosition, Panel, PanelEvent},
-    item::{Item, ItemEvent},
-    Workspace, WorkspaceId,
 };
 
 use anyhow::Result;
-use ui::{divider::Divider, h_flex, label::Label, v_flex};
+use ui::{
+    divider::Divider,
+    dock::{Panel, PanelEvent, TabPanel},
+    h_flex,
+    label::Label,
+    v_flex,
+};
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
@@ -75,10 +78,8 @@ pub struct StoryContainer {
     focus_handle: gpui::FocusHandle,
     name: SharedString,
     description: SharedString,
-    position: DockPosition,
     width: Option<gpui::Pixels>,
     height: Option<gpui::Pixels>,
-    active: bool,
     story: Option<AnyView>,
 }
 
@@ -91,43 +92,6 @@ impl FocusableView for StoryContainer {
 #[derive(Debug)]
 pub enum ContainerEvent {
     Close,
-}
-
-impl Item for StoryContainer {
-    type Event = ContainerEvent;
-
-    fn tab_content(
-        &self,
-        _params: workspace::item::TabContentParams,
-        _cx: &WindowContext,
-    ) -> AnyElement {
-        Label::new(self.name.clone()).into_any_element()
-    }
-
-    fn deactivated(&mut self, _cx: &mut ViewContext<Self>) {
-        self.active = false;
-    }
-
-    fn workspace_deactivated(&mut self, _cx: &mut ViewContext<Self>) {
-        self.active = false;
-    }
-
-    fn clone_on_split(
-        &self,
-        _: Option<WorkspaceId>,
-        cx: &mut ViewContext<Self>,
-    ) -> Option<View<Self>> {
-        Some(cx.new_view(|cx| {
-            Self::new(self.name.clone(), self.description.clone(), cx)
-                .story(self.story.clone().unwrap())
-        }))
-    }
-
-    fn to_item_events(event: &Self::Event, mut f: impl FnMut(ItemEvent)) {
-        match event {
-            ContainerEvent::Close => f(ItemEvent::CloseItem),
-        }
-    }
 }
 
 impl EventEmitter<ContainerEvent> for StoryContainer {}
@@ -146,8 +110,6 @@ impl StoryContainer {
             description: description.into(),
             width: None,
             height: None,
-            position: DockPosition::Left,
-            active: false,
             story: None,
         }
     }
@@ -156,34 +118,19 @@ impl StoryContainer {
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
         story: AnyView,
-        workspace: View<Workspace>,
+        tab_panel: View<TabPanel>,
         cx: &mut WindowContext,
     ) -> Task<Result<View<Self>>> {
-        let pane = workspace.read(cx).active_pane().clone();
         let name = name.into();
         let description = description.into();
 
         cx.spawn(|mut cx| async move {
-            pane.update(&mut cx, |pane, cx| {
+            tab_panel.update(&mut cx, |panel, cx| {
                 let view = cx.new_view(|cx| Self::new(name, description, cx).story(story));
-
-                pane.add_item(Box::new(view.clone()), true, true, None, cx);
+                panel.add_panel(Arc::new(view.clone()), cx);
                 view
             })
         })
-    }
-
-    pub fn add_panel(
-        story: AnyView,
-        workspace: View<Workspace>,
-        position: DockPosition,
-        size: gpui::Pixels,
-        cx: &mut WindowContext,
-    ) {
-        workspace.update(cx, |workspace, cx| {
-            let panel = cx.new_view(|cx| MyPanel::new(story, position, size, cx));
-            workspace.add_panel(panel, cx)
-        });
     }
 
     pub fn width(mut self, width: gpui::Pixels) -> Self {
@@ -196,17 +143,19 @@ impl StoryContainer {
         self
     }
 
-    pub fn position(mut self, position: DockPosition) -> Self {
-        self.position = position;
-        self
-    }
-
     pub fn story(mut self, story: AnyView) -> Self {
         self.story = Some(story);
         self
     }
 }
 
+impl Panel for StoryContainer {
+    fn title(&self, _cx: &WindowContext) -> SharedString {
+        self.name.clone()
+    }
+}
+
+impl EventEmitter<PanelEvent> for StoryContainer {}
 impl Render for StoryContainer {
     fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
@@ -219,7 +168,6 @@ impl Render for StoryContainer {
                     .flex_col()
                     .gap_4()
                     .p_4()
-                    .child(Label::new(self.name.clone()).text_size(px(24.0)))
                     .child(Label::new(self.description.clone()).text_size(px(16.0)))
                     .child(Divider::horizontal().label("This is a divider")),
             )
@@ -233,84 +181,5 @@ impl Render for StoryContainer {
                         .child(story),
                 )
             })
-    }
-}
-
-struct MyPanel {
-    focus_handle: gpui::FocusHandle,
-    view: AnyView,
-    _position: DockPosition,
-    width: Option<Pixels>,
-    height: Option<Pixels>,
-}
-
-impl MyPanel {
-    fn new(view: AnyView, position: DockPosition, size: Pixels, cx: &mut WindowContext) -> Self {
-        let mut this = Self {
-            focus_handle: cx.focus_handle(),
-            view,
-            _position: position,
-            width: None,
-            height: None,
-        };
-        this.update_size(size);
-        this
-    }
-
-    fn update_size(&mut self, size: Pixels) {
-        match self._position {
-            DockPosition::Bottom => self.height = Some(size),
-            DockPosition::Left | DockPosition::Right => self.width = Some(size),
-        }
-    }
-}
-
-impl Panel for MyPanel {
-    fn persistent_name() -> &'static str {
-        "my-panel"
-    }
-
-    fn can_position(&self, position: DockPosition) -> bool {
-        match self._position {
-            DockPosition::Bottom => matches!(position, DockPosition::Bottom),
-            DockPosition::Left | DockPosition::Right => {
-                matches!(position, DockPosition::Left | DockPosition::Right)
-            }
-        }
-    }
-
-    fn position(&self, _cx: &WindowContext) -> DockPosition {
-        self._position
-    }
-
-    fn set_position(&mut self, position: DockPosition, cx: &mut ViewContext<Self>) {
-        self._position = position;
-        cx.notify()
-    }
-
-    fn size(&self, _cx: &WindowContext) -> gpui::Pixels {
-        match self._position {
-            DockPosition::Bottom => self.height.unwrap_or(px(100.)),
-            DockPosition::Left | DockPosition::Right => self.width.unwrap_or(px(100.)),
-        }
-    }
-
-    fn set_size(&mut self, size: Option<gpui::Pixels>, cx: &mut ViewContext<Self>) {
-        if let Some(size) = size {
-            self.update_size(size)
-        }
-        cx.notify();
-    }
-}
-
-impl EventEmitter<PanelEvent> for MyPanel {}
-impl FocusableView for MyPanel {
-    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
-        self.focus_handle.clone()
-    }
-}
-impl Render for MyPanel {
-    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
-        div().id("my-panel").size_full().child(self.view.clone())
     }
 }
