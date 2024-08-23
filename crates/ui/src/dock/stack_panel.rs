@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
+    h_flex,
     resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
     theme::ActiveTheme,
     Placement,
@@ -8,7 +9,7 @@ use crate::{
 
 use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, px, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
@@ -263,7 +264,7 @@ impl EventEmitter<PanelEvent> for StackPanel {}
 impl EventEmitter<DismissEvent> for StackPanel {}
 impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
+        h_flex()
             .size_full()
             .flex_grow()
             .flex_shrink()
