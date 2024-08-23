@@ -1,6 +1,6 @@
 use gpui::{
-    div, AnyView, FocusHandle, ParentElement as _, Render, Styled, View, ViewContext,
-    VisualContext as _, WindowContext,
+    div, AnyView, FocusHandle, InteractiveElement, ParentElement as _, Render, Styled, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
     ops::{Deref, DerefMut},
@@ -108,13 +108,7 @@ impl<'a> ContextModal for WindowContext<'a> {
     }
 
     fn notifications(&self) -> Rc<Vec<View<Notification>>> {
-        Rc::new(
-            Root::read(&self)
-                .notification
-                .read(&self)
-                .notifications
-                .clone(),
-        )
+        Rc::new(Root::read(&self).notification.read(&self).notifications())
     }
 }
 impl<'a, V> ContextModal for ViewContext<'a, V> {
@@ -218,6 +212,7 @@ impl Root {
 impl Render for Root {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         div()
+            .id("root")
             .size_full()
             .text_color(cx.theme().foreground)
             .child(self.child.clone())

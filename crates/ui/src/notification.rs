@@ -1,4 +1,4 @@
-use std::{any::TypeId, sync::Arc, time::Duration};
+use std::{any::TypeId, collections::VecDeque, sync::Arc, time::Duration};
 
 use gpui::{
     div, prelude::FluentBuilder, px, Animation, AnimationExt, ClickEvent, DismissEvent, ElementId,
@@ -165,19 +165,6 @@ impl Notification {
         self
     }
 
-    fn perform_autohide(&self, cx: &mut ViewContext<Self>) {
-        if !self.autohide {
-            return;
-        }
-
-        // Sleep for 5 seconds to autohide the notification
-        cx.spawn(|view, mut cx| async move {
-            Timer::after(Duration::from_secs(5)).await;
-            let _ = view.update(&mut cx, |_, cx| cx.emit(DismissEvent));
-        })
-        .detach();
-    }
-
     fn dismiss(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
         cx.emit(DismissEvent);
     }
@@ -186,9 +173,6 @@ impl EventEmitter<DismissEvent> for Notification {}
 impl FluentBuilder for Notification {}
 impl Render for Notification {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let group_id = "notification-group";
-        self.perform_autohide(cx);
-
         let icon = match self.icon.clone() {
             Some(icon) => icon,
             None => match self.type_ {
@@ -206,11 +190,11 @@ impl Render for Notification {
         };
 
         div()
-            .w_96()
             .id("notification")
+            .group("")
             .occlude()
-            .group(group_id)
             .relative()
+            .w_96()
             .border_1()
             .border_color(cx.theme().border)
             .bg(cx.theme().popover)
@@ -219,15 +203,7 @@ impl Render for Notification {
             .py_2()
             .px_4()
             .gap_3()
-            .child(
-                div()
-                    .absolute()
-                    .map(|this| match self.title.is_some() {
-                        true => this.top_3().left_4(),
-                        false => this.top_2p5().left_4(),
-                    })
-                    .child(icon),
-            )
+            .child(div().absolute().top_3().left_4().child(icon))
             .child(
                 v_flex()
                     .pl_6()
@@ -252,7 +228,7 @@ impl Render for Notification {
                         .top_1()
                         .right_1()
                         .invisible()
-                        .group_hover(group_id, |this| this.visible())
+                        .group_hover("", |this| this.visible())
                         .child(
                             Button::new("close", cx)
                                 .icon(IconName::Close)
@@ -275,19 +251,23 @@ impl Render for Notification {
 
 /// A list of notifications.
 pub struct NotificationList {
-    pub(crate) notifications: Vec<View<Notification>>,
+    /// Notifications that will be auto hidden.
+    pub(crate) notifications: VecDeque<View<Notification>>,
+    expanded: bool,
 }
 
 impl NotificationList {
     pub fn new(_cx: &mut ViewContext<Self>) -> Self {
         Self {
-            notifications: Vec::new(),
+            notifications: VecDeque::new(),
+            expanded: false,
         }
     }
 
     pub fn push(&mut self, notification: impl Into<Notification>, cx: &mut ViewContext<Self>) {
         let notification = notification.into();
         let id = notification.id.clone();
+        let autohide = notification.autohide;
 
         // Remove the notification by id, for keep unique.
         self.notifications.retain(|note| note.read(cx).id != id);
@@ -298,7 +278,24 @@ impl NotificationList {
         })
         .detach();
 
-        self.notifications.push(notification);
+        self.notifications.push_back(notification);
+        if autohide {
+            // Sleep for 5 seconds to autohide the notification
+            cx.spawn(|view, mut cx| async move {
+                Timer::after(Duration::from_secs(5)).await;
+                let _ = view.update(&mut cx, |view, cx| {
+                    if let Some(ix) = view
+                        .notifications
+                        .iter()
+                        .position(|note| note.read(cx).autohide)
+                    {
+                        view.notifications.remove(ix);
+                    }
+                    cx.notify()
+                });
+            })
+            .detach();
+        }
         cx.notify();
     }
 
@@ -306,34 +303,37 @@ impl NotificationList {
         self.notifications.clear();
         cx.notify();
     }
+
+    pub fn notifications(&self) -> Vec<View<Notification>> {
+        self.notifications.iter().cloned().collect()
+    }
 }
 
 impl Render for NotificationList {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         let size = cx.viewport_size();
-
-        let last_10_notes = self
-            .notifications
-            .iter()
-            .rev()
-            .take(10)
-            .rev()
-            .cloned()
-            .collect::<Vec<_>>();
+        let items = self.notifications.iter().rev().take(10).rev().cloned();
 
         div()
             .absolute()
+            .flex()
             .top_4()
             .bottom_4()
             .right_4()
             .justify_end()
             .child(
                 v_flex()
+                    .id("notification-list")
                     .absolute()
+                    .relative()
                     .right_0()
-                    .h(size.height)
+                    .h(size.height - px(8.))
+                    .on_hover(cx.listener(|view, hovered, cx| {
+                        view.expanded = *hovered;
+                        cx.notify()
+                    }))
                     .gap_3()
-                    .children(last_10_notes),
+                    .children(items),
             )
     }
 }
