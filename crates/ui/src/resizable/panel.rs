@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, prelude::FluentBuilder, px, AnyElement, AnyView, Axis, Bounds, DragMoveEvent,
-    EntityId, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, Render,
-    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WindowContext,
+    canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds,
+    DragMoveEvent, EntityId, InteractiveElement as _, IntoElement, MouseButton, ParentElement,
+    Pixels, Render, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
@@ -20,6 +21,7 @@ pub struct ResizablePanelGroup {
     axis: Axis,
     handle_size: Pixels,
     size: Pixels,
+    bounds: Bounds<Pixels>,
     resizing_panel_ix: Option<usize>,
 }
 
@@ -31,6 +33,7 @@ impl ResizablePanelGroup {
             panels: Vec::new(),
             handle_size: px(1.),
             size: px(20.),
+            bounds: Bounds::default(),
             resizing_panel_ix: None,
         }
     }
@@ -219,6 +222,8 @@ impl ResizablePanelGroup {
         }
         let size = size.floor();
 
+        let container_size = self.bounds.size.along(self.axis);
+
         // 1. The `size` is the new size for the `ix` offset panel will be.
         // 2. Limit `size` with the panel min and max size.
         // 3. Get the `ix` panel changed size.
@@ -231,24 +236,42 @@ impl ResizablePanelGroup {
         if new_size < size {
             return;
         }
-        let changed_size = (new_size - old_size).floor();
+        let mut changed_size = (new_size - old_size).floor();
 
         // If change size is less than 1px, do nothing.
         if changed_size > px(-1.0) && changed_size < px(1.0) {
             return;
         }
 
-        let next_size = self.sizes[ix + 1] - changed_size;
-        let next_new_size = self.panels[ix + 1].read(cx).limit_size(next_size);
-        let overflow_size = next_new_size - next_size;
-        if overflow_size != px(0.) {
+        let mut new_sizes = self.sizes.clone();
+
+        new_sizes[ix] = new_size;
+
+        // The next panel will reduce the changed size, if the changed size is less than it min size, then going to change the next one.
+        let mut next_ix = ix + 1;
+        while next_ix < self.sizes.len() - 1 {
+            let old_size = new_sizes[next_ix];
+            let new_size = self.panels[next_ix]
+                .read(cx)
+                .limit_size(old_size - changed_size);
+            changed_size = (new_size - old_size).floor();
+            if new_size < old_size - changed_size {
+                next_ix += 1;
+
+                continue;
+            } else {
+                new_sizes[next_ix] = new_size;
+                break;
+            }
+        }
+
+        // If changed size is still greater than 0, it means the resize is overflow the all next panel's min size.
+        println!("--------- changed_size: {}", changed_size);
+        if changed_size > px(0.) {
             return;
         }
 
-        self.sizes[ix] = new_size;
-        self.panels[ix].update(cx, |this, _| this.size = new_size);
-        self.sizes[ix + 1] = next_new_size;
-
+        self.sizes = new_sizes;
         for (i, panel) in self.panels.iter_mut().enumerate() {
             let size = self.sizes[i];
             panel.update(cx, |this, _| this.size = size);
@@ -258,6 +281,7 @@ impl ResizablePanelGroup {
 
 impl Render for ResizablePanelGroup {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let view = cx.view().clone();
         let container = if self.axis.is_horizontal() {
             h_flex()
         } else {
@@ -285,6 +309,14 @@ impl Render for ResizablePanelGroup {
 
                 panel.clone()
             }))
+            .child({
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full()
+            })
     }
 }
 
