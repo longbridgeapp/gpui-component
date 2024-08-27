@@ -190,12 +190,16 @@ impl TextInput {
     /// Set the text of the input field.
     pub fn set_text(&mut self, text: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
         self.history.ignore = true;
-        let text: SharedString = text.into();
-        let range = 0..self.text.chars().map(|c| c.len_utf16()).sum();
-        self.replace_text_in_range(Some(range), &text, cx);
+        self.replace_text(text, cx);
         self.history.ignore = false;
 
         cx.notify();
+    }
+
+    fn replace_text(&mut self, text: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
+        let text: SharedString = text.into();
+        let range = 0..self.text.chars().map(|c| c.len_utf16()).sum();
+        self.replace_text_in_range(Some(range), &text, cx);
     }
 
     /// Set the disabled state of the input field.
@@ -375,7 +379,7 @@ impl TextInput {
     }
 
     fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
-        self.set_text("", cx);
+        self.replace_text("", cx);
     }
 
     fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {
