@@ -102,7 +102,7 @@ impl Modal {
     }
 
     /// Set the maximum width of the modal, defaults to `None`.
-    pub fn max_width(mut self, max_width: Pixels) -> Self {
+    pub fn max_w(mut self, max_width: Pixels) -> Self {
         self.max_width = Some(max_width);
         self
     }

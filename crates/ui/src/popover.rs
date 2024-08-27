@@ -16,21 +16,26 @@ pub fn init(_cx: &mut AppContext) {}
 pub struct PopoverContent {
     focus_handle: FocusHandle,
     content: Rc<dyn Fn(&mut WindowContext) -> AnyElement>,
+    max_width: Option<Pixels>,
 }
 
 impl PopoverContent {
-    pub fn new<B>(cx: &mut WindowContext, content: B) -> View<Self>
+    pub fn new<B>(cx: &mut WindowContext, content: B) -> Self
     where
         B: Fn(&mut WindowContext) -> AnyElement + 'static,
     {
-        cx.new_view(|cx| {
-            let focus_handle = cx.focus_handle();
+        let focus_handle = cx.focus_handle();
 
-            Self {
-                focus_handle,
-                content: Rc::new(content),
-            }
-        })
+        Self {
+            focus_handle,
+            content: Rc::new(content),
+            max_width: None,
+        }
+    }
+
+    pub fn max_w(mut self, max_width: Pixels) -> Self {
+        self.max_width = Some(max_width);
+        self
     }
 }
 impl EventEmitter<DismissEvent> for PopoverContent {}
@@ -43,7 +48,7 @@ impl FocusableView for PopoverContent {
 
 impl Render for PopoverContent {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().p_4().max_w_128().child(self.content.clone()(cx))
+        div().p_4().when_some(self.max_width, |this, v| this.max_w(v)).child(self.content.clone()(cx))
     }
 }
 
@@ -309,8 +314,8 @@ impl<M: ManagedView> Element for Popover<M> {
 
     fn paint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        _bounds: gpui::Bounds<gpui::Pixels>,
+        id: Option<&GlobalElementId>,
+        _bounds: Bounds<Pixels>,
         request_layout: &mut Self::RequestLayoutState,
         prepaint: &mut Self::PrepaintState,
         cx: &mut WindowContext,
