@@ -43,8 +43,7 @@ impl Render for DockArea {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .id("dock-area")
-            .flex()
-            .flex_1()
+            .size_full()
             .overflow_hidden()
             .map(|this| match self.zoom_view.clone() {
                 Some(view) => this.bg(cx.theme().tab_bar).p_3().child(
