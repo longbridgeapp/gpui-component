@@ -9,6 +9,7 @@ use gpui::{
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
+const PANEL_MIN_SIZE: Pixels = px(100.);
 const HANDLE_PADDING: Pixels = px(4.);
 
 #[derive(Clone, Render)]
@@ -36,7 +37,7 @@ impl ResizablePanelGroup {
             sizes: Vec::new(),
             panels: Vec::new(),
             handle_size: px(1.),
-            size: px(20.),
+            size: PANEL_MIN_SIZE,
             bounds: Bounds::default(),
             resizing_panel_ix: None,
             last_window_size: cx.bounds().size,
@@ -271,15 +272,7 @@ impl Render for ResizablePanelGroup {
 
         container
             .size_full()
-            .flex_grow()
-            .flex_shrink()
-            // .map(|this| {
-            //     use crate::StyledExt as _;
-            //     match self.axis {
-            //         Axis::Horizontal => this.debug_red(),
-            //         Axis::Vertical => this.debug_blue(),
-            //     }
-            // })
+            .flex_auto()
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 if ix < self.panels.len() - 1 {
                     let handle = self.render_resize_handle(ix, cx);
@@ -302,10 +295,15 @@ impl Render for ResizablePanelGroup {
                 view: cx.view().clone(),
                 axis: self.axis,
             })
+        // .map(|this| {
+        //     use crate::StyledExt as _;
+        //     match self.axis {
+        //         Axis::Horizontal => this.debug_red(),
+        //         Axis::Vertical => this.debug_blue(),
+        //     }
+        // })
     }
 }
-
-const PANEL_MIN_SIZE: Pixels = px(100.);
 
 pub struct ResizablePanel {
     size: Pixels,
@@ -320,7 +318,7 @@ pub struct ResizablePanel {
 impl ResizablePanel {
     pub(super) fn new() -> Self {
         Self {
-            size: px(20.),
+            size: PANEL_MIN_SIZE,
             axis: Axis::Horizontal,
             content_builder: None,
             content_view: None,
@@ -358,8 +356,7 @@ impl Render for ResizablePanel {
         div()
             .relative()
             .size_full()
-            .flex_grow()
-            .flex_shrink()
+            .flex_auto()
             .when(self.axis.is_vertical(), |this| this.h(size))
             .when(self.axis.is_horizontal(), |this| this.w(size))
             .child({

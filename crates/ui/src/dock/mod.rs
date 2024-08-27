@@ -44,8 +44,7 @@ impl Render for DockArea {
         div()
             .id("dock-area")
             .flex()
-            .flex_grow()
-            .flex_shrink()
+            .flex_1()
             .overflow_hidden()
             .map(|this| match self.zoom_view.clone() {
                 Some(view) => this.bg(cx.theme().tab_bar).p_3().child(

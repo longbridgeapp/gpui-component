@@ -65,7 +65,7 @@ impl StoryWorkspace {
             let stock_panel1 = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
             view.add_panel(
                 stock_panel1.clone(),
-                Some(px(400.)),
+                Some(px(380.)),
                 weak_dock_area.clone(),
                 cx,
             );
@@ -307,7 +307,6 @@ impl Render for StoryWorkspace {
             .relative()
             .size_full()
             .flex()
-            .flex_1()
             .flex_col()
             .bg(cx.theme().background)
             .text_color(cx.theme().foreground)
