@@ -185,10 +185,11 @@ impl Render for PopupStory {
                             Popover::new("info-top-left")
                                 .trigger(Button::new("info-top-left", cx).label("Top Left"))
                                 .content(|cx| {
-                                    PopoverContent::new(cx, |cx| {
+                                   let content =  PopoverContent::new(cx, |cx| {
                                         v_flex()
                                             .gap_4()
                                             .child("Hello, this is a Popover.")
+                                            .w(px(400.))
                                             .child(Divider::horizontal())
                                             .child(
                                                 Button::new("info1", cx)
@@ -197,7 +198,11 @@ impl Render for PopupStory {
                                                     .small(),
                                             )
                                             .into_any()
-                                    })
+                                    });
+                                    content.update(cx, |this, _| {
+                                        this.max_w(px(600.));
+                                    });
+                                    content
                                 }),
                         ),
                     )

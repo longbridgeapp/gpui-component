@@ -16,6 +16,7 @@ pub fn init(_cx: &mut AppContext) {}
 pub struct PopoverContent {
     focus_handle: FocusHandle,
     content: Rc<dyn Fn(&mut WindowContext) -> AnyElement>,
+    max_width: Option<Pixels>,
 }
 
 impl PopoverContent {
@@ -29,8 +30,14 @@ impl PopoverContent {
             Self {
                 focus_handle,
                 content: Rc::new(content),
+                max_width: None
             }
         })
+    }
+
+    pub fn max_w(&mut self, max_width: Pixels) -> &mut Self {
+        self.max_width = Some(max_width);
+        self
     }
 }
 impl EventEmitter<DismissEvent> for PopoverContent {}
@@ -43,7 +50,13 @@ impl FocusableView for PopoverContent {
 
 impl Render for PopoverContent {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().p_4().max_w_128().child(self.content.clone()(cx))
+        div().p_4().map(|this| {
+            if let Some(max_width) = self.max_width {
+                this.max_w(max_width)
+            } else {
+                this.max_w_128()
+            }
+        }).child(self.content.clone()(cx))
     }
 }
 
