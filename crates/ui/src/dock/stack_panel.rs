@@ -9,7 +9,7 @@ use crate::{
 
 use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    prelude::FluentBuilder as _, px, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
@@ -32,11 +32,11 @@ impl StackPanel {
             parent: None,
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
-            panel_group: cx.new_view(|_| {
+            panel_group: cx.new_view(|cx| {
                 if axis == Axis::Horizontal {
-                    h_resizable()
+                    h_resizable(cx)
                 } else {
-                    v_resizable()
+                    v_resizable(cx)
                 }
             }),
         }
@@ -125,7 +125,6 @@ impl StackPanel {
     {
         resizable_panel()
             .content_view(panel.view())
-            .min_size(px(100.))
             .when_some(size, |this, size| this.size(size))
     }
 
