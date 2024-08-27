@@ -113,8 +113,8 @@ impl PopupMenu {
     }
 
     /// Set max width of the popup menu, default is 500px
-    pub fn max_w(mut self, height: impl Into<Pixels>) -> Self {
-        self.max_width = height.into();
+    pub fn max_w(mut self, width: impl Into<Pixels>) -> Self {
+        self.max_width = width.into();
         self
     }
 
