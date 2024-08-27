@@ -125,7 +125,6 @@ impl StackPanel {
     {
         resizable_panel()
             .content_view(panel.view())
-            .min_size(px(100.))
             .when_some(size, |this, size| this.size(size))
     }
 

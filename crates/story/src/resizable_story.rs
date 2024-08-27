@@ -37,21 +37,18 @@ impl ResizableStory {
                         .child(
                             resizable_panel()
                                 .size(px(300.))
-                                .min_size(px(120.))
                                 .content(|cx| panel_box("Left 1 (Min 120px)", cx)),
                             cx,
                         )
                         .child(
                             resizable_panel()
                                 .size(px(400.))
-                                .min_size(px(100.))
                                 .content(|cx| panel_box("Center 1", cx)),
                             cx,
                         )
                         .child(
                             resizable_panel()
                                 .size(px(300.))
-                                .min_size(px(100.))
                                 .content(|cx| panel_box("Right (Grow)", cx)),
                             cx,
                         ),
@@ -60,15 +57,12 @@ impl ResizableStory {
                 .child(
                     resizable_panel()
                         .size(px(150.))
-                        .max_size(px(550.))
-                        .min_size(px(100.))
                         .content(|cx| panel_box("Center (Grow)", cx)),
                     cx,
                 )
                 .child(
                     resizable_panel()
                         .size(px(210.))
-                        .min_size(px(100.))
                         .content(|cx| panel_box("Bottom", cx)),
                     cx,
                 )
@@ -79,15 +73,12 @@ impl ResizableStory {
                 .child(
                     resizable_panel()
                         .size(px(300.))
-                        .min_size(px(100.))
                         .content(|cx| panel_box("Left 2", cx)),
                     cx,
                 )
                 .child(
                     resizable_panel()
                         .size(px(400.))
-                        .max_size(px(550.))
-                        .min_size(px(100.))
                         .content(|cx| panel_box("Right (Grow)", cx)),
                     cx,
                 )
