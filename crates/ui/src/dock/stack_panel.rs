@@ -32,11 +32,11 @@ impl StackPanel {
             parent: None,
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
-            panel_group: cx.new_view(|_| {
+            panel_group: cx.new_view(|cx| {
                 if axis == Axis::Horizontal {
-                    h_resizable()
+                    h_resizable(cx)
                 } else {
-                    v_resizable()
+                    v_resizable(cx)
                 }
             }),
         }

@@ -39,6 +39,7 @@ impl DragPanel {
 impl Render for DragPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
+            .id("drag-panel")
             .cursor_grab()
             .py_1()
             .px_3()
@@ -214,6 +215,8 @@ impl TabPanel {
                         .py_2()
                         .px_3()
                         .min_w_16()
+                        .overflow_hidden()
+                        .whitespace_nowrap()
                         .child(panel.title(cx))
                         .on_drag(
                             DragPanel {
@@ -237,6 +240,7 @@ impl TabPanel {
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 let active = ix == self.active_ix;
                 Tab::new(("tab", ix), panel.title(cx))
+                    .py_2()
                     .selected(active)
                     .on_click(cx.listener(move |view, _, cx| {
                         view.set_active_ix(ix, cx);

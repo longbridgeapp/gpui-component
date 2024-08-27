@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
     EntityId, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement,
-    Pixels, Render, StatefulInteractiveElement, Style, Styled, View, ViewContext,
+    Pixels, Render, Size, StatefulInteractiveElement, Style, Styled, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
@@ -23,10 +23,14 @@ pub struct ResizablePanelGroup {
     size: Pixels,
     bounds: Bounds<Pixels>,
     resizing_panel_ix: Option<usize>,
+    last_window_size: Size<Pixels>,
 }
 
 impl ResizablePanelGroup {
-    pub(super) fn new() -> Self {
+    pub(super) fn new(cx: &mut ViewContext<Self>) -> Self {
+        // Observe the window size to update the bounds of the resizable panel group.
+        cx.observe_window_bounds(Self::on_window_resize).detach();
+
         Self {
             axis: Axis::Horizontal,
             sizes: Vec::new(),
@@ -35,6 +39,7 @@ impl ResizablePanelGroup {
             size: px(20.),
             bounds: Bounds::default(),
             resizing_panel_ix: None,
+            last_window_size: cx.bounds().size,
         }
     }
 
@@ -122,6 +127,22 @@ impl ResizablePanelGroup {
         self.sizes.clear();
         self.panels.clear();
         cx.notify()
+    }
+
+    fn on_window_resize(&mut self, cx: &mut ViewContext<Self>) {
+        let changed_size = cx.bounds().size - self.last_window_size;
+        self.last_window_size = cx.bounds().size;
+        let changed = changed_size.along(self.axis);
+
+        // Avg the change in size across all panels.
+        // The minimum size limited in ResizablePanel.
+        let avg_change = changed / self.panels.len() as f32;
+        for (ix, panel) in self.panels.iter().enumerate() {
+            self.sizes[ix] += avg_change;
+            panel.update(cx, |this, _| this.size = self.sizes[ix]);
+        }
+
+        cx.notify();
     }
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {

@@ -30,9 +30,9 @@ impl ResizableStory {
         }
 
         let group1 = cx.new_view(|cx| {
-            v_resizable()
+            v_resizable(cx)
                 .group(
-                    h_resizable()
+                    h_resizable(cx)
                         .size(px(150.))
                         .child(
                             resizable_panel()
@@ -69,7 +69,7 @@ impl ResizableStory {
         });
 
         let group2 = cx.new_view(|cx| {
-            h_resizable()
+            h_resizable(cx)
                 .child(
                     resizable_panel()
                         .size(px(300.))
