@@ -187,8 +187,9 @@ impl ResizablePanelGroup {
     /// The `ix`` is the index of the panel to resize,
     /// and the `size` is the new size for the panel.
     fn resize_panels(&mut self, ix: usize, size: Pixels, cx: &mut ViewContext<Self>) {
+        let mut ix = ix;
         // Only resize the left panels.
-        if ix == self.panels.len() - 1 {
+        if ix >= self.panels.len() - 1 {
             return;
         }
         let size = size.floor();
@@ -207,36 +208,38 @@ impl ResizablePanelGroup {
         }
         let main_ix = ix;
 
-        let mut ix = ix;
         if is_expand {
-            println!("-------- expand: {}", changed);
+            // Now to expand logic is correct.
             while changed > px(0.) && ix < self.panels.len() - 1 {
                 ix += 1;
-                let next_size = (new_sizes[ix] - changed).floor().max(PANEL_MIN_SIZE);
-                new_sizes[ix] = next_size;
-
-                changed = changed - new_sizes[ix] - next_size;
-                println!("-------- expand 1: {}", changed);
+                let available_size = (new_sizes[ix] - PANEL_MIN_SIZE).max(px(0.));
+                let to_reduce = changed.min(available_size);
+                new_sizes[ix] -= to_reduce;
+                changed -= to_reduce;
+                println!(
+                    "-------- expand remaining: to_reduce: {} changed: {}",
+                    to_reduce, changed
+                );
             }
         } else {
+            // Handle reduction
             println!("-------- reduce: {}", changed);
             while changed < px(0.) && ix > 0 {
                 ix -= 1;
-                let prev_size = (new_sizes[ix] + changed).floor().max(PANEL_MIN_SIZE);
-                new_sizes[ix] = prev_size;
-                changed = changed - new_sizes[ix] - prev_size;
+                let available_size = self.sizes[ix] - PANEL_MIN_SIZE;
+                let to_increase = (-changed).min(available_size);
+                new_sizes[ix] += to_increase;
+                changed += to_increase;
+                println!("-------- reduce remaining: {}", changed);
             }
         }
 
+        // If total size exceeds container size, adjust the main panel
         let total_size = new_sizes.iter().map(|s| s.0).sum::<f32>();
         if total_size > container_size.0 {
             let overflow = total_size - container_size.0;
-            new_sizes[main_ix] = new_sizes[main_ix] - px(overflow);
+            new_sizes[main_ix] = (new_sizes[main_ix] - px(overflow)).max(PANEL_MIN_SIZE);
         }
-
-        // if changed.floor() != px(0.) {
-        //     return;
-        // }
 
         self.sizes = new_sizes;
         for (i, panel) in self.panels.iter_mut().enumerate() {
