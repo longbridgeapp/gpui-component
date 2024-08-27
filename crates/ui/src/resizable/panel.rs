@@ -37,7 +37,7 @@ impl ResizablePanelGroup {
             sizes: Vec::new(),
             panels: Vec::new(),
             handle_size: px(1.),
-            size: PANEL_MIN_SIZE,
+            size: px(0.),
             bounds: Bounds::default(),
             resizing_panel_ix: None,
             last_window_size: cx.bounds().size,
@@ -272,7 +272,6 @@ impl Render for ResizablePanelGroup {
 
         container
             .size_full()
-            .flex_auto()
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 if ix < self.panels.len() - 1 {
                     let handle = self.render_resize_handle(ix, cx);
@@ -318,7 +317,7 @@ pub struct ResizablePanel {
 impl ResizablePanel {
     pub(super) fn new() -> Self {
         Self {
-            size: PANEL_MIN_SIZE,
+            size: px(0.),
             axis: Axis::Horizontal,
             content_builder: None,
             content_view: None,
@@ -351,14 +350,21 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
+        let has_size = self.size > px(0.);
         let size = self.size.max(PANEL_MIN_SIZE);
 
         div()
             .relative()
-            .size_full()
-            .flex_auto()
-            .when(self.axis.is_vertical(), |this| this.h(size))
-            .when(self.axis.is_horizontal(), |this| this.w(size))
+            .overflow_hidden()
+            .map(|this| {
+                if !has_size {
+                    this.when(self.axis.is_vertical(), |this| this.w_full().flex_1())
+                        .when(self.axis.is_horizontal(), |this| this.h_full().flex_1())
+                } else {
+                    this.when(self.axis.is_vertical(), |this| this.w_full().h(size))
+                        .when(self.axis.is_horizontal(), |this| this.h_full().w(size))
+                }
+            })
             .child({
                 canvas(
                     move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),

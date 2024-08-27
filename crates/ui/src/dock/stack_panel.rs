@@ -4,12 +4,12 @@ use crate::{
     h_flex,
     resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
     theme::ActiveTheme,
-    Placement,
+    Placement, StyledExt,
 };
 
 use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    div, prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
@@ -265,7 +265,6 @@ impl Render for StackPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         h_flex()
             .size_full()
-            .flex_1()
             .overflow_hidden()
             .bg(cx.theme().tab_bar)
             .child(self.panel_group.clone())
