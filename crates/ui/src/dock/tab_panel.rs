@@ -14,6 +14,7 @@ use crate::{
     popup_menu::PopupMenuExt,
     tab::{Tab, TabBar},
     theme::ActiveTheme,
+    tooltip::Tooltip,
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
 };
 
@@ -174,6 +175,7 @@ impl TabPanel {
                         .icon(IconName::Minimize)
                         .xsmall()
                         .ghost()
+                        .tooltip(t!("Dock.Zoom Out"))
                         .on_click(
                             cx.listener(|view, _, cx| view.on_action_toggle_zoom(&ToggleZoom, cx)),
                         ),
@@ -203,6 +205,7 @@ impl TabPanel {
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
+            let title = panel.title(cx);
 
             return h_flex()
                 .justify_between()
@@ -216,8 +219,9 @@ impl TabPanel {
                         .px_3()
                         .min_w_16()
                         .overflow_hidden()
-                        .whitespace_nowrap()
-                        .child(panel.title(cx))
+                        .text_ellipsis()
+                        .child(title.clone())
+                        .tooltip(move |cx| Tooltip::new(title.clone(), cx))
                         .on_drag(
                             DragPanel {
                                 panel: panel.clone(),

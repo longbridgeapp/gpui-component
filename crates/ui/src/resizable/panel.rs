@@ -129,22 +129,6 @@ impl ResizablePanelGroup {
         cx.notify()
     }
 
-    fn on_window_resize(&mut self, cx: &mut ViewContext<Self>) {
-        let changed_size = cx.bounds().size - self.last_window_size;
-        self.last_window_size = cx.bounds().size;
-        let changed = changed_size.along(self.axis);
-
-        // Avg the change in size across all panels.
-        // The minimum size limited in ResizablePanel.
-        let avg_change = changed / self.panels.len() as f32;
-        for (ix, panel) in self.panels.iter().enumerate() {
-            self.sizes[ix] += avg_change;
-            panel.update(cx, |this, _| this.size = self.sizes[ix]);
-        }
-
-        cx.notify();
-    }
-
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
         let neg_offset = -HANDLE_PADDING + px(1.);
@@ -192,6 +176,22 @@ impl ResizablePanelGroup {
                     cx.new_view(|_| drag_panel.clone())
                 },
             )
+    }
+
+    fn on_window_resize(&mut self, cx: &mut ViewContext<Self>) {
+        let changed_size = cx.bounds().size - self.last_window_size;
+        self.last_window_size = cx.bounds().size;
+        let changed = changed_size.along(self.axis);
+
+        // Avg the change in size across all panels.
+        // The minimum size limited in ResizablePanel.
+        let avg_change = changed / self.panels.len() as f32;
+        for (ix, panel) in self.panels.iter().enumerate() {
+            self.sizes[ix] += avg_change;
+            panel.update(cx, |this, _| this.size = self.sizes[ix]);
+        }
+
+        cx.notify();
     }
 
     fn sync_real_panel_sizes(&mut self, cx: &WindowContext) {
@@ -253,7 +253,7 @@ impl ResizablePanelGroup {
         }
 
         self.sizes = new_sizes;
-        for (i, panel) in self.panels.iter_mut().enumerate() {
+        for (i, panel) in self.panels.iter().enumerate() {
             let size = self.sizes[i];
             panel.update(cx, |this, _| this.size = size);
         }

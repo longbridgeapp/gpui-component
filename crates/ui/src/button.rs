@@ -2,6 +2,7 @@ use crate::{
     h_flex,
     indicator::Indicator,
     theme::{ActiveTheme, Colorize as _},
+    tooltip::Tooltip,
     Disableable, Icon, Selectable, Sizable, Size,
 };
 use gpui::{
@@ -385,6 +386,9 @@ impl RenderOnce for Button {
                     .children(self.children)
             })
             .when(self.loading, |this| this.bg(normal_style.bg.opacity(0.8)))
+            .when_some(self.tooltip.clone(), |this, tooltip| {
+                this.tooltip(move |cx| Tooltip::new(tooltip.clone(), cx))
+            })
     }
 }
 
