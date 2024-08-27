@@ -37,7 +37,7 @@ impl ResizablePanelGroup {
             sizes: Vec::new(),
             panels: Vec::new(),
             handle_size: px(1.),
-            size: px(0.),
+            size: PANEL_MIN_SIZE,
             bounds: Bounds::default(),
             resizing_panel_ix: None,
             last_window_size: cx.bounds().size,
@@ -317,7 +317,7 @@ pub struct ResizablePanel {
 impl ResizablePanel {
     pub(super) fn new() -> Self {
         Self {
-            size: px(0.),
+            size: PANEL_MIN_SIZE,
             axis: Axis::Horizontal,
             content_builder: None,
             content_view: None,
@@ -350,7 +350,7 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
-        let has_size = self.size > px(0.);
+        let has_size = self.size != PANEL_MIN_SIZE;
         let size = self.size.max(PANEL_MIN_SIZE);
 
         div()
