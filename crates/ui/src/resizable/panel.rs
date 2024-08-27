@@ -1,15 +1,10 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::rc::Rc;
 
 use gpui::{
-    canvas, div, prelude::FluentBuilder, px, relative, Along, AnyElement, AnyView, Axis, Bounds,
-    DragMoveEvent, Element, EntityId, InteractiveElement as _, IntoElement, MouseButton,
-    MouseMoveEvent, MouseUpEvent, ParentElement, Pixels, Position, Render,
-    StatefulInteractiveElement, Style, Styled, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
+    EntityId, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement,
+    Pixels, Render, StatefulInteractiveElement, Style, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
@@ -197,18 +192,15 @@ impl ResizablePanelGroup {
 
         self.sync_real_panel_sizes(cx);
 
-        let mut new_sizes = self.sizes.clone();
-        new_sizes[ix] = size.max(PANEL_MIN_SIZE);
-        let mut changed = new_sizes[ix] - self.sizes[ix];
+        let mut changed = size - self.sizes[ix];
         let is_expand = changed > px(0.);
 
-        // If the changed size is less than 1px, do not resize any panel.
-        if changed.abs() < px(1.) {
-            return;
-        }
         let main_ix = ix;
+        let mut new_sizes = self.sizes.clone();
 
         if is_expand {
+            new_sizes[ix] = size;
+
             // Now to expand logic is correct.
             while changed > px(0.) && ix < self.panels.len() - 1 {
                 ix += 1;
@@ -216,29 +208,27 @@ impl ResizablePanelGroup {
                 let to_reduce = changed.min(available_size);
                 new_sizes[ix] -= to_reduce;
                 changed -= to_reduce;
-                println!(
-                    "-------- expand remaining: to_reduce: {} changed: {}",
-                    to_reduce, changed
-                );
             }
         } else {
-            // Handle reduction
-            println!("-------- reduce: {}", changed);
+            let new_size = size.max(PANEL_MIN_SIZE);
+            new_sizes[ix] = new_size;
+            changed = size - PANEL_MIN_SIZE;
+            new_sizes[ix + 1] += self.sizes[ix] - new_size;
+
             while changed < px(0.) && ix > 0 {
                 ix -= 1;
                 let available_size = self.sizes[ix] - PANEL_MIN_SIZE;
-                let to_increase = (-changed).min(available_size);
+                let to_increase = (changed).min(available_size);
                 new_sizes[ix] += to_increase;
                 changed += to_increase;
-                println!("-------- reduce remaining: {}", changed);
             }
         }
 
         // If total size exceeds container size, adjust the main panel
-        let total_size = new_sizes.iter().map(|s| s.0).sum::<f32>();
-        if total_size > container_size.0 {
-            let overflow = total_size - container_size.0;
-            new_sizes[main_ix] = (new_sizes[main_ix] - px(overflow)).max(PANEL_MIN_SIZE);
+        let total_size: Pixels = new_sizes.iter().map(|s| s.0).sum::<f32>().into();
+        if total_size > container_size {
+            let overflow = total_size - container_size;
+            new_sizes[main_ix] = (new_sizes[main_ix] - overflow).max(PANEL_MIN_SIZE);
         }
 
         self.sizes = new_sizes;
@@ -351,8 +341,6 @@ impl Render for ResizablePanel {
             .flex_shrink()
             .when(self.axis.is_vertical(), |this| this.h(size))
             .when(self.axis.is_horizontal(), |this| this.w(size))
-            .bg(cx.theme().background)
-            .child(format!("size: {}", size))
             .child({
                 canvas(
                     move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
