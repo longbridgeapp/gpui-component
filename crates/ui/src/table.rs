@@ -1,4 +1,4 @@
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, ops::Range, rc::Rc};
 
 use crate::{
     h_flex,
@@ -198,6 +198,20 @@ pub trait TableDelegate: Sized + 'static {
             .child(Icon::new(IconName::Inbox).size_12())
             .into_any_element()
     }
+
+    /// Returns a threshold value (n rows), of course, when scrolling to the bottom,
+    /// the remaining number of rows triggers `load_more`.
+    ///
+    /// Default: 50 rows
+    fn load_more_threshold(&self) -> usize {
+        50
+    }
+
+    /// Load more data when the table is scrolled to the bottom.
+    ///
+    /// This is always called when the table is near the bottom,
+    /// so you must check if there is more data to load or lock the loading state.
+    fn load_more(&mut self, cx: &mut ViewContext<Table<Self>>) {}
 }
 
 impl<D> Table<D>
@@ -650,6 +664,14 @@ where
             })
     }
 
+    /// Dispatch delegate's `load_more` method when the visible range is near the end.
+    fn load_more(&mut self, visible_range: Range<usize>, cx: &mut ViewContext<Self>) {
+        if visible_range.end >= self.delegate().rows_count() - self.delegate().load_more_threshold()
+        {
+            self.delegate.load_more(cx);
+        }
+    }
+
     fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Self>) {
         if col_ix == to_ix {
             return;
@@ -746,6 +768,8 @@ where
                             uniform_list(view, "table-uniform-list", rows_count, {
                                 let horizontal_scroll_handle = horizontal_scroll_handle.clone();
                                 move |table, visible_range, cx| {
+                                    table.load_more(visible_range.clone(), cx);
+
                                     visible_range
                                         .map(|row_ix| {
                                             table
