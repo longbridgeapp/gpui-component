@@ -1,12 +1,16 @@
+use std::time::Duration;
+
 use fake::Fake;
 use gpui::{
-    div, img, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, View, ViewContext,
-    VisualContext as _, WindowContext,
+    div, img, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
     checkbox::Checkbox,
     h_flex,
+    indicator::Indicator,
     label::Label,
+    prelude::FluentBuilder as _,
     table::{ColSort, Table, TableDelegate, TableEvent},
     theme::ActiveTheme as _,
     v_flex, Icon, IconName, Selectable,
@@ -84,6 +88,8 @@ struct CustomerTableDelegate {
     col_order: bool,
     col_sort: bool,
     col_selection: bool,
+    loading: bool,
+    is_eof: bool,
 }
 
 impl CustomerTableDelegate {
@@ -111,6 +117,8 @@ impl CustomerTableDelegate {
             col_order: true,
             col_sort: true,
             col_selection: true,
+            loading: false,
+            is_eof: false,
         }
     }
 }
@@ -322,6 +330,32 @@ impl TableDelegate for CustomerTableDelegate {
             }
         }
     }
+
+    fn can_load_more(&self) -> bool {
+        return !self.loading && !self.is_eof;
+    }
+
+    fn load_more_threshold(&self) -> usize {
+        150
+    }
+
+    fn load_more(&mut self, cx: &mut ViewContext<Table<Self>>) {
+        self.loading = true;
+
+        cx.spawn(|view, mut cx| async move {
+            // Simulate network request, delay 1s to load data.
+            Timer::after(Duration::from_secs(1)).await;
+
+            cx.update(|cx| {
+                let _ = view.update(cx, |view, _| {
+                    view.delegate_mut().customers.extend(randome_customers(200));
+                    view.delegate_mut().loading = false;
+                    view.delegate_mut().is_eof = view.delegate().customers.len() >= 6000;
+                });
+            })
+        })
+        .detach();
+    }
 }
 
 pub struct TableStory {
@@ -438,7 +472,12 @@ impl Render for TableStory {
                             .label("Column Selection")
                             .selected(delegate.col_selection)
                             .on_click(cx.listener(Self::toggle_col_selection)),
-                    ),
+                    )
+                    .when(delegate.loading, |this| {
+                        this.child(h_flex().gap_1().child(Indicator::new()).child("Loading..."))
+                    })
+                    .child(format!("Total Rows: {}", delegate.rows_count()))
+                    .when(delegate.is_eof, |this| this.child("Is loaded all data.")),
             )
             .child(self.table.clone())
     }
