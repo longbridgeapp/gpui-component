@@ -21,7 +21,7 @@ pub struct ResizablePanelGroup {
     sizes: Vec<Pixels>,
     axis: Axis,
     handle_size: Pixels,
-    size: Pixels,
+    size: Option<Pixels>,
     bounds: Bounds<Pixels>,
     resizing_panel_ix: Option<usize>,
     last_window_size: Size<Pixels>,
@@ -37,7 +37,7 @@ impl ResizablePanelGroup {
             sizes: Vec::new(),
             panels: Vec::new(),
             handle_size: px(1.),
-            size: PANEL_MIN_SIZE,
+            size: None,
             bounds: Bounds::default(),
             resizing_panel_ix: None,
             last_window_size: cx.bounds().size,
@@ -64,19 +64,19 @@ impl ResizablePanelGroup {
     }
 
     /// Add a resizable panel to the group.
-    pub fn child(mut self, panel: ResizablePanel, cx: &mut WindowContext) -> Self {
+    pub fn child(mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) -> Self {
         self.add_child(panel, cx);
         self
     }
 
     /// Add a ResizablePanelGroup as a child to the group.
-    pub fn group(self, group: ResizablePanelGroup, cx: &mut WindowContext) -> Self {
+    pub fn group(self, group: ResizablePanelGroup, cx: &mut ViewContext<Self>) -> Self {
         let mut group: ResizablePanelGroup = group;
         group.handle_size = self.handle_size;
         let size = group.size;
         let panel = ResizablePanel::new()
             .content_view(cx.new_view(|_| group).into())
-            .size(size);
+            .when_some(size, |this, size| this.size(size));
         self.child(panel, cx)
     }
 
@@ -85,11 +85,11 @@ impl ResizablePanelGroup {
     /// - When the axis is horizontal, the size is the height of the group.
     /// - When the axis is vertical, the size is the width of the group.
     pub fn size(mut self, size: Pixels) -> Self {
-        self.size = size;
+        self.size = Some(size);
         self
     }
 
-    pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut WindowContext) {
+    pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;
         self.sizes.push(panel.size.unwrap_or(PANEL_MIN_SIZE));
@@ -188,7 +188,7 @@ impl ResizablePanelGroup {
 
         // Avg the change in size across all panels.
         // The minimum size limited in ResizablePanel.
-        let avg_change = (changed / self.panels.len() as f32).round();
+        let avg_change = changed / self.panels.len() as f32;
         for (ix, panel) in self.panels.iter().enumerate() {
             self.sizes[ix] += avg_change;
             panel.update(cx, |this, _| this.size = Some(self.sizes[ix]));
