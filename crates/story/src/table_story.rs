@@ -331,18 +331,15 @@ impl TableDelegate for CustomerTableDelegate {
         }
     }
 
+    fn can_load_more(&self) -> bool {
+        return !self.loading && !self.is_eof;
+    }
+
     fn load_more_threshold(&self) -> usize {
         150
     }
 
     fn load_more(&mut self, cx: &mut ViewContext<Table<Self>>) {
-        if self.loading {
-            return;
-        }
-        if self.is_eof {
-            return;
-        }
-
         self.loading = true;
 
         cx.spawn(|view, mut cx| async move {

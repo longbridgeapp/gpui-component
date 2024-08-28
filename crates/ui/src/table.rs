@@ -199,6 +199,13 @@ pub trait TableDelegate: Sized + 'static {
             .into_any_element()
     }
 
+    /// Return true to enable load more data when scrolling to the bottom.
+    ///
+    /// Default: true
+    fn can_load_more(&self) -> bool {
+        true
+    }
+
     /// Returns a threshold value (n rows), of course, when scrolling to the bottom,
     /// the remaining number of rows triggers `load_more`.
     ///
@@ -208,6 +215,8 @@ pub trait TableDelegate: Sized + 'static {
     }
 
     /// Load more data when the table is scrolled to the bottom.
+    ///
+    /// This will performed in a background task.
     ///
     /// This is always called when the table is near the bottom,
     /// so you must check if there is more data to load or lock the loading state.
@@ -666,9 +675,19 @@ where
 
     /// Dispatch delegate's `load_more` method when the visible range is near the end.
     fn load_more(&mut self, visible_range: Range<usize>, cx: &mut ViewContext<Self>) {
-        if visible_range.end >= self.delegate().rows_count() - self.delegate().load_more_threshold()
-        {
-            self.delegate.load_more(cx);
+        if !self.delegate.can_load_more() {
+            return;
+        }
+
+        if visible_range.end >= self.delegate.rows_count() - self.delegate.load_more_threshold() {
+            cx.spawn(|view, mut cx| async move {
+                cx.update(|cx| {
+                    view.update(cx, |view, cx| {
+                        view.delegate.load_more(cx);
+                    })
+                })
+            })
+            .detach();
         }
     }
 
