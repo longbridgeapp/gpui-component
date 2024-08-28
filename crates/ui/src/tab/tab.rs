@@ -75,6 +75,7 @@ impl RenderOnce for Tab {
             .items_center()
             .flex_shrink_0()
             .cursor_pointer()
+            .overflow_hidden()
             .text_color(text_color)
             .bg(bg_color)
             .border_x_1()

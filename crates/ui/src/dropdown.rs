@@ -472,6 +472,8 @@ where
     }
 
     fn toggle_menu(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        cx.stop_propagation();
+
         self.open = !self.open;
         if self.open {
             self.list.focus_handle(cx).focus(cx);
