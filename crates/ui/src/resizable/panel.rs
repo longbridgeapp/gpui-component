@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
     EntityId, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement,
-    Pixels, Render, Size, StatefulInteractiveElement, Style, Styled, View, ViewContext,
+    Pixels, Render, StatefulInteractiveElement, Style, Styled, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
@@ -24,7 +24,6 @@ pub struct ResizablePanelGroup {
     size: Option<Pixels>,
     bounds: Bounds<Pixels>,
     resizing_panel_ix: Option<usize>,
-    last_window_size: Size<Pixels>,
 }
 
 impl ResizablePanelGroup {
@@ -40,7 +39,6 @@ impl ResizablePanelGroup {
             size: None,
             bounds: Bounds::default(),
             resizing_panel_ix: None,
-            last_window_size: cx.bounds().size,
         }
     }
 
@@ -182,16 +180,29 @@ impl ResizablePanelGroup {
     fn on_window_resize(&mut self, cx: &mut ViewContext<Self>) {
         self.sync_real_panel_sizes(cx);
 
-        let changed_size = cx.bounds().size - self.last_window_size;
-        self.last_window_size = cx.bounds().size;
-        let changed = changed_size.along(self.axis);
+        let last_inner_window_size = self.sizes.iter().fold(px(0.), |acc, p| acc + *p);
+        let window_bounds_size = cx.bounds().size;
+        let window_size = window_bounds_size.along(self.axis);
+        let inner_window_size = if self.axis.is_vertical() {
+            window_size - px(32.)
+        } else {
+            window_size
+        };
 
-        // Avg the change in size across all panels.
-        // The minimum size limited in ResizablePanel.
-        let avg_change = changed / self.panels.len() as f32;
+        let mut acc = px(0.);
+
         for (ix, panel) in self.panels.iter().enumerate() {
-            self.sizes[ix] += avg_change;
-            panel.update(cx, |this, _| this.size = Some(self.sizes[ix]));
+            let ratio = self.sizes[ix] / last_inner_window_size;
+            let mut size = (ratio * inner_window_size).floor();
+            acc += size;
+
+            if ix == self.panels.len() - 1 {
+                let remain = inner_window_size - acc;
+                size = size + remain;
+            }
+
+            self.sizes[ix] = size;
+            panel.update(cx, |this, _| this.size = Some(size));
         }
 
         cx.notify();
