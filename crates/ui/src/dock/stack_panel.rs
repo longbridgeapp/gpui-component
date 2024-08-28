@@ -4,12 +4,12 @@ use crate::{
     h_flex,
     resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
     theme::ActiveTheme,
-    Placement, StyledExt,
+    Placement,
 };
 
 use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    div, prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };

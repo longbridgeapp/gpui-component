@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder, px, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
+    div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
     DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
     IntoElement, ParentElement, Render, ScrollHandle, StatefulInteractiveElement, Styled, View,
     ViewContext, VisualContext as _, WeakView,
@@ -505,7 +505,6 @@ impl Render for TabPanel {
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_toggle_zoom))
             .size_full()
-            .debug_red()
             .overflow_hidden()
             .bg(cx.theme().background)
             .child(self.render_tabs(cx))
