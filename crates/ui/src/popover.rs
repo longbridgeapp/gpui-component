@@ -48,7 +48,10 @@ impl FocusableView for PopoverContent {
 
 impl Render for PopoverContent {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().p_4().when_some(self.max_width, |this, v| this.max_w(v)).child(self.content.clone()(cx))
+        div()
+            .p_2()
+            .when_some(self.max_width, |this, v| this.max_w(v))
+            .child(self.content.clone()(cx))
     }
 }
 
