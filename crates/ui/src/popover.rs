@@ -239,9 +239,11 @@ impl<M: ManagedView> Element for Popover<M> {
                                 .occlude()
                                 .when(!no_style, |this| this.popover_style(cx))
                                 .map(|this| match anchor {
-                                    AnchorCorner::TopLeft | AnchorCorner::TopRight => this.top_2(),
+                                    AnchorCorner::TopLeft | AnchorCorner::TopRight => {
+                                        this.top_1p5()
+                                    }
                                     AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
-                                        this.bottom_2()
+                                        this.bottom_1p5()
                                     }
                                 })
                                 .child(content_view.clone())
