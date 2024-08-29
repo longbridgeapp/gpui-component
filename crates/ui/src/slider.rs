@@ -107,6 +107,7 @@ impl Slider {
                 max - (max - min) * relative
             }
         };
+
         let value = (value / step).round() * step;
 
         self.value = value.clamp(self.min, self.max);
