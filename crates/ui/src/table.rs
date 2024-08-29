@@ -679,15 +679,20 @@ where
             return;
         }
 
-        if visible_range.end >= self.delegate.rows_count() - self.delegate.load_more_threshold() {
-            cx.spawn(|view, mut cx| async move {
-                cx.update(|cx| {
-                    view.update(cx, |view, cx| {
-                        view.delegate.load_more(cx);
+        let row_count = self.delegate.rows_count();
+        let load_more_count = self.delegate.load_more_threshold();
+
+        // Securely handle subtract logic to prevent attempt to subtract with overflow
+        if row_count >= load_more_count {
+            if visible_range.end >= row_count - load_more_count {
+                cx.spawn(|view, mut cx| async move {
+                    cx.update(|cx| {
+                        view.update(cx, |view, cx| {
+                            view.delegate.load_more(cx);
+                        })
                     })
-                })
-            })
-            .detach();
+                }).detach()
+            }
         }
     }
 
