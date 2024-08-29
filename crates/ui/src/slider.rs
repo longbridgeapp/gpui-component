@@ -137,7 +137,7 @@ impl Slider {
                 },
             ))
             .absolute()
-            .top(px(-4.))
+            .top(px(-5.))
             .left(relative(self.relative_value()))
             .ml(-px(8.))
             .size_4()
@@ -161,12 +161,13 @@ impl Render for Slider {
         div()
             .id("slider")
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
-            .py_1()
+            .h_5()
             .child(
                 div()
                     .id("slider-bar")
                     .relative()
                     .w_full()
+                    .my_1p5()
                     .h_1p5()
                     .bg(cx.theme().slider_bar.opacity(0.2))
                     .active(|this| this.bg(cx.theme().slider_bar.opacity(0.4)))
