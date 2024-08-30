@@ -7,6 +7,7 @@ mod styled;
 mod svg_img;
 mod time;
 
+pub mod animation;
 pub mod button;
 pub mod checkbox;
 pub mod clipboard;
