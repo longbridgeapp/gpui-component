@@ -7,7 +7,8 @@ use gpui::{
 };
 
 use crate::{
-    button::Button, theme::ActiveTheme as _, v_flex, ContextModal, IconName, Sizable as _,
+    animation::cubic_bezier, button::Button, theme::ActiveTheme as _, v_flex, ContextModal,
+    IconName, Sizable as _,
 };
 
 #[derive(IntoElement)]
@@ -182,9 +183,10 @@ impl RenderOnce for Modal {
                         .children(self.footer)
                         .with_animation(
                             "slide-down",
-                            Animation::new(Duration::from_secs_f64(0.1)),
+                            Animation::new(Duration::from_secs_f64(0.25))
+                                .with_easing(cubic_bezier(0.32, 0.72, 0., 1.)),
                             move |this, delta| {
-                                let y_offset = px(-30.) + delta * px(30.);
+                                let y_offset = px(0.) + delta * px(30.);
                                 this.top(y + y_offset)
                             },
                         ),
