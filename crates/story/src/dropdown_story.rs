@@ -138,7 +138,7 @@ impl DropdownStory {
                 disabled_dropdown: cx.new_view(|cx| {
                     Dropdown::new("disabled-dropdown", Vec::<SharedString>::new(), None, cx)
                         .small()
-                        .disabled()
+                        .disabled(true)
                 }),
             }
         })

@@ -12,7 +12,7 @@ use crate::{
     input::ClearButton,
     list::{self, List, ListDelegate, ListItem},
     theme::{ActiveTheme, Colorize},
-    v_flex, Icon, IconName, Sizable, Size, StyleSized, StyledExt,
+    v_flex, Disableable, Icon, IconName, Sizable, Size, StyleSized, StyledExt,
 };
 
 actions!(dropdown, [Up, Down, Enter, Escape]);
@@ -386,8 +386,8 @@ where
     }
 
     /// Set the disable state for the dropdown.
-    pub fn disabled(mut self) -> Self {
-        self.disabled = true;
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
         self
     }
 
@@ -590,7 +590,13 @@ where
                     .border_color(cx.theme().input)
                     .rounded(px(cx.theme().radius))
                     .shadow_sm()
-                    .cursor_pointer()
+                    .map(|this| {
+                        if self.disabled {
+                            this.cursor_not_allowed()
+                        } else {
+                            this.cursor_pointer()
+                        }
+                    })
                     .overflow_hidden()
                     .input_text_size(self.size)
                     .map(|this| match self.width {
@@ -615,7 +621,13 @@ where
                                     .child(self.display_title(cx)),
                             )
                             .when(show_clean, |this| {
-                                this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean)))
+                                this.child(ClearButton::new(cx).map(|this| {
+                                    if self.disabled {
+                                        this.disabled(true)
+                                    } else {
+                                        this.on_click(cx.listener(Self::clean))
+                                    }
+                                }))
                             })
                             .when(!show_clean, |this| {
                                 let icon = match self.icon.clone() {
@@ -629,7 +641,11 @@ where
                                     }
                                 };
 
-                                this.child(Icon::new(icon).text_color(cx.theme().muted_foreground))
+                                this.child(
+                                    Icon::new(icon)
+                                        .text_color(cx.theme().muted_foreground)
+                                        .when(self.disabled, |this| this.cursor_not_allowed()),
+                                )
                             }),
                     )
                     .child(
