@@ -1,4 +1,4 @@
-use gpui::{px, Styled as _, WindowContext};
+use gpui::{px, WindowContext};
 
 use crate::{button::Button, IconName, Sizable as _};
 
@@ -10,6 +10,5 @@ impl ClearButton {
             .icon(IconName::CircleX)
             .ghost()
             .with_size(px(14.))
-            .cursor_pointer()
     }
 }
