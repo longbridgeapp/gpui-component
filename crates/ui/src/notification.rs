@@ -8,8 +8,8 @@ use gpui::{
 use smol::Timer;
 
 use crate::{
-    button::Button, h_flex, theme::ActiveTheme as _, v_flex, Icon, IconName, Sizable as _,
-    StyledExt,
+    animation::cubic_bezier, button::Button, h_flex, theme::ActiveTheme as _, v_flex, Icon,
+    IconName, Sizable as _, StyledExt,
 };
 
 pub enum NotificationType {
@@ -239,11 +239,12 @@ impl Render for Notification {
                 )
             })
             .with_animation(
-                "slide-left",
-                Animation::new(Duration::from_secs_f64(0.1)),
+                "slide-down",
+                Animation::new(Duration::from_secs_f64(0.15))
+                    .with_easing(cubic_bezier(0.4, 0., 0.2, 1.)),
                 move |this, delta| {
-                    let x_offset = px(120.) + delta * px(-120.);
-                    this.left(px(0.) + x_offset)
+                    let y_offset = px(-45.) + delta * px(45.);
+                    this.top(px(0.) + y_offset)
                 },
             )
     }
