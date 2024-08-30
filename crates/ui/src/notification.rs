@@ -49,6 +49,7 @@ pub struct Notification {
     icon: Option<Icon>,
     autohide: bool,
     on_click: Option<Arc<dyn Fn(&ClickEvent, &mut WindowContext)>>,
+    closing: bool,
 }
 
 impl From<SharedString> for Notification {
@@ -92,6 +93,7 @@ impl Notification {
             icon: None,
             autohide: true,
             on_click: None,
+            closing: false,
         }
     }
 
@@ -166,13 +168,29 @@ impl Notification {
     }
 
     fn dismiss(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
-        cx.emit(DismissEvent);
+        self.closing = true;
+        cx.notify();
+
+        // Dismiss the notification after 0.15s to show the animation.
+        cx.spawn(|view, mut cx| async move {
+            Timer::after(Duration::from_secs_f32(0.15)).await;
+            cx.update(|cx| {
+                if let Some(view) = view.upgrade() {
+                    view.update(cx, |view, cx| {
+                        view.closing = false;
+                        cx.emit(DismissEvent);
+                    });
+                }
+            })
+        })
+        .detach()
     }
 }
 impl EventEmitter<DismissEvent> for Notification {}
 impl FluentBuilder for Notification {}
 impl Render for Notification {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let closing = self.closing;
         let icon = match self.icon.clone() {
             Some(icon) => icon,
             None => match self.type_ {
@@ -216,8 +234,8 @@ impl Render for Notification {
             )
             .when_some(self.on_click.clone(), |this, on_click| {
                 this.cursor_pointer()
-                    .on_click(cx.listener(move |_, event, cx| {
-                        cx.emit(DismissEvent);
+                    .on_click(cx.listener(move |view, event, cx| {
+                        view.dismiss(event, cx);
                         on_click(event, cx);
                     }))
             })
@@ -239,12 +257,17 @@ impl Render for Notification {
                 )
             })
             .with_animation(
-                "slide-down",
+                ElementId::NamedInteger("slide-down".into(), closing as usize),
                 Animation::new(Duration::from_secs_f64(0.15))
                     .with_easing(cubic_bezier(0.4, 0., 0.2, 1.)),
                 move |this, delta| {
-                    let y_offset = px(-45.) + delta * px(45.);
-                    this.top(px(0.) + y_offset)
+                    if closing {
+                        let x_offset = px(0.) + delta * px(45.);
+                        this.left(px(0.) + x_offset).opacity(1. - delta)
+                    } else {
+                        let y_offset = px(-45.) + delta * px(45.);
+                        this.top(px(0.) + y_offset)
+                    }
                 },
             )
     }
@@ -290,7 +313,9 @@ impl NotificationList {
                         .iter()
                         .position(|note| note.read(cx).autohide)
                     {
-                        view.notifications.remove(ix);
+                        if let Some(note) = view.notifications.get(ix) {
+                            note.update(cx, |note, cx| note.dismiss(&ClickEvent::default(), cx));
+                        }
                     }
                     cx.notify()
                 });
