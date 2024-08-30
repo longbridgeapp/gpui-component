@@ -52,6 +52,7 @@ pub struct DropdownStory {
     simple_dropdown1: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown2: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown3: View<Dropdown<Vec<SharedString>>>,
+    disabled_dropdown: View<Dropdown<Vec<SharedString>>>,
 }
 
 impl DropdownStory {
@@ -133,6 +134,11 @@ impl DropdownStory {
                                 .text_color(cx.theme().muted_foreground)
                                 .child("No Data")
                         })
+                }),
+                disabled_dropdown: cx.new_view(|cx| {
+                    Dropdown::new("disabled-dropdown", Vec::<SharedString>::new(), None, cx)
+                        .small()
+                        .disabled()
                 }),
             }
         })
@@ -227,7 +233,8 @@ impl Render for DropdownStory {
                     .gap_2()
                     .child(self.simple_dropdown1.clone())
                     .child(self.simple_dropdown2.clone())
-                    .child(self.simple_dropdown3.clone()),
+                    .child(self.simple_dropdown3.clone())
+                    .child(self.disabled_dropdown.clone()),
             )
     }
 }
