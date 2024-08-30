@@ -226,6 +226,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     menu_width: Length,
     /// Store the bounds of the input
     bounds: Bounds<Pixels>,
+    disabled: bool,
 }
 
 pub struct SearchableVec<T> {
@@ -338,6 +339,7 @@ where
             width: Length::Auto,
             menu_width: Length::Auto,
             bounds: Bounds::default(),
+            disabled: false,
         };
         this.set_selected_index(selected_index, cx);
         this
@@ -380,6 +382,12 @@ where
     /// Set true to show the clear button when the input field is not empty.
     pub fn cleanable(mut self) -> Self {
         self.cleanable = true;
+        self
+    }
+
+    /// Set the disable state for the dropdown.
+    pub fn disabled(mut self) -> Self {
+        self.disabled = true;
         self
     }
 
@@ -492,7 +500,7 @@ where
     }
 
     fn display_title(&self, cx: &WindowContext) -> impl IntoElement {
-        if let Some(selected_index) = &self.selected_index(cx) {
+        let title = if let Some(selected_index) = &self.selected_index(cx) {
             let title = self
                 .list
                 .read(cx)
@@ -513,7 +521,12 @@ where
             div()
                 .text_color(cx.theme().accent_foreground)
                 .child(self.placeholder.clone())
-        }
+        };
+
+        title.when(self.disabled, |this| {
+            this.cursor_not_allowed()
+                .text_color(cx.theme().muted_foreground)
+        })
     }
 }
 
@@ -551,6 +564,8 @@ where
         let show_clean = self.cleanable && self.selected_index(cx).is_some();
         let view = cx.view().clone();
         let bounds = self.bounds;
+        let allow_open = !(self.open || self.disabled);
+        let outline_visible = is_focused && !self.disabled;
 
         div()
             .id(self.id.clone())
@@ -582,9 +597,9 @@ where
                         Length::Definite(l) => this.flex_none().w(l),
                         Length::Auto => this.w_full(),
                     })
-                    .when(is_focused, |this| this.outline(cx))
+                    .when(outline_visible, |this| this.outline(cx))
                     .input_size(self.size)
-                    .when(!self.open, |this| {
+                    .when(allow_open, |this| {
                         this.on_click(cx.listener(Self::toggle_menu))
                     })
                     .child(
