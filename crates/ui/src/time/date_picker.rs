@@ -219,7 +219,7 @@ impl Render for DatePicker {
                                 .track_focus(&self.focus_handle)
                                 .occlude()
                                 .absolute()
-                                .mt_2()
+                                .mt_1p5()
                                 .overflow_hidden()
                                 .rounded_lg()
                                 .p_3()
