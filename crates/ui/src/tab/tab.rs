@@ -2,7 +2,7 @@ use crate::theme::{ActiveTheme, Colorize};
 use crate::Selectable;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    div, AnyElement, Div, ElementId, InteractiveElement, IntoElement, ParentElement as _,
+    div, px, AnyElement, Div, ElementId, InteractiveElement, IntoElement, ParentElement as _,
     RenderOnce, Stateful, StatefulInteractiveElement, Styled, WindowContext,
 };
 
@@ -19,7 +19,7 @@ pub struct Tab {
 impl Tab {
     pub fn new(id: impl Into<ElementId>, label: impl IntoElement) -> Self {
         Self {
-            base: div().id(id.into()).gap_1().py_1p5().px_3().h_8(),
+            base: div().id(id.into()).gap_1().py_1p5().px_3().h(px(30.)),
             label: label.into_any_element(),
             disabled: false,
             selected: false,
@@ -79,7 +79,6 @@ impl RenderOnce for Tab {
             .text_color(text_color)
             .bg(bg_color)
             .border_x_1()
-            .border_color(bg_color)
             .border_color(cx.theme().transparent)
             .when(self.selected, |this| this.border_color(cx.theme().border))
             .text_sm()
@@ -87,7 +86,7 @@ impl RenderOnce for Tab {
             .when_some(self.prefix, |this, prefix| {
                 this.child(prefix).text_color(text_color)
             })
-            .child(self.label)
+            .child(div().text_ellipsis().child(self.label))
             .when_some(self.suffix, |this, suffix| this.child(suffix))
     }
 }
