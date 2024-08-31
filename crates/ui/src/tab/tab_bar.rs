@@ -21,7 +21,7 @@ pub struct TabBar {
 impl TabBar {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
-            base: div().h_8().px(px(-1.)),
+            base: div().px(px(-1.)),
             id: id.into(),
             children: SmallVec::new(),
             scroll_handle: ScrollHandle::new(),
@@ -30,7 +30,7 @@ impl TabBar {
         }
     }
 
-    #[allow(unused)]
+    /// Track the scroll of the TabBar
     pub fn track_scroll(mut self, scroll_handle: ScrollHandle) -> Self {
         self.scroll_handle = scroll_handle;
         self
@@ -63,27 +63,31 @@ impl Styled for TabBar {
 
 impl RenderOnce for TabBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.theme();
-
         self.base
             .id(self.id)
             .group("tab-bar")
+            .relative()
             .flex()
             .flex_none()
             .items_center()
-            .border_b_1()
-            .border_color(cx.theme().border)
-            .bg(theme.tab_bar)
-            .text_color(theme.tab_foreground)
+            .bg(cx.theme().tab_bar)
+            .text_color(cx.theme().tab_foreground)
+            .child(
+                div()
+                    .id("border-b")
+                    .absolute()
+                    .bottom_0()
+                    .size_full()
+                    .border_b_1()
+                    .border_color(cx.theme().border),
+            )
             .when_some(self.prefix, |this, prefix| this.child(prefix))
-            // The child will append to this level
             .child(
                 h_flex()
                     .id("tabs")
                     .flex_grow()
                     .overflow_x_scroll()
                     .track_scroll(&self.scroll_handle)
-                    // The children will append to this level
                     .children(self.children),
             )
             .when_some(self.suffix, |this, suffix| this.child(suffix))

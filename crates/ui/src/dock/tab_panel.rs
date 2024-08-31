@@ -290,6 +290,7 @@ impl TabPanel {
                     .top_0()
                     .right_0()
                     .border_l_1()
+                    .border_b_1()
                     .h_full()
                     .border_color(cx.theme().border)
                     .bg(cx.theme().tab_bar)
