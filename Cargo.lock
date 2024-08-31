@@ -70,55 +70,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anstream"
-version = "0.6.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64e15c1ab1f89faffbf04a634d5e1962e9074f2741eef6d97f3c4e322426d526"
-dependencies = [
- "anstyle",
- "anstyle-parse",
- "anstyle-query",
- "anstyle-wincon",
- "colorchoice",
- "is_terminal_polyfill",
- "utf8parse",
-]
-
-[[package]]
-name = "anstyle"
-version = "1.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bec1de6f59aedf83baf9ff929c98f2ad654b97c9510f4e70cf6f661d49fd5b1"
-
-[[package]]
-name = "anstyle-parse"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb47de1e80c2b463c735db5b217a0ddc39d612e7ac9e2e96a5aed1f57616c1cb"
-dependencies = [
- "utf8parse",
-]
-
-[[package]]
-name = "anstyle-query"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d36fc52c7f6c869915e99412912f22093507da8d9e942ceaf66fe4b7c14422a"
-dependencies = [
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "anstyle-wincon"
-version = "3.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bf74e1b6e971609db8ca7a9ce79fd5768ab6ae46441c572e46cf596f59e57f8"
-dependencies = [
- "anstyle",
- "windows-sys 0.52.0",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -516,17 +467,15 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bindgen"
-version = "0.65.1"
+version = "0.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
+checksum = "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "lazy_static",
- "lazycell",
+ "itertools 0.12.1",
  "log",
- "peeking_take_while",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -534,7 +483,6 @@ dependencies = [
  "rustc-hash",
  "shlex",
  "syn 2.0.71",
- "which",
 ]
 
 [[package]]
@@ -579,7 +527,7 @@ checksum = "3dcde5f311c85b8ca30c2e4198d4326bc342c76541590106f5fa4a50946ea499"
 [[package]]
 name = "blade-graphics"
 version = "0.4.0"
-source = "git+https://github.com/kvark/blade?rev=7f54ddfc001edc48225e6602d3c38ebb855421aa#7f54ddfc001edc48225e6602d3c38ebb855421aa"
+source = "git+https://github.com/kvark/blade?rev=fee06c42f658b36dd9ac85444a9ee2a481383695#fee06c42f658b36dd9ac85444a9ee2a481383695"
 dependencies = [
  "ash",
  "ash-window",
@@ -587,7 +535,7 @@ dependencies = [
  "block",
  "bytemuck",
  "codespan-reporting",
- "core-graphics-types",
+ "core-graphics-types 0.1.3",
  "glow",
  "gpu-alloc",
  "gpu-alloc-ash",
@@ -609,7 +557,7 @@ dependencies = [
 [[package]]
 name = "blade-macros"
 version = "0.2.1"
-source = "git+https://github.com/kvark/blade?rev=7f54ddfc001edc48225e6602d3c38ebb855421aa#7f54ddfc001edc48225e6602d3c38ebb855421aa"
+source = "git+https://github.com/kvark/blade?rev=fee06c42f658b36dd9ac85444a9ee2a481383695#fee06c42f658b36dd9ac85444a9ee2a481383695"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -619,7 +567,7 @@ dependencies = [
 [[package]]
 name = "blade-util"
 version = "0.1.0"
-source = "git+https://github.com/kvark/blade?rev=7f54ddfc001edc48225e6602d3c38ebb855421aa#7f54ddfc001edc48225e6602d3c38ebb855421aa"
+source = "git+https://github.com/kvark/blade?rev=fee06c42f658b36dd9ac85444a9ee2a481383695#fee06c42f658b36dd9ac85444a9ee2a481383695"
 dependencies = [
  "blade-graphics",
  "bytemuck",
@@ -792,20 +740,20 @@ dependencies = [
 
 [[package]]
 name = "cbindgen"
-version = "0.26.0"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da6bc11b07529f16944307272d5bd9b22530bc7d05751717c9d416586cedab49"
+checksum = "3fce8dd7fcfcbf3a0a87d8f515194b49d6135acab73e18bd380d1d93bb1a15eb"
 dependencies = [
  "heck 0.4.1",
- "indexmap 1.9.3",
+ "indexmap 2.2.6",
  "log",
  "proc-macro2",
  "quote",
  "serde",
  "serde_json",
- "syn 1.0.109",
+ "syn 2.0.71",
  "tempfile",
- "toml 0.5.11",
+ "toml 0.8.15",
 ]
 
 [[package]]
@@ -931,9 +879,25 @@ checksum = "f6140449f97a6e97f9511815c5632d84c8aacf8ac271ad77c559218161a1373c"
 dependencies = [
  "bitflags 1.3.2",
  "block",
- "cocoa-foundation",
- "core-foundation",
- "core-graphics",
+ "cocoa-foundation 0.1.2",
+ "core-foundation 0.9.4",
+ "core-graphics 0.23.2",
+ "foreign-types",
+ "libc",
+ "objc",
+]
+
+[[package]]
+name = "cocoa"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f79398230a6e2c08f5c9760610eb6924b52aa9e7950a619602baba59dcbbdbb2"
+dependencies = [
+ "bitflags 2.6.0",
+ "block",
+ "cocoa-foundation 0.2.0",
+ "core-foundation 0.10.0",
+ "core-graphics 0.24.0",
  "foreign-types",
  "libc",
  "objc",
@@ -947,8 +911,22 @@ checksum = "8c6234cbb2e4c785b456c0644748b1ac416dd045799740356f8363dfe00c93f7"
 dependencies = [
  "bitflags 1.3.2",
  "block",
- "core-foundation",
- "core-graphics-types",
+ "core-foundation 0.9.4",
+ "core-graphics-types 0.1.3",
+ "libc",
+ "objc",
+]
+
+[[package]]
+name = "cocoa-foundation"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e14045fb83be07b5acf1c0884b2180461635b433455fa35d1cd6f17f1450679d"
+dependencies = [
+ "bitflags 2.6.0",
+ "block",
+ "core-foundation 0.10.0",
+ "core-graphics-types 0.2.0",
  "libc",
  "objc",
 ]
@@ -966,7 +944,7 @@ dependencies = [
 [[package]]
 name = "collections"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "rustc-hash",
 ]
@@ -976,12 +954,6 @@ name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
-
-[[package]]
-name = "colorchoice"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
 
 [[package]]
 name = "combine"
@@ -1039,10 +1011,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-foundation-sys"
-version = "0.8.6"
+name = "core-foundation"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
+checksum = "b55271e5c8c478ad3f38ad24ef34923091e0548492a266d19b3c0b4d82574c63"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
+]
+
+[[package]]
+name = "core-foundation-sys"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
 name = "core-graphics"
@@ -1051,8 +1033,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c07782be35f9e1140080c6b96f0d44b739e2278479f64e02fdab4e32dfd8b081"
 dependencies = [
  "bitflags 1.3.2",
- "core-foundation",
- "core-graphics-types",
+ "core-foundation 0.9.4",
+ "core-graphics-types 0.1.3",
+ "foreign-types",
+ "libc",
+]
+
+[[package]]
+name = "core-graphics"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa95a34622365fa5bbf40b20b75dba8dfa8c94c734aea8ac9a5ca38af14316f1"
+dependencies = [
+ "bitflags 2.6.0",
+ "core-foundation 0.10.0",
+ "core-graphics-types 0.2.0",
  "foreign-types",
  "libc",
 ]
@@ -1064,7 +1059,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "45390e6114f68f718cc7a830514a96f903cccd70d02a8f6d9f643ac4ba45afaf"
 dependencies = [
  "bitflags 1.3.2",
- "core-foundation",
+ "core-foundation 0.9.4",
+ "libc",
+]
+
+[[package]]
+name = "core-graphics-types"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d44a101f213f6c4cdc1853d4b78aef6db6bdfa3468798cc1d9912f4735013eb"
+dependencies = [
+ "bitflags 2.6.0",
+ "core-foundation 0.10.0",
  "libc",
 ]
 
@@ -1074,8 +1080,8 @@ version = "20.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9d2790b5c08465d49f8dc05c8bcae9fea467855947db39b0f8145c091aaced5"
 dependencies = [
- "core-foundation",
- "core-graphics",
+ "core-foundation 0.9.4",
+ "core-graphics 0.23.2",
  "foreign-types",
  "libc",
 ]
@@ -1254,16 +1260,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c297a1c74b71ae29df00c3e22dd9534821d60eb9af5a0192823fa2acea70c2a"
 
 [[package]]
-name = "deranged"
-version = "0.3.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4"
-dependencies = [
- "powerfmt",
- "serde",
-]
-
-[[package]]
 name = "derive_more"
 version = "0.99.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1279,7 +1275,7 @@ dependencies = [
 [[package]]
 name = "derive_refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1458,29 +1454,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.71",
-]
-
-[[package]]
-name = "env_filter"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f2c92ceda6ceec50f43169f9ee8424fe2db276791afde7b2cd8bc084cb376ab"
-dependencies = [
- "log",
- "regex",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.11.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e13fa619b91fb2381732789fc5de83b45675e882f66623b7d8cb4f643017018d"
-dependencies = [
- "anstream",
- "anstyle",
- "env_filter",
- "humantime",
- "log",
 ]
 
 [[package]]
@@ -1684,8 +1657,8 @@ source = "git+https://github.com/zed-industries/font-kit?rev=40391b7#40391b7c004
 dependencies = [
  "bitflags 2.6.0",
  "byteorder",
- "core-foundation",
- "core-graphics",
+ "core-foundation 0.9.4",
+ "core-graphics 0.23.2",
  "core-text",
  "dirs 5.0.1",
  "dwrote",
@@ -2230,7 +2203,7 @@ dependencies = [
 [[package]]
 name = "gpui"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "anyhow",
  "as-raw-xcb-connection",
@@ -2245,17 +2218,16 @@ dependencies = [
  "calloop",
  "calloop-wayland-source",
  "cbindgen",
- "cocoa",
+ "cocoa 0.26.0",
  "collections",
- "core-foundation",
+ "core-foundation 0.9.4",
  "core-foundation-sys",
- "core-graphics",
+ "core-graphics 0.23.2",
  "core-text",
  "cosmic-text",
  "ctor",
  "derive_more",
  "embed-resource",
- "env_logger",
  "etagere",
  "filedescriptor",
  "flume",
@@ -2265,7 +2237,7 @@ dependencies = [
  "gpui_macros",
  "http_client",
  "image",
- "itertools 0.11.0",
+ "itertools 0.13.0",
  "linkme",
  "log",
  "media",
@@ -2296,7 +2268,6 @@ dependencies = [
  "sum_tree",
  "taffy",
  "thiserror",
- "time",
  "usvg",
  "util",
  "uuid",
@@ -2331,7 +2302,7 @@ dependencies = [
 [[package]]
 name = "gpui_macros"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2488,15 +2459,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "home"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3d1354bf6b7235cb4a0576c2619fd4ed18183f689b12b006a0ee7329eeff9a5"
-dependencies = [
- "windows-sys 0.52.0",
-]
-
-[[package]]
 name = "html5ever"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2535,7 +2497,7 @@ dependencies = [
 [[package]]
 name = "http_client"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2548,12 +2510,6 @@ dependencies = [
  "serde_json",
  "url",
 ]
-
-[[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "iana-time-zone"
@@ -2730,12 +2686,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "is_terminal_polyfill"
-version = "1.70.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
-
-[[package]]
 name = "isahc"
 version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2776,6 +2726,15 @@ name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -2902,12 +2861,6 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 dependencies = [
  "spin",
 ]
-
-[[package]]
-name = "lazycell"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "lebe"
@@ -3095,11 +3048,11 @@ dependencies = [
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "anyhow",
  "bindgen",
- "core-foundation",
+ "core-foundation 0.9.4",
  "foreign-types",
  "metal",
  "objc",
@@ -3137,7 +3090,7 @@ checksum = "7ecfd3296f8c56b7c1f6fbac3c71cefa9d78ce009850c45000015f206dc7fa21"
 dependencies = [
  "bitflags 2.6.0",
  "block",
- "core-graphics-types",
+ "core-graphics-types 0.1.3",
  "foreign-types",
  "log",
  "objc",
@@ -3331,12 +3284,6 @@ checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
 dependencies = [
  "num-traits",
 ]
-
-[[package]]
-name = "num-conv"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
 
 [[package]]
 name = "num-derive"
@@ -3628,12 +3575,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "peeking_take_while"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
-
-[[package]]
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3852,12 +3793,6 @@ dependencies = [
  "static_assertions",
  "thiserror",
 ]
-
-[[package]]
-name = "powerfmt"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 
 [[package]]
 name = "ppv-lite86"
@@ -4155,8 +4090,8 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76e8caa82e31bb98fee12fa8f051c94a6aa36b07cddb03f0d4fc558988360ff1"
 dependencies = [
- "cocoa",
- "core-graphics",
+ "cocoa 0.25.0",
+ "core-graphics 0.23.2",
  "objc",
  "raw-window-handle 0.6.2",
 ]
@@ -4214,7 +4149,7 @@ dependencies = [
 [[package]]
 name = "refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "derive_refineable",
 ]
@@ -4549,7 +4484,7 @@ checksum = "d369a96f978623eb3dc28807c4852d6cc617fed53da5d3c400feff1ef34a714a"
 [[package]]
 name = "semantic_version"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "anyhow",
  "serde",
@@ -4998,7 +4933,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "sum_tree"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "arrayvec",
  "log",
@@ -5260,37 +5195,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "time"
-version = "0.3.36"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
-dependencies = [
- "deranged",
- "itoa 1.0.11",
- "num-conv",
- "powerfmt",
- "serde",
- "time-core",
- "time-macros",
-]
-
-[[package]]
-name = "time-core"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
-
-[[package]]
-name = "time-macros"
-version = "0.2.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
-dependencies = [
- "num-conv",
- "time-core",
-]
-
-[[package]]
 name = "tiny-keccak"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5339,15 +5243,6 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
-
-[[package]]
-name = "toml"
-version = "0.5.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "toml"
@@ -5654,15 +5549,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
-name = "utf8parse"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
-
-[[package]]
 name = "util"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1d2c6954e827c1ab91eba6495a43441ec04602b2"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
 dependencies = [
  "anyhow",
  "async-fs 1.6.0",
@@ -5672,7 +5561,6 @@ dependencies = [
  "futures-lite 1.13.0",
  "globset",
  "log",
- "rand 0.8.5",
  "regex",
  "rust-embed",
  "serde",
@@ -6040,18 +5928,6 @@ name = "weezl"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
-
-[[package]]
-name = "which"
-version = "4.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
-dependencies = [
- "either",
- "home",
- "once_cell",
- "rustix 0.38.34",
-]
 
 [[package]]
 name = "winapi"
@@ -6493,8 +6369,8 @@ checksum = "68b00c945786b02d7805d09a969fa36d0eee4e0bd4fb3ec2a79d2bf45a1b44cd"
 dependencies = [
  "base64",
  "block",
- "cocoa",
- "core-graphics",
+ "cocoa 0.25.0",
+ "core-graphics 0.23.2",
  "crossbeam-channel",
  "dpi",
  "dunce",

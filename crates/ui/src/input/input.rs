@@ -21,7 +21,8 @@ use gpui::{
     FocusHandle, FocusableView, GlobalElementId, InteractiveElement as _, IntoElement, KeyBinding,
     KeyDownEvent, LayoutId, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
     PaintQuad, ParentElement as _, Pixels, Point, Render, ShapedLine, SharedString, Style,
-    Styled as _, TextRun, UnderlineStyle, View, ViewContext, ViewInputHandler, WindowContext,
+    Styled as _, TextRun, UTF16Selection, UnderlineStyle, View, ViewContext, ViewInputHandler,
+    WindowContext,
 };
 use unicode_segmentation::*;
 
@@ -685,8 +686,15 @@ impl ViewInputHandler for TextInput {
         Some(self.text[range].to_string())
     }
 
-    fn selected_text_range(&mut self, _cx: &mut ViewContext<Self>) -> Option<Range<usize>> {
-        Some(self.range_to_utf16(&self.selected_range))
+    fn selected_text_range(
+        &mut self,
+        _ignore_disabled_input: bool,
+        _cx: &mut ViewContext<Self>,
+    ) -> Option<UTF16Selection> {
+        Some(UTF16Selection {
+            range: self.range_to_utf16(&self.selected_range),
+            reversed: false,
+        })
     }
 
     fn marked_text_range(&self, _cx: &mut ViewContext<Self>) -> Option<Range<usize>> {
