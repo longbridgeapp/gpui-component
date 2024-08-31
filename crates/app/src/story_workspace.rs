@@ -15,8 +15,7 @@ use ui::{
     drawer::Drawer,
     h_flex,
     modal::Modal,
-    popover::Popover,
-    popup_menu::PopupMenu,
+    popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Theme},
     ContextModal, IconName, Root, Sizable,
 };
@@ -430,23 +429,23 @@ impl Render for LocaleSelector {
             .track_focus(&focus_handle)
             .on_action(cx.listener(Self::on_select_locale))
             .child(
-                Popover::new("locale-selector")
-                    .anchor(AnchorCorner::TopRight)
-                    .trigger(Button::new("btn", cx).small().ghost().icon(IconName::Globe))
-                    .content(move |cx| {
-                        PopupMenu::build(cx, |this, _cx| {
-                            this.menu_with_check(
-                                "English",
-                                locale == "en",
-                                Box::new(SelectLocale("en".into())),
-                            )
-                            .menu_with_check(
-                                "简体中文",
-                                locale == "zh-CN",
-                                Box::new(SelectLocale("zh-CN".into())),
-                            )
-                        })
-                    }),
+                Button::new("btn", cx)
+                    .small()
+                    .ghost()
+                    .icon(IconName::Globe)
+                    .popup_menu(move |this, _| {
+                        this.menu_with_check(
+                            "English",
+                            locale == "en",
+                            Box::new(SelectLocale("en".into())),
+                        )
+                        .menu_with_check(
+                            "简体中文",
+                            locale == "zh-CN",
+                            Box::new(SelectLocale("zh-CN".into())),
+                        )
+                    })
+                    .anchor(AnchorCorner::TopRight),
             )
     }
 }
