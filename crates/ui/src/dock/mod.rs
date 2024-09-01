@@ -3,21 +3,19 @@ mod stack_panel;
 mod tab_panel;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyView, InteractiveElement as _, IntoElement,
+    actions, div, prelude::FluentBuilder, AnyWeakView, InteractiveElement as _, IntoElement,
     ParentElement as _, Render, Styled, View, ViewContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
-use crate::theme::ActiveTheme;
-
-actions!(dock, [ToggleZoom]);
+actions!(dock, [ToggleZoom, ClosePanel]);
 
 /// The main area of the dock.
 pub struct DockArea {
     root: View<StackPanel>,
-    zoom_view: Option<AnyView>,
+    zoom_view: Option<AnyWeakView>,
 }
 
 impl DockArea {
@@ -33,28 +31,24 @@ impl DockArea {
         if self.zoom_view.is_some() {
             self.zoom_view = None;
         } else {
-            self.zoom_view = Some(panel.into());
+            self.zoom_view = Some(panel.downgrade().into());
         }
         cx.notify();
     }
 }
 
 impl Render for DockArea {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .id("dock-area")
             .size_full()
             .overflow_hidden()
-            .map(|this| match self.zoom_view.clone() {
-                Some(view) => this.bg(cx.theme().tab_bar).p_3().child(
-                    div()
-                        .size_full()
-                        .border_1()
-                        .border_color(cx.theme().border)
-                        .shadow_lg()
-                        .child(view),
-                ),
-                None => this.child(self.root.clone()),
+            .map(|this| {
+                if let Some(zoom_view) = self.zoom_view.as_ref().and_then(|view| view.upgrade()) {
+                    this.child(zoom_view)
+                } else {
+                    this.child(self.root.clone())
+                }
             })
     }
 }
