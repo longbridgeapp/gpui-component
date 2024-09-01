@@ -53,7 +53,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Calendar
   - [ ] TimePicker
   - [x] DateRangePicker
-- [ ] ColorPicker
+- [x] ColorPicker
 - [x] List
   - [x] A complex List example.
 - [x] Table
