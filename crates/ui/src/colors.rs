@@ -6,10 +6,38 @@ use serde::{de::Error, Deserialize, Deserializer};
 use crate::theme::hsl;
 use anyhow::Result;
 
-static DEFAULT_COLOR: once_cell::sync::Lazy<ShacnColors> = once_cell::sync::Lazy::new(|| {
-    serde_json::from_str(include_str!("../default-colors.json"))
-        .expect("failed to parse default-json")
-});
+pub trait ColorExt {
+    fn to_hex_string(&self) -> String;
+}
+
+impl ColorExt for Hsla {
+    fn to_hex_string(&self) -> String {
+        let rgb = self.to_rgb();
+
+        if rgb.a < 1. {
+            return format!(
+                "#{:02X}{:02X}{:02X}{:02X}",
+                u32::from((rgb.r * 255.) as u32),
+                u32::from((rgb.g * 255.) as u32),
+                u32::from((rgb.b * 255.) as u32),
+                u32::from((self.a * 255.) as u32)
+            );
+        }
+
+        format!(
+            "#{:02X}{:02X}{:02X}",
+            u32::from((rgb.r * 255.) as u32),
+            u32::from((rgb.g * 255.) as u32),
+            u32::from((rgb.b * 255.) as u32)
+        )
+    }
+}
+
+pub(crate) static DEFAULT_COLOR: once_cell::sync::Lazy<ShacnColors> =
+    once_cell::sync::Lazy::new(|| {
+        serde_json::from_str(include_str!("../default-colors.json"))
+            .expect("failed to parse default-json")
+    });
 
 type ColorScales = HashMap<usize, ShacnColor>;
 
@@ -33,61 +61,61 @@ mod color_scales {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-struct ShacnColors {
-    black: ShacnColor,
-    white: ShacnColor,
+pub(crate) struct ShacnColors {
+    pub(crate) black: ShacnColor,
+    pub(crate) white: ShacnColor,
     #[serde(with = "color_scales")]
-    slate: ColorScales,
+    pub(crate) slate: ColorScales,
     #[serde(with = "color_scales")]
-    gray: ColorScales,
+    pub(crate) gray: ColorScales,
     #[serde(with = "color_scales")]
-    zinc: ColorScales,
+    pub(crate) zinc: ColorScales,
     #[serde(with = "color_scales")]
-    neutral: ColorScales,
+    pub(crate) neutral: ColorScales,
     #[serde(with = "color_scales")]
-    stone: ColorScales,
+    pub(crate) stone: ColorScales,
     #[serde(with = "color_scales")]
-    red: ColorScales,
+    pub(crate) red: ColorScales,
     #[serde(with = "color_scales")]
-    orange: ColorScales,
+    pub(crate) orange: ColorScales,
     #[serde(with = "color_scales")]
-    amber: ColorScales,
+    pub(crate) amber: ColorScales,
     #[serde(with = "color_scales")]
-    yellow: ColorScales,
+    pub(crate) yellow: ColorScales,
     #[serde(with = "color_scales")]
-    lime: ColorScales,
+    pub(crate) lime: ColorScales,
     #[serde(with = "color_scales")]
-    green: ColorScales,
+    pub(crate) green: ColorScales,
     #[serde(with = "color_scales")]
-    emerald: ColorScales,
+    pub(crate) emerald: ColorScales,
     #[serde(with = "color_scales")]
-    teal: ColorScales,
+    pub(crate) teal: ColorScales,
     #[serde(with = "color_scales")]
-    cyan: ColorScales,
+    pub(crate) cyan: ColorScales,
     #[serde(with = "color_scales")]
-    sky: ColorScales,
+    pub(crate) sky: ColorScales,
     #[serde(with = "color_scales")]
-    blue: ColorScales,
+    pub(crate) blue: ColorScales,
     #[serde(with = "color_scales")]
-    indigo: ColorScales,
+    pub(crate) indigo: ColorScales,
     #[serde(with = "color_scales")]
-    violet: ColorScales,
+    pub(crate) violet: ColorScales,
     #[serde(with = "color_scales")]
-    purple: ColorScales,
+    pub(crate) purple: ColorScales,
     #[serde(with = "color_scales")]
-    fuchsia: ColorScales,
+    pub(crate) fuchsia: ColorScales,
     #[serde(with = "color_scales")]
-    pink: ColorScales,
+    pub(crate) pink: ColorScales,
     #[serde(with = "color_scales")]
-    rose: ColorScales,
+    pub(crate) rose: ColorScales,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Deserialize)]
-struct ShacnColor {
+pub(crate) struct ShacnColor {
     #[serde(default)]
-    scale: usize,
+    pub(crate) scale: usize,
     #[serde(deserialize_with = "from_hsa_channel", alias = "hslChannel")]
-    hsla: Hsla,
+    pub(crate) hsla: Hsla,
 }
 
 /// Deserialize Hsla from a string in the format "210 40% 98%"
@@ -105,7 +133,9 @@ where
     }
 
     fn parse_number(s: &str) -> f32 {
-        s.trim_end_matches('%').parse().unwrap_or(0.0)
+        s.trim_end_matches('%')
+            .parse()
+            .expect("failed to parse number")
     }
 
     let (h, s, l) = (
