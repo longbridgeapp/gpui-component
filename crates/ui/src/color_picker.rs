@@ -1,7 +1,8 @@
 use gpui::{
-    anchored, deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, FocusHandle,
-    FocusableView, Hsla, InteractiveElement as _, IntoElement, KeyBinding, Length, MouseButton,
-    ParentElement, Render, SharedString, StatefulInteractiveElement as _, Styled, ViewContext,
+    anchored, deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
+    FocusHandle, FocusableView, Hsla, InteractiveElement as _, IntoElement, KeyBinding, Length,
+    MouseButton, ParentElement, Render, SharedString, StatefulInteractiveElement as _, Styled,
+    ViewContext,
 };
 
 use crate::{
@@ -17,6 +18,11 @@ use crate::{
 pub fn init(cx: &mut AppContext) {
     let context = Some("ColorPicker");
     cx.bind_keys([KeyBinding::new("escape", Escape, context)])
+}
+
+#[derive(Clone)]
+pub enum ColorPickerEvent {
+    Change(Option<Hsla>),
 }
 
 fn color_palettes() -> Vec<Vec<Hsla>> {
@@ -111,12 +117,17 @@ impl ColorPicker {
     }
 
     fn clean(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
-        self.value = None;
-        cx.notify();
+        self.update_value(None, cx)
     }
 
     fn toggle_picker(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
         self.open = !self.open;
+        cx.notify();
+    }
+
+    fn update_value(&mut self, value: Option<Hsla>, cx: &mut ViewContext<Self>) {
+        self.value = value;
+        cx.emit(ColorPickerEvent::Change(value));
         cx.notify();
     }
 
@@ -145,7 +156,7 @@ impl ColorPicker {
                         cx.notify();
                     }))
                     .on_click(cx.listener(move |view, _, cx| {
-                        view.value = Some(color);
+                        view.update_value(Some(color), cx);
                         view.open = false;
                         cx.notify();
                     }))
@@ -191,6 +202,7 @@ impl ColorPicker {
     }
 }
 
+impl EventEmitter<ColorPickerEvent> for ColorPicker {}
 impl FocusableView for ColorPicker {
     fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
