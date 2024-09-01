@@ -249,7 +249,7 @@ impl Render for ColorPicker {
                             .justify_between()
                             .gap_1()
                             .child(self.render_item(value, false, cx))
-                            .child(div().w_full().overflow_hidden().child(display_title))
+                            .child(div().flex_1().overflow_hidden().child(display_title))
                             .when(show_clean, |this| {
                                 this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean)))
                             })
