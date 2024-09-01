@@ -113,14 +113,13 @@ impl RenderOnce for Checkbox {
             )
             .map(|this| {
                 if let Some(label) = self.label {
-                    this.child(
+                    this.text_color(cx.theme().foreground).child(
                         div()
                             .w_full()
                             .overflow_hidden()
                             .line_height(relative(1.))
                             .child(label),
                     )
-                    .text_color(color)
                 } else {
                     this
                 }

@@ -11,7 +11,7 @@ use ui::{
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
-    theme::{ActiveTheme, Colorize, Theme},
+    theme::{Colorize, Theme},
     v_flex, FocusableCycle, IconName, Sizable,
 };
 
