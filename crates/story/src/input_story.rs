@@ -7,6 +7,7 @@ use gpui::{
 use ui::{
     button::Button,
     checkbox::Checkbox,
+    color_picker::ColorPicker,
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
@@ -42,6 +43,7 @@ pub struct InputStory {
     otp_input_small: View<OtpInput>,
     otp_input_large: View<OtpInput>,
     opt_input_sized: View<OtpInput>,
+    color_picker: View<ColorPicker>,
 }
 
 impl InputStory {
@@ -147,6 +149,10 @@ impl InputStory {
                     .default_value("654321")
                     .with_size(px(55.))
             }),
+            color_picker: cx.new_view(|cx| {
+                let picker = ColorPicker::new("picker1", cx);
+                picker
+            }),
         }
     }
 
@@ -197,6 +203,7 @@ impl FocusableCycle for InputStory {
             self.suffix_input1.focus_handle(cx),
             self.large_input.focus_handle(cx),
             self.small_input.focus_handle(cx),
+            self.color_picker.focus_handle(cx),
             self.otp_input.focus_handle(cx),
         ]
         .to_vec()
@@ -244,6 +251,7 @@ impl Render for InputStory {
                             .child(self.small_input.clone()),
                     ),
             )
+            .child(section("Color Picker", cx).child(self.color_picker.clone()))
             .child(
                 section(
                     h_flex()

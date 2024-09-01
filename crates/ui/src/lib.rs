@@ -11,6 +11,7 @@ pub mod animation;
 pub mod button;
 pub mod checkbox;
 pub mod clipboard;
+pub mod color_picker;
 pub mod context_menu;
 pub mod divider;
 pub mod dock;
