@@ -91,6 +91,10 @@ Dock:
     en: Unnamed
     zh-CN: 未命名
     zh-HK: 未命名
+  Close:
+    en: Close
+    zh-CN: 关闭
+    zh-HK: 關閉
   Zoom In:
     en: Zoom In
     zh-CN: 放大

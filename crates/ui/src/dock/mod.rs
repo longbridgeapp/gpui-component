@@ -10,7 +10,7 @@ pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
-actions!(dock, [ToggleZoom]);
+actions!(dock, [ToggleZoom, ClosePanel]);
 
 /// The main area of the dock.
 pub struct DockArea {
@@ -31,7 +31,6 @@ impl DockArea {
         if self.zoom_view.is_some() {
             self.zoom_view = None;
         } else {
-            println!("------- Zooming in/out the panel. {:?} -------", panel);
             self.zoom_view = Some(panel.downgrade().into());
         }
         cx.notify();

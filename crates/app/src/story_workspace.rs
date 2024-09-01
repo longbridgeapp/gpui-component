@@ -39,7 +39,6 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 
 pub struct StoryWorkspace {
     locale_selector: View<LocaleSelector>,
-    // stack_panel: View<StackPanel>,
     dock_area: View<DockArea>,
 }
 

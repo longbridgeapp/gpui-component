@@ -18,7 +18,7 @@ use crate::{
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
 };
 
-use super::{DockArea, Panel, PanelView, StackPanel, ToggleZoom};
+use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -195,6 +195,8 @@ impl TabPanel {
                             },
                             Box::new(ToggleZoom),
                         )
+                        .separator()
+                        .menu(t!("Dock.Close"), Box::new(ClosePanel))
                     })
                     .anchor(AnchorCorner::TopRight),
             )
@@ -488,6 +490,12 @@ impl TabPanel {
             cx.emit(PanelEvent::ZoomOut)
         }
     }
+
+    fn on_action_close_panel(&mut self, _: &ClosePanel, cx: &mut ViewContext<Self>) {
+        if let Some(panel) = self.active_panel() {
+            self.remove_panel(panel, cx);
+        }
+    }
 }
 
 impl Panel for TabPanel {}
@@ -505,6 +513,7 @@ impl Render for TabPanel {
             .id("tab-panel")
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_toggle_zoom))
+            .on_action(cx.listener(Self::on_action_close_panel))
             .size_full()
             .overflow_hidden()
             .bg(cx.theme().background)
