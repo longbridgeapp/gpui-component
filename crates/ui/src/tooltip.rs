@@ -28,8 +28,7 @@ impl Render for Tooltip {
                 .border_color(cx.theme().border)
                 .shadow_md()
                 .rounded(px(6.))
-                .pt_1()
-                .pb_0p5()
+                .py_0p5()
                 .px_2()
                 .text_sm()
                 .child(self.text.clone()),
