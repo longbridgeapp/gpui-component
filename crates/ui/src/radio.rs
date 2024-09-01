@@ -63,7 +63,7 @@ impl RenderOnce for Radio {
             .id(self.id)
             .gap_x_2()
             .cursor(CursorStyle::PointingHand)
-            .text_color(color)
+            .text_color(cx.theme().foreground)
             .items_start()
             .child(
                 div()
