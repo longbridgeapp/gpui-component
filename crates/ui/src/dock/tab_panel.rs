@@ -130,6 +130,18 @@ impl TabPanel {
         cx.notify();
     }
 
+    /// Add panel to try to split
+    pub fn add_panel_at(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        placement: Placement,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.will_split_placement = Some(placement);
+        self.split_panel(panel, placement, cx);
+        cx.notify();
+    }
+
     fn insert_panel_at(
         &mut self,
         panel: Arc<dyn PanelView>,

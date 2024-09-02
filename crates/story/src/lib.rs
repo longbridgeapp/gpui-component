@@ -49,7 +49,7 @@ use ui::{
     h_flex,
     label::Label,
     popup_menu::PopupMenu,
-    v_flex,
+    v_flex, Placement,
 };
 
 pub fn init(cx: &mut AppContext) {
@@ -125,6 +125,7 @@ impl StoryContainer {
         description: impl Into<SharedString>,
         story: AnyView,
         tab_panel: View<TabPanel>,
+        placement: Option<Placement>,
         closeable: bool,
         cx: &mut WindowContext,
     ) -> Task<Result<View<Self>>> {
@@ -135,7 +136,11 @@ impl StoryContainer {
             tab_panel.update(&mut cx, |panel, cx| {
                 let view =
                     cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
-                panel.add_panel(Arc::new(view.clone()), cx);
+                if let Some(placement) = placement {
+                    panel.add_panel_at(Arc::new(view.clone()), placement, cx);
+                } else {
+                    panel.add_panel(Arc::new(view.clone()), cx);
+                }
                 view
             })
         })
