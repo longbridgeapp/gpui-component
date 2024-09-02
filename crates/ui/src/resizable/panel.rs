@@ -135,7 +135,7 @@ impl ResizablePanelGroup {
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
-        let neg_offset = -HANDLE_PADDING + px(1.);
+        let neg_offset = -HANDLE_PADDING;
         let view = cx.view().clone();
 
         div()
@@ -146,14 +146,14 @@ impl ResizablePanelGroup {
             .when(self.axis.is_horizontal(), |this| {
                 this.cursor_col_resize()
                     .top_0()
-                    .right(neg_offset)
+                    .left(neg_offset)
                     .h_full()
                     .w(px(1.))
                     .px(HANDLE_PADDING)
             })
             .when(self.axis.is_vertical(), |this| {
                 this.cursor_row_resize()
-                    .bottom(neg_offset)
+                    .top(neg_offset)
                     .left_0()
                     .w_full()
                     .h(px(1.))
@@ -262,8 +262,8 @@ impl Render for ResizablePanelGroup {
         container
             .size_full()
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
-                if ix < self.panels.len() - 1 {
-                    let handle = self.render_resize_handle(ix, cx);
+                if ix > 0 {
+                    let handle = self.render_resize_handle(ix - 1, cx);
                     panel.update(cx, |view, _| {
                         view.resize_handle = Some(handle.into_any_element())
                     });
@@ -362,7 +362,6 @@ impl Render for ResizablePanel {
             .flex_grow()
             .size_full()
             .relative()
-            .overflow_hidden()
             .when(self.size.is_none(), |this| this.flex_shrink())
             .when(self.axis.is_vertical(), |this| this.min_h(PANEL_MIN_SIZE))
             .when(self.axis.is_horizontal(), |this| this.min_w(PANEL_MIN_SIZE))

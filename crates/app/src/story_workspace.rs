@@ -175,7 +175,7 @@ impl StoryWorkspace {
             TooltipStory::view(cx).into(),
             right_tab_panel.clone(),
             Some(Placement::Top),
-            Some(px(200.)),
+            None,
             true,
             cx,
         )
