@@ -662,6 +662,7 @@ where
                     deferred(
                         anchored().snap_to_window().child(
                             div()
+                                .occlude()
                                 .map(|this| match self.menu_width {
                                     Length::Auto => this.w(bounds.size.width),
                                     Length::Definite(w) => this.w(w),

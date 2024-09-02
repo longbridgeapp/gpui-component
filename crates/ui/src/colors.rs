@@ -6,8 +6,9 @@ use serde::{de::Error, Deserialize, Deserializer};
 use crate::theme::hsl;
 use anyhow::Result;
 
-pub trait ColorExt {
+pub(crate) trait ColorExt {
     fn to_hex_string(&self) -> String;
+    fn parse_hex_string(hex: &str) -> Result<Hsla>;
 }
 
 impl ColorExt for Hsla {
@@ -17,19 +18,40 @@ impl ColorExt for Hsla {
         if rgb.a < 1. {
             return format!(
                 "#{:02X}{:02X}{:02X}{:02X}",
-                u32::from((rgb.r * 255.) as u32),
-                u32::from((rgb.g * 255.) as u32),
-                u32::from((rgb.b * 255.) as u32),
-                u32::from((self.a * 255.) as u32)
+                ((rgb.r * 255.) as u32),
+                ((rgb.g * 255.) as u32),
+                ((rgb.b * 255.) as u32),
+                ((self.a * 255.) as u32)
             );
         }
 
         format!(
             "#{:02X}{:02X}{:02X}",
-            u32::from((rgb.r * 255.) as u32),
-            u32::from((rgb.g * 255.) as u32),
-            u32::from((rgb.b * 255.) as u32)
+            ((rgb.r * 255.) as u32),
+            ((rgb.g * 255.) as u32),
+            ((rgb.b * 255.) as u32)
         )
+    }
+
+    fn parse_hex_string(hex: &str) -> Result<Hsla> {
+        let hex = hex.trim_start_matches('#');
+        let len = hex.len();
+        if len != 6 && len != 8 {
+            return Err(anyhow::anyhow!("invalid hex color"));
+        }
+
+        let r = u8::from_str_radix(&hex[0..2], 16)? as f32 / 255.;
+        let g = u8::from_str_radix(&hex[2..4], 16)? as f32 / 255.;
+        let b = u8::from_str_radix(&hex[4..6], 16)? as f32 / 255.;
+        let a = if len == 8 {
+            u8::from_str_radix(&hex[6..8], 16)? as f32 / 255.
+        } else {
+            1.
+        };
+
+        let v = gpui::Rgba { r, g, b, a };
+        let color: Hsla = v.into();
+        Ok(color)
     }
 }
 
@@ -211,6 +233,8 @@ color_methods!(rose);
 
 #[cfg(test)]
 mod tests {
+    use gpui::{rgb, rgba};
+
     use super::*;
 
     #[test]
@@ -228,5 +252,29 @@ mod tests {
         assert_eq!(cyan_300(), hsl(187.0, 92.4, 69.0));
         assert_eq!(blue_400(), hsl(213.1, 93.9, 67.8));
         assert_eq!(indigo_500(), hsl(238.7, 83.5, 66.7));
+    }
+
+    #[test]
+    fn test_to_hex_string() {
+        let color: Hsla = rgb(0xf8fafc).into();
+        assert_eq!(color.to_hex_string(), "#F8FAFC");
+
+        let color: Hsla = rgb(0xfef2f2).into();
+        assert_eq!(color.to_hex_string(), "#FEF2F2");
+
+        let color: Hsla = rgba(0x0413fcaa).into();
+        assert_eq!(color.to_hex_string(), "#0413FCAA");
+    }
+
+    #[test]
+    fn test_from_hex_string() {
+        let color: Hsla = Hsla::parse_hex_string("#F8FAFC").unwrap();
+        assert_eq!(color, rgb(0xf8fafc).into());
+
+        let color: Hsla = Hsla::parse_hex_string("#FEF2F2").unwrap();
+        assert_eq!(color, rgb(0xfef2f2).into());
+
+        let color: Hsla = Hsla::parse_hex_string("#0413FCAA").unwrap();
+        assert_eq!(color, rgba(0x0413fcaa).into());
     }
 }

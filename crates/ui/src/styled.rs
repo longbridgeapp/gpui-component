@@ -5,7 +5,7 @@ use crate::{
     theme::{ActiveTheme, Colorize},
 };
 use gpui::{
-    div, px, rems, Axis, Div, Element, EntityId, Fill, FocusHandle, Pixels, Styled, WindowContext,
+    div, px, Axis, Div, Element, EntityId, Fill, FocusHandle, Pixels, Styled, WindowContext,
 };
 
 /// Returns a `Div` as horizontal flex layout.
@@ -238,15 +238,17 @@ pub trait StyleSized<T: Styled> {
     fn list_size(self, size: Size) -> Self;
     fn list_px(self, size: Size) -> Self;
     fn list_py(self, size: Size) -> Self;
+    /// Apply size with the given `Size`.
+    fn size_with(self, size: Size) -> Self;
 }
 
 impl<T: Styled> StyleSized<T> for T {
     fn input_text_size(self, size: Size) -> Self {
         match size {
-            Size::XSmall => self.text_size(rems(0.75)),
-            Size::Small => self.text_size(rems(0.8)),
-            Size::Medium => self.text_size(rems(0.875)),
-            Size::Large => self.text_size(rems(1.)),
+            Size::XSmall => self.text_xs(),
+            Size::Small => self.text_sm(),
+            Size::Medium => self.text_base(),
+            Size::Large => self.text_lg(),
             Size::Size(size) => self.text_size(size),
         }
     }
@@ -313,6 +315,16 @@ impl<T: Styled> StyleSized<T> for T {
             Size::Medium => self.py_1(),
             Size::Small => self.py_0p5(),
             _ => self.py_1(),
+        }
+    }
+
+    fn size_with(self, size: Size) -> Self {
+        match size {
+            Size::Large => self.size_11(),
+            Size::Medium => self.size_8(),
+            Size::Small => self.size_5(),
+            Size::XSmall => self.size_4(),
+            Size::Size(size) => self.size(size),
         }
     }
 }

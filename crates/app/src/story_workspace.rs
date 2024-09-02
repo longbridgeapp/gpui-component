@@ -11,12 +11,13 @@ use workspace::TitleBar;
 use std::sync::Arc;
 use ui::{
     button::Button,
+    color_picker::{ColorPicker, ColorPickerEvent},
     dock::{DockArea, StackPanel, TabPanel},
     drawer::Drawer,
     h_flex,
     modal::Modal,
     popup_menu::PopupMenuExt,
-    theme::{ActiveTheme, Theme},
+    theme::{ActiveTheme, Colorize as _, Theme},
     ContextModal, IconName, Root, Sizable,
 };
 
@@ -38,8 +39,9 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 }
 
 pub struct StoryWorkspace {
-    locale_selector: View<LocaleSelector>,
     dock_area: View<DockArea>,
+    locale_selector: View<LocaleSelector>,
+    theme_color_picker: View<ColorPicker>,
 }
 
 impl StoryWorkspace {
@@ -228,9 +230,34 @@ impl StoryWorkspace {
 
         let locale_selector = cx.new_view(LocaleSelector::new);
 
+        let theme_color_picker = cx.new_view(|cx| {
+            let mut picker = ColorPicker::new("theme-color-picker", cx)
+                .xsmall()
+                .anchor(AnchorCorner::TopRight)
+                .label("Primary Color");
+            picker.set_value(cx.theme().primary, cx);
+            picker
+        });
+        cx.subscribe(
+            &theme_color_picker,
+            |_, _, ev: &ColorPickerEvent, cx| match ev {
+                ColorPickerEvent::Change(color) => {
+                    if let Some(color) = color {
+                        let theme = cx.global_mut::<Theme>();
+                        theme.primary = *color;
+                        theme.primary_hover = color.lighten(0.1);
+                        theme.primary_active = color.darken(0.1);
+                        cx.refresh();
+                    }
+                }
+            },
+        )
+        .detach();
+
         Self {
             dock_area,
             locale_selector,
+            theme_color_picker,
         }
     }
 
@@ -326,7 +353,7 @@ impl Render for StoryWorkspace {
                             .justify_end()
                             .px_2()
                             .gap_2()
-                            .child(self.locale_selector.clone())
+                            .child(self.theme_color_picker.clone())
                             .child(
                                 Button::new("theme-mode", cx)
                                     .map(|this| {
@@ -347,6 +374,7 @@ impl Render for StoryWorkspace {
                                         Theme::change(mode, cx);
                                     }),
                             )
+                            .child(self.locale_selector.clone())
                             .child(
                                 Button::new("github", cx)
                                     .icon(IconName::GitHub)
