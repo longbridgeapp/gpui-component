@@ -38,7 +38,7 @@ pub use webview_story::WebViewStory;
 
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
+    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
     StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 
@@ -120,12 +120,14 @@ impl StoryContainer {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn add_panel(
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
         story: AnyView,
         tab_panel: View<TabPanel>,
         placement: Option<Placement>,
+        size: Option<Pixels>,
         closeable: bool,
         cx: &mut WindowContext,
     ) -> Task<Result<View<Self>>> {
@@ -137,7 +139,7 @@ impl StoryContainer {
                 let view =
                     cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
                 if let Some(placement) = placement {
-                    panel.add_panel_at(Arc::new(view.clone()), placement, cx);
+                    panel.add_panel_at(Arc::new(view.clone()), placement, size, cx);
                 } else {
                     panel.add_panel(Arc::new(view.clone()), cx);
                 }

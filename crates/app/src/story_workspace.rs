@@ -91,6 +91,7 @@ impl StoryWorkspace {
             ButtonStory::view(cx).into(),
             center_tab_panel.clone(),
             None,
+            None,
             false,
             cx,
         )
@@ -101,6 +102,7 @@ impl StoryWorkspace {
             "A control that allows the user to input text.",
             InputStory::view(cx).into(),
             center_tab_panel.clone(),
+            None,
             None,
             false,
             cx,
@@ -113,6 +115,7 @@ impl StoryWorkspace {
             TextStory::view(cx).into(),
             center_tab_panel.clone(),
             Some(Placement::Bottom),
+            Some(px(200.)),
             true,
             cx,
         )
@@ -123,6 +126,7 @@ impl StoryWorkspace {
             "A control that allows the user to toggle between two states.",
             SwitchStory::view(cx).into(),
             center_tab_panel.clone(),
+            None,
             None,
             true,
             cx,
@@ -135,6 +139,7 @@ impl StoryWorkspace {
             DropdownStory::new(cx).into(),
             center_tab_panel.clone(),
             None,
+            None,
             true,
             cx,
         )
@@ -145,6 +150,7 @@ impl StoryWorkspace {
             "Modal & Drawer use examples",
             ModalStory::view(cx).into(),
             center_tab_panel.clone(),
+            None,
             None,
             true,
             cx,
@@ -157,6 +163,7 @@ impl StoryWorkspace {
             PopupStory::view(cx).into(),
             center_tab_panel.clone(),
             None,
+            None,
             true,
             cx,
         )
@@ -168,6 +175,7 @@ impl StoryWorkspace {
             TooltipStory::view(cx).into(),
             right_tab_panel.clone(),
             Some(Placement::Top),
+            Some(px(200.)),
             true,
             cx,
         )
@@ -178,6 +186,7 @@ impl StoryWorkspace {
             "A list displays a series of items.",
             ListStory::view(cx).into(),
             left_tab_panel.clone(),
+            None,
             None,
             true,
             cx,
@@ -190,6 +199,7 @@ impl StoryWorkspace {
             IconStory::view(cx).into(),
             left_tab_panel.clone(),
             Some(Placement::Bottom),
+            Some(px(200.)),
             true,
             cx,
         )
@@ -200,6 +210,7 @@ impl StoryWorkspace {
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
             right_tab_panel.clone(),
+            None,
             None,
             true,
             cx,
@@ -220,6 +231,7 @@ impl StoryWorkspace {
             TableStory::view(cx).into(),
             center_tab_panel.clone(),
             None,
+            None,
             true,
             cx,
         )
@@ -231,6 +243,7 @@ impl StoryWorkspace {
             ProgressStory::view(cx).into(),
             center_tab_panel.clone(),
             Some(Placement::Bottom),
+            Some(px(200.)),
             true,
             cx,
         )
@@ -241,6 +254,7 @@ impl StoryWorkspace {
             "Accessible resizable panel groups and layouts with keyboard support.",
             ResizableStory::view(cx).into(),
             center_tab_panel.clone(),
+            None,
             None,
             true,
             cx,
@@ -253,6 +267,7 @@ impl StoryWorkspace {
             ScrollableStory::view(cx).into(),
             center_tab_panel.clone(),
             None,
+            None,
             true,
             cx,
         )
@@ -263,6 +278,7 @@ impl StoryWorkspace {
             "A calendar component.",
             CalendarStory::view(cx).into(),
             center_tab_panel.clone(),
+            None,
             None,
             true,
             cx,

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{
     div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
     DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, ParentElement, Render, ScrollHandle, StatefulInteractiveElement, Styled, View,
-    ViewContext, VisualContext as _, WeakView, WindowContext,
+    IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
+    View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -135,10 +135,11 @@ impl TabPanel {
         &mut self,
         panel: Arc<dyn PanelView>,
         placement: Placement,
+        size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
         self.will_split_placement = Some(placement);
-        self.split_panel(panel, placement, cx);
+        self.split_panel(panel, placement, size, cx);
         cx.notify();
     }
 
@@ -428,7 +429,7 @@ impl TabPanel {
 
         // Insert into new tabs
         if let Some(placement) = self.will_split_placement {
-            self.split_panel(panel, placement, cx);
+            self.split_panel(panel, placement, None, cx);
         } else {
             if let Some(ix) = ix {
                 self.insert_panel_at(panel, ix, cx)
@@ -445,6 +446,7 @@ impl TabPanel {
         &self,
         panel: Arc<dyn PanelView>,
         placement: Placement,
+        size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
         let dock_area = self.dock_area.clone();
@@ -463,11 +465,11 @@ impl TabPanel {
 
         if parent_axis.is_vertical() && placement.is_vertical() {
             stack_panel.update(cx, |view, cx| {
-                view.insert_panel_at(new_tab_panel, ix, placement, None, dock_area.clone(), cx);
+                view.insert_panel_at(new_tab_panel, ix, placement, size, dock_area.clone(), cx);
             });
         } else if parent_axis.is_horizontal() && placement.is_horizontal() {
             stack_panel.update(cx, |view, cx| {
-                view.insert_panel_at(new_tab_panel, ix, placement, None, dock_area.clone(), cx);
+                view.insert_panel_at(new_tab_panel, ix, placement, size, dock_area.clone(), cx);
             });
         } else {
             // 1. Create new StackPanel with new axis
@@ -493,12 +495,12 @@ impl TabPanel {
 
             new_stack_panel.update(cx, |view, cx| match placement {
                 Placement::Left | Placement::Top => {
-                    view.add_panel(new_tab_panel, None, dock_area.clone(), cx);
+                    view.add_panel(new_tab_panel, size, dock_area.clone(), cx);
                     view.add_panel(tab_panel.clone(), None, dock_area.clone(), cx);
                 }
                 Placement::Right | Placement::Bottom => {
                     view.add_panel(tab_panel.clone(), None, dock_area.clone(), cx);
-                    view.add_panel(new_tab_panel, None, dock_area.clone(), cx);
+                    view.add_panel(new_tab_panel, size, dock_area.clone(), cx);
                 }
             });
 
