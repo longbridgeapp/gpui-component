@@ -76,9 +76,9 @@ impl Colorize for Hsla {
     /// Returns a new color with the given opacity.
     ///
     /// The opacity is a value between 0.0 and 1.0, where 0.0 is fully transparent and 1.0 is fully opaque.
-    fn opacity(&self, opacity: f32) -> Hsla {
+    fn opacity(&self, factor: f32) -> Hsla {
         Hsla {
-            a: self.a * opacity,
+            a: self.a * factor.clamp(0.0, 1.0),
             ..*self
         }
     }
@@ -111,14 +111,16 @@ impl Colorize for Hsla {
         }
     }
 
-    fn lighten(&self, amount: f32) -> Hsla {
-        let l = (self.l * (1.0 + amount)).min(1.0);
+    /// Return a new color with the lightness increased by the given factor.
+    fn lighten(&self, factor: f32) -> Hsla {
+        let l = (self.l * 1.0 - factor.clamp(0.0, 1.0)).min(1.0);
 
         Hsla { l, ..*self }
     }
 
-    fn darken(&self, amount: f32) -> Hsla {
-        let l = (self.l * (1.0 - amount)).max(0.0);
+    /// Return a new color with the darkness increased by the given factor.
+    fn darken(&self, factor: f32) -> Hsla {
+        let l = (self.l * 1.0 - factor.clamp(0.0, 1.0)).max(0.0);
 
         Hsla { l, ..*self }
     }

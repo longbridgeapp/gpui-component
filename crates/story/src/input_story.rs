@@ -7,11 +7,9 @@ use gpui::{
 use ui::{
     button::Button,
     checkbox::Checkbox,
-    color_picker::{ColorPicker, ColorPickerEvent},
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
-    theme::{Colorize, Theme},
     v_flex, FocusableCycle, IconName, Sizable,
 };
 
@@ -44,7 +42,6 @@ pub struct InputStory {
     otp_input_small: View<OtpInput>,
     otp_input_large: View<OtpInput>,
     opt_input_sized: View<OtpInput>,
-    color_picker: View<ColorPicker>,
 }
 
 impl InputStory {
@@ -106,23 +103,6 @@ impl InputStory {
         })
         .detach();
 
-        let color_picker = cx.new_view(|cx| {
-            let picker = ColorPicker::new("picker1", cx);
-            picker
-        });
-        cx.subscribe(&color_picker, |_, _, ev: &ColorPickerEvent, cx| match ev {
-            ColorPickerEvent::Change(color) => {
-                if let Some(color) = color {
-                    let theme = cx.global_mut::<Theme>();
-                    theme.primary = *color;
-                    theme.primary_hover = color.lighten(0.1);
-                    theme.primary_active = color.darken(0.1);
-                    cx.refresh();
-                }
-            }
-        })
-        .detach();
-
         Self {
             input1,
             input2,
@@ -167,7 +147,6 @@ impl InputStory {
                     .default_value("654321")
                     .with_size(px(55.))
             }),
-            color_picker,
         }
     }
 
@@ -218,7 +197,6 @@ impl FocusableCycle for InputStory {
             self.suffix_input1.focus_handle(cx),
             self.large_input.focus_handle(cx),
             self.small_input.focus_handle(cx),
-            self.color_picker.focus_handle(cx),
             self.otp_input.focus_handle(cx),
         ]
         .to_vec()
@@ -266,7 +244,6 @@ impl Render for InputStory {
                             .child(self.small_input.clone()),
                     ),
             )
-            .child(section("Color Picker", cx).child(self.color_picker.clone()))
             .child(
                 section(
                     h_flex()

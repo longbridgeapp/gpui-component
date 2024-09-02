@@ -1,23 +1,25 @@
 use gpui::{
-    anchored, deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
-    FocusHandle, FocusableView, Hsla, InteractiveElement as _, IntoElement, KeyBinding, Length,
-    MouseButton, ParentElement, Render, SharedString, StatefulInteractiveElement as _, Styled,
-    ViewContext,
+    anchored, canvas, deferred, div, prelude::FluentBuilder as _, px, relative, AnchorCorner,
+    AppContext, Bounds, ElementId, EventEmitter, FocusHandle, FocusableView, Hsla,
+    InteractiveElement as _, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point,
+    Render, SharedString, StatefulInteractiveElement as _, Styled, View, ViewContext,
+    VisualContext,
 };
 
 use crate::{
-    colors::DEFAULT_COLOR,
     divider::Divider,
     h_flex,
-    input::ClearButton,
+    input::{InputEvent, TextInput},
     popover::Escape,
     theme::{ActiveTheme as _, Colorize},
-    v_flex, ColorExt as _, Icon, IconName, Size, StyleSized as _, StyledExt as _,
+    tooltip::Tooltip,
+    v_flex, ColorExt as _, Sizable, Size, StyleSized,
 };
 
+const KEY_CONTEXT: &'static str = "ColorPicker";
+
 pub fn init(cx: &mut AppContext) {
-    let context = Some("ColorPicker");
-    cx.bind_keys([KeyBinding::new("escape", Escape, context)])
+    cx.bind_keys([KeyBinding::new("escape", Escape, Some(KEY_CONTEXT))])
 }
 
 #[derive(Clone)]
@@ -26,6 +28,7 @@ pub enum ColorPickerEvent {
 }
 
 fn color_palettes() -> Vec<Vec<Hsla>> {
+    use crate::colors::DEFAULT_COLOR;
     use itertools::Itertools as _;
 
     macro_rules! c {
@@ -55,22 +58,47 @@ fn color_palettes() -> Vec<Vec<Hsla>> {
 pub struct ColorPicker {
     id: ElementId,
     focus_handle: FocusHandle,
-    featured_colors: Vec<Hsla>,
     value: Option<Hsla>,
-    cleanable: bool,
-    open: bool,
-    size: Size,
-    width: Length,
+    featured_colors: Vec<Hsla>,
     hovered_color: Option<Hsla>,
+    label: Option<SharedString>,
+    size: Size,
+    anchor: AnchorCorner,
+    color_input: View<TextInput>,
+
+    open: bool,
+    bounds: Bounds<Pixels>,
 }
 
 impl ColorPicker {
     pub fn new(id: impl Into<ElementId>, cx: &mut ViewContext<Self>) -> Self {
+        let color_input = cx.new_view(|cx| TextInput::new(cx).xsmall());
+
+        cx.subscribe(&color_input, |this, _, ev: &InputEvent, cx| match ev {
+            InputEvent::Change(value) => {
+                if let Ok(color) = Hsla::parse_hex_string(value) {
+                    this.value = Some(color);
+                    this.hovered_color = Some(color);
+                }
+            }
+            InputEvent::PressEnter => {
+                let val = this.color_input.read(cx).text();
+                if let Ok(color) = Hsla::parse_hex_string(&val) {
+                    this.open = false;
+                    this.update_value(Some(color), true, cx);
+                }
+            }
+            _ => {}
+        })
+        .detach();
+
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
             featured_colors: vec![
                 crate::black(),
+                crate::gray_600(),
+                crate::gray_400(),
                 crate::white(),
                 crate::red_600(),
                 crate::orange_600(),
@@ -81,43 +109,55 @@ impl ColorPicker {
                 crate::purple_600(),
             ],
             value: None,
-            cleanable: false,
-            open: false,
-            size: Size::default(),
-            width: Length::Auto,
             hovered_color: None,
+            size: Size::Medium,
+            label: None,
+            anchor: AnchorCorner::TopLeft,
+            color_input,
+            open: false,
+            bounds: Bounds::default(),
         }
     }
 
-    /// Set true to show the clear button when the input field is not empty.
-    pub fn cleanable(mut self) -> Self {
-        self.cleanable = true;
-        self
-    }
-
-    /// Set width of the date picker input field, default is `Length::Auto`.
-    pub fn width(mut self, width: impl Into<Length>) -> Self {
-        self.width = width.into();
-        self
-    }
-
+    /// Set the featured colors to be displayed in the color picker.
+    ///
+    /// This is used to display a set of colors that the user can quickly select from,
+    /// for example provided user's last used colors.
     pub fn featured_colors(mut self, colors: Vec<Hsla>) -> Self {
         self.featured_colors = colors;
         self
     }
 
-    pub fn value(mut self, value: Hsla) -> Self {
-        self.value = Some(value);
+    /// Set current color value.
+    pub fn set_value(&mut self, value: Hsla, cx: &mut ViewContext<Self>) {
+        self.update_value(Some(value), false, cx)
+    }
+
+    /// Set the size of the color picker, default is `Size::Medium`.
+    pub fn size(mut self, size: Size) -> Self {
+        self.size = size;
         self
     }
 
-    fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
-        self.open = false;
-        cx.notify();
+    /// Set the label to be displayed above the color picker.
+    ///
+    /// Default is `None`.
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = Some(label.into());
+        self
     }
 
-    fn clean(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
-        self.update_value(None, cx)
+    /// Set the anchor corner of the color picker.
+    ///
+    /// Default is `AnchorCorner::TopLeft`.
+    pub fn anchor(mut self, anchor: AnchorCorner) -> Self {
+        self.anchor = anchor;
+        self
+    }
+
+    fn on_escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
+        self.open = false;
+        cx.notify();
     }
 
     fn toggle_picker(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
@@ -125,9 +165,19 @@ impl ColorPicker {
         cx.notify();
     }
 
-    fn update_value(&mut self, value: Option<Hsla>, cx: &mut ViewContext<Self>) {
+    fn update_value(&mut self, value: Option<Hsla>, emit: bool, cx: &mut ViewContext<Self>) {
         self.value = value;
-        cx.emit(ColorPickerEvent::Change(value));
+        self.hovered_color = value;
+        self.color_input.update(cx, |view, cx| {
+            if let Some(value) = value {
+                view.set_text(value.to_hex_string(), cx);
+            } else {
+                view.set_text("", cx);
+            }
+        });
+        if emit {
+            cx.emit(ColorPickerEvent::Change(value));
+        }
         cx.notify();
     }
 
@@ -145,18 +195,22 @@ impl ColorPicker {
             .h_5()
             .w_5()
             .bg(color)
-            .rounded_sm()
             .border_1()
             .border_color(color.darken(0.1))
             .when(clickable, |this| {
                 this.cursor_pointer()
-                    .hover(|this| this.border_color(color.darken(0.3)))
+                    .hover(|this| {
+                        this.border_color(color.darken(0.3))
+                            .bg(color.lighten(0.1))
+                            .shadow_sm()
+                    })
+                    .active(|this| this.border_color(color.darken(0.5)).bg(color.darken(0.2)))
                     .on_mouse_move(cx.listener(move |view, _, cx| {
                         view.hovered_color = Some(color);
                         cx.notify();
                     }))
                     .on_click(cx.listener(move |view, _, cx| {
-                        view.update_value(Some(color), cx);
+                        view.update_value(Some(color), true, cx);
                         view.open = false;
                         cx.notify();
                     }))
@@ -165,7 +219,7 @@ impl ColorPicker {
 
     fn render_colors(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
-            .gap_2()
+            .gap_3()
             .child(
                 h_flex().gap_1().children(
                     self.featured_colors
@@ -173,6 +227,7 @@ impl ColorPicker {
                         .map(|color| self.render_item(*color, true, cx)),
                 ),
             )
+            .child(Divider::horizontal())
             .child(
                 v_flex()
                     .gap_1()
@@ -185,120 +240,135 @@ impl ColorPicker {
                         )
                     })),
             )
-            .when_some(self.hovered_color.clone(), |this, hovered_color| {
+            .when_some(self.hovered_color, |this, hovered_color| {
                 this.child(Divider::horizontal()).child(
                     h_flex()
-                        .gap_1()
+                        .gap_2()
                         .items_center()
                         .child(
                             div()
                                 .bg(hovered_color)
+                                .border_1()
+                                .border_color(hovered_color.darken(0.2))
                                 .size_5()
                                 .rounded(px(cx.theme().radius)),
                         )
-                        .child(hovered_color.to_hex_string()),
+                        .child(self.color_input.clone()),
                 )
             })
     }
+
+    fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
+        match self.anchor {
+            AnchorCorner::TopLeft => AnchorCorner::BottomLeft,
+            AnchorCorner::TopRight => AnchorCorner::BottomRight,
+            AnchorCorner::BottomLeft => AnchorCorner::TopLeft,
+            AnchorCorner::BottomRight => AnchorCorner::TopRight,
+        }
+        .corner(bounds)
+    }
 }
 
+impl Sizable for ColorPicker {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
 impl EventEmitter<ColorPickerEvent> for ColorPicker {}
 impl FocusableView for ColorPicker {
-    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
+    fn focus_handle(&self, _: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
 impl Render for ColorPicker {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let is_focused = self.focus_handle.is_focused(cx);
-        let show_clean = self.cleanable && self.value.is_some();
-
-        let display_title = if let Some(value) = self.value {
-            format!("{}", value.to_hex_string())
+        let display_title: SharedString = if let Some(value) = self.value {
+            value.to_hex_string()
         } else {
-            "Select a color".to_string()
-        };
+            "".to_string()
+        }
+        .into();
 
-        let value = self.value.unwrap_or_else(|| cx.theme().foreground);
+        let view = cx.view().clone();
 
         div()
             .id(self.id.clone())
-            .key_context("ColorPicker")
+            .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
-            .on_action(cx.listener(Self::escape))
-            .w_full()
-            .relative()
-            .map(|this| match self.width {
-                Length::Definite(l) => this.flex_none().w(l),
-                Length::Auto => this.w_full(),
-            })
-            .input_text_size(self.size)
+            .on_action(cx.listener(Self::on_escape))
             .child(
-                div()
+                h_flex()
                     .id("color-picker-input")
-                    .relative()
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .bg(cx.theme().background)
-                    .border_1()
-                    .border_color(cx.theme().input)
-                    .rounded(px(cx.theme().radius))
-                    .shadow_sm()
                     .cursor_pointer()
-                    .overflow_hidden()
+                    .gap_2()
+                    .items_center()
                     .input_text_size(self.size)
-                    .when(is_focused, |this| this.outline(cx))
-                    .input_size(self.size)
-                    .when(!self.open, |this| {
-                        this.on_click(cx.listener(Self::toggle_picker))
-                    })
+                    .line_height(relative(1.))
                     .child(
-                        h_flex()
-                            .w_full()
-                            .items_center()
-                            .justify_between()
-                            .gap_1()
-                            .child(self.render_item(value, false, cx))
-                            .child(div().flex_1().overflow_hidden().child(display_title))
-                            .when(show_clean, |this| {
-                                this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean)))
+                        div()
+                            .id("color-picker-square")
+                            .bg(cx.theme().background)
+                            .border_1()
+                            .border_color(cx.theme().input)
+                            .rounded(px(cx.theme().radius))
+                            .bg(cx.theme().background)
+                            .shadow_sm()
+                            .overflow_hidden()
+                            .size_with(self.size)
+                            .when_some(self.value, |this, value| {
+                                this.bg(value).border_color(value.darken(0.3))
                             })
-                            .when(!show_clean, |this| {
-                                this.child(
-                                    Icon::new(IconName::Palette)
-                                        .text_color(cx.theme().muted_foreground),
-                                )
-                            }),
+                            .tooltip(move |cx| Tooltip::new(display_title.clone(), cx)),
+                    )
+                    .when_some(self.label.clone(), |this, label| this.child(label))
+                    .on_click(cx.listener(Self::toggle_picker))
+                    .child(
+                        canvas(
+                            move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                            |_, _, _| {},
+                        )
+                        .absolute()
+                        .size_full(),
                     ),
             )
             .when(self.open, |this| {
                 this.child(
                     deferred(
-                        anchored().snap_to_window().child(
-                            div()
-                                .track_focus(&self.focus_handle)
-                                .occlude()
-                                .absolute()
-                                .mt_1p5()
-                                .w_72()
-                                .overflow_hidden()
-                                .rounded_lg()
-                                .p_3()
-                                .border_1()
-                                .border_color(cx.theme().border)
-                                .shadow_lg()
-                                .rounded_lg()
-                                .bg(cx.theme().background)
-                                .on_mouse_up_out(
-                                    MouseButton::Left,
-                                    cx.listener(|view, _, cx| view.escape(&Escape, cx)),
-                                )
-                                .child(self.render_colors(cx)),
-                        ),
+                        anchored()
+                            .anchor(self.anchor)
+                            .snap_to_window()
+                            .position(self.resolved_corner(self.bounds))
+                            .child(
+                                div()
+                                    .track_focus(&self.focus_handle)
+                                    .occlude()
+                                    .map(|this| match self.anchor {
+                                        AnchorCorner::TopLeft | AnchorCorner::TopRight => {
+                                            this.mt_1p5()
+                                        }
+                                        AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
+                                            this.mb_1p5()
+                                        }
+                                    })
+                                    .w_72()
+                                    .overflow_hidden()
+                                    .rounded_lg()
+                                    .p_3()
+                                    .border_1()
+                                    .border_color(cx.theme().border)
+                                    .shadow_lg()
+                                    .rounded_lg()
+                                    .bg(cx.theme().background)
+                                    .on_mouse_up_out(
+                                        MouseButton::Left,
+                                        cx.listener(|view, _, cx| view.on_escape(&Escape, cx)),
+                                    )
+                                    .child(self.render_colors(cx)),
+                            ),
                     )
-                    .with_priority(2),
+                    .with_priority(1),
                 )
             })
     }
