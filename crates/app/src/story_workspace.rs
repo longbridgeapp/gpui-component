@@ -18,7 +18,7 @@ use ui::{
     modal::Modal,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
-    ContextModal, IconName, Root, Sizable,
+    ContextModal, IconName, Placement, Root, Sizable,
 };
 
 use crate::app_state::AppState;
@@ -52,35 +52,49 @@ impl StoryWorkspace {
         .detach();
 
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
-        let dock_area = cx.new_view(|cx| DockArea::new(stack_panel.clone(), cx));
+        let dock_area = cx.new_view(|cx| DockArea::new("main-dock", stack_panel.clone(), cx));
         let weak_dock_area = dock_area.downgrade();
 
-        let tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
-        let right_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
-        let right_tab_panel1 = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let center_tab_panel =
+            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
+        let left_tab_panel =
+            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
+        let right_tab_panel =
+            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
 
         stack_panel.update(cx, |view, cx| {
-            view.add_panel(tab_panel.clone(), None, weak_dock_area.clone(), cx);
-
-            let stock_panel1 = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            let left_stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            left_stack_panel.update(cx, |view, cx| {
+                view.add_panel(left_tab_panel.clone(), None, weak_dock_area.clone(), cx);
+            });
             view.add_panel(
-                stock_panel1.clone(),
-                Some(px(380.)),
+                left_stack_panel.clone(),
+                Some(px(300.)),
                 weak_dock_area.clone(),
                 cx,
             );
 
-            stock_panel1.update(cx, |view, cx| {
+            view.add_panel(center_tab_panel.clone(), None, weak_dock_area.clone(), cx);
+
+            let right_stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            right_stack_panel.update(cx, |view, cx| {
                 view.add_panel(right_tab_panel.clone(), None, weak_dock_area.clone(), cx);
-                view.add_panel(right_tab_panel1.clone(), None, weak_dock_area.clone(), cx);
-            })
+            });
+            view.add_panel(
+                right_stack_panel.clone(),
+                Some(px(340.)),
+                weak_dock_area.clone(),
+                cx,
+            );
         });
 
         StoryContainer::add_panel(
             "Buttons",
             "Displays a button or a component that looks like a button.",
             ButtonStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             false,
             cx,
         )
@@ -90,7 +104,9 @@ impl StoryWorkspace {
             "Input",
             "A control that allows the user to input text.",
             InputStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             false,
             cx,
         )
@@ -100,7 +116,9 @@ impl StoryWorkspace {
             "Text",
             "Links, paragraphs, checkboxes, and more.",
             TextStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            Some(Placement::Bottom),
+            Some(px(200.)),
             true,
             cx,
         )
@@ -110,7 +128,9 @@ impl StoryWorkspace {
             "Switch",
             "A control that allows the user to toggle between two states.",
             SwitchStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -120,7 +140,9 @@ impl StoryWorkspace {
             "Dropdowns",
             "Displays a list of options for the user to pick from—triggered by a button.",
             DropdownStory::new(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -130,7 +152,9 @@ impl StoryWorkspace {
             "Modal",
             "Modal & Drawer use examples",
             ModalStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -140,7 +164,9 @@ impl StoryWorkspace {
             "Popup",
             "A popup displays content on top of the main page.",
             PopupStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -150,7 +176,9 @@ impl StoryWorkspace {
             "Tooltip",
             "Displays a short message when users hover over an element.",
             TooltipStory::view(cx).into(),
-            tab_panel.clone(),
+            right_tab_panel.clone(),
+            Some(Placement::Top),
+            None,
             true,
             cx,
         )
@@ -160,7 +188,9 @@ impl StoryWorkspace {
             "List",
             "A list displays a series of items.",
             ListStory::view(cx).into(),
-            tab_panel.clone(),
+            left_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -170,7 +200,9 @@ impl StoryWorkspace {
             "Icon",
             "Icon use examples",
             IconStory::view(cx).into(),
-            tab_panel.clone(),
+            left_tab_panel.clone(),
+            Some(Placement::Bottom),
+            Some(px(200.)),
             true,
             cx,
         )
@@ -180,7 +212,9 @@ impl StoryWorkspace {
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
-            right_tab_panel1.clone(),
+            right_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -198,7 +232,9 @@ impl StoryWorkspace {
             "Table",
             "Powerful table and datagrids built.",
             TableStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -208,8 +244,10 @@ impl StoryWorkspace {
             "Progress",
             "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
             ProgressStory::view(cx).into(),
-            tab_panel.clone(),
-                 true,
+            center_tab_panel.clone(),
+            Some(Placement::Bottom),
+            Some(px(200.)),
+            true,
             cx,
         )
         .detach();
@@ -218,7 +256,9 @@ impl StoryWorkspace {
             "Resizable",
             "Accessible resizable panel groups and layouts with keyboard support.",
             ResizableStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -228,7 +268,9 @@ impl StoryWorkspace {
             "Scrollable",
             "A scrollable area with scroll bar.",
             ScrollableStory::view(cx).into(),
-            tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )
@@ -238,7 +280,9 @@ impl StoryWorkspace {
             "Calendar",
             "A calendar component.",
             CalendarStory::view(cx).into(),
-            right_tab_panel.clone(),
+            center_tab_panel.clone(),
+            None,
+            None,
             true,
             cx,
         )

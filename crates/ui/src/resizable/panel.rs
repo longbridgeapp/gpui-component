@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
-    EntityId, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement,
-    Pixels, Render, StatefulInteractiveElement, Style, Styled, View, ViewContext,
+    Entity, EntityId, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent,
+    ParentElement, Pixels, Render, StatefulInteractiveElement, Style, Styled, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
@@ -89,26 +89,19 @@ impl ResizablePanelGroup {
         self
     }
 
-    /// When add a child panel to the group, resize other panels each into half of the remaining space.
-    fn default_panel_size(&self) -> Pixels {
-        let container_size = self.bounds.size.along(self.axis);
-        let each_size = container_size / (self.panels.len() + 1) as f32;
-        each_size.round()
-    }
-
     pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;
-        panel.size = self.default_panel_size();
-        self.sizes.push(panel.size);
+        panel.group = Some(cx.view().clone());
+        self.sizes.push(panel.size.unwrap_or_default());
         self.panels.push(cx.new_view(|_| panel));
     }
 
     pub fn insert_child(&mut self, panel: ResizablePanel, ix: usize, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;
-        panel.size = self.default_panel_size();
-        self.sizes.insert(ix, panel.size);
+        panel.group = Some(cx.view().clone());
+        self.sizes.insert(ix, panel.size.unwrap_or_default());
         self.panels.insert(ix, cx.new_view(|_| panel));
         cx.notify()
     }
@@ -122,8 +115,8 @@ impl ResizablePanelGroup {
     ) {
         let mut panel = panel;
         panel.axis = self.axis;
-        panel.size = self.default_panel_size();
-        self.sizes[ix] = panel.size;
+        panel.group = Some(cx.view().clone());
+        self.sizes[ix] = panel.size.unwrap_or_default();
         self.panels[ix] = cx.new_view(|_| panel);
         cx.notify()
     }
@@ -142,7 +135,7 @@ impl ResizablePanelGroup {
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.axis;
-        let neg_offset = -HANDLE_PADDING + px(1.);
+        let neg_offset = -HANDLE_PADDING;
         let view = cx.view().clone();
 
         div()
@@ -153,14 +146,14 @@ impl ResizablePanelGroup {
             .when(self.axis.is_horizontal(), |this| {
                 this.cursor_col_resize()
                     .top_0()
-                    .right(neg_offset)
+                    .left(neg_offset)
                     .h_full()
                     .w(px(1.))
                     .px(HANDLE_PADDING)
             })
             .when(self.axis.is_vertical(), |this| {
                 this.cursor_row_resize()
-                    .bottom(neg_offset)
+                    .top(neg_offset)
                     .left_0()
                     .w_full()
                     .h(px(1.))
@@ -250,7 +243,9 @@ impl ResizablePanelGroup {
         self.sizes = new_sizes;
         for (i, panel) in self.panels.iter().enumerate() {
             let size = self.sizes[i];
-            panel.update(cx, |this, _| this.size = size);
+            if size > px(0.) {
+                panel.update(cx, |this, _| this.changed_size = Some(size));
+            }
         }
     }
 }
@@ -267,8 +262,8 @@ impl Render for ResizablePanelGroup {
         container
             .size_full()
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
-                if ix < self.panels.len() - 1 {
-                    let handle = self.render_resize_handle(ix, cx);
+                if ix > 0 {
+                    let handle = self.render_resize_handle(ix - 1, cx);
                     panel.update(cx, |view, _| {
                         view.resize_handle = Some(handle.into_any_element())
                     });
@@ -292,7 +287,9 @@ impl Render for ResizablePanelGroup {
 }
 
 pub struct ResizablePanel {
-    size: Pixels,
+    group: Option<View<ResizablePanelGroup>>,
+    size: Option<Pixels>,
+    changed_size: Option<Pixels>,
     axis: Axis,
     content_builder: Option<Rc<dyn Fn(&mut WindowContext) -> AnyElement>>,
     content_view: Option<AnyView>,
@@ -304,7 +301,9 @@ pub struct ResizablePanel {
 impl ResizablePanel {
     pub(super) fn new() -> Self {
         Self {
-            size: PANEL_MIN_SIZE,
+            group: None,
+            size: None,
+            changed_size: None,
             axis: Axis::Horizontal,
             content_builder: None,
             content_view: None,
@@ -327,8 +326,28 @@ impl ResizablePanel {
     }
 
     pub fn size(mut self, size: Pixels) -> Self {
-        self.size = size;
+        self.size = Some(size);
         self
+    }
+
+    /// Save the real panel size, and update group sizes
+    fn update_size(&mut self, bounds: Bounds<Pixels>, cx: &mut ViewContext<Self>) {
+        let new_size = bounds.size.along(self.axis);
+        self.bounds = bounds;
+
+        let panel_view = cx.view().clone();
+        if let Some(group) = self.group.as_ref() {
+            group.update(cx, |view, _| {
+                if let Some(ix) = view
+                    .panels
+                    .iter()
+                    .position(|v| v.entity_id() == panel_view.entity_id())
+                {
+                    view.sizes[ix] = new_size;
+                }
+            })
+        }
+        cx.notify();
     }
 }
 
@@ -337,24 +356,27 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
-        let axis = self.axis;
-        let size = self.size.max(PANEL_MIN_SIZE);
 
         div()
             .flex()
             .flex_grow()
+            .size_full()
             .relative()
-            .overflow_hidden()
-            .when(self.axis.is_vertical(), |this| this.w_full().h(size))
-            .when(self.axis.is_horizontal(), |this| this.h_full().w(size))
+            .when(self.size.is_none(), |this| this.flex_shrink())
+            .when(self.axis.is_vertical(), |this| this.min_h(PANEL_MIN_SIZE))
+            .when(self.axis.is_horizontal(), |this| this.min_w(PANEL_MIN_SIZE))
+            .when_some(self.size, |this, size| {
+                this.flex_shrink_0()
+                    .when(self.axis.is_vertical(), |this| this.h(size))
+                    .when(self.axis.is_horizontal(), |this| this.w(size))
+            })
+            .when_some(self.changed_size, |this, size| {
+                this.when(self.axis.is_vertical(), |this| this.h(size))
+                    .when(self.axis.is_horizontal(), |this| this.w(size))
+            })
             .child({
                 canvas(
-                    move |bounds, cx| {
-                        view.update(cx, |r, _| {
-                            r.size = bounds.size.along(axis);
-                            r.bounds = bounds;
-                        })
-                    },
+                    move |bounds, cx| view.update(cx, |r, cx| r.update_size(bounds, cx)),
                     |_, _, _| {},
                 )
                 .absolute()
