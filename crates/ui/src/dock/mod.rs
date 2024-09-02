@@ -4,7 +4,7 @@ mod tab_panel;
 
 use gpui::{
     actions, div, prelude::FluentBuilder, AnyWeakView, InteractiveElement as _, IntoElement,
-    ParentElement as _, Render, Styled, View, ViewContext,
+    ParentElement as _, Render, SharedString, Styled, View, ViewContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
@@ -14,16 +14,27 @@ actions!(dock, [ToggleZoom, ClosePanel]);
 
 /// The main area of the dock.
 pub struct DockArea {
+    id: SharedString,
     root: View<StackPanel>,
     zoom_view: Option<AnyWeakView>,
 }
 
 impl DockArea {
-    pub fn new(root: View<StackPanel>, _cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(
+        id: impl Into<SharedString>,
+        root: View<StackPanel>,
+        _cx: &mut ViewContext<Self>,
+    ) -> Self {
         Self {
+            id: id.into(),
             root,
             zoom_view: None,
         }
+    }
+
+    /// Returns the ID of the dock area.
+    pub fn id(&self) -> SharedString {
+        self.id.clone()
     }
 
     /// Toggles the zoom view.
@@ -34,6 +45,25 @@ impl DockArea {
             self.zoom_view = Some(panel.downgrade().into());
         }
         cx.notify();
+    }
+
+    /// Returns the root stack panel.
+    pub fn root(&self) -> View<StackPanel> {
+        self.root.clone()
+    }
+
+    /// Return the index of the panel.
+    pub fn index_of_panel<P: Panel>(
+        &self,
+        panel: View<P>,
+        cx: &mut ViewContext<Self>,
+    ) -> Option<usize> {
+        self.root.read(cx).index_of_panel(panel)
+    }
+
+    /// Return the existing panel by type.
+    pub fn panel<P: Panel>(&self, cx: &mut ViewContext<Self>) -> Option<View<P>> {
+        self.root.read(cx).panel::<P>(cx)
     }
 }
 

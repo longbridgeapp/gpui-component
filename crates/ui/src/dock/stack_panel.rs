@@ -11,7 +11,7 @@ use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
     prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
-    VisualContext, WeakView,
+    VisualContext, WeakView, WindowContext,
 };
 use smallvec::SmallVec;
 
@@ -62,6 +62,24 @@ impl StackPanel {
             .position(|p| p.view().entity_id() == entity_id)
     }
 
+    /// Return the existing panel view by type.
+    pub fn panel<P>(&self, cx: &WindowContext) -> Option<View<P>>
+    where
+        P: Panel,
+    {
+        self.panels.iter().find_map(|p| {
+            if let Ok(p) = p.view().downcast::<P>() {
+                Some(p)
+            } else {
+                if let Ok(tab) = p.view().downcast::<TabPanel>() {
+                    tab.read(cx).panel(cx)
+                } else {
+                    None
+                }
+            }
+        })
+    }
+
     /// Add a panel at the end of the stack.
     pub fn add_panel<P>(
         &mut self,
@@ -78,17 +96,33 @@ impl StackPanel {
     pub fn add_panel_at<P>(
         &mut self,
         panel: View<P>,
+        placement: Placement,
+        size: Option<Pixels>,
+        dock_area: WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) where
+        P: Panel,
+    {
+        self.insert_panel_at(panel, self.panels_len(), placement, size, dock_area, cx);
+    }
+
+    pub fn insert_panel_at<P>(
+        &mut self,
+        panel: View<P>,
         ix: usize,
         placement: Placement,
+        size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) where
         P: Panel,
     {
         match placement {
-            Placement::Top | Placement::Left => self.insert_panel_before(panel, ix, dock_area, cx),
+            Placement::Top | Placement::Left => {
+                self.insert_panel_before(panel, ix, size, dock_area, cx)
+            }
             Placement::Right | Placement::Bottom => {
-                self.insert_panel_after(panel, ix, dock_area, cx)
+                self.insert_panel_after(panel, ix, size, dock_area, cx)
             }
         }
     }
@@ -98,12 +132,13 @@ impl StackPanel {
         &mut self,
         panel: View<P>,
         ix: usize,
+        size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) where
         P: Panel,
     {
-        self.insert_panel(panel, ix, None, dock_area, cx);
+        self.insert_panel(panel, ix, size, dock_area, cx);
     }
 
     /// Insert a panel after the index.
@@ -111,12 +146,13 @@ impl StackPanel {
         &mut self,
         panel: View<P>,
         ix: usize,
+        size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) where
         P: Panel,
     {
-        self.insert_panel(panel, ix + 1, None, dock_area, cx);
+        self.insert_panel(panel, ix + 1, size, dock_area, cx);
     }
 
     fn new_resizable_panel<P>(panel: View<P>, size: Option<Pixels>) -> ResizablePanel
@@ -175,6 +211,12 @@ impl StackPanel {
             }
         })
         .detach();
+
+        let ix = if ix > self.panels.len() {
+            self.panels.len()
+        } else {
+            ix
+        };
 
         self.panels.insert(ix, Arc::new(panel.clone()));
         self.panel_group.update(cx, |view, cx| {
