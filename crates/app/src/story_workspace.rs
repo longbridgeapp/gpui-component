@@ -76,101 +76,112 @@ impl StoryWorkspace {
             })
         });
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Buttons",
             "Displays a button or a component that looks like a button.",
             ButtonStory::view(cx).into(),
             tab_panel.clone(),
+            false,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Input",
             "A control that allows the user to input text.",
             InputStory::view(cx).into(),
             tab_panel.clone(),
+            false,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Text",
             "Links, paragraphs, checkboxes, and more.",
             TextStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Switch",
             "A control that allows the user to toggle between two states.",
             SwitchStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Dropdowns",
             "Displays a list of options for the user to pick from—triggered by a button.",
             DropdownStory::new(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Modal",
             "Modal & Drawer use examples",
             ModalStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Popup",
             "A popup displays content on top of the main page.",
             PopupStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Tooltip",
             "Displays a short message when users hover over an element.",
             TooltipStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "List",
             "A list displays a series of items.",
             ListStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Icon",
             "Icon use examples",
             IconStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Image",
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
             right_tab_panel1.clone(),
+            true,
             cx,
         )
         .detach();
@@ -183,47 +194,52 @@ impl StoryWorkspace {
         //     cx,
         // );
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Table",
             "Powerful table and datagrids built.",
             TableStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Progress",
             "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
             ProgressStory::view(cx).into(),
             tab_panel.clone(),
+                 true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Resizable",
             "Accessible resizable panel groups and layouts with keyboard support.",
             ResizableStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Scrollable",
             "A scrollable area with scroll bar.",
             ScrollableStory::view(cx).into(),
             tab_panel.clone(),
+            true,
             cx,
         )
         .detach();
 
-        StoryContainer::add_pane(
+        StoryContainer::add_panel(
             "Calendar",
             "A calendar component.",
             CalendarStory::view(cx).into(),
             right_tab_panel.clone(),
+            true,
             cx,
         )
         .detach();

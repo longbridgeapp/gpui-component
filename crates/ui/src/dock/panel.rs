@@ -1,6 +1,8 @@
 use gpui::{AnyView, EventEmitter, FocusableView, SharedString, View, WindowContext};
 use rust_i18n::t;
 
+use crate::popup_menu::PopupMenu;
+
 use super::PanelEvent;
 
 pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
@@ -13,6 +15,11 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     fn closeable(&self, _cx: &WindowContext) -> bool {
         true
     }
+
+    /// The addition popup menu of the panel, default is `None`.
+    fn popup_menu(&self, this: PopupMenu, _cx: &WindowContext) -> PopupMenu {
+        this
+    }
 }
 
 pub trait PanelView: 'static + Send + Sync {
@@ -21,12 +28,24 @@ pub trait PanelView: 'static + Send + Sync {
         t!("Dock.Unnamed").into()
     }
 
+    fn closeable(&self, cx: &WindowContext) -> bool;
+
+    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
+
     fn view(&self) -> AnyView;
 }
 
 impl<T: Panel> PanelView for View<T> {
     fn title(&self, cx: &WindowContext) -> SharedString {
         self.read(cx).title(cx)
+    }
+
+    fn closeable(&self, cx: &WindowContext) -> bool {
+        self.read(cx).closeable(cx)
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        self.read(cx).popup_menu(menu, cx)
     }
 
     fn view(&self) -> AnyView {
