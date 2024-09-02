@@ -4,14 +4,14 @@ use gpui::{
     div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
     DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
     IntoElement, ParentElement, Render, ScrollHandle, StatefulInteractiveElement, Styled, View,
-    ViewContext, VisualContext as _, WeakView,
+    ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 use rust_i18n::t;
 
 use crate::{
     button::Button,
     h_flex,
-    popup_menu::PopupMenuExt,
+    popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
     theme::ActiveTheme,
     tooltip::Tooltip,
@@ -164,6 +164,9 @@ impl TabPanel {
 
     fn render_menu_button(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let is_zoomed = self.is_zoomed;
+        let closeable = self.closeable(cx);
+        let view = cx.view().clone();
+        let build_popup_menu = move |this, cx: &WindowContext| view.read(cx).popup_menu(this, cx);
 
         h_flex()
             .gap_2()
@@ -186,17 +189,20 @@ impl TabPanel {
                     .icon(IconName::Ellipsis)
                     .xsmall()
                     .ghost()
-                    .popup_menu(move |this, _| {
-                        this.menu(
-                            if is_zoomed {
-                                t!("Dock.Zoom Out")
-                            } else {
-                                t!("Dock.Zoom In")
-                            },
-                            Box::new(ToggleZoom),
-                        )
-                        .separator()
-                        .menu(t!("Dock.Close"), Box::new(ClosePanel))
+                    .popup_menu(move |this, cx| {
+                        build_popup_menu(this, cx)
+                            .menu(
+                                if is_zoomed {
+                                    t!("Dock.Zoom Out")
+                                } else {
+                                    t!("Dock.Zoom In")
+                                },
+                                Box::new(ToggleZoom),
+                            )
+                            .when(closeable, |this| {
+                                this.separator()
+                                    .menu(t!("Dock.Close"), Box::new(ClosePanel))
+                            })
                     })
                     .anchor(AnchorCorner::TopRight),
             )
@@ -498,7 +504,21 @@ impl TabPanel {
     }
 }
 
-impl Panel for TabPanel {}
+impl Panel for TabPanel {
+    fn closeable(&self, cx: &WindowContext) -> bool {
+        self.active_panel()
+            .map(|panel| panel.closeable(cx))
+            .unwrap_or(false)
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        if let Some(panel) = self.active_panel() {
+            panel.popup_menu(menu, cx)
+        } else {
+            menu
+        }
+    }
+}
 impl FocusableView for TabPanel {
     fn focus_handle(&self, _cx: &AppContext) -> gpui::FocusHandle {
         // FIXME: Delegate to the active panel

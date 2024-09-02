@@ -37,8 +37,8 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter, FocusableView,
-    InteractiveElement, IntoElement, ParentElement, Render, SharedString,
+    actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
+    FocusableView, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
     StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 
@@ -48,6 +48,7 @@ use ui::{
     dock::{Panel, PanelEvent, TabPanel},
     h_flex,
     label::Label,
+    popup_menu::PopupMenu,
     v_flex,
 };
 
@@ -56,6 +57,8 @@ pub fn init(cx: &mut AppContext) {
     dropdown_story::init(cx);
     popup_story::init(cx);
 }
+
+actions!(story, [PanelInfo]);
 
 pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {
     use ui::theme::ActiveTheme;
@@ -81,6 +84,7 @@ pub struct StoryContainer {
     width: Option<gpui::Pixels>,
     height: Option<gpui::Pixels>,
     story: Option<AnyView>,
+    closeable: bool,
 }
 
 impl FocusableView for StoryContainer {
@@ -100,6 +104,7 @@ impl StoryContainer {
     pub fn new(
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
+        closeable: bool,
         cx: &mut WindowContext,
     ) -> Self {
         let focus_handle = cx.focus_handle();
@@ -111,14 +116,16 @@ impl StoryContainer {
             width: None,
             height: None,
             story: None,
+            closeable,
         }
     }
 
-    pub fn add_pane(
+    pub fn add_panel(
         name: impl Into<SharedString>,
         description: impl Into<SharedString>,
         story: AnyView,
         tab_panel: View<TabPanel>,
+        closeable: bool,
         cx: &mut WindowContext,
     ) -> Task<Result<View<Self>>> {
         let name = name.into();
@@ -126,7 +133,8 @@ impl StoryContainer {
 
         cx.spawn(|mut cx| async move {
             tab_panel.update(&mut cx, |panel, cx| {
-                let view = cx.new_view(|cx| Self::new(name, description, cx).story(story));
+                let view =
+                    cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
                 panel.add_panel(Arc::new(view.clone()), cx);
                 view
             })
@@ -152,6 +160,14 @@ impl StoryContainer {
 impl Panel for StoryContainer {
     fn title(&self, _cx: &WindowContext) -> SharedString {
         self.name.clone()
+    }
+
+    fn closeable(&self, _cx: &WindowContext) -> bool {
+        self.closeable
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
+        menu.menu("Panel Info", Box::new(PanelInfo))
     }
 }
 
