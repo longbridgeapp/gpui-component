@@ -218,7 +218,7 @@ pub struct Dropdown<D: DropdownDelegate + 'static> {
     icon: Option<IconName>,
     open: bool,
     cleanable: bool,
-    placeholder: SharedString,
+    placeholder: Option<SharedString>,
     title_prefix: Option<SharedString>,
     selected_value: Option<<D::Item as DropdownItem>::Value>,
     empty: Option<Box<dyn Fn(&WindowContext) -> AnyElement + 'static>>,
@@ -327,7 +327,7 @@ where
         let mut this = Self {
             id: id.into(),
             focus_handle,
-            placeholder: t!("Dropdown.placeholder").into(),
+            placeholder: None,
             list,
             size: Size::Medium,
             icon: None,
@@ -359,7 +359,7 @@ where
 
     /// Set the placeholder for display when dropdown value is empty.
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
-        self.placeholder = placeholder.into();
+        self.placeholder = Some(placeholder.into());
         self
     }
 
@@ -518,9 +518,11 @@ where
                 }))
                 .child(title.clone())
         } else {
-            div()
-                .text_color(cx.theme().accent_foreground)
-                .child(self.placeholder.clone())
+            div().text_color(cx.theme().accent_foreground).child(
+                self.placeholder
+                    .clone()
+                    .unwrap_or_else(|| t!("Dropdown.placeholder").into()),
+            )
         };
 
         title.when(self.disabled, |this| {
