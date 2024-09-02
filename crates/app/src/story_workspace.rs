@@ -66,7 +66,7 @@ impl StoryWorkspace {
             });
             view.add_panel(
                 left_stack_panel.clone(),
-                Some(px(250.)),
+                Some(px(300.)),
                 weak_dock_area.clone(),
                 cx,
             );
