@@ -191,26 +191,16 @@ impl StackPanel {
         })
         .detach();
 
-        cx.spawn(|view, mut cx| {
-            let panel = panel.clone();
-            async move {
-                if let Some(view) = view.upgrade() {
-                    cx.update(|cx| {
-                        // If the panel is a TabPanel, set its parent to this.
-                        if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.clone()));
-                        } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
-                            stack_panel.update(cx, |stack_panel, _| {
-                                stack_panel.parent = Some(view.clone())
-                            });
-                        }
-                    })
-                } else {
-                    Ok(())
-                }
+        let view = cx.view().clone();
+        let panel1 = panel.clone();
+        cx.window_context().defer(move |cx| {
+            // If the panel is a TabPanel, set its parent to this.
+            if let Ok(tab_panel) = panel1.view().downcast::<TabPanel>() {
+                tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
+            } else if let Ok(stack_panel) = panel1.view().downcast::<Self>() {
+                stack_panel.update(cx, |stack_panel, _| stack_panel.parent = Some(view));
             }
-        })
-        .detach();
+        });
 
         let ix = if ix > self.panels.len() {
             self.panels.len()
