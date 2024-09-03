@@ -20,6 +20,7 @@ use crate::{
 
 use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
 
+#[derive(Debug)]
 pub enum PanelEvent {
     ZoomIn,
     ZoomOut,
@@ -449,7 +450,7 @@ impl TabPanel {
         let parent_axis = stack_panel.read(cx).axis;
         let ix = stack_panel
             .read(cx)
-            .index_of_panel(cx.view().clone())
+            .index_of_panel(&cx.view())
             .unwrap_or_default();
 
         if parent_axis.is_vertical() && placement.is_vertical() {
@@ -523,6 +524,12 @@ impl TabPanel {
 }
 
 impl Panel for TabPanel {
+    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
+        self.active_panel()
+            .map(|panel| panel.title(cx))
+            .unwrap_or("Empty Tab".into())
+    }
+
     fn closeable(&self, cx: &WindowContext) -> bool {
         self.active_panel()
             .map(|panel| panel.closeable(cx))

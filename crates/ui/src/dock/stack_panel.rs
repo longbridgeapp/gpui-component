@@ -23,7 +23,11 @@ pub struct StackPanel {
     panel_group: View<ResizablePanelGroup>,
 }
 
-impl Panel for StackPanel {}
+impl Panel for StackPanel {
+    fn title(&self, _cx: &gpui::WindowContext) -> gpui::SharedString {
+        "StackPanel".into()
+    }
+}
 
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
@@ -52,7 +56,7 @@ impl StackPanel {
     }
 
     /// Return the index of the panel.
-    pub fn index_of_panel<P>(&self, panel: View<P>) -> Option<usize>
+    pub(crate) fn index_of_panel<P>(&self, panel: &View<P>) -> Option<usize>
     where
         P: Panel,
     {
@@ -157,30 +161,33 @@ impl StackPanel {
         P: Panel,
     {
         // If the panel is already in the stack, return.
-        if let Some(_) = self.index_of_panel(panel.clone()) {
+        if let Some(_) = self.index_of_panel(&panel) {
             return;
         }
 
-        let dock_area = dock_area.clone();
         cx.subscribe(&panel, move |_, panel, event, cx| match event {
-            PanelEvent::ZoomIn | PanelEvent::ZoomOut => {
-                if let Some(dock) = dock_area.upgrade() {
-                    dock.update(cx, |dock, cx| {
-                        dock.toggle_zoom(panel.clone(), cx);
-                    });
-                }
+            PanelEvent::ZoomIn => {
+                let _ = dock_area.update(cx, |dock, cx| {
+                    dock.set_zoomed_in(panel.clone(), cx);
+                });
+            }
+            PanelEvent::ZoomOut => {
+                let _ = dock_area.update(cx, |dock, cx| dock.set_zoomed_out(cx));
             }
         })
         .detach();
 
         let view = cx.view().clone();
-        let panel1 = panel.clone();
-        cx.window_context().defer(move |cx| {
-            // If the panel is a TabPanel, set its parent to this.
-            if let Ok(tab_panel) = panel1.view().downcast::<TabPanel>() {
-                tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
-            } else if let Ok(stack_panel) = panel1.view().downcast::<Self>() {
-                stack_panel.update(cx, |stack_panel, _| stack_panel.parent = Some(view));
+        cx.window_context().defer({
+            let panel = panel.clone();
+
+            move |cx| {
+                // If the panel is a TabPanel, set its parent to this.
+                if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
+                    tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
+                } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
+                    stack_panel.update(cx, |stack_panel, _| stack_panel.parent = Some(view));
+                }
             }
         });
 
@@ -203,7 +210,7 @@ impl StackPanel {
     where
         P: Panel,
     {
-        if let Some(ix) = self.index_of_panel(panel) {
+        if let Some(ix) = self.index_of_panel(&panel) {
             self.panels.remove(ix);
             self.panel_group.update(cx, |view, cx| {
                 view.remove_child(ix, cx);
@@ -224,7 +231,7 @@ impl StackPanel {
     ) where
         P: Panel,
     {
-        if let Some(ix) = self.index_of_panel(old_panel) {
+        if let Some(ix) = self.index_of_panel(&old_panel) {
             self.panels[ix] = Arc::new(new_panel.clone());
             self.panel_group.update(cx, |view, cx| {
                 view.replace_child(Self::new_resizable_panel(new_panel.clone(), None), ix, cx);

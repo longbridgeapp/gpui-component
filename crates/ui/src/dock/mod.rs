@@ -3,7 +3,7 @@ mod stack_panel;
 mod tab_panel;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyWeakView, InteractiveElement as _, IntoElement,
+    actions, div, prelude::FluentBuilder, AnyView, InteractiveElement as _, IntoElement,
     ParentElement as _, Render, SharedString, Styled, View, ViewContext,
 };
 pub use panel::*;
@@ -16,7 +16,7 @@ actions!(dock, [ToggleZoom, ClosePanel]);
 pub struct DockArea {
     id: SharedString,
     root: View<StackPanel>,
-    zoom_view: Option<AnyWeakView>,
+    zoom_view: Option<AnyView>,
 }
 
 impl DockArea {
@@ -37,13 +37,13 @@ impl DockArea {
         self.id.clone()
     }
 
-    /// Toggles the zoom view.
-    pub fn toggle_zoom<P: Panel>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>) {
-        if self.zoom_view.is_some() {
-            self.zoom_view = None;
-        } else {
-            self.zoom_view = Some(panel.downgrade().into());
-        }
+    pub fn set_zoomed_in<P: Panel>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>) {
+        self.zoom_view = Some(panel.into());
+        cx.notify();
+    }
+
+    pub fn set_zoomed_out(&mut self, cx: &mut ViewContext<Self>) {
+        self.zoom_view = None;
         cx.notify();
     }
 
@@ -55,12 +55,13 @@ impl DockArea {
 
 impl Render for DockArea {
     fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
+        // println!("Rendering dock area");
         div()
             .id("dock-area")
             .size_full()
             .overflow_hidden()
             .map(|this| {
-                if let Some(zoom_view) = self.zoom_view.as_ref().and_then(|view| view.upgrade()) {
+                if let Some(zoom_view) = self.zoom_view.clone() {
                     this.child(zoom_view)
                 } else {
                     this.child(self.root.clone())
