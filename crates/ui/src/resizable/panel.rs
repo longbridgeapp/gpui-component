@@ -244,7 +244,7 @@ impl ResizablePanelGroup {
         for (i, panel) in self.panels.iter().enumerate() {
             let size = self.sizes[i];
             if size > px(0.) {
-                panel.update(cx, |this, _| this.changed_size = Some(size));
+                panel.update(cx, |this, _| this.size = Some(size));
             }
         }
     }
@@ -288,8 +288,10 @@ impl Render for ResizablePanelGroup {
 
 pub struct ResizablePanel {
     group: Option<View<ResizablePanelGroup>>,
+    /// Initial size is the size that the panel has when it is created.
+    initial_size: Option<Pixels>,
+    /// size is the size that the panel has when it is resized or ajusted by flex layout.
     size: Option<Pixels>,
-    changed_size: Option<Pixels>,
     axis: Axis,
     content_builder: Option<Rc<dyn Fn(&mut WindowContext) -> AnyElement>>,
     content_view: Option<AnyView>,
@@ -302,8 +304,8 @@ impl ResizablePanel {
     pub(super) fn new() -> Self {
         Self {
             group: None,
+            initial_size: None,
             size: None,
-            changed_size: None,
             axis: Axis::Horizontal,
             content_builder: None,
             content_view: None,
@@ -326,7 +328,7 @@ impl ResizablePanel {
     }
 
     pub fn size(mut self, size: Pixels) -> Self {
-        self.size = Some(size);
+        self.initial_size = Some(size);
         self
     }
 
@@ -334,6 +336,7 @@ impl ResizablePanel {
     fn update_size(&mut self, bounds: Bounds<Pixels>, cx: &mut ViewContext<Self>) {
         let new_size = bounds.size.along(self.axis);
         self.bounds = bounds;
+        self.size = Some(new_size);
 
         let panel_view = cx.view().clone();
         if let Some(group) = self.group.as_ref() {
@@ -362,15 +365,17 @@ impl Render for ResizablePanel {
             .flex_grow()
             .size_full()
             .relative()
-            .when(self.size.is_none(), |this| this.flex_shrink())
+            .when(self.initial_size.is_none(), |this| this.flex_shrink())
             .when(self.axis.is_vertical(), |this| this.min_h(PANEL_MIN_SIZE))
             .when(self.axis.is_horizontal(), |this| this.min_w(PANEL_MIN_SIZE))
-            .when_some(self.size, |this, size| {
-                this.flex_shrink_0()
+            .when_some(self.initial_size, |this, size| {
+                // The changed_size is None, that mean the initial size for the panel, so we need set flex_shrink_0
+                // To let it keep the initial size.
+                this.when(self.size.is_none(), |this| this.flex_shrink_0())
                     .when(self.axis.is_vertical(), |this| this.h(size))
                     .when(self.axis.is_horizontal(), |this| this.w(size))
             })
-            .when_some(self.changed_size, |this, size| {
+            .when_some(self.size, |this, size| {
                 this.when(self.axis.is_vertical(), |this| this.h(size))
                     .when(self.axis.is_horizontal(), |this| this.w(size))
             })
