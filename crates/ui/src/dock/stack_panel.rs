@@ -188,6 +188,7 @@ impl StackPanel {
                     });
                 }
             }
+            _ => {}
         })
         .detach();
 

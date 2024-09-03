@@ -23,6 +23,7 @@ use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
 pub enum PanelEvent {
     ZoomIn,
     ZoomOut,
+    Focus,
 }
 
 #[derive(Clone)]
@@ -76,8 +77,11 @@ impl TabPanel {
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
+        let focus_handle = cx.focus_handle();
+        cx.on_focus(&focus_handle, Self::on_focus).detach();
+
         Self {
-            focus_handle: cx.focus_handle(),
+            focus_handle,
             dock_area,
             stack_panel,
             panels: Vec::new(),
@@ -534,6 +538,10 @@ impl TabPanel {
         if let Some(panel) = self.active_panel() {
             self.remove_panel(panel, cx);
         }
+    }
+
+    fn on_focus(&mut self, cx: &mut ViewContext<Self>) {
+        cx.emit(PanelEvent::Focus);
     }
 }
 

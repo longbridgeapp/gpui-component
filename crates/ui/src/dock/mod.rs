@@ -3,9 +3,8 @@ mod stack_panel;
 mod tab_panel;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyWeakView, AppContext, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, ParentElement as _, Render, SharedString, Styled, View,
-    ViewContext,
+    actions, div, prelude::FluentBuilder, AnyWeakView, InteractiveElement as _, IntoElement,
+    ParentElement as _, Render, SharedString, Styled, View, ViewContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
@@ -16,7 +15,6 @@ actions!(dock, [ToggleZoom, ClosePanel]);
 /// The main area of the dock.
 pub struct DockArea {
     id: SharedString,
-    focus_handle: FocusHandle,
     root: View<StackPanel>,
     zoom_view: Option<AnyWeakView>,
 }
@@ -25,11 +23,10 @@ impl DockArea {
     pub fn new(
         id: impl Into<SharedString>,
         root: View<StackPanel>,
-        cx: &mut ViewContext<Self>,
+        _cx: &mut ViewContext<Self>,
     ) -> Self {
         Self {
             id: id.into(),
-            focus_handle: cx.focus_handle(),
             root,
             zoom_view: None,
         }
@@ -67,12 +64,6 @@ impl DockArea {
     /// Return the existing panel by type.
     pub fn panel<P: Panel>(&self, cx: &mut ViewContext<Self>) -> Option<View<P>> {
         self.root.read(cx).panel::<P>(cx)
-    }
-}
-
-impl FocusableView for DockArea {
-    fn focus_handle(&self, _: &AppContext) -> FocusHandle {
-        self.focus_handle.clone()
     }
 }
 
