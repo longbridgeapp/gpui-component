@@ -24,9 +24,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 
 pub trait PanelView: 'static + Send + Sync {
     /// The title of the panel, default is `None`.
-    fn title(&self, _cx: &WindowContext) -> SharedString {
-        t!("Dock.Unnamed").into()
-    }
+    fn title(&self, _cx: &WindowContext) -> SharedString;
 
     fn closeable(&self, cx: &WindowContext) -> bool;
 
