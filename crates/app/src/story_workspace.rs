@@ -55,34 +55,29 @@ impl StoryWorkspace {
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", stack_panel.clone(), cx));
         let weak_dock_area = dock_area.downgrade();
 
-        let center_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
-        let left_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
-        let right_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
+        let center_tab_panel = cx.new_view(|cx| TabPanel::new(None, weak_dock_area.clone(), cx));
+        let left_tab_panel = cx.new_view(|cx| {
+            let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
+        });
+
+        let right_tab_panel = cx.new_view(|cx| {
+            let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
+        });
 
         stack_panel.update(cx, |view, cx| {
-            let left_stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
-            left_stack_panel.update(cx, |view, cx| {
-                view.add_panel(left_tab_panel.clone(), None, weak_dock_area.clone(), cx);
-            });
             view.add_panel(
-                left_stack_panel.clone(),
+                left_tab_panel.clone(),
                 Some(px(300.)),
                 weak_dock_area.clone(),
                 cx,
             );
 
             view.add_panel(center_tab_panel.clone(), None, weak_dock_area.clone(), cx);
-
-            let right_stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
-            right_stack_panel.update(cx, |view, cx| {
-                view.add_panel(right_tab_panel.clone(), None, weak_dock_area.clone(), cx);
-            });
             view.add_panel(
-                right_stack_panel.clone(),
-                Some(px(340.)),
+                right_tab_panel.clone(),
+                Some(px(350.)),
                 weak_dock_area.clone(),
                 cx,
             );
@@ -213,7 +208,7 @@ impl StoryWorkspace {
             "Render SVG image and Chart",
             ImageStory::view(cx).into(),
             right_tab_panel.clone(),
-            None,
+            Some(Placement::Bottom),
             None,
             true,
             cx,
@@ -280,8 +275,8 @@ impl StoryWorkspace {
             "Calendar",
             "A calendar component.",
             CalendarStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
+            right_tab_panel.clone(),
+            Some(Placement::Bottom),
             None,
             true,
             cx,
