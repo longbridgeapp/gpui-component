@@ -71,11 +71,15 @@ pub struct TabPanel {
 }
 
 impl TabPanel {
-    pub fn new(dock_area: WeakView<DockArea>, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(
+        stack_panel: Option<View<StackPanel>>,
+        dock_area: WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
             dock_area,
-            stack_panel: None,
+            stack_panel,
             panels: Vec::new(),
             active_ix: 0,
             tab_bar_scroll_handle: ScrollHandle::new(),
@@ -451,7 +455,7 @@ impl TabPanel {
     ) {
         let dock_area = self.dock_area.clone();
         // wrap the panel in a TabPanel
-        let new_tab_panel = cx.new_view(|cx| Self::new(dock_area.clone(), cx));
+        let new_tab_panel = cx.new_view(|cx| Self::new(None, dock_area.clone(), cx));
         new_tab_panel.update(cx, |view, cx| {
             view.add_panel(panel, cx);
         });
