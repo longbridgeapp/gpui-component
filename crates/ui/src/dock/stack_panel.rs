@@ -9,9 +9,9 @@ use crate::{
 
 use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
-    VisualContext, WeakView, WindowContext,
+    VisualContext, WeakView,
 };
 use smallvec::SmallVec;
 
@@ -60,24 +60,6 @@ impl StackPanel {
         self.panels
             .iter()
             .position(|p| p.view().entity_id() == entity_id)
-    }
-
-    /// Return the existing panel view by type.
-    pub fn panel<P>(&self, cx: &WindowContext) -> Option<View<P>>
-    where
-        P: Panel,
-    {
-        self.panels.iter().find_map(|p| {
-            if let Ok(p) = p.view().downcast::<P>() {
-                Some(p)
-            } else {
-                if let Ok(tab) = p.view().downcast::<TabPanel>() {
-                    tab.read(cx).panel(cx)
-                } else {
-                    None
-                }
-            }
-        })
     }
 
     /// Add a panel at the end of the stack.
@@ -287,7 +269,7 @@ impl StackPanel {
 }
 
 impl FocusableView for StackPanel {
-    fn focus_handle(&self, _cx: &gpui::AppContext) -> FocusHandle {
+    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }

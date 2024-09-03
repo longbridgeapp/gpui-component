@@ -103,21 +103,6 @@ impl TabPanel {
         cx.notify();
     }
 
-    /// Return the existing panel view by type.
-    pub fn panel<P: Panel>(&self, cx: &WindowContext) -> Option<View<P>> {
-        self.panels.iter().find_map(|p| {
-            if let Ok(p) = p.view().downcast::<P>() {
-                Some(p)
-            } else {
-                if let Ok(stack) = p.view().downcast::<StackPanel>() {
-                    stack.read(cx).panel::<P>(cx)
-                } else {
-                    None
-                }
-            }
-        })
-    }
-
     /// Add a panel to the end of the tabs
     pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         if self
@@ -553,8 +538,7 @@ impl Panel for TabPanel {
     }
 }
 impl FocusableView for TabPanel {
-    fn focus_handle(&self, _cx: &AppContext) -> gpui::FocusHandle {
-        // FIXME: Delegate to the active panel
+    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
         self.focus_handle.clone()
     }
 }
