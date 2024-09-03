@@ -1,19 +1,19 @@
-use gpui::{
-    actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
-    ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
-    WindowContext,
-};
+use gpui::{actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext, WindowContext};
 
+use crate::section;
 use ui::{
     button::Button,
     checkbox::Checkbox,
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
-    v_flex, FocusableCycle, IconName, Sizable,
+    scroll::ScrollbarAxis,
+    v_flex,
+    FocusableCycle,
+    IconName,
+    Sizable,
+    StyledExt,
 };
-
-use crate::section;
 
 actions!(input_story, [Tab, TabPrev]);
 
@@ -207,6 +207,8 @@ impl Render for InputStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .key_context(CONTEXT)
+            .id("input-story")
+            .scrollable(cx.entity_id(), ScrollbarAxis::Vertical)
             .on_action(cx.listener(Self::tab))
             .on_action(cx.listener(Self::tab_prev))
             .size_full()

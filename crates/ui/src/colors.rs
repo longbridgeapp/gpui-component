@@ -55,18 +55,18 @@ impl ColorExt for Hsla {
     }
 }
 
-pub(crate) static DEFAULT_COLOR: once_cell::sync::Lazy<ShacnColors> =
+pub(crate) static DEFAULT_COLOR: once_cell::sync::Lazy<ShadcnColors> =
     once_cell::sync::Lazy::new(|| {
         serde_json::from_str(include_str!("../default-colors.json"))
             .expect("failed to parse default-json")
     });
 
-type ColorScales = HashMap<usize, ShacnColor>;
+type ColorScales = HashMap<usize, ShadcnColor>;
 
 mod color_scales {
     use std::collections::HashMap;
 
-    use super::{ColorScales, ShacnColor};
+    use super::{ColorScales, ShadcnColor};
 
     use serde::de::{Deserialize, Deserializer};
 
@@ -75,7 +75,7 @@ mod color_scales {
         D: Deserializer<'de>,
     {
         let mut map = HashMap::new();
-        for color in Vec::<ShacnColor>::deserialize(deserializer)? {
+        for color in Vec::<ShadcnColor>::deserialize(deserializer)? {
             map.insert(color.scale, color);
         }
         Ok(map)
@@ -83,9 +83,9 @@ mod color_scales {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-pub(crate) struct ShacnColors {
-    pub(crate) black: ShacnColor,
-    pub(crate) white: ShacnColor,
+pub(crate) struct ShadcnColors {
+    pub(crate) black: ShadcnColor,
+    pub(crate) white: ShadcnColor,
     #[serde(with = "color_scales")]
     pub(crate) slate: ColorScales,
     #[serde(with = "color_scales")]
@@ -133,7 +133,7 @@ pub(crate) struct ShacnColors {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Deserialize)]
-pub(crate) struct ShacnColor {
+pub(crate) struct ShadcnColor {
     #[serde(default)]
     pub(crate) scale: usize,
     #[serde(deserialize_with = "from_hsa_channel", alias = "hslChannel")]
