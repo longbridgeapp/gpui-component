@@ -1,10 +1,14 @@
-use gpui::{px, rems, ParentElement, Render, Styled, View, VisualContext as _, WindowContext};
+use gpui::{
+    px, rems, AnyView, ParentElement, Render, Styled, View, VisualContext as _, WindowContext,
+};
 use ui::{
     button::{Button, ButtonStyle},
     h_flex,
     theme::ActiveTheme as _,
     v_flex, Icon, IconName,
 };
+
+use crate::Story;
 
 pub struct IconStory {}
 
@@ -15,6 +19,20 @@ impl IconStory {
 
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| Self::new(cx))
+    }
+}
+
+impl Story for IconStory {
+    fn title() -> &'static str {
+        "Icon"
+    }
+
+    fn description() -> &'static str {
+        "Icon is a visual representation of an action or an object."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        cx.new_view(|cx| Self::new(cx)).into()
     }
 }
 

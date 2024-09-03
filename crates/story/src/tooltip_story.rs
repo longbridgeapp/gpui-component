@@ -12,6 +12,8 @@ use ui::{
     v_flex,
 };
 
+use crate::Story;
+
 pub struct TooltipStory;
 
 impl TooltipStory {
@@ -21,6 +23,20 @@ impl TooltipStory {
 
     fn new(_: &mut WindowContext) -> Self {
         Self {}
+    }
+}
+
+impl Story for TooltipStory {
+    fn title() -> &'static str {
+        "Tooltip"
+    }
+
+    fn description() -> &'static str {
+        "Displays a short message when users hover over an element."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
     }
 }
 

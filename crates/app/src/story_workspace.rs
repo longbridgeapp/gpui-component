@@ -55,12 +55,9 @@ impl StoryWorkspace {
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", stack_panel.clone(), cx));
         let weak_dock_area = dock_area.downgrade();
 
-        let center_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
-        let left_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
-        let right_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
+        let center_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let left_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let right_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
 
         stack_panel.update(cx, |view, cx| {
             let left_stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
@@ -88,34 +85,13 @@ impl StoryWorkspace {
             );
         });
 
-        StoryContainer::add_panel(
-            "Buttons",
-            "Displays a button or a component that looks like a button.",
-            ButtonStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            false,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<ButtonStory>(center_tab_panel.clone(), None, None, false, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Input",
-            "A control that allows the user to input text.",
-            InputStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            false,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<InputStory>(center_tab_panel.clone(), None, None, false, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Text",
-            "Links, paragraphs, checkboxes, and more.",
-            TextStory::view(cx).into(),
+        StoryContainer::add_panel::<TextStory>(
             center_tab_panel.clone(),
             Some(Placement::Bottom),
             Some(px(200.)),
@@ -124,58 +100,19 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
-            "Switch",
-            "A control that allows the user to toggle between two states.",
-            SwitchStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<SwitchStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Dropdowns",
-            "Displays a list of options for the user to pick from—triggered by a button.",
-            DropdownStory::new(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<DropdownStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Modal",
-            "Modal & Drawer use examples",
-            ModalStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<ModalStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Popup",
-            "A popup displays content on top of the main page.",
-            PopupStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<PopupStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Tooltip",
-            "Displays a short message when users hover over an element.",
-            TooltipStory::view(cx).into(),
+        StoryContainer::add_panel::<TooltipStory>(
             right_tab_panel.clone(),
             Some(Placement::Top),
             None,
@@ -184,22 +121,10 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
-            "List",
-            "A list displays a series of items.",
-            ListStory::view(cx).into(),
-            left_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<ListStory>(left_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Icon",
-            "Icon use examples",
-            IconStory::view(cx).into(),
+        StoryContainer::add_panel::<IconStory>(
             left_tab_panel.clone(),
             Some(Placement::Bottom),
             Some(px(200.)),
@@ -208,17 +133,8 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
-            "Image",
-            "Render SVG image and Chart",
-            ImageStory::view(cx).into(),
-            right_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<ImageStory>(right_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
         // StoryContainer::add_panel(
         //     WebViewStory::view(cx).into(),
@@ -228,22 +144,10 @@ impl StoryWorkspace {
         //     cx,
         // );
 
-        StoryContainer::add_panel(
-            "Table",
-            "Powerful table and datagrids built.",
-            TableStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<TableStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
-        StoryContainer::add_panel(
-            "Progress",
-            "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
-            ProgressStory::view(cx).into(),
+        StoryContainer::add_panel::<ProgressStory>(
             center_tab_panel.clone(),
             Some(Placement::Bottom),
             Some(px(200.)),
@@ -252,10 +156,10 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
-            "Resizable",
-            "Accessible resizable panel groups and layouts with keyboard support.",
-            ResizableStory::view(cx).into(),
+        StoryContainer::add_panel::<ResizableStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
+
+        StoryContainer::add_panel::<ScrollableStory>(
             center_tab_panel.clone(),
             None,
             None,
@@ -264,29 +168,8 @@ impl StoryWorkspace {
         )
         .detach();
 
-        StoryContainer::add_panel(
-            "Scrollable",
-            "A scrollable area with scroll bar.",
-            ScrollableStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
-
-        StoryContainer::add_panel(
-            "Calendar",
-            "A calendar component.",
-            CalendarStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            cx,
-        )
-        .detach();
+        StoryContainer::add_panel::<CalendarStory>(center_tab_panel.clone(), None, None, true, cx)
+            .detach();
 
         let locale_selector = cx.new_view(LocaleSelector::new);
 

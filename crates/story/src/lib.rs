@@ -42,10 +42,10 @@ use gpui::{
     StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use ui::{
     divider::Divider,
-    dock::{Panel, PanelEvent, TabPanel},
+    dock::{Panel, PanelEvent, PanelId, PanelView, TabPanel},
     h_flex,
     label::Label,
     popup_menu::PopupMenu,
@@ -77,7 +77,18 @@ pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {
         .child(div().flex_none().w_full().child(title))
 }
 
+pub trait Story {
+    fn klass() -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
+    fn title() -> &'static str;
+    fn description() -> &'static str;
+    fn new_view(cx: &mut WindowContext) -> AnyView;
+}
+
 pub struct StoryContainer {
+    panel_id: PanelId,
     focus_handle: gpui::FocusHandle,
     name: SharedString,
     description: SharedString,
@@ -85,6 +96,7 @@ pub struct StoryContainer {
     height: Option<gpui::Pixels>,
     story: Option<AnyView>,
     closeable: bool,
+    story_klass: Option<SharedString>,
 }
 
 impl FocusableView for StoryContainer {
@@ -101,43 +113,43 @@ pub enum ContainerEvent {
 impl EventEmitter<ContainerEvent> for StoryContainer {}
 
 impl StoryContainer {
-    pub fn new(
-        name: impl Into<SharedString>,
-        description: impl Into<SharedString>,
-        closeable: bool,
-        cx: &mut WindowContext,
-    ) -> Self {
+    pub fn new(closeable: bool, cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
 
         Self {
+            panel_id: PanelId::new(),
             focus_handle,
-            name: name.into(),
-            description: description.into(),
+            name: SharedString::default(),
+            description: SharedString::default(),
             width: None,
             height: None,
             story: None,
+            story_klass: None,
             closeable,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn add_panel(
-        name: impl Into<SharedString>,
-        description: impl Into<SharedString>,
-        story: AnyView,
+    pub fn add_panel<S: Story>(
         tab_panel: View<TabPanel>,
         placement: Option<Placement>,
         size: Option<Pixels>,
         closeable: bool,
         cx: &mut WindowContext,
     ) -> Task<Result<View<Self>>> {
-        let name = name.into();
-        let description = description.into();
+        let name = S::title();
+        let description = S::description();
+        let story = S::new_view(cx);
+        let story_klass = S::klass();
 
         cx.spawn(|mut cx| async move {
             tab_panel.update(&mut cx, |panel, cx| {
-                let view =
-                    cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
+                let view = cx.new_view(|cx| {
+                    let mut story = Self::new(closeable, cx).story(story, story_klass);
+                    story.name = name.into();
+                    story.description = description.into();
+                    story
+                });
                 if let Some(placement) = placement {
                     panel.add_panel_at(Arc::new(view.clone()), placement, size, cx);
                 } else {
@@ -158,13 +170,37 @@ impl StoryContainer {
         self
     }
 
-    pub fn story(mut self, story: AnyView) -> Self {
+    pub fn story(mut self, story: AnyView, story_klass: impl Into<SharedString>) -> Self {
         self.story = Some(story);
+        self.story_klass = Some(story_klass.into());
         self
     }
 }
 
 impl Panel for StoryContainer {
+    fn panel_name() -> &'static str {
+        "StoryContainer"
+    }
+
+    fn panel_id(&self) -> PanelId {
+        self.panel_id
+    }
+
+    fn deserialize(
+        _: View<ui::dock::DockArea>,
+        panel_id: PanelId,
+        cx: &mut ViewContext<TabPanel>,
+    ) -> Task<Result<Box<dyn PanelView>>> {
+        if let Some(data) = LocalStorage::get_panel(panel_id) {
+            if let Ok(container) = Self::deserialize_from(&data, cx) {
+                let view = cx.new_view(|_| container);
+                return Task::Ready(Some(Ok(Box::new(view))));
+            }
+        }
+
+        Task::Ready(None)
+    }
+
     fn title(&self, _cx: &WindowContext) -> SharedString {
         self.name.clone()
     }
@@ -175,6 +211,64 @@ impl Panel for StoryContainer {
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.menu("Panel Info", Box::new(PanelInfo))
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct StoryContainerData {
+    panel_id: PanelId,
+    kind: String,
+}
+
+impl StoryContainer {
+    fn serialize_to(&self) -> Result<String> {
+        let data = StoryContainerData {
+            panel_id: self.panel_id,
+            kind: self.story_klass.as_ref().unwrap().to_string(),
+        };
+
+        Ok(serde_json::to_string(&data)?)
+    }
+
+    fn deserialize_from(data: &str, cx: &mut WindowContext) -> Result<Self> {
+        let data = serde_json::from_str::<StoryContainerData>(data)?;
+
+        macro_rules! story_for {
+            ($p:ident) => {
+                (
+                    $p::title(),
+                    $p::description(),
+                    $p::new_view(cx),
+                    $p::klass(),
+                )
+            };
+        }
+
+        let (title, description, view, klass) = match data.kind.as_str() {
+            "ButtonStory" => story_for!(ButtonStory),
+            "CalendarStory" => story_for!(CalendarStory),
+            "DropdownStory" => story_for!(DropdownStory),
+            "IconStory" => story_for!(IconStory),
+            "ImageStory" => story_for!(ImageStory),
+            "InputStory" => story_for!(InputStory),
+            "ListStory" => story_for!(ListStory),
+            "ModalStory" => story_for!(ModalStory),
+            "PopupStory" => story_for!(PopupStory),
+            "ProgressStory" => story_for!(ProgressStory),
+            "ResizableStory" => story_for!(ResizableStory),
+            "ScrollableStory" => story_for!(ScrollableStory),
+            "SwitchStory" => story_for!(SwitchStory),
+            "TableStory" => story_for!(TableStory),
+            "TextStory" => story_for!(TextStory),
+            "TooltipStory" => story_for!(TooltipStory),
+            _ => return Err(anyhow!("Unknown story kind: {}", data.kind)),
+        };
+
+        let mut container = Self::new(false, cx).story(view, klass);
+        container.name = title.into();
+        container.description = description.into();
+
+        Ok(container)
     }
 }
 
@@ -204,5 +298,23 @@ impl Render for StoryContainer {
                         .child(story),
                 )
             })
+    }
+}
+
+pub struct LocalStorage {}
+
+impl LocalStorage {
+    fn path(key: &str) -> std::path::PathBuf {
+        std::env::home_dir().unwrap().join(".gpui-story").join(key)
+    }
+
+    fn get_panel(panel_id: PanelId) -> Option<String> {
+        let key = Self::path(&format!("panel-{}", panel_id));
+        std::fs::read_to_string(key).ok()
+    }
+
+    fn set_panel(panel_id: PanelId, value: String) -> Result<()> {
+        let key = Self::path(&format!("panel-{}", panel_id));
+        std::fs::write(key, value).map_err(Into::into)
     }
 }

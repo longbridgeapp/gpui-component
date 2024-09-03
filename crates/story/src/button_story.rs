@@ -1,6 +1,6 @@
 use gpui::{
-    px, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
-    VisualContext as _, WindowContext,
+    px, AnyView, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 use ui::{
@@ -12,7 +12,7 @@ use ui::{
     v_flex, Disableable as _, Icon, IconName, Selectable as _, Sizable as _,
 };
 
-use crate::section;
+use crate::{section, Story};
 
 pub struct ButtonStory {
     disabled: bool,
@@ -33,6 +33,20 @@ impl ButtonStory {
 
     fn on_click(ev: &ClickEvent, _: &mut WindowContext) {
         println!("Button clicked! {:?}", ev);
+    }
+}
+
+impl Story for ButtonStory {
+    fn title() -> &'static str {
+        "Button"
+    }
+
+    fn description() -> &'static str {
+        "A button is a control that a user can click to perform an action."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        ButtonStory::view(cx).into()
     }
 }
 

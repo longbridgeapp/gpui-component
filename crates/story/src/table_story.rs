@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use fake::Fake;
 use gpui::{
-    div, img, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer, View,
-    ViewContext, VisualContext as _, WindowContext,
+    div, img, AnyView, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer,
+    View, ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
     checkbox::Checkbox,
@@ -15,6 +15,8 @@ use ui::{
     theme::ActiveTheme as _,
     v_flex, Icon, IconName, Selectable,
 };
+
+use crate::Story;
 
 struct Customer {
     id: usize,
@@ -429,6 +431,20 @@ impl TableStory {
             TableEvent::SelectCol(ix) => println!("Select col: {}", ix),
             TableEvent::SelectRow(ix) => println!("Select row: {}", ix),
         }
+    }
+}
+
+impl Story for TableStory {
+    fn title() -> &'static str {
+        "Table"
+    }
+
+    fn description() -> &'static str {
+        "Powerful table and datagrids built."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
     }
 }
 

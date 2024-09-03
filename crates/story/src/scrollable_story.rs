@@ -2,14 +2,17 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, px, Entity, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
-    StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext, WindowContext,
+    canvas, div, px, AnyView, Entity, InteractiveElement, ParentElement, Pixels, Render,
+    ScrollHandle, StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext,
+    WindowContext,
 };
 use ui::button::Button;
 use ui::divider::Divider;
 use ui::scroll::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use ui::theme::ActiveTheme;
 use ui::{h_flex, v_flex, StyledExt as _};
+
+use crate::Story;
 
 pub struct ScrollableStory {
     scroll_handle: ScrollHandle,
@@ -57,6 +60,20 @@ impl ScrollableStory {
     pub fn change_axis(&mut self, axis: ScrollbarAxis, cx: &mut ViewContext<Self>) {
         self.axis = axis;
         cx.notify();
+    }
+}
+
+impl Story for ScrollableStory {
+    fn title() -> &'static str {
+        "Scrollable"
+    }
+
+    fn description() -> &'static str {
+        "A scrollable container with a scrollbar."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
     }
 }
 

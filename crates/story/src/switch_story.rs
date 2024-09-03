@@ -1,5 +1,5 @@
 use gpui::{
-    Div, IntoElement, ParentElement, Render, SharedString, Styled, View, ViewContext,
+    AnyView, Div, IntoElement, ParentElement, Render, SharedString, Styled, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
@@ -10,6 +10,8 @@ use ui::{
     theme::ActiveTheme,
     v_flex, Disableable as _, Sizable, StyledExt,
 };
+
+use crate::Story;
 
 #[derive(Default)]
 pub struct SwitchStory {
@@ -29,6 +31,20 @@ impl SwitchStory {
             switch2: false,
             switch3: true,
         }
+    }
+}
+
+impl Story for SwitchStory {
+    fn title() -> &'static str {
+        "Switch"
+    }
+
+    fn description() -> &'static str {
+        "A control that allows the user to toggle between two states."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
     }
 }
 

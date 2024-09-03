@@ -2,9 +2,9 @@ use std::{sync::Arc, time::Duration};
 
 use fake::Fake;
 use gpui::{
-    div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView, IntoElement, ParentElement,
-    Render, SharedString, Styled, Task, Timer, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    div, prelude::FluentBuilder as _, px, AnyView, FocusHandle, FocusableView, IntoElement,
+    ParentElement, Render, SharedString, Styled, Task, Timer, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
@@ -18,6 +18,8 @@ use ui::{
     theme::ActiveTheme as _,
     v_flex, ContextModal as _, Icon, IconName, Placement,
 };
+
+use crate::Story;
 
 pub struct ListItemDeletegate {
     story: WeakView<ModalStory>,
@@ -149,6 +151,20 @@ pub struct ModalStory {
     modal_overlay: bool,
     model_show_close: bool,
     model_padding: bool,
+}
+
+impl Story for ModalStory {
+    fn title() -> &'static str {
+        "Modal"
+    }
+
+    fn description() -> &'static str {
+        "Modal and drawer examples."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl ModalStory {

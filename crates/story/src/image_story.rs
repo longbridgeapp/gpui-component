@@ -1,5 +1,9 @@
-use gpui::{px, ParentElement as _, Render, Styled, View, VisualContext as _, WindowContext};
+use gpui::{
+    px, AnyView, ParentElement as _, Render, Styled, View, VisualContext as _, WindowContext,
+};
 use ui::{h_flex, svg_img, v_flex, SvgImg};
+
+use crate::Story;
 
 const GOOGLE_LOGO: &str = include_str!("./fixtures/google.svg");
 const PIE_JSON: &str = include_str!("./fixtures/pie.json");
@@ -8,6 +12,20 @@ pub struct ImageStory {
     google_logo: SvgImg,
     pie_chart: SvgImg,
     inbox_img: SvgImg,
+}
+
+impl Story for ImageStory {
+    fn title() -> &'static str {
+        "Image"
+    }
+
+    fn description() -> &'static str {
+        "Image and SVG rendering"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl ImageStory {

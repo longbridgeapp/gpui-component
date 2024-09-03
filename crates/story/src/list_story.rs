@@ -2,9 +2,9 @@ use core::time;
 
 use fake::Fake;
 use gpui::{
-    actions, div, px, ElementId, FocusHandle, FocusableView, InteractiveElement, IntoElement,
-    ParentElement, Render, RenderOnce, Styled, Task, Timer, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, div, px, AnyView, ElementId, FocusHandle, FocusableView, InteractiveElement,
+    IntoElement, ParentElement, Render, RenderOnce, Styled, Task, Timer, View, ViewContext,
+    VisualContext, WindowContext,
 };
 
 use ui::{
@@ -15,6 +15,8 @@ use ui::{
     theme::{hsl, ActiveTheme, Colorize as _},
     v_flex,
 };
+
+use crate::Story;
 
 actions!(list_story, [SelectedCompany]);
 
@@ -194,6 +196,20 @@ pub struct ListStory {
     focus_handle: FocusHandle,
     company_list: View<List<CompanyListDelegate>>,
     selected_company: Option<Company>,
+}
+
+impl Story for ListStory {
+    fn title() -> &'static str {
+        "List"
+    }
+
+    fn description() -> &'static str {
+        "A list displays a series of items."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl ListStory {

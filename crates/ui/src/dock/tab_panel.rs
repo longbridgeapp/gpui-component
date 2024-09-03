@@ -1,10 +1,11 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use anyhow::Result;
 use gpui::{
     div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
     DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
     IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
-    View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    Task, View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -18,7 +19,7 @@ use crate::{
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
 };
 
-use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
+use super::{ClosePanel, DockArea, Panel, PanelId, PanelView, StackPanel, ToggleZoom};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -57,6 +58,7 @@ impl Render for DragPanel {
 }
 
 pub struct TabPanel {
+    panel_id: PanelId,
     focus_handle: FocusHandle,
     dock_area: WeakView<DockArea>,
     stack_panel: Option<View<StackPanel>>,
@@ -71,15 +73,12 @@ pub struct TabPanel {
 }
 
 impl TabPanel {
-    pub fn new(
-        stack_panel: Option<View<StackPanel>>,
-        dock_area: WeakView<DockArea>,
-        cx: &mut ViewContext<Self>,
-    ) -> Self {
+    pub fn new(dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> Self {
         Self {
+            panel_id: PanelId::new(),
             focus_handle: cx.focus_handle(),
             dock_area,
-            stack_panel,
+            stack_panel: None,
             panels: Vec::new(),
             active_ix: 0,
             tab_bar_scroll_handle: ScrollHandle::new(),
@@ -455,7 +454,7 @@ impl TabPanel {
     ) {
         let dock_area = self.dock_area.clone();
         // wrap the panel in a TabPanel
-        let new_tab_panel = cx.new_view(|cx| Self::new(None, dock_area.clone(), cx));
+        let new_tab_panel = cx.new_view(|cx| Self::new(dock_area.clone(), cx));
         new_tab_panel.update(cx, |view, cx| {
             view.add_panel(panel, cx);
         });
@@ -551,7 +550,72 @@ impl Panel for TabPanel {
             menu
         }
     }
+
+    fn panel_name() -> &'static str {
+        "TabPanel"
+    }
+
+    fn panel_id(&self) -> super::PanelId {
+        self.panel_id
+    }
+
+    fn serialize(
+        &self,
+        dock_area: View<DockArea>,
+        cx: &mut ViewContext<TabPanel>,
+    ) -> Task<Result<()>> {
+        let panel_id = self.panel_id;
+        let state_key = format!("panel:{}", panel_id);
+
+        // let panels: Vec<HashMap<PanelId, String>> = self
+        //     .panels
+        //     .iter()
+        //     .map(|view| {
+        //         let panel_id = view.panel_id(cx);
+        //         HashMap::from([(panel_id, view.panel_name().to_string())])
+        //     })
+        //     .collect();
+
+        // let data = serde_json::to_string(&panels).unwrap();
+
+        // dock_area.update(cx, |view, _| view.write_state(&state_key, &data))
+        //
+        Task::Ready(None)
+    }
+
+    fn deserialize(
+        doc_area: View<DockArea>,
+        panel_id: PanelId,
+        cx: &mut ViewContext<TabPanel>,
+    ) -> Task<Result<Box<dyn PanelView>>> {
+        let state_key = format!("panel:{}", panel_id);
+
+        // cx.spawn(|_, mut cx| async move {
+        //     cx.update(|cx| async move {
+        //         let mut tab_panel = TabPanel::new(doc_area.downgrade(), cx);
+        //         tab_panel.panel_id = panel_id;
+
+        //         let panels = match doc_area.read(cx).read_state(&state_key).await {
+        //             Ok(data) => {
+        //                 serde_json::from_str::<Vec<HashMap<PanelId, String>>>(&data).unwrap()
+        //             }
+        //             _ => vec![],
+        //         };
+
+        //         for panel_id in panels {
+        //             let panel =
+        //                 cx.new_view(|cx| PanelView::deserialize(doc_area.clone(), panel_id, cx));
+        //             tab_panel.add_panel(panel, cx);
+        //         }
+
+        //         Some(cx.new_view(|_| tab_panel))
+        //     })
+        // });
+
+        Task::Ready(None)
+    }
 }
+
 impl FocusableView for TabPanel {
     fn focus_handle(&self, _cx: &AppContext) -> gpui::FocusHandle {
         // FIXME: Delegate to the active panel

@@ -1,5 +1,5 @@
 use gpui::{
-    div, px, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext,
+    div, px, AnyView, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
 use ui::{
@@ -13,12 +13,28 @@ use ui::{
     v_flex, IconName, Sizable,
 };
 
+use crate::Story;
+
 pub struct ProgressStory {
     value: f32,
     slider1: View<Slider>,
     slider1_value: f32,
     slider2: View<Slider>,
     slider2_value: f32,
+}
+
+impl Story for ProgressStory {
+    fn title() -> &'static str {
+        "Progress"
+    }
+
+    fn description() -> &'static str {
+        "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl ProgressStory {

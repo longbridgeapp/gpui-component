@@ -1,12 +1,14 @@
 use gpui::{
-    div, px, AnyElement, IntoElement, ParentElement as _, Render, SharedString, Styled, View,
-    ViewContext, VisualContext, WindowContext,
+    div, px, AnyElement, AnyView, IntoElement, ParentElement as _, Render, SharedString, Styled,
+    View, ViewContext, VisualContext, WindowContext,
 };
 use ui::theme::ActiveTheme;
 use ui::{
     resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanelGroup},
     v_flex,
 };
+
+use crate::Story;
 
 pub struct ResizableStory {
     group1: View<ResizablePanelGroup>,
@@ -84,6 +86,20 @@ impl ResizableStory {
                 )
         });
         Self { group1, group2 }
+    }
+}
+
+impl Story for ResizableStory {
+    fn title() -> &'static str {
+        "Resizable"
+    }
+
+    fn description() -> &'static str {
+        "A group to manage resizable panels in horizontal and vertical directions."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
     }
 }
 

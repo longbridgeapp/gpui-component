@@ -1,6 +1,6 @@
 use chrono::Days;
 use gpui::{
-    px, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
+    px, AnyView, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 use ui::{
@@ -8,12 +8,28 @@ use ui::{
     v_flex, Sizable as _,
 };
 
+use crate::Story;
+
 pub struct CalendarStory {
     date_picker: View<DatePicker>,
     date_picker_small: View<DatePicker>,
     date_picker_large: View<DatePicker>,
     date_picker_value: Option<String>,
     date_range_picker: View<DatePicker>,
+}
+
+impl Story for CalendarStory {
+    fn title() -> &'static str {
+        "Calendar"
+    }
+
+    fn description() -> &'static str {
+        "A date picker and calendar component."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl CalendarStory {

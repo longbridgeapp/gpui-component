@@ -1,6 +1,6 @@
 use gpui::{
-    actions, px, AppContext, InteractiveElement, IntoElement, KeyBinding, ParentElement, Render,
-    SharedString, Styled, View, ViewContext, VisualContext, WindowContext,
+    actions, px, AnyView, AppContext, InteractiveElement, IntoElement, KeyBinding, ParentElement,
+    Render, SharedString, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -9,6 +9,8 @@ use ui::{
     theme::ActiveTheme,
     v_flex, FocusableCycle, IconName, Sizable,
 };
+
+use crate::Story;
 
 actions!(dropdown_story, [Tab, TabPrev]);
 
@@ -53,6 +55,20 @@ pub struct DropdownStory {
     simple_dropdown2: View<Dropdown<Vec<SharedString>>>,
     simple_dropdown3: View<Dropdown<Vec<SharedString>>>,
     disabled_dropdown: View<Dropdown<Vec<SharedString>>>,
+}
+
+impl Story for DropdownStory {
+    fn title() -> &'static str {
+        "Dropdown"
+    }
+
+    fn description() -> &'static str {
+        "Displays a list of options for the user to pick from—triggered by a button."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::new(cx).into()
+    }
 }
 
 impl DropdownStory {

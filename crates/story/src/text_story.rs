@@ -1,5 +1,5 @@
 use gpui::{
-    div, px, rems, IntoElement, ParentElement, Render, Styled, View, ViewContext,
+    div, px, rems, AnyView, IntoElement, ParentElement, Render, Styled, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 
@@ -14,7 +14,7 @@ use ui::{
     v_flex, Disableable as _, IconName, StyledExt,
 };
 
-use crate::section;
+use crate::{section, Story};
 
 pub struct TextStory {
     check1: bool,
@@ -44,6 +44,20 @@ impl TextStory {
     #[allow(unused)]
     fn on_click(checked: &bool, cx: &mut WindowContext) {
         println!("Check value changed: {}", checked);
+    }
+}
+
+impl Story for TextStory {
+    fn title() -> &'static str {
+        "Text"
+    }
+
+    fn description() -> &'static str {
+        "Links, paragraphs, checkboxes, and more."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
     }
 }
 

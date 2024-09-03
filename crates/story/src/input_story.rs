@@ -1,6 +1,6 @@
 use gpui::{
-    actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
-    ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
+    actions, div, px, AnyView, AppContext, FocusHandle, InteractiveElement, IntoElement,
+    KeyBinding, ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
 
@@ -13,7 +13,7 @@ use ui::{
     v_flex, FocusableCycle, IconName, Sizable,
 };
 
-use crate::section;
+use crate::{section, Story};
 
 actions!(input_story, [Tab, TabPrev]);
 
@@ -42,6 +42,20 @@ pub struct InputStory {
     otp_input_small: View<OtpInput>,
     otp_input_large: View<OtpInput>,
     opt_input_sized: View<OtpInput>,
+}
+
+impl Story for InputStory {
+    fn title() -> &'static str {
+        "Input"
+    }
+
+    fn description() -> &'static str {
+        "A control that allows the user to input text."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl InputStory {

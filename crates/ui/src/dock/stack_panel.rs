@@ -1,21 +1,22 @@
 use std::sync::Arc;
 
+use super::{DockArea, Panel, PanelEvent, PanelId, PanelView, TabPanel};
 use crate::{
     h_flex,
     resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
     theme::ActiveTheme,
     Placement,
 };
-
-use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
+use anyhow::Result;
 use gpui::{
     prelude::FluentBuilder as _, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
-    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
+    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, Task, View, ViewContext,
     VisualContext, WeakView, WindowContext,
 };
 use smallvec::SmallVec;
 
 pub struct StackPanel {
+    panel_id: PanelId,
     pub(super) parent: Option<View<StackPanel>>,
     pub(super) axis: Axis,
     focus_handle: FocusHandle,
@@ -23,11 +24,41 @@ pub struct StackPanel {
     panel_group: View<ResizablePanelGroup>,
 }
 
-impl Panel for StackPanel {}
+impl Panel for StackPanel {
+    fn panel_name() -> &'static str {
+        "StackPanel"
+    }
+
+    fn panel_id(&self) -> PanelId {
+        self.panel_id
+    }
+
+    fn deserialize(
+        dock_area: View<DockArea>,
+        panel_id: PanelId,
+        cx: &mut ViewContext<TabPanel>,
+    ) -> Task<Result<Box<dyn PanelView>>> {
+        let panel = cx.new_view(|cx| {
+            let mut this = Self::new(Axis::Vertical, cx);
+            this.panel_id = panel_id;
+            this
+        });
+        Task::Ready(Some(Ok(Box::new(panel))))
+    }
+
+    fn serialize(
+        &self,
+        dock_area: View<DockArea>,
+        cx: &mut ViewContext<TabPanel>,
+    ) -> Task<Result<()>> {
+        Task::Ready(None)
+    }
+}
 
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
         Self {
+            panel_id: PanelId::new(),
             axis,
             parent: None,
             focus_handle: cx.focus_handle(),
@@ -191,26 +222,16 @@ impl StackPanel {
         })
         .detach();
 
-        cx.spawn(|view, mut cx| {
-            let panel = panel.clone();
-            async move {
-                if let Some(view) = view.upgrade() {
-                    cx.update(|cx| {
-                        // If the panel is a TabPanel, set its parent to this.
-                        if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                            tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.clone()));
-                        } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
-                            stack_panel.update(cx, |stack_panel, _| {
-                                stack_panel.parent = Some(view.clone())
-                            });
-                        }
-                    })
-                } else {
-                    Ok(())
-                }
+        let view = cx.view().clone();
+        let panel1 = panel.clone();
+        cx.window_context().defer(move |cx| {
+            // If the panel is a TabPanel, set its parent to this.
+            if let Ok(tab_panel) = panel1.view().downcast::<TabPanel>() {
+                tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
+            } else if let Ok(stack_panel) = panel1.view().downcast::<Self>() {
+                stack_panel.update(cx, |stack_panel, _| stack_panel.parent = Some(view));
             }
-        })
-        .detach();
+        });
 
         let ix = if ix > self.panels.len() {
             self.panels.len()

@@ -1,8 +1,8 @@
 use gpui::{
-    actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton,
-    MouseDownEvent, ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, div, impl_actions, px, AnchorCorner, AnyView, AppContext, DismissEvent, Element,
+    EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding,
+    MouseButton, MouseDownEvent, ParentElement as _, Render, Styled as _, View, ViewContext,
+    VisualContext, WindowContext,
 };
 use serde::Deserialize;
 use ui::{
@@ -16,6 +16,8 @@ use ui::{
     switch::Switch,
     v_flex, IconName, Sizable,
 };
+
+use crate::Story;
 
 #[derive(Clone, PartialEq, Deserialize)]
 struct Info(usize);
@@ -77,6 +79,20 @@ pub struct PopupStory {
     form: View<Form>,
     message: String,
     window_mode: bool,
+}
+
+impl Story for PopupStory {
+    fn title() -> &'static str {
+        "Popup"
+    }
+
+    fn description() -> &'static str {
+        "A popup displays content on top of the main page."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl PopupStory {
@@ -199,9 +215,10 @@ impl Render for PopupStory {
                                                         .small(),
                                                 )
                                                 .into_any()
-                                        }).max_w(px(600.))
+                                        })
+                                        .max_w(px(600.))
                                     })
-                                })
+                                }),
                         ),
                     )
                     .child(
@@ -209,7 +226,7 @@ impl Render for PopupStory {
                             .anchor(AnchorCorner::TopRight)
                             .trigger(Button::new("info-top-right", cx).label("Top Right"))
                             .content(|cx| {
-                                cx.new_view(|cx|
+                                cx.new_view(|cx| {
                                     PopoverContent::new(cx, |cx| {
                                         v_flex()
                                             .gap_4()
@@ -223,7 +240,8 @@ impl Render for PopupStory {
                                                     .small(),
                                             )
                                             .into_any()
-                                    }))
+                                    })
+                                })
                             }),
                     ),
             )
@@ -284,11 +302,13 @@ impl Render for PopupStory {
                                         .w(px(300.)),
                                 )
                                 .content(|cx| {
-                                    cx.new_view(|cx|
+                                    cx.new_view(|cx| {
                                         PopoverContent::new(cx, |cx| {
                                             v_flex()
                                                 .gap_4()
-                                                .child("Hello, this is a Popover on the Bottom Right.")
+                                                .child(
+                                                    "Hello, this is a Popover on the Bottom Right.",
+                                                )
                                                 .child(Divider::horizontal())
                                                 .child(
                                                     Button::new("info1", cx)
@@ -297,7 +317,8 @@ impl Render for PopupStory {
                                                         .small(),
                                                 )
                                                 .into_any()
-                                        }))
+                                        })
+                                    })
                                 }),
                         ),
                 ),
