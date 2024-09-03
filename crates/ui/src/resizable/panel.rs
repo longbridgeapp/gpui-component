@@ -93,7 +93,7 @@ impl ResizablePanelGroup {
         let mut panel = panel;
         panel.axis = self.axis;
         panel.group = Some(cx.view().clone());
-        self.sizes.push(panel.size.unwrap_or_default());
+        self.sizes.push(panel.initial_size.unwrap_or_default());
         self.panels.push(cx.new_view(|_| panel));
     }
 
@@ -101,7 +101,9 @@ impl ResizablePanelGroup {
         let mut panel = panel;
         panel.axis = self.axis;
         panel.group = Some(cx.view().clone());
-        self.sizes.insert(ix, panel.size.unwrap_or_default());
+
+        self.sizes
+            .insert(ix, panel.initial_size.unwrap_or_default());
         self.panels.insert(ix, cx.new_view(|_| panel));
         cx.notify()
     }
@@ -114,9 +116,14 @@ impl ResizablePanelGroup {
         cx: &mut ViewContext<Self>,
     ) {
         let mut panel = panel;
+
+        let old_panel = self.panels[ix].clone();
+        let old_panel_initial_size = old_panel.read(cx).initial_size;
+
+        panel.initial_size = old_panel_initial_size;
         panel.axis = self.axis;
         panel.group = Some(cx.view().clone());
-        self.sizes[ix] = panel.size.unwrap_or_default();
+        self.sizes[ix] = panel.initial_size.unwrap_or_default();
         self.panels[ix] = cx.new_view(|_| panel);
         cx.notify()
     }
@@ -327,6 +334,7 @@ impl ResizablePanel {
         self
     }
 
+    /// Set the initial size of the panel.
     pub fn size(mut self, size: Pixels) -> Self {
         self.initial_size = Some(size);
         self
@@ -369,16 +377,12 @@ impl Render for ResizablePanel {
             .when(self.axis.is_vertical(), |this| this.min_h(PANEL_MIN_SIZE))
             .when(self.axis.is_horizontal(), |this| this.min_w(PANEL_MIN_SIZE))
             .when_some(self.initial_size, |this, size| {
-                // The changed_size is None, that mean the initial size for the panel, so we need set flex_shrink_0
+                // The `self.size` is None, that mean the initial size for the panel, so we need set flex_shrink_0
                 // To let it keep the initial size.
                 this.when(self.size.is_none(), |this| this.flex_shrink_0())
-                    .when(self.axis.is_vertical(), |this| this.h(size))
-                    .when(self.axis.is_horizontal(), |this| this.w(size))
+                    .flex_basis(size)
             })
-            .when_some(self.size, |this, size| {
-                this.when(self.axis.is_vertical(), |this| this.h(size))
-                    .when(self.axis.is_horizontal(), |this| this.w(size))
-            })
+            .when_some(self.size, |this, size| this.flex_basis(size))
             .child({
                 canvas(
                     move |bounds, cx| view.update(cx, |r, cx| r.update_size(bounds, cx)),

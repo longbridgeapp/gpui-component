@@ -146,7 +146,7 @@ impl StackPanel {
         P: Panel,
     {
         resizable_panel()
-            .content_view(panel.view())
+            .content_view(panel.into())
             .when_some(size, |this, size| this.size(size))
     }
 
