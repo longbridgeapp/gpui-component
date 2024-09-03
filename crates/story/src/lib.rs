@@ -48,8 +48,9 @@ use ui::{
     dock::{Panel, PanelEvent, TabPanel},
     h_flex,
     label::Label,
+    notification::Notification,
     popup_menu::PopupMenu,
-    v_flex, Placement,
+    v_flex, ContextModal, Placement,
 };
 
 pub fn init(cx: &mut AppContext) {
@@ -85,12 +86,6 @@ pub struct StoryContainer {
     height: Option<gpui::Pixels>,
     story: Option<AnyView>,
     closeable: bool,
-}
-
-impl FocusableView for StoryContainer {
-    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
-        self.focus_handle.clone()
-    }
 }
 
 #[derive(Debug)]
@@ -162,6 +157,13 @@ impl StoryContainer {
         self.story = Some(story);
         self
     }
+
+    fn on_action_panel_info(&mut self, _: &PanelInfo, cx: &mut ViewContext<Self>) {
+        struct Info;
+        let note = Notification::new(format!("You have clicked panel info on: {}", self.name))
+            .id::<Info>();
+        cx.push_notification(note);
+    }
 }
 
 impl Panel for StoryContainer {
@@ -174,17 +176,25 @@ impl Panel for StoryContainer {
     }
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
-        menu.menu("Panel Info", Box::new(PanelInfo))
+        menu.track_focus(&self.focus_handle)
+            .menu("Info", Box::new(PanelInfo))
     }
 }
 
 impl EventEmitter<PanelEvent> for StoryContainer {}
+impl FocusableView for StoryContainer {
+    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
+    }
+}
 impl Render for StoryContainer {
-    fn render(&mut self, _: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .id("story-container")
             .size_full()
             .overflow_scroll()
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::on_action_panel_info))
             .child(
                 div()
                     .flex()

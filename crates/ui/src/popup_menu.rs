@@ -75,6 +75,8 @@ pub struct PopupMenu {
     max_width: Pixels,
     hovered_menu_ix: Option<usize>,
     bounds: Bounds<Pixels>,
+
+    action_focus_handle: Option<FocusHandle>,
     _subscriptions: [gpui::Subscription; 1],
 }
 
@@ -91,6 +93,7 @@ impl PopupMenu {
 
             let menu = Self {
                 focus_handle,
+                action_focus_handle: None,
                 parent_menu: None,
                 menu_items: Vec::new(),
                 selected_index: None,
@@ -104,6 +107,12 @@ impl PopupMenu {
             cx.refresh();
             f(menu, cx)
         })
+    }
+
+    /// Bind the focus handle of the menu, when clicked, it will focus back to this handle and then dispath the action
+    pub fn track_focus(mut self, focus_handle: &FocusHandle) -> Self {
+        self.action_focus_handle = Some(focus_handle.clone());
+        self
     }
 
     /// Set min width of the popup menu, default is 120px
@@ -190,12 +199,31 @@ impl PopupMenu {
             self.has_icon = true;
         }
 
+        let action_focus_handle = self.action_focus_handle.clone();
+
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
             action: Some(action.boxed_clone()),
             handler: Rc::new(move |cx| {
                 cx.activate_window();
+
+                // Focus back to the user expected focus handle
+                // Then the actions listened on that focus handle can be received
+                //
+                // For example:
+                //
+                // TabPanel
+                //   |- PopupMenu
+                //   |- PanelContent (actions are listened here)
+                //
+                // The `PopupMenu` and `PanelContent` are at the same level in the TabPanel
+                // If the actions are listened on the `PanelContent`,
+                // it can't receive the actions from the `PopupMenu`, unless we focus on `PanelContent`.
+                if let Some(handle) = action_focus_handle.as_ref() {
+                    cx.focus(&handle);
+                }
+
                 cx.dispatch_action(action.boxed_clone());
             }),
         });

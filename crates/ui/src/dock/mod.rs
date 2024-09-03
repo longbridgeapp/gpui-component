@@ -51,20 +51,6 @@ impl DockArea {
     pub fn root(&self) -> View<StackPanel> {
         self.root.clone()
     }
-
-    /// Return the index of the panel.
-    pub fn index_of_panel<P: Panel>(
-        &self,
-        panel: View<P>,
-        cx: &mut ViewContext<Self>,
-    ) -> Option<usize> {
-        self.root.read(cx).index_of_panel(panel)
-    }
-
-    /// Return the existing panel by type.
-    pub fn panel<P: Panel>(&self, cx: &mut ViewContext<Self>) -> Option<View<P>> {
-        self.root.read(cx).panel::<P>(cx)
-    }
 }
 
 impl Render for DockArea {

@@ -23,7 +23,6 @@ use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
 pub enum PanelEvent {
     ZoomIn,
     ZoomOut,
-    Focus,
 }
 
 #[derive(Clone)]
@@ -77,11 +76,8 @@ impl TabPanel {
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
-        let focus_handle = cx.focus_handle();
-        cx.on_focus(&focus_handle, Self::on_focus).detach();
-
         Self {
-            focus_handle,
+            focus_handle: cx.focus_handle(),
             dock_area,
             stack_panel,
             panels: Vec::new(),
@@ -105,21 +101,6 @@ impl TabPanel {
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
         cx.notify();
-    }
-
-    /// Return the existing panel view by type.
-    pub fn panel<P: Panel>(&self, cx: &WindowContext) -> Option<View<P>> {
-        self.panels.iter().find_map(|p| {
-            if let Ok(p) = p.view().downcast::<P>() {
-                Some(p)
-            } else {
-                if let Ok(stack) = p.view().downcast::<StackPanel>() {
-                    stack.read(cx).panel::<P>(cx)
-                } else {
-                    None
-                }
-            }
-        })
     }
 
     /// Add a panel to the end of the tabs
@@ -539,10 +520,6 @@ impl TabPanel {
             self.remove_panel(panel, cx);
         }
     }
-
-    fn on_focus(&mut self, cx: &mut ViewContext<Self>) {
-        cx.emit(PanelEvent::Focus);
-    }
 }
 
 impl Panel for TabPanel {
@@ -561,8 +538,7 @@ impl Panel for TabPanel {
     }
 }
 impl FocusableView for TabPanel {
-    fn focus_handle(&self, _cx: &AppContext) -> gpui::FocusHandle {
-        // FIXME: Delegate to the active panel
+    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
         self.focus_handle.clone()
     }
 }
