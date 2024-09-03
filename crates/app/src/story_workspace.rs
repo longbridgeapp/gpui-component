@@ -55,12 +55,9 @@ impl StoryWorkspace {
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", stack_panel.clone(), cx));
         let weak_dock_area = dock_area.downgrade();
 
-        let center_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
-        let left_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
-        let right_tab_panel =
-            cx.new_view(|cx| TabPanel::new(Some(stack_panel.clone()), weak_dock_area.clone(), cx));
+        let center_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let left_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
+        let right_tab_panel = cx.new_view(|cx| TabPanel::new(weak_dock_area.clone(), cx));
 
         stack_panel.update(cx, |view, cx| {
             let left_stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
