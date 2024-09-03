@@ -1,4 +1,4 @@
-use gpui::{actions, div, px, AppContext, Entity, FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext, WindowContext};
+use gpui::{actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext, WindowContext};
 
 use crate::section;
 use ui::{
