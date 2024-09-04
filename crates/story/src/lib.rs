@@ -39,10 +39,9 @@ pub use webview_story::WebViewStory;
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
     FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
-    StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
+    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
-use anyhow::Result;
 use ui::{
     divider::Divider,
     dock::{Panel, PanelEvent, TabPanel},

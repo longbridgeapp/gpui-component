@@ -128,11 +128,13 @@ impl TabPanel {
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.will_split_placement = Some(placement);
         cx.spawn(|view, mut cx| async move {
             cx.update(|cx| {
-                view.update(cx, |view, cx| view.split_panel(panel, placement, size, cx))
-                    .ok()
+                view.update(cx, |view, cx| {
+                    view.will_split_placement = Some(placement);
+                    view.split_panel(panel, placement, size, cx)
+                })
+                .ok()
             })
             .ok()
         })
