@@ -119,7 +119,10 @@ impl DatePicker {
     }
 
     fn clean(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
-        self.update_date(Date::Single(None), cx);
+        match self.date {
+            Date::Single(_) => { self.update_date(Date::Single(None), cx); }
+            Date::Range(_, _) => { self.update_date(Date::Range(None, None), cx); }
+        }
     }
 
     fn toggle_calendar(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
