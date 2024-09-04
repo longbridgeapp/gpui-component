@@ -55,7 +55,10 @@ impl StoryWorkspace {
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", stack_panel.clone(), cx));
         let weak_dock_area = dock_area.downgrade();
 
-        let center_tab_panel = cx.new_view(|cx| TabPanel::new(None, weak_dock_area.clone(), cx));
+        let center_tab_panel = cx.new_view(|cx| {
+            let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
+            TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
+        });
         let left_tab_panel = cx.new_view(|cx| {
             let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
             TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
@@ -92,8 +95,7 @@ impl StoryWorkspace {
             None,
             false,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Input",
@@ -104,8 +106,7 @@ impl StoryWorkspace {
             None,
             false,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Text",
@@ -116,8 +117,7 @@ impl StoryWorkspace {
             Some(px(200.)),
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Switch",
@@ -128,8 +128,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Dropdowns",
@@ -140,8 +139,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Modal",
@@ -152,8 +150,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Popup",
@@ -164,20 +161,18 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Tooltip",
             "Displays a short message when users hover over an element.",
             TooltipStory::view(cx).into(),
             right_tab_panel.clone(),
-            Some(Placement::Top),
+            None,
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "List",
@@ -188,8 +183,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Icon",
@@ -200,8 +194,7 @@ impl StoryWorkspace {
             Some(px(200.)),
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Image",
@@ -212,8 +205,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         // StoryContainer::add_panel(
         //     WebViewStory::view(cx).into(),
@@ -232,8 +224,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Progress",
@@ -244,8 +235,7 @@ impl StoryWorkspace {
             Some(px(200.)),
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Resizable",
@@ -256,8 +246,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Scrollable",
@@ -268,8 +257,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         StoryContainer::add_panel(
             "Calendar",
@@ -280,8 +268,7 @@ impl StoryWorkspace {
             None,
             true,
             cx,
-        )
-        .detach();
+        );
 
         let locale_selector = cx.new_view(LocaleSelector::new);
 
