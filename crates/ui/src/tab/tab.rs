@@ -1,4 +1,4 @@
-use crate::theme::{ActiveTheme, Colorize};
+use crate::theme::ActiveTheme;
 use crate::Selectable;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{

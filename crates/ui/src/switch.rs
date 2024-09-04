@@ -1,10 +1,6 @@
 use std::time::Duration;
 
-use crate::{
-    h_flex,
-    theme::{ActiveTheme, Colorize},
-    Disableable, Sizable, Size,
-};
+use crate::{h_flex, theme::ActiveTheme, Disableable, Sizable, Size};
 use gpui::{
     div, prelude::FluentBuilder as _, px, Animation, AnimationExt as _, Div, ElementId,
     InteractiveElement, IntoElement, ParentElement as _, RenderOnce, SharedString, Stateful,

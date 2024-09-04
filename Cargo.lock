@@ -474,7 +474,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.11.0",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -944,7 +944,7 @@ dependencies = [
 [[package]]
 name = "collections"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "rustc-hash",
 ]
@@ -1275,7 +1275,7 @@ dependencies = [
 [[package]]
 name = "derive_refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2203,7 +2203,7 @@ dependencies = [
 [[package]]
 name = "gpui"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "anyhow",
  "as-raw-xcb-connection",
@@ -2302,7 +2302,7 @@ dependencies = [
 [[package]]
 name = "gpui_macros"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2497,7 +2497,7 @@ dependencies = [
 [[package]]
 name = "http_client"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -3048,7 +3048,7 @@ dependencies = [
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -4149,7 +4149,7 @@ dependencies = [
 [[package]]
 name = "refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "derive_refineable",
 ]
@@ -4484,7 +4484,7 @@ checksum = "d369a96f978623eb3dc28807c4852d6cc617fed53da5d3c400feff1ef34a714a"
 [[package]]
 name = "semantic_version"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "anyhow",
  "serde",
@@ -4933,7 +4933,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "sum_tree"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "arrayvec",
  "log",
@@ -5552,7 +5552,7 @@ checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 [[package]]
 name = "util"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#1dce79297865a43e65cb36ce6368c74088b9d62a"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#4f7507eb244527afcab0c186b39eba047d11a158"
 dependencies = [
  "anyhow",
  "async-fs 1.6.0",

@@ -9,10 +9,7 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    button::Button,
-    h_flex,
-    theme::{ActiveTheme, Colorize},
-    v_flex, Disableable as _, IconName, Selectable,
+    button::Button, h_flex, theme::ActiveTheme, v_flex, Disableable as _, IconName, Selectable,
 };
 
 use super::utils::days_in_month;

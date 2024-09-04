@@ -12,7 +12,7 @@ use ui::{
     label::Label,
     list::ListItem,
     list::{List, ListDelegate},
-    theme::{hsl, ActiveTheme, Colorize as _},
+    theme::{hsl, ActiveTheme},
     v_flex,
 };
 

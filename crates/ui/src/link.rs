@@ -3,7 +3,7 @@ use gpui::{
     RenderOnce, SharedString, Stateful, StatefulInteractiveElement, Styled,
 };
 
-use crate::theme::{ActiveTheme as _, Colorize};
+use crate::theme::ActiveTheme as _;
 
 #[derive(IntoElement)]
 pub struct Link {

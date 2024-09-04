@@ -3,7 +3,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::theme::{ActiveTheme, Colorize};
+use crate::theme::ActiveTheme;
 
 #[derive(IntoElement)]
 pub struct Progress {

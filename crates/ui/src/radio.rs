@@ -4,11 +4,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::{
-    h_flex,
-    theme::{ActiveTheme, Colorize},
-    IconName,
-};
+use crate::{h_flex, theme::ActiveTheme, IconName};
 
 #[derive(IntoElement)]
 pub struct Radio {
