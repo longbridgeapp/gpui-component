@@ -129,7 +129,14 @@ impl TabPanel {
         cx: &mut ViewContext<Self>,
     ) {
         self.will_split_placement = Some(placement);
-        self.split_panel(panel, placement, size, cx);
+        cx.spawn(|view, mut cx| async move {
+            cx.update(|cx| {
+                view.update(cx, |view, cx| view.split_panel(panel, placement, size, cx))
+                    .ok()
+            })
+            .ok()
+        })
+        .detach();
         cx.notify();
     }
 

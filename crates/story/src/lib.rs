@@ -125,22 +125,19 @@ impl StoryContainer {
         size: Option<Pixels>,
         closeable: bool,
         cx: &mut WindowContext,
-    ) -> Task<Result<View<Self>>> {
+    ) {
         let name = name.into();
         let description = description.into();
 
-        cx.spawn(|mut cx| async move {
-            tab_panel.update(&mut cx, |panel, cx| {
-                let view =
-                    cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
-                if let Some(placement) = placement {
-                    panel.add_panel_at(Arc::new(view.clone()), placement, size, cx);
-                } else {
-                    panel.add_panel(Arc::new(view.clone()), cx);
-                }
-                view
-            })
-        })
+        tab_panel.update(cx, |panel, cx| {
+            let view = cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
+            if let Some(placement) = placement {
+                panel.add_panel_at(Arc::new(view.clone()), placement, size, cx);
+            } else {
+                panel.add_panel(Arc::new(view.clone()), cx);
+            }
+            view
+        });
     }
 
     pub fn width(mut self, width: gpui::Pixels) -> Self {
