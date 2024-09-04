@@ -12,13 +12,13 @@ use std::sync::Arc;
 use ui::{
     button::Button,
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, StackPanel, TabPanel},
+    dock::{DockArea, DockItem},
     drawer::Drawer,
     h_flex,
     modal::Modal,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
-    ContextModal, IconName, Placement, Root, Sizable,
+    ContextModal, IconName, Root, Sizable,
 };
 
 use crate::app_state::AppState;
@@ -51,240 +51,176 @@ impl StoryWorkspace {
         })
         .detach();
 
-        let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
-        let dock_area = cx.new_view(|cx| DockArea::new("main-dock", stack_panel.clone(), cx));
-        let weak_dock_area = dock_area.downgrade();
+        let dock_area = cx.new_view(|cx| DockArea::new("main-dock", cx));
 
-        let center_tab_panel = cx.new_view(|cx| {
-            let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
-            TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
-        });
-        let left_tab_panel = cx.new_view(|cx| {
-            let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
-            TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
-        });
+        let dock_item = DockItem::split(
+            Axis::Horizontal,
+            vec![
+                DockItem::split(
+                    Axis::Vertical,
+                    vec![
+                        DockItem::tabs(
+                            vec![
+                                DockItem::panel(StoryContainer::panel(
+                                    "Icon",
+                                    "Icon use examples",
+                                    IconStory::view(cx).into(),
+                                    cx,
+                                )),
+                            ],
+                            None,
+                            &dock_area,
+                            cx,
+                        ),
+                        DockItem::panel(StoryContainer::panel(
+                                "Calendar",
+                                "A calendar component.",
+                                CalendarStory::view(cx).into(),
+                            cx,
+                        )),
+                    ],
+                    vec![None, None],
+                    &dock_area,
+                    cx,
+                ),
+                DockItem::split(
+                    Axis::Vertical,
+                    vec![
+                        DockItem::tabs(
+                            vec![
+                                DockItem::panel(StoryContainer::panel(
+                                    "Button",
+                                    "Displays a button or a component that looks like a button.",
+                                    ButtonStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Input",
+                                    "A control that allows the user to input text.",
+                                    InputStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Dropdown",
+                                    "Displays a list of options for the user to pick from—triggered by a button.",
+                                    DropdownStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Modal",
+                                   "Modal & Drawer use examples",
+                                    ModalStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Popup",
+                                   "A popup displays content on top of the main page.",
+                                    PopupStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::tabs(
+                                    vec![DockItem::panel(StoryContainer::panel(
+                                        "List",
+                                        "A list displays a series of items.",
+                                        ListStory::view(cx).into(),
+                                        cx,
+                                    ))],
+                                    None,
+                                    &dock_area,
+                                    cx,
+                                ),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Switch",
+                                    "A control that allows the user to toggle between two states.",
+                                    SwitchStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Progress",
+                                    "Progress use examples",
+                                    ProgressStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Table",
+                                    "Table use examples",
+                                    TableStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Image",
+                                    "Image use examples",
+                                    ImageStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Resizable",
+                                    "Resizable use examples",
+                                    ResizableStory::view(cx).into(),
+                                    cx,
+                                )),
+                                DockItem::panel(StoryContainer::panel(
+                                    "Scrollable",
+                                    "Scrollable use examples",
+                                    ScrollableStory::view(cx).into(),
+                                    cx,
+                                )),
+                            ],
+                            None,
+                            &dock_area,
+                            cx,
+                        ),
+                        DockItem::tabs(
+                            vec![
+                            DockItem::panel(StoryContainer::panel(
+                                    "Progress",
+                                    "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
+                                    ProgressStory::view(cx).into(),
+                                cx,
+                            )),
+                            DockItem::panel(StoryContainer::panel(
+                                "Text",
+                                "Links, paragraphs, checkboxes, and more.",
+                                TextStory::view(cx).into(),
+                                cx,
+                            ))],
+                            None,
+                            &dock_area,
+                            cx,
+                        ),
+                    ],
+                    vec![None, Some(px(300.))],
+                    &dock_area,
+                    cx,
+                ),
+                DockItem::split(Axis::Vertical, vec![
+                    DockItem::panel(StoryContainer::panel(
+                        "Tooltip",
+                        "Displays a short message when users hover over an element.",
+                        TooltipStory::view(cx).into(),
+                        cx,
+                    )),
+                    DockItem::panel(StoryContainer::panel(
+                            "Calendar",
+                            "A calendar component.",
+                            CalendarStory::view(cx).into(),
+                        cx,
+                    )),
+                    DockItem::panel(StoryContainer::panel(
+                            "Image",
+                            "Render SVG image and Chart",
+                            ImageStory::view(cx).into(),
+                        cx,
+                    )),
+                ], vec![None, None, Some(px(300.))], &dock_area, cx),
 
-        let right_tab_panel = cx.new_view(|cx| {
-            let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Vertical, cx));
-            TabPanel::new(Some(stack_panel), weak_dock_area.clone(), cx)
-        });
-
-        stack_panel.update(cx, |view, cx| {
-            view.add_panel(
-                left_tab_panel.clone(),
-                Some(px(300.)),
-                weak_dock_area.clone(),
-                cx,
-            );
-
-            view.add_panel(center_tab_panel.clone(), None, weak_dock_area.clone(), cx);
-            view.add_panel(
-                right_tab_panel.clone(),
-                Some(px(350.)),
-                weak_dock_area.clone(),
-                cx,
-            );
-        });
-
-        StoryContainer::add_panel(
-            "Buttons",
-            "Displays a button or a component that looks like a button.",
-            ButtonStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            false,
-            None,
+            ],
+            vec![Some(px(300.)), None, Some(px(350.))],
+            &dock_area,
             cx,
         );
 
-        StoryContainer::add_panel(
-            "Input",
-            "A control that allows the user to input text.",
-            InputStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            false,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Text",
-            "Links, paragraphs, checkboxes, and more.",
-            TextStory::view(cx).into(),
-            center_tab_panel.clone(),
-            Some(Placement::Bottom),
-            Some(px(200.)),
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Switch",
-            "A control that allows the user to toggle between two states.",
-            SwitchStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Dropdowns",
-            "Displays a list of options for the user to pick from—triggered by a button.",
-            DropdownStory::new(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Modal",
-            "Modal & Drawer use examples",
-            ModalStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Popup",
-            "A popup displays content on top of the main page.",
-            PopupStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Tooltip",
-            "Displays a short message when users hover over an element.",
-            TooltipStory::view(cx).into(),
-            right_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "List",
-            "A list displays a series of items.",
-            ListStory::view(cx).into(),
-            left_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Icon",
-            "Icon use examples",
-            IconStory::view(cx).into(),
-            left_tab_panel.clone(),
-            Some(Placement::Bottom),
-            Some(px(200.)),
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Image",
-            "Render SVG image and Chart",
-            ImageStory::view(cx).into(),
-            right_tab_panel.clone(),
-            Some(Placement::Bottom),
-            None,
-            true,
-            Some(cx.theme().muted),
-            cx,
-        );
-
-        // StoryContainer::add_panel(
-        //     WebViewStory::view(cx).into(),
-        //     stack_panel.clone(),
-        //     DockPosition::Right,
-        //     px(450.),
-        //     cx,
-        // );
-
-        StoryContainer::add_panel(
-            "Table",
-            "Powerful table and datagrids built.",
-            TableStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Progress",
-            "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
-            ProgressStory::view(cx).into(),
-            center_tab_panel.clone(),
-            Some(Placement::Bottom),
-            Some(px(200.)),
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Resizable",
-            "Accessible resizable panel groups and layouts with keyboard support.",
-            ResizableStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Scrollable",
-            "A scrollable area with scroll bar.",
-            ScrollableStory::view(cx).into(),
-            center_tab_panel.clone(),
-            None,
-            None,
-            true,
-            None,
-            cx,
-        );
-
-        StoryContainer::add_panel(
-            "Calendar",
-            "A calendar component.",
-            CalendarStory::view(cx).into(),
-            right_tab_panel.clone(),
-            Some(Placement::Bottom),
-            None,
-            true,
-            None,
-            cx,
-        );
+        dock_area.update(cx, |view, cx| view.set_root(dock_item, cx));
 
         let locale_selector = cx.new_view(LocaleSelector::new);
 

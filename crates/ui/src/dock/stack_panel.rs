@@ -9,7 +9,7 @@ use crate::{
 
 use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
@@ -19,7 +19,7 @@ pub struct StackPanel {
     pub(super) parent: Option<View<StackPanel>>,
     pub(super) axis: Axis,
     focus_handle: FocusHandle,
-    panels: SmallVec<[Arc<dyn PanelView>; 2]>,
+    pub(crate) panels: SmallVec<[Arc<dyn PanelView>; 2]>,
     panel_group: View<ResizablePanelGroup>,
 }
 
@@ -56,53 +56,41 @@ impl StackPanel {
     }
 
     /// Return the index of the panel.
-    pub(crate) fn index_of_panel<P>(&self, panel: &View<P>) -> Option<usize>
-    where
-        P: Panel,
-    {
-        let entity_id = panel.entity_id();
-        self.panels
-            .iter()
-            .position(|p| p.view().entity_id() == entity_id)
+    pub(crate) fn index_of_panel(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
+        self.panels.iter().position(|p| p == &panel)
     }
 
     /// Add a panel at the end of the stack.
-    pub fn add_panel<P>(
+    pub fn add_panel(
         &mut self,
-        panel: View<P>,
+        panel: Arc<dyn PanelView>,
         size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
+    ) {
         self.insert_panel(panel, self.panels.len(), size, dock_area, cx);
     }
 
-    pub fn add_panel_at<P>(
+    pub fn add_panel_at(
         &mut self,
-        panel: View<P>,
+        panel: Arc<dyn PanelView>,
         placement: Placement,
         size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
+    ) {
         self.insert_panel_at(panel, self.panels_len(), placement, size, dock_area, cx);
     }
 
-    pub fn insert_panel_at<P>(
+    pub fn insert_panel_at(
         &mut self,
-        panel: View<P>,
+        panel: Arc<dyn PanelView>,
         ix: usize,
         placement: Placement,
         size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
+    ) {
         match placement {
             Placement::Top | Placement::Left => {
                 self.insert_panel_before(panel, ix, size, dock_area, cx)
@@ -114,68 +102,61 @@ impl StackPanel {
     }
 
     /// Insert a panel at the index.
-    pub fn insert_panel_before<P>(
+    pub fn insert_panel_before(
         &mut self,
-        panel: View<P>,
+        panel: Arc<dyn PanelView>,
         ix: usize,
         size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
+    ) {
         self.insert_panel(panel, ix, size, dock_area, cx);
     }
 
     /// Insert a panel after the index.
-    pub fn insert_panel_after<P>(
+    pub fn insert_panel_after(
         &mut self,
-        panel: View<P>,
+        panel: Arc<dyn PanelView>,
         ix: usize,
         size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
+    ) {
         self.insert_panel(panel, ix + 1, size, dock_area, cx);
     }
 
-    fn new_resizable_panel<P>(panel: View<P>, size: Option<Pixels>) -> ResizablePanel
-    where
-        P: Panel,
-    {
+    fn new_resizable_panel(panel: Arc<dyn PanelView>, size: Option<Pixels>) -> ResizablePanel {
         resizable_panel()
-            .content_view(panel.into())
+            .content_view(panel.view())
             .when_some(size, |this, size| this.size(size))
     }
 
-    fn insert_panel<P>(
+    fn insert_panel(
         &mut self,
-        panel: View<P>,
+        panel: Arc<dyn PanelView>,
         ix: usize,
         size: Option<Pixels>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
+    ) {
         // If the panel is already in the stack, return.
-        if let Some(_) = self.index_of_panel(&panel) {
+        if let Some(_) = self.index_of_panel(panel.clone()) {
             return;
         }
 
-        cx.subscribe(&panel, move |_, panel, event, cx| match event {
-            PanelEvent::ZoomIn => {
-                let _ = dock_area.update(cx, |dock, cx| {
-                    dock.set_zoomed_in(panel.clone(), cx);
-                });
-            }
-            PanelEvent::ZoomOut => {
-                let _ = dock_area.update(cx, |dock, cx| dock.set_zoomed_out(cx));
-            }
-        })
-        .detach();
+        let pane_view = panel.view();
+
+        // cx.subscribe(&pane_view, move |_, panel, event, cx| match event {
+        //     PanelEvent::ZoomIn => {
+        //         let _ = dock_area.update(cx, |dock, cx| {
+        //             dock.set_zoomed_in(panel.clone(), cx);
+        //         });
+        //     }
+        //     PanelEvent::ZoomOut => {
+        //         let _ = dock_area.update(cx, |dock, cx| dock.set_zoomed_out(cx));
+        //     }
+        // })
+        // .detach();
 
         let view = cx.view().clone();
         cx.window_context().defer({
@@ -197,7 +178,7 @@ impl StackPanel {
             ix
         };
 
-        self.panels.insert(ix, Arc::new(panel.clone()));
+        self.panels.insert(ix, panel.clone());
         self.panel_group.update(cx, |view, cx| {
             view.insert_child(Self::new_resizable_panel(panel, size), ix, cx)
         });
@@ -206,11 +187,8 @@ impl StackPanel {
     }
 
     /// Remove panel from the stack.
-    pub fn remove_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
-    where
-        P: Panel,
-    {
-        if let Some(ix) = self.index_of_panel(&panel) {
+    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        if let Some(ix) = self.index_of_panel(panel.clone()) {
             self.panels.remove(ix);
             self.panel_group.update(cx, |view, cx| {
                 view.remove_child(ix, cx);
@@ -223,18 +201,20 @@ impl StackPanel {
     }
 
     /// Replace the old panel with the new panel at same index.
-    pub(super) fn replace_panel<P>(
+    pub(super) fn replace_panel(
         &mut self,
-        old_panel: View<P>,
+        old_panel: Arc<dyn PanelView>,
         new_panel: View<StackPanel>,
         cx: &mut ViewContext<Self>,
-    ) where
-        P: Panel,
-    {
-        if let Some(ix) = self.index_of_panel(&old_panel) {
+    ) {
+        if let Some(ix) = self.index_of_panel(old_panel.clone()) {
             self.panels[ix] = Arc::new(new_panel.clone());
             self.panel_group.update(cx, |view, cx| {
-                view.replace_child(Self::new_resizable_panel(new_panel.clone(), None), ix, cx);
+                view.replace_child(
+                    Self::new_resizable_panel(Arc::new(new_panel.clone()), None),
+                    ix,
+                    cx,
+                );
             });
         }
     }
@@ -252,7 +232,7 @@ impl StackPanel {
         let view = cx.view().clone();
         if let Some(parent) = self.parent.as_ref() {
             parent.update(cx, |parent, cx| {
-                parent.remove_panel(view, cx);
+                parent.remove_panel(Arc::new(view), cx);
             });
         }
 
