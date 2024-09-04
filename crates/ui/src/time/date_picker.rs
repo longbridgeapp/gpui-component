@@ -82,8 +82,8 @@ impl DatePicker {
     }
 
     /// Set the date picker to range mode.
-    pub fn range_mode(mut self, cx: &mut ViewContext<Self>) -> Self {
-        self.set_date(Date::Range(None, None), cx);
+    pub fn range_mode(mut self) -> Self {
+        self.date = Date::Range(None, None);
         self
     }
 
