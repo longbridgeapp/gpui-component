@@ -72,7 +72,7 @@ impl CalendarStory {
                 .placeholder("Range mode picker")
                 .number_of_months(2)
                 .cleanable()
-                .range_mode(cx)
+                .range_mode()
         });
 
         cx.subscribe(&default_range_mode_picker, |this, _, ev, _| match ev {
