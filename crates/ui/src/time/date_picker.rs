@@ -38,12 +38,33 @@ pub struct DatePicker {
 }
 
 impl DatePicker {
+    /// Create a date picker.
     pub fn new(id: impl Into<ElementId>, cx: &mut ViewContext<Self>) -> Self {
+        Self::new_with_range(id, false, cx)
+    }
+
+    /// Create a date picker with range mode.
+    pub fn range_picker(id: impl Into<ElementId>, cx: &mut ViewContext<Self>) -> Self {
+        Self::new_with_range(id, true, cx)
+    }
+
+    fn new_with_range(
+        id: impl Into<ElementId>,
+        is_range: bool,
+        cx: &mut ViewContext<Self>,
+    ) -> Self {
+        let date = if is_range {
+            Date::Range(None, None)
+        } else {
+            Date::Single(None)
+        };
+
         let calendar = cx.new_view(Calendar::new);
+        calendar.update(cx, |view, cx| view.set_date(date, cx));
 
         cx.subscribe(&calendar, |this, _, ev: &CalendarEvent, cx| match ev {
             CalendarEvent::Selected(date) => {
-                this.update_date(*date, cx);
+                this.update_date(*date, true, cx);
             }
         })
         .detach();
@@ -51,7 +72,7 @@ impl DatePicker {
         Self {
             id: id.into(),
             focus_handle: cx.focus_handle(),
-            date: Date::Single(None),
+            date,
             calendar,
             open: false,
             size: Size::default(),
@@ -100,16 +121,18 @@ impl DatePicker {
 
     /// Set the date of the date picker.
     pub fn set_date(&mut self, date: impl Into<Date>, cx: &mut ViewContext<Self>) {
-        self.update_date(date.into(), cx);
+        self.update_date(date.into(), false, cx);
     }
 
-    fn update_date(&mut self, date: Date, cx: &mut ViewContext<Self>) {
+    fn update_date(&mut self, date: Date, emit: bool, cx: &mut ViewContext<Self>) {
         self.date = date;
         self.calendar.update(cx, |view, cx| {
             view.set_date(date, cx);
         });
         self.open = false;
-        cx.emit(DatePickerEvent::Change(date));
+        if emit {
+            cx.emit(DatePickerEvent::Change(date));
+        }
         cx.notify();
     }
 
@@ -119,7 +142,14 @@ impl DatePicker {
     }
 
     fn clean(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {
-        self.update_date(Date::Single(None), cx);
+        match self.date {
+            Date::Single(_) => {
+                self.update_date(Date::Single(None), true, cx);
+            }
+            Date::Range(_, _) => {
+                self.update_date(Date::Range(None, None), true, cx);
+            }
+        }
     }
 
     fn toggle_calendar(&mut self, _: &gpui::ClickEvent, cx: &mut ViewContext<Self>) {

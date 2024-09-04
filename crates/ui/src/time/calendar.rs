@@ -638,7 +638,7 @@ impl Calendar {
 impl EventEmitter<CalendarEvent> for Calendar {}
 
 impl Render for Calendar {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()
             .track_focus(&self.focus_handle)
             .gap_0p5()
