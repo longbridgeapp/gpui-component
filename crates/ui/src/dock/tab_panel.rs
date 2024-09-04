@@ -51,6 +51,7 @@ impl Render for DragPanel {
             .border_1()
             .border_color(cx.theme().border)
             .rounded_md()
+            .text_color(cx.theme().tab_foreground)
             .bg(cx.theme().tab_active)
             .opacity(0.75)
             .child(self.panel.title(cx))
@@ -353,7 +354,7 @@ impl TabPanel {
                             .bg(cx.theme().drop_target)
                             .map(|this| match self.will_split_placement {
                                 Some(placement) => {
-                                    let size = DefiniteLength::Fraction(0.25);
+                                    let size = DefiniteLength::Fraction(0.35);
                                     match placement {
                                         Placement::Left => this.left_0().top_0().bottom_0().w(size),
                                         Placement::Right => {
@@ -383,13 +384,13 @@ impl TabPanel {
         let position = drag.event.position;
 
         // Check the mouse position to determine the split direction
-        if position.x < bounds.left() + bounds.size.width * 0.25 {
+        if position.x < bounds.left() + bounds.size.width * 0.35 {
             self.will_split_placement = Some(Placement::Left);
-        } else if position.x > bounds.left() + bounds.size.width * 0.75 {
+        } else if position.x > bounds.left() + bounds.size.width * 0.65 {
             self.will_split_placement = Some(Placement::Right);
-        } else if position.y < bounds.top() + bounds.size.height * 0.25 {
+        } else if position.y < bounds.top() + bounds.size.height * 0.35 {
             self.will_split_placement = Some(Placement::Top);
-        } else if position.y > bounds.top() + bounds.size.height * 0.75 {
+        } else if position.y > bounds.top() + bounds.size.height * 0.65 {
             self.will_split_placement = Some(Placement::Bottom);
         } else {
             // center to merge into the current tab

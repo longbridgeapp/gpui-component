@@ -164,6 +164,7 @@ struct Colors {
     pub list_active: Hsla,
     pub list_head: Hsla,
     pub link: Hsla,
+    pub drop_target: Hsla,
 }
 
 impl Colors {
@@ -205,6 +206,7 @@ impl Colors {
             list_active: hsl(240.0, 7., 88.0).opacity(0.75),
             list_head: hsl(0.0, 0.0, 100.),
             link: hsl(221.0, 83.0, 53.0),
+            drop_target: hsl(235.0, 30., 44.0).opacity(0.25),
         }
     }
 
@@ -246,6 +248,7 @@ impl Colors {
             list_active: hsl(240.0, 3.7, 15.0),
             list_head: hsl(0.0, 0.0, 6.0),
             link: hsl(221.0, 83.0, 53.0),
+            drop_target: hsl(235.0, 30., 44.0).opacity(0.1),
         }
     }
 }
@@ -367,7 +370,7 @@ impl From<Colors> for Theme {
             panel: colors.panel,
             selection: colors.selection,
             drag_border: crate::blue_500(),
-            drop_target: hsl(220.0, 65., 44.0).opacity(0.15),
+            drop_target: colors.drop_target,
             tab_bar: colors.tab_bar,
             tab: gpui::transparent_black(),
             tab_active: colors.background,
