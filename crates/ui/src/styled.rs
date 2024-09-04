@@ -2,11 +2,9 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::{
     scroll::{Scrollable, ScrollbarAxis},
-    theme::{ActiveTheme, Colorize},
+    theme::ActiveTheme,
 };
-use gpui::{
-    div, px, Axis, Div, Element, EntityId, Fill, FocusHandle, Pixels, Styled, WindowContext,
-};
+use gpui::{div, px, Axis, Div, Element, EntityId, FocusHandle, Pixels, Styled, WindowContext};
 
 /// Returns a `Div` as horizontal flex layout.
 pub fn h_flex() -> Div {
@@ -121,45 +119,6 @@ pub trait StyledExt: Styled + Sized {
     font_weight!(font_bold, BOLD);
     font_weight!(font_extrabold, EXTRA_BOLD);
     font_weight!(font_black, BLACK);
-
-    /// Set the opacity of the element.
-    fn opacity(mut self, opacity: f32) -> Self {
-        let text_color = self.style().text.clone().and_then(|t| t.color);
-        let bg_color = self.style().background.clone();
-        let border_color = self.style().border_color;
-        let box_shadow = self.style().box_shadow.clone();
-
-        let this = if let Some(bg) = bg_color {
-            match bg {
-                Fill::Color(color) => self.bg(color.opacity(opacity)),
-            }
-        } else {
-            self
-        };
-
-        let this = if let Some(color) = border_color {
-            this.border_color(color.opacity(opacity))
-        } else {
-            this
-        };
-
-        let this = if let Some(mut shadow) = box_shadow {
-            for shadow in shadow.iter_mut() {
-                shadow.color = shadow.color.opacity(opacity);
-            }
-            this.shadow(shadow)
-        } else {
-            this
-        };
-
-        let this = if let Some(text_color) = text_color {
-            this.text_color(text_color.opacity(opacity))
-        } else {
-            this
-        };
-
-        this
-    }
 
     /// Set as Popover style
     fn popover_style(self, cx: &mut WindowContext) -> Self {

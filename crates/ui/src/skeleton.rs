@@ -5,7 +5,7 @@ use gpui::{
     RenderOnce, Styled,
 };
 
-use crate::{theme::ActiveTheme, StyledExt};
+use crate::theme::ActiveTheme;
 
 #[derive(IntoElement)]
 pub struct Skeleton {

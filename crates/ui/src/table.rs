@@ -3,7 +3,7 @@ use std::{cell::Cell, ops::Range, rc::Rc};
 use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
-    theme::{ActiveTheme, Colorize},
+    theme::ActiveTheme,
     v_flex, Icon, IconName,
 };
 use gpui::{
@@ -691,7 +691,8 @@ where
                             view.delegate.load_more(cx);
                         })
                     })
-                }).detach()
+                })
+                .detach()
             }
         }
     }

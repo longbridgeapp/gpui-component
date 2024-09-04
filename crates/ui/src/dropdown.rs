@@ -11,7 +11,7 @@ use crate::{
     h_flex,
     input::ClearButton,
     list::{self, List, ListDelegate, ListItem},
-    theme::{ActiveTheme, Colorize},
+    theme::ActiveTheme,
     v_flex, Disableable, Icon, IconName, Sizable, Size, StyleSized, StyledExt,
 };
 

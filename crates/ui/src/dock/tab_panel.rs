@@ -15,7 +15,7 @@ use crate::{
     tab::{Tab, TabBar},
     theme::ActiveTheme,
     tooltip::Tooltip,
-    v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
+    v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
 use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};

@@ -1,7 +1,4 @@
-use crate::{
-    theme::{ActiveTheme, Colorize},
-    tooltip::Tooltip,
-};
+use crate::{theme::ActiveTheme, tooltip::Tooltip};
 use gpui::{
     canvas, div, px, relative, Axis, Bounds, DragMoveEvent, EntityId, EventEmitter,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement as _, Pixels,

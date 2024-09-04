@@ -266,7 +266,7 @@ impl Render for Notification {
                         this.left(px(0.) + x_offset).opacity(1. - delta)
                     } else {
                         let y_offset = px(-45.) + delta * px(45.);
-                        this.top(px(0.) + y_offset)
+                        this.top(px(0.) + y_offset).opacity(delta)
                     }
                 },
             )
