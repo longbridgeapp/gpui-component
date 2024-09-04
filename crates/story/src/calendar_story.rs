@@ -14,6 +14,7 @@ pub struct CalendarStory {
     date_picker_large: View<DatePicker>,
     date_picker_value: Option<String>,
     date_range_picker: View<DatePicker>,
+    default_range_mode_picker: View<DatePicker>,
 }
 
 impl CalendarStory {
@@ -65,11 +66,28 @@ impl CalendarStory {
         })
         .detach();
 
+        let default_range_mode_picker = cx.new_view(|cx| {
+            DatePicker::new("default_range_mode_picker", cx)
+                .width(px(300.))
+                .placeholder("Range mode picker")
+                .number_of_months(2)
+                .cleanable()
+                .range_mode(cx)
+        });
+
+        cx.subscribe(&default_range_mode_picker, |this, _, ev, _| match ev {
+            DatePickerEvent::Change(date) => {
+                this.date_picker_value = date.format("%Y-%m-%d").map(|s| s.to_string());
+            }
+        })
+          .detach();
+
         Self {
             date_picker,
             date_picker_large,
             date_picker_small,
             date_range_picker,
+            default_range_mode_picker,
             date_picker_value: None,
         }
     }
@@ -83,6 +101,7 @@ impl Render for CalendarStory {
             .child(self.date_picker_small.clone())
             .child(self.date_picker_large.clone())
             .child(self.date_range_picker.clone())
+            .child(self.default_range_mode_picker.clone())
             .child(format!("Date picker value: {:?}", self.date_picker_value).into_element())
     }
 }

@@ -81,6 +81,12 @@ impl DatePicker {
         self
     }
 
+    /// Set the date picker to range mode.
+    pub fn range_mode(mut self, cx: &mut ViewContext<Self>) -> Self {
+        self.set_date(Date::Range(None, None), cx);
+        self
+    }
+
     /// Set width of the date picker input field, default is `Length::Auto`.
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
