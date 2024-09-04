@@ -67,12 +67,10 @@ impl CalendarStory {
         .detach();
 
         let default_range_mode_picker = cx.new_view(|cx| {
-            DatePicker::new("default_range_mode_picker", cx)
+            DatePicker::range_picker("default_range_mode_picker", cx)
                 .width(px(300.))
                 .placeholder("Range mode picker")
-                .number_of_months(2)
                 .cleanable()
-                .range_mode()
         });
 
         cx.subscribe(&default_range_mode_picker, |this, _, ev, _| match ev {
@@ -80,7 +78,7 @@ impl CalendarStory {
                 this.date_picker_value = date.format("%Y-%m-%d").map(|s| s.to_string());
             }
         })
-          .detach();
+        .detach();
 
         Self {
             date_picker,
