@@ -1,6 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 
-use crate::theme::ActiveTheme;
+use crate::theme::{ActiveTheme, Colorize};
 use gpui::{
     fill, point, px, relative, size, Bounds, ContentMask, Edges, Element, EntityId, Hitbox,
     IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position,
@@ -372,7 +372,7 @@ impl Element for Scrollbar {
                             (thumb_bg, cx.theme().scrollbar, cx.theme().border, px(1.))
                         } else {
                             (
-                                thumb_bg,
+                                thumb_bg.opacity(0.3),
                                 cx.theme().transparent,
                                 gpui::transparent_black(),
                                 THUMB_INSET,
