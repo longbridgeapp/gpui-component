@@ -118,6 +118,15 @@ impl StoryContainer {
         }
     }
 
+    pub fn panel(
+        name: impl Into<SharedString>,
+        description: impl Into<SharedString>,
+        story: AnyView,
+        cx: &mut WindowContext,
+    ) -> View<Self> {
+        cx.new_view(|cx| Self::new(name, description, true, cx).story(story))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn add_panel(
         name: impl Into<SharedString>,

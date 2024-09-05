@@ -62,8 +62,8 @@ pub struct TabPanel {
     focus_handle: FocusHandle,
     dock_area: WeakView<DockArea>,
     stack_panel: Option<View<StackPanel>>,
-    panels: Vec<Arc<dyn PanelView>>,
-    active_ix: usize,
+    pub(crate) panels: Vec<Arc<dyn PanelView>>,
+    pub(crate) active_ix: usize,
     tab_bar_scroll_handle: ScrollHandle,
 
     is_zoomed: bool,
@@ -185,7 +185,7 @@ impl TabPanel {
         let tab_view = cx.view().clone();
         if let Some(stack_panel) = self.stack_panel.as_ref() {
             stack_panel.update(cx, |view, cx| {
-                view.remove_panel(tab_view, cx);
+                view.remove_panel(Arc::new(tab_view), cx);
             })
         }
     }
@@ -462,18 +462,33 @@ impl TabPanel {
 
         let stack_panel = self.stack_panel.as_ref().unwrap();
         let parent_axis = stack_panel.read(cx).axis;
+
         let ix = stack_panel
             .read(cx)
-            .index_of_panel(&cx.view())
+            .index_of_panel(Arc::new(cx.view().clone()))
             .unwrap_or_default();
 
         if parent_axis.is_vertical() && placement.is_vertical() {
             stack_panel.update(cx, |view, cx| {
-                view.insert_panel_at(new_tab_panel, ix, placement, size, dock_area.clone(), cx);
+                view.insert_panel_at(
+                    Arc::new(new_tab_panel),
+                    ix,
+                    placement,
+                    size,
+                    dock_area.clone(),
+                    cx,
+                );
             });
         } else if parent_axis.is_horizontal() && placement.is_horizontal() {
             stack_panel.update(cx, |view, cx| {
-                view.insert_panel_at(new_tab_panel, ix, placement, size, dock_area.clone(), cx);
+                view.insert_panel_at(
+                    Arc::new(new_tab_panel),
+                    ix,
+                    placement,
+                    size,
+                    dock_area.clone(),
+                    cx,
+                );
             });
         } else {
             // 1. Create new StackPanel with new axis
@@ -499,18 +514,18 @@ impl TabPanel {
 
             new_stack_panel.update(cx, |view, cx| match placement {
                 Placement::Left | Placement::Top => {
-                    view.add_panel(new_tab_panel, size, dock_area.clone(), cx);
-                    view.add_panel(tab_panel.clone(), None, dock_area.clone(), cx);
+                    view.add_panel(Arc::new(new_tab_panel), size, dock_area.clone(), cx);
+                    view.add_panel(Arc::new(tab_panel.clone()), None, dock_area.clone(), cx);
                 }
                 Placement::Right | Placement::Bottom => {
-                    view.add_panel(tab_panel.clone(), None, dock_area.clone(), cx);
-                    view.add_panel(new_tab_panel, size, dock_area.clone(), cx);
+                    view.add_panel(Arc::new(tab_panel.clone()), None, dock_area.clone(), cx);
+                    view.add_panel(Arc::new(new_tab_panel), size, dock_area.clone(), cx);
                 }
             });
 
             if *stack_panel != new_stack_panel {
                 stack_panel.update(cx, |view, cx| {
-                    view.replace_panel(tab_panel.clone(), new_stack_panel.clone(), cx);
+                    view.replace_panel(Arc::new(tab_panel.clone()), new_stack_panel.clone(), cx);
                 });
             }
 

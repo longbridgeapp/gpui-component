@@ -56,7 +56,7 @@ pub struct DropdownStory {
 }
 
 impl DropdownStory {
-    pub fn new(cx: &mut WindowContext) -> View<Self> {
+    fn new(cx: &mut WindowContext) -> View<Self> {
         let countries = vec![
             Country::new("United States", "US"),
             Country::new("Canada", "CA"),
@@ -142,6 +142,10 @@ impl DropdownStory {
                 }),
             }
         })
+    }
+
+    pub fn view(cx: &mut WindowContext) -> View<Self> {
+        Self::new(cx)
     }
 
     fn on_dropdown_event(
