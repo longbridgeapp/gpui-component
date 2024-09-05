@@ -1,14 +1,24 @@
-use gpui::{AnyView, EventEmitter, FocusableView, SharedString, View, WindowContext};
+use gpui::{AnyView, EventEmitter, FocusableView, Hsla, SharedString, View, WindowContext};
 use rust_i18n::t;
 
 use crate::popup_menu::PopupMenu;
 
 use super::PanelEvent;
 
+pub struct TitleStyle {
+    pub background: Hsla,
+    pub foreground: Hsla,
+}
+
 pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// The title of the panel, default is `None`.
     fn title(&self, _cx: &WindowContext) -> SharedString {
         t!("Dock.Unnamed").into()
+    }
+
+    /// The theme of the panel title, default is `None`.
+    fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle> {
+        None
     }
 
     /// Whether the panel can be closed, default is `true`.
@@ -23,8 +33,9 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 }
 
 pub trait PanelView: 'static + Send + Sync {
-    /// The title of the panel, default is `None`.
     fn title(&self, _cx: &WindowContext) -> SharedString;
+
+    fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
 
     fn closeable(&self, cx: &WindowContext) -> bool;
 
@@ -36,6 +47,10 @@ pub trait PanelView: 'static + Send + Sync {
 impl<T: Panel> PanelView for View<T> {
     fn title(&self, cx: &WindowContext) -> SharedString {
         self.read(cx).title(cx)
+    }
+
+    fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle> {
+        self.read(cx).title_style(cx)
     }
 
     fn closeable(&self, cx: &WindowContext) -> bool {

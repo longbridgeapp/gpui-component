@@ -242,12 +242,16 @@ impl TabPanel {
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
             let title = panel.title(cx);
+            let title_style = panel.title_style(cx);
 
             return h_flex()
                 .justify_between()
                 .items_center()
                 .line_height(rems(1.0))
                 .pr_3()
+                .when_some(title_style, |this, theme| {
+                    this.bg(theme.background).text_color(theme.foreground)
+                })
                 .child(
                     div()
                         .id("tab")
