@@ -38,17 +38,19 @@ pub use webview_story::WebViewStory;
 
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, SharedString,
-    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
+    SharedString, StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
     divider::Divider,
-    dock::{Panel, PanelEvent, TabPanel},
+    dock::{Panel, PanelEvent, TabPanel, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
     popup_menu::PopupMenu,
+    theme::ActiveTheme,
     v_flex, ContextModal, Placement,
 };
 
@@ -80,6 +82,7 @@ pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {
 pub struct StoryContainer {
     focus_handle: gpui::FocusHandle,
     name: SharedString,
+    title_bg: Option<Hsla>,
     description: SharedString,
     width: Option<gpui::Pixels>,
     height: Option<gpui::Pixels>,
@@ -106,6 +109,7 @@ impl StoryContainer {
         Self {
             focus_handle,
             name: name.into(),
+            title_bg: None,
             description: description.into(),
             width: None,
             height: None,
@@ -123,13 +127,18 @@ impl StoryContainer {
         placement: Option<Placement>,
         size: Option<Pixels>,
         closeable: bool,
+        title_bg: Option<Hsla>,
         cx: &mut WindowContext,
     ) {
         let name = name.into();
         let description = description.into();
 
         tab_panel.update(cx, |panel, cx| {
-            let view = cx.new_view(|cx| Self::new(name, description, closeable, cx).story(story));
+            let view = cx.new_view(|cx| {
+                Self::new(name, description, closeable, cx)
+                    .story(story)
+                    .title_bg(title_bg)
+            });
             if let Some(placement) = placement {
                 panel.add_panel_at(Arc::new(view.clone()), placement, size, cx);
             } else {
@@ -154,6 +163,11 @@ impl StoryContainer {
         self
     }
 
+    pub fn title_bg(mut self, title_bg: Option<Hsla>) -> Self {
+        self.title_bg = title_bg;
+        self
+    }
+
     fn on_action_panel_info(&mut self, _: &PanelInfo, cx: &mut ViewContext<Self>) {
         struct Info;
         let note = Notification::new(format!("You have clicked panel info on: {}", self.name))
@@ -165,6 +179,17 @@ impl StoryContainer {
 impl Panel for StoryContainer {
     fn title(&self, _cx: &WindowContext) -> SharedString {
         self.name.clone()
+    }
+
+    fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle> {
+        if let Some(bg) = self.title_bg {
+            Some(TitleStyle {
+                background: bg,
+                foreground: cx.theme().foreground,
+            })
+        } else {
+            None
+        }
     }
 
     fn closeable(&self, _cx: &WindowContext) -> bool {

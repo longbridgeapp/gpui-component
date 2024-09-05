@@ -94,6 +94,7 @@ impl StoryWorkspace {
             None,
             None,
             false,
+            None,
             cx,
         );
 
@@ -105,6 +106,7 @@ impl StoryWorkspace {
             None,
             None,
             false,
+            None,
             cx,
         );
 
@@ -116,6 +118,7 @@ impl StoryWorkspace {
             Some(Placement::Bottom),
             Some(px(200.)),
             true,
+            None,
             cx,
         );
 
@@ -127,6 +130,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -138,6 +142,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -149,6 +154,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -160,6 +166,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -171,6 +178,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -182,6 +190,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -193,6 +202,7 @@ impl StoryWorkspace {
             Some(Placement::Bottom),
             Some(px(200.)),
             true,
+            None,
             cx,
         );
 
@@ -204,6 +214,7 @@ impl StoryWorkspace {
             Some(Placement::Bottom),
             None,
             true,
+            Some(cx.theme().muted),
             cx,
         );
 
@@ -223,6 +234,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -234,6 +246,7 @@ impl StoryWorkspace {
             Some(Placement::Bottom),
             Some(px(200.)),
             true,
+            None,
             cx,
         );
 
@@ -245,6 +258,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -256,6 +270,7 @@ impl StoryWorkspace {
             None,
             None,
             true,
+            None,
             cx,
         );
 
@@ -267,6 +282,7 @@ impl StoryWorkspace {
             Some(Placement::Bottom),
             None,
             true,
+            None,
             cx,
         );
 
