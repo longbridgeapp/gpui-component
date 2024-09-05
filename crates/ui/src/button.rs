@@ -11,6 +11,19 @@ use gpui::{
     RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
+pub enum ButtonBorderSide {
+    All,
+    NoLeft,
+    NoRight,
+    NoLeftRight,
+}
+
+pub enum ButtonRoundedSide {
+    All,
+    Left,
+    Right,
+}
+
 pub enum ButtonRounded {
     None,
     Small,
@@ -109,6 +122,8 @@ pub struct Button {
     selected: bool,
     style: ButtonStyle,
     rounded: ButtonRounded,
+    rounded_side: ButtonRoundedSide,
+    border_side: ButtonBorderSide,
     size: Size,
     compact: bool,
     tooltip: Option<SharedString>,
@@ -134,6 +149,8 @@ impl Button {
             selected: false,
             style: ButtonStyle::Secondary,
             rounded: ButtonRounded::Medium,
+            rounded_side: ButtonRoundedSide::All,
+            border_side: ButtonBorderSide::All,
             size: Size::Medium,
             tooltip: None,
             on_click: None,
@@ -188,6 +205,18 @@ impl Button {
     /// Set the border radius of the Button.
     pub fn rounded(mut self, rounded: impl Into<ButtonRounded>) -> Self {
         self.rounded = rounded.into();
+        self
+    }
+
+    /// Set the border rounded side of the Button.
+    pub fn rounded_side(mut self, rounded_side: impl Into<ButtonRoundedSide>) -> Self {
+        self.rounded_side = rounded_side.into();
+        self
+    }
+
+    /// Set the border side of the Button.
+    pub fn border_side(mut self, border_side: impl Into<ButtonBorderSide>) -> Self {
+        self.border_side = border_side.into();
         self
     }
 
@@ -310,12 +339,28 @@ impl RenderOnce for Button {
                     }
                 }
             })
-            .map(|this| match self.rounded {
-                ButtonRounded::Small => this.rounded(px(cx.theme().radius * 0.5)),
-                ButtonRounded::Medium => this.rounded(px(cx.theme().radius)),
-                ButtonRounded::Large => this.rounded(px(cx.theme().radius * 2.0)),
-                ButtonRounded::Size(px) => this.rounded(px),
-                ButtonRounded::None => this.rounded_none(),
+            .map(|this| match self.rounded_side {
+                ButtonRoundedSide::All => match self.rounded {
+                    ButtonRounded::Small => this.rounded(px(cx.theme().radius * 0.5)),
+                    ButtonRounded::Medium => this.rounded(px(cx.theme().radius)),
+                    ButtonRounded::Large => this.rounded(px(cx.theme().radius * 2.0)),
+                    ButtonRounded::Size(px) => this.rounded(px),
+                    ButtonRounded::None => this.rounded_none(),
+                },
+                ButtonRoundedSide::Left => match self.rounded {
+                    ButtonRounded::Small => this.rounded_l(px(cx.theme().radius * 0.5)),
+                    ButtonRounded::Medium => this.rounded_l(px(cx.theme().radius)),
+                    ButtonRounded::Large => this.rounded_l(px(cx.theme().radius * 2.0)),
+                    ButtonRounded::Size(px) => this.rounded_l(px),
+                    ButtonRounded::None => this.rounded_none(),
+                },
+                ButtonRoundedSide::Right => match self.rounded {
+                    ButtonRounded::Small => this.rounded_r(px(cx.theme().radius * 0.5)),
+                    ButtonRounded::Medium => this.rounded_r(px(cx.theme().radius)),
+                    ButtonRounded::Large => this.rounded_r(px(cx.theme().radius * 2.0)),
+                    ButtonRounded::Size(px) => this.rounded_r(px),
+                    ButtonRounded::None => this.rounded_none(),
+                },
             })
             .text_color(normal_style.fg)
             .when(self.selected, |this| {
@@ -361,7 +406,12 @@ impl RenderOnce for Button {
                     .text_color(disabled_style.fg)
                     .border_color(disabled_style.border)
             })
-            .border_1()
+            .map(|this| match self.border_side {
+                ButtonBorderSide::All => this.border_1(),
+                ButtonBorderSide::NoLeft => this.border_1().border_l_0(),
+                ButtonBorderSide::NoRight => this.border_1().border_r_0(),
+                ButtonBorderSide::NoLeftRight => this.border_1().border_l_0().border_r_0(),
+            })
             .child({
                 h_flex()
                     .id("label")

@@ -5,6 +5,7 @@ use gpui::{
 
 use ui::{
     button::{Button, ButtonCustomStyle},
+    button_group::ButtonGroup,
     checkbox::Checkbox,
     h_flex,
     prelude::FluentBuilder,
@@ -404,6 +405,38 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             ),
                     ),
+            )
+            .child(
+                section("Button Group", cx).child(
+                    ButtonGroup::new("button-group")
+                        .child(
+                            Button::new("button-one", cx)
+                                .label("One")
+                                .disabled(disabled)
+                                .selected(selected)
+                                .loading(loading)
+                                .when(compact, |this| this.compact())
+                                .on_click(Self::on_click),
+                        )
+                        .child(
+                            Button::new("button-two", cx)
+                                .label("Two")
+                                .disabled(disabled)
+                                .selected(selected)
+                                .loading(loading)
+                                .when(compact, |this| this.compact())
+                                .on_click(Self::on_click),
+                        )
+                        .child(
+                            Button::new("button-three", cx)
+                                .label("Three")
+                                .disabled(disabled)
+                                .selected(selected)
+                                .loading(loading)
+                                .when(compact, |this| this.compact())
+                                .on_click(Self::on_click),
+                        ),
+                ),
             )
             .child(
                 section("Icon Button", cx)
