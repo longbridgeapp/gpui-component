@@ -143,7 +143,7 @@ impl TabPanel {
         cx.notify();
     }
 
-    fn insert_panel_at(
+    pub fn insert_panel_at(
         &mut self,
         panel: Arc<dyn PanelView>,
         ix: usize,
@@ -404,7 +404,6 @@ impl TabPanel {
     }
 
     fn on_drop(&mut self, drag: &DragPanel, ix: Option<usize>, cx: &mut ViewContext<Self>) {
-        let panel = drag.panel.clone();
         let is_same_tab = drag.tab_panel == *cx.view();
 
         // If target is same tab, and it is only one panel, do nothing.
@@ -418,31 +417,44 @@ impl TabPanel {
             }
         }
 
-        // Here is looks like remove_panel on a same item, but it differnece.
-        //
-        // We must to split it to remove_panel, unless it will be crash by error:
-        // Cannot update ui::dock::tab_panel::TabPanel while it is already being updated
-        if is_same_tab {
-            self.detach_panel(panel.clone(), cx);
-        } else {
-            let _ = drag.tab_panel.update(cx, |view, cx| {
-                view.detach_panel(panel.clone(), cx);
-                view.remove_self_if_empty(cx);
-            });
-        }
-
-        // Insert into new tabs
-        if let Some(placement) = self.will_split_placement {
-            self.split_panel(panel, placement, None, cx);
-        } else {
-            if let Some(ix) = ix {
-                self.insert_panel_at(panel, ix, cx)
+        let panel = drag.panel.clone();
+        let from_tab_panel = drag.tab_panel.clone();
+        let to_tabl_panel = cx.view().clone();
+        let will_split_placement = self.will_split_placement;
+        let _ = self.dock_area.update(cx, |dock_area, cx| {
+            if let Some(placement) = will_split_placement {
+                dock_area.split_panel(panel, from_tab_panel, to_tabl_panel, placement, cx);
             } else {
-                self.add_panel(panel, cx)
+                dock_area.move_panel(panel, from_tab_panel, to_tabl_panel, ix, cx)
             }
-        }
+        });
 
-        self.remove_self_if_empty(cx);
+        // let panel = drag.panel.clone();
+        // // Here is looks like remove_panel on a same item, but it differnece.
+        // //
+        // // We must to split it to remove_panel, unless it will be crash by error:
+        // // Cannot update ui::dock::tab_panel::TabPanel while it is already being updated
+        // if is_same_tab {
+        //     self.detach_panel(panel.clone(), cx);
+        // } else {
+        //     let _ = drag.tab_panel.update(cx, |view, cx| {
+        //         view.detach_panel(panel.clone(), cx);
+        //         view.remove_self_if_empty(cx);
+        //     });
+        // }
+
+        // // Insert into new tabs
+        // if let Some(placement) = self.will_split_placement {
+        //     self.split_panel(panel, placement, None, cx);
+        // } else {
+        //     if let Some(ix) = ix {
+        //         self.insert_panel_at(panel, ix, cx)
+        //     } else {
+        //         self.add_panel(panel, cx)
+        //     }
+        // }
+
+        // self.remove_self_if_empty(cx);
     }
 
     /// Add panel with split placement
