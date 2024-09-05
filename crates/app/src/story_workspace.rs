@@ -53,25 +53,18 @@ impl StoryWorkspace {
 
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", cx));
 
-        let dock_item = DockItem::split(
+        let dock_item = DockItem::split_with_sizes(
             Axis::Horizontal,
             vec![
                 DockItem::split(
                     Axis::Vertical,
                     vec![
-                        DockItem::tabs(
-                            vec![
-                                DockItem::panel(StoryContainer::panel(
-                                    "Icon",
-                                    "Icon use examples",
-                                    IconStory::view(cx).into(),
-                                    cx,
-                                )),
-                            ],
-                            None,
-                            &dock_area,
+                        DockItem::panel(StoryContainer::panel(
+                            "Icon",
+                            "Icon use examples",
+                            IconStory::view(cx).into(),
                             cx,
-                        ),
+                        )),
                         DockItem::panel(StoryContainer::panel(
                                 "Calendar",
                                 "A calendar component.",
@@ -79,11 +72,10 @@ impl StoryWorkspace {
                             cx,
                         )),
                     ],
-                    vec![None, None],
                     &dock_area,
                     cx,
                 ),
-                DockItem::split(
+                DockItem::split_with_sizes(
                     Axis::Vertical,
                     vec![
                         DockItem::tabs(
@@ -193,7 +185,7 @@ impl StoryWorkspace {
                     &dock_area,
                     cx,
                 ),
-                DockItem::split(Axis::Vertical, vec![
+                DockItem::split_with_sizes(Axis::Vertical, vec![
                     DockItem::panel(StoryContainer::panel(
                         "Tooltip",
                         "Displays a short message when users hover over an element.",

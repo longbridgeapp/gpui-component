@@ -136,27 +136,13 @@ impl StackPanel {
         panel: Arc<dyn PanelView>,
         ix: usize,
         size: Option<Pixels>,
-        dock_area: WeakView<DockArea>,
+        _dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) {
         // If the panel is already in the stack, return.
         if let Some(_) = self.index_of_panel(panel.clone()) {
             return;
         }
-
-        let pane_view = panel.view();
-
-        // cx.subscribe(&pane_view, move |_, panel, event, cx| match event {
-        //     PanelEvent::ZoomIn => {
-        //         let _ = dock_area.update(cx, |dock, cx| {
-        //             dock.set_zoomed_in(panel.clone(), cx);
-        //         });
-        //     }
-        //     PanelEvent::ZoomOut => {
-        //         let _ = dock_area.update(cx, |dock, cx| dock.set_zoomed_out(cx));
-        //     }
-        // })
-        // .detach();
 
         let view = cx.view().clone();
         cx.window_context().defer({
