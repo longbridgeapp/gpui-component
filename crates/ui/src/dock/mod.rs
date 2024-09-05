@@ -5,15 +5,15 @@ mod tab_panel;
 use std::sync::Arc;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyElement, AnyView, Axis, InteractiveElement as _,
-    IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled, View, ViewContext,
-    VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder, AnyElement, AnyView, Axis, Entity,
+    InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled,
+    View, ViewContext, VisualContext, WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
-use crate::Placement;
+use crate::{AxisExt, Placement};
 
 actions!(dock, [ToggleZoom, ClosePanel]);
 
@@ -27,17 +27,154 @@ pub struct DockArea {
 /// DockItem is a tree structure that represents the layout of the dock.
 #[derive(Clone)]
 pub enum DockItem {
-    Split {
-        axis: gpui::Axis,
-        items: Vec<DockItem>,
-        sizes: Vec<Option<Pixels>>,
-        view: View<StackPanel>,
-    },
-    Tabs {
-        items: Vec<Arc<dyn PanelView>>,
-        active_ix: usize,
-        view: View<TabPanel>,
-    },
+    Split(DockItemStack),
+    Tabs(DockItemTabs),
+}
+
+#[derive(Clone)]
+pub struct DockItemStack {
+    axis: gpui::Axis,
+    items: Vec<DockItem>,
+    sizes: Vec<Option<Pixels>>,
+    view: View<StackPanel>,
+}
+
+impl DockItemStack {
+    fn add_item(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        placement: Placement,
+        size: Option<Pixels>,
+        ix: Option<usize>,
+        dock_area: &View<DockArea>,
+        cx: &mut WindowContext,
+    ) {
+        let item = DockItem::new_tab(panel.clone(), dock_area, cx);
+        if let Some(ix) = ix {
+            self.items.insert(ix, item.clone());
+            self.sizes.insert(ix, size);
+        } else {
+            self.items.push(item.clone());
+            self.sizes.push(size);
+        }
+
+        let ix = ix.unwrap_or_else(|| self.items.len() - 1);
+
+        let stack_panel = self.view.clone();
+        let dock_area = dock_area.downgrade();
+        cx.defer(move |cx| {
+            stack_panel.update(cx, |view, cx| {
+                view.insert_panel_at(item.view().clone(), ix, placement, size, dock_area, cx)
+            });
+        })
+    }
+
+    fn remove_item(&mut self, panel: Arc<dyn PanelView>, cx: &mut WindowContext) {
+        if let Some(ix) = self
+            .items
+            .iter()
+            .position(|item| item.find_panel(panel.clone()).is_some())
+        {
+            self.items.remove(ix);
+            self.sizes.remove(ix);
+
+            let view = self.view.clone();
+            cx.defer(move |cx| {
+                view.update(cx, |view, cx| {
+                    view.remove_panel(panel.clone(), cx);
+                })
+            });
+        }
+    }
+
+    fn split_item(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        tab_panel: Arc<dyn PanelView>,
+        placement: Placement,
+        size: Option<Pixels>,
+        dock_area: &View<DockArea>,
+        cx: &mut WindowContext,
+    ) {
+        let ix = self
+            .items
+            .iter()
+            .position(|item| item.find_panel(tab_panel.clone()).is_some());
+        let parent_axis = self.axis;
+
+        if parent_axis.is_vertical() && placement.is_vertical() {
+            self.add_item(panel, placement, size, ix, dock_area, cx);
+        } else if parent_axis.is_horizontal() && placement.is_horizontal() {
+            self.add_item(panel, placement, size, ix, dock_area, cx);
+        } else {
+            // let tab_panel = tab_panel.clone();
+            // let stack_panel = self.view.clone();
+            // let new_stack_panel = if self.items.len() <= 1 {
+            //     self.remove_all_items(cx);
+            //     self.axis = placement.axis();
+            //     stack_panel
+            // } else {
+            //     let mut new_stack_item = DockItem::split(placement.axis(), vec![self.clone()], dock_area, cx);
+            //     new_stack_item.
+            // };
+        }
+    }
+
+    fn remove_all_items(&mut self, cx: &mut WindowContext) {
+        let items = std::mem::take(&mut self.items);
+        let sizes = std::mem::take(&mut self.sizes);
+
+        let view = self.view.clone();
+        cx.defer(move |cx| {
+            view.update(cx, |view, cx| {
+                view.remove_all_panels(cx);
+            })
+        });
+    }
+}
+
+#[derive(Clone)]
+pub struct DockItemTabs {
+    items: Vec<Arc<dyn PanelView>>,
+    active_ix: usize,
+    view: View<TabPanel>,
+}
+
+impl DockItemTabs {
+    fn add_item(&mut self, panel: Arc<dyn PanelView>, ix: Option<usize>, cx: &mut WindowContext) {
+        if let Some(ix) = ix {
+            self.items.insert(ix, panel.clone());
+        } else {
+            self.items.push(panel.clone());
+        }
+
+        let view = self.view.clone();
+        cx.defer(move |cx| {
+            view.update(cx, |view, cx| {
+                if let Some(ix) = ix {
+                    view.insert_panel_at(panel, ix, cx);
+                } else {
+                    view.add_panel(panel, cx);
+                }
+            })
+        });
+    }
+
+    fn remove_item(&mut self, panel: Arc<dyn PanelView>, cx: &mut WindowContext) {
+        if let Some(ix) = self.items.iter().position(|item| item == &panel) {
+            self.items.remove(ix);
+            if self.active_ix == ix {
+                self.active_ix = self.active_ix.saturating_sub(1);
+            }
+
+            let view = self.view.clone();
+            cx.defer(move |cx| {
+                view.update(cx, |view, cx| {
+                    view.remove_panel(panel.clone(), cx);
+                })
+            });
+        }
+    }
 }
 
 impl DockItem {
@@ -73,12 +210,12 @@ impl DockItem {
 
             stack_panel
         });
-        Self::Split {
+        Self::Split(DockItemStack {
             axis,
             items,
             sizes,
             view: stack_panel,
-        }
+        })
     }
 
     /// Create DockItem with tabs layout, items are displayed as tabs.
@@ -91,12 +228,25 @@ impl DockItem {
         cx: &mut WindowContext,
     ) -> Self {
         let mut new_items: Vec<Arc<dyn PanelView>> = vec![];
+        for item in items.into_iter() {
+            let item: Arc<dyn PanelView> = Arc::new(item);
+            new_items.push(item)
+        }
+        Self::new_tabs(new_items, active_ix, dock_area, cx)
+    }
+
+    fn new_tabs(
+        items: Vec<Arc<dyn PanelView>>,
+        active_ix: Option<usize>,
+        dock_area: &View<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        let mut new_items: Vec<Arc<dyn PanelView>> = vec![];
         let active_ix = active_ix.unwrap_or(0);
         let tab_panel = cx.new_view(|cx| {
             let mut tab_panel = TabPanel::new(None, dock_area.downgrade(), cx);
 
-            for item in items.iter() {
-                let item = Arc::new(item.clone());
+            for item in items.into_iter() {
                 new_items.push(item.clone());
                 tab_panel.add_panel(item.clone(), cx)
             }
@@ -104,11 +254,11 @@ impl DockItem {
             tab_panel
         });
 
-        Self::Tabs {
+        Self::Tabs(DockItemTabs {
             items: new_items,
             active_ix,
             view: tab_panel,
-        }
+        })
     }
 
     pub fn tab<P: Panel>(
@@ -116,38 +266,48 @@ impl DockItem {
         dock_area: &View<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
-        Self::tabs(vec![item], None, dock_area, cx)
+        Self::new_tab(Arc::new(item), dock_area, cx)
+    }
+
+    fn new_tab(
+        item: Arc<dyn PanelView>,
+        dock_area: &View<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        Self::new_tabs(vec![item], None, dock_area, cx)
     }
 
     /// Returns the views of the dock item.
     fn view(&self) -> Arc<dyn PanelView> {
         match self {
-            Self::Split { view, .. } => Arc::new(view.clone()),
-            Self::Tabs { view, .. } => Arc::new(view.clone()),
+            Self::Split(stack) => Arc::new(stack.view.clone()),
+            Self::Tabs(tabs) => Arc::new(tabs.view.clone()),
         }
     }
 
     /// Find existing panel in the dock item.
     pub fn find_panel(&self, panel: Arc<dyn PanelView>) -> Option<Arc<dyn PanelView>> {
         match self {
-            Self::Split { items, .. } => {
-                items.iter().find_map(|item| item.find_panel(panel.clone()))
-            }
-            Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
+            Self::Split(stack) => stack
+                .items
+                .iter()
+                .find_map(|item| item.find_panel(panel.clone())),
+            Self::Tabs(tabs) => tabs.items.iter().find(|item| *item == &panel).cloned(),
         }
     }
 
     /// Find existing dock item in the dock item by panel.
     pub fn find_dock_item(&mut self, panel: Arc<dyn PanelView>) -> Option<&mut DockItem> {
         match self {
-            Self::Tabs { view, .. } => {
-                if view.view() == panel.view() {
+            Self::Tabs(tabs) => {
+                if tabs.view.view() == panel.view() {
                     Some(self)
                 } else {
                     None
                 }
             }
-            Self::Split { items, .. } => items
+            Self::Split(stack) => stack
+                .items
                 .iter_mut()
                 .find_map(|item| item.find_dock_item(panel.clone())),
         }
@@ -162,38 +322,12 @@ impl DockItem {
         cx: &mut WindowContext,
     ) {
         match self {
-            Self::Split {
-                items, sizes, view, ..
-            } => {
-                // let item = Self::tabs(vec![], active_ix, dock_area, cx)
-                // if let Some(ix) = ix {
-                //     items.insert(ix, item.clone());
-                //     sizes.insert(ix, None);
-                // } else {
-                //     items.push(item.clone());
-                //     sizes.push(None);
-                // }
-                // view.update(cx, |view, cx| {
-                //     view.add_panel(item.view(), None, dock_area.downgrade(), cx);
-                // })
+            Self::Split(stack) => {
+                // FIXME: The placement is always right, we need to add a way to specify it.
+                stack.add_item(panel, Placement::Right, None, ix, &dock_area, cx);
             }
-            Self::Tabs { items, view, .. } => {
-                if let Some(ix) = ix {
-                    items.insert(ix, panel.clone());
-                } else {
-                    items.push(panel.clone());
-                }
-
-                let view = view.clone();
-                cx.defer(move |cx| {
-                    view.update(cx, |view, cx| {
-                        if let Some(ix) = ix {
-                            view.insert_panel_at(panel, ix, cx);
-                        } else {
-                            view.add_panel(panel, cx);
-                        }
-                    })
-                });
+            Self::Tabs(tabs) => {
+                tabs.add_item(panel, ix, cx);
             }
         }
     }
@@ -201,62 +335,47 @@ impl DockItem {
     pub(super) fn split_to(
         &mut self,
         panel: Arc<dyn PanelView>,
+        parent_item: &mut DockItem,
         placement: Placement,
         dock_area: &View<DockArea>,
         cx: &mut WindowContext,
     ) {
-        // let item = Self::Panel { view: panel };
-        // let new_tab_item = Self::tabs(vec![item], None, dock_area, cx);
+        let new_tab = Self::new_tab(panel.clone(), dock_area, cx);
 
-        // match self {
-        //     Self::Tabs { .. } => {}
-        //     _ => {
-        //         unreachable!("Only DockItem::Tabs can be split to DockItem::Tabs")
-        //     }
-        // }
+        match parent_item {
+            Self::Split(DockItemStack {
+                axis, items, view, ..
+            }) => {
+                let stack_panel = view.clone();
+                let ix = items
+                    .iter()
+                    .position(|item| item.view() == self.view())
+                    .unwrap_or_default();
+
+                if axis.is_vertical() && placement.is_vertical() {
+                    stack_panel.update(cx, |view, cx| {
+                        view.insert_panel_at(
+                            new_tab.view(),
+                            ix,
+                            placement,
+                            None,
+                            dock_area.downgrade(),
+                            cx,
+                        )
+                    })
+                }
+            }
+            _ => {
+                unreachable!("Parent item must be a split")
+            }
+        };
     }
 
     /// Remove a panel from the dock item.
     pub fn remove(&mut self, panel: Arc<dyn PanelView>, cx: &mut WindowContext) {
         match self {
-            Self::Split {
-                items, sizes, view, ..
-            } => {
-                if let Some(ix) = items
-                    .iter()
-                    .position(|item| item.find_panel(panel.clone()).is_some())
-                {
-                    items.remove(ix);
-                    sizes.remove(ix);
-
-                    let view = view.clone();
-                    cx.defer(move |cx| {
-                        view.update(cx, |view, cx| {
-                            view.remove_panel(panel.clone(), cx);
-                        })
-                    });
-                }
-            }
-            Self::Tabs {
-                items,
-                view,
-                active_ix,
-                ..
-            } => {
-                if let Some(ix) = items.iter().position(|item| item == &panel) {
-                    items.remove(ix);
-                    if *active_ix == ix {
-                        *active_ix = active_ix.saturating_sub(1);
-                    }
-
-                    let view = view.clone();
-                    cx.defer(move |cx| {
-                        view.update(cx, |view, cx| {
-                            view.remove_panel(panel.clone(), cx);
-                        })
-                    });
-                }
-            }
+            Self::Split(stack) => stack.remove_item(panel, cx),
+            Self::Tabs(tabs) => tabs.remove_item(panel, cx),
         }
     }
 }
@@ -264,12 +383,12 @@ impl DockItem {
 impl DockArea {
     pub fn new(id: impl Into<SharedString>, cx: &mut WindowContext) -> Self {
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
-        let dock_item = DockItem::Split {
+        let dock_item = DockItem::Split(DockItemStack {
             axis: Axis::Horizontal,
             items: vec![],
             sizes: vec![],
             view: stack_panel.clone(),
-        };
+        });
 
         Self {
             id: id.into(),
@@ -318,24 +437,37 @@ impl DockArea {
     pub(super) fn split_panel(
         &mut self,
         panel: Arc<dyn PanelView>,
-        from_tab_panel: View<TabPanel>,
-        to_tab_panel: View<TabPanel>,
+        tab_panel: View<TabPanel>,
         placement: Placement,
+        size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
         let dock_area = cx.view().clone();
 
-        if let Some(from_item) = self.items.find_dock_item(Arc::new(from_tab_panel)) {
-            from_item.remove(panel.clone(), cx);
-        } else {
-            panic!("TabPanel not found in DockArea");
-        }
+        // wrap the panel in a TabPanel
+        let new_tab = DockItem::new_tab(panel.clone(), &dock_area, cx);
 
-        if let Some(item) = self.items.find_dock_item(Arc::new(to_tab_panel)) {
-            item.split_to(panel, placement, &dock_area, cx);
-        } else {
-            panic!("TabPanel not found in DockArea");
-        }
+        let stack_panel = tab_panel.read(cx).parent().unwrap();
+        let parent_item = self
+            .items
+            .find_dock_item(Arc::new(stack_panel.clone()))
+            .unwrap();
+
+        match parent_item {
+            DockItem::Split(stack) => {
+                stack.split_item(
+                    new_tab.view(),
+                    Arc::new(tab_panel),
+                    placement,
+                    size,
+                    &dock_area,
+                    cx,
+                );
+            }
+            _ => {
+                unreachable!("Parent item must be a split")
+            }
+        };
     }
 
     /// Subscribe event on the panels
@@ -377,12 +509,12 @@ impl DockArea {
         }
 
         match item {
-            DockItem::Split { items, .. } => {
+            DockItem::Split(DockItemStack { items, .. }) => {
                 for item in items {
                     self.subscribe_item(item, cx);
                 }
             }
-            DockItem::Tabs { view, .. } => {
+            DockItem::Tabs(DockItemTabs { view, .. }) => {
                 // We need, only subscribe to the zoom events on the TabPanel
                 // Because we always wrap the DockItem::Panel in a DockItem::Tabs
                 subscribe_zoom(view, dock_area.clone(), cx);
@@ -407,8 +539,8 @@ impl DockArea {
 
     fn render_items(&self, _cx: &mut ViewContext<Self>) -> AnyElement {
         match &self.items {
-            DockItem::Split { view, .. } => view.clone().into_any_element(),
-            DockItem::Tabs { view, .. } => view.clone().into_any_element(),
+            DockItem::Split(DockItemStack { view, .. }) => view.clone().into_any_element(),
+            DockItem::Tabs(DockItemTabs { view, .. }) => view.clone().into_any_element(),
         }
     }
 }

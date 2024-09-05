@@ -94,6 +94,10 @@ impl TabPanel {
         self.stack_panel = Some(parent);
     }
 
+    pub(super) fn parent(&self) -> Option<View<StackPanel>> {
+        self.stack_panel.clone()
+    }
+
     /// Return current active_panel View
     pub fn active_panel(&self) -> Option<Arc<dyn PanelView>> {
         self.panels.get(self.active_ix).cloned()
@@ -423,7 +427,7 @@ impl TabPanel {
         let will_split_placement = self.will_split_placement;
         let _ = self.dock_area.update(cx, |dock_area, cx| {
             if let Some(placement) = will_split_placement {
-                dock_area.split_panel(panel, from_tab_panel, to_tabl_panel, placement, cx);
+                dock_area.split_panel(panel, to_tabl_panel, placement, None, cx);
             } else {
                 dock_area.move_panel(panel, from_tab_panel, to_tabl_panel, ix, cx)
             }
