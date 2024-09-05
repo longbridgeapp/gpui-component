@@ -209,13 +209,13 @@ impl Button {
     }
 
     /// Set the border rounded side of the Button.
-    pub fn rounded_side(mut self, rounded_side: impl Into<ButtonRoundedSide>) -> Self {
+    pub(crate) fn rounded_side(mut self, rounded_side: impl Into<ButtonRoundedSide>) -> Self {
         self.rounded_side = rounded_side.into();
         self
     }
 
     /// Set the border side of the Button.
-    pub fn border_side(mut self, border_side: impl Into<ButtonBorderSide>) -> Self {
+    pub(crate) fn border_side(mut self, border_side: impl Into<ButtonBorderSide>) -> Self {
         self.border_side = border_side.into();
         self
     }
