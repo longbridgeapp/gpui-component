@@ -29,6 +29,12 @@ impl ButtonGroup {
     }
 }
 
+impl Styled for ButtonGroup {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
 impl RenderOnce for ButtonGroup {
     fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
         let children_len = self.children.len();
@@ -61,11 +67,5 @@ impl RenderOnce for ButtonGroup {
             } else {
                 self.children
             })
-    }
-}
-
-impl Styled for ButtonGroup {
-    fn style(&mut self) -> &mut gpui::StyleRefinement {
-        self.base.style()
     }
 }
