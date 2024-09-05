@@ -228,17 +228,33 @@ impl DockItem {
                 {
                     items.remove(ix);
                     sizes.remove(ix);
-                    view.update(cx, |view, cx| {
-                        view.remove_panel(panel.clone(), cx);
-                    })
+
+                    let view = view.clone();
+                    cx.defer(move |cx| {
+                        view.update(cx, |view, cx| {
+                            view.remove_panel(panel.clone(), cx);
+                        })
+                    });
                 }
             }
-            Self::Tabs { items, view, .. } => {
+            Self::Tabs {
+                items,
+                view,
+                active_ix,
+                ..
+            } => {
                 if let Some(ix) = items.iter().position(|item| item == &panel) {
                     items.remove(ix);
-                    view.update(cx, |view, cx| {
-                        view.remove_panel(panel.clone(), cx);
-                    })
+                    if *active_ix == ix {
+                        *active_ix = active_ix.saturating_sub(1);
+                    }
+
+                    let view = view.clone();
+                    cx.defer(move |cx| {
+                        view.update(cx, |view, cx| {
+                            view.remove_panel(panel.clone(), cx);
+                        })
+                    });
                 }
             }
         }
