@@ -140,16 +140,16 @@ impl DockItem {
     /// Find existing dock item in the dock item by panel.
     pub fn find_dock_item(&mut self, panel: Arc<dyn PanelView>) -> Option<&mut DockItem> {
         match self {
-            Self::Split { items, .. } => items
-                .iter_mut()
-                .find_map(|item| item.find_dock_item(panel.clone())),
-            Self::Tabs { items, .. } => {
-                if items.iter().any(|item| item == &panel) {
+            Self::Tabs { view, .. } => {
+                if view.view() == panel.view() {
                     Some(self)
                 } else {
                     None
                 }
             }
+            Self::Split { items, .. } => items
+                .iter_mut()
+                .find_map(|item| item.find_dock_item(panel.clone())),
         }
     }
 
@@ -183,13 +183,17 @@ impl DockItem {
                 } else {
                     items.push(panel.clone());
                 }
-                view.update(cx, |view, cx| {
-                    if let Some(ix) = ix {
-                        view.insert_panel_at(panel, ix, cx);
-                    } else {
-                        view.add_panel(panel, cx);
-                    }
-                })
+
+                let view = view.clone();
+                cx.defer(move |cx| {
+                    view.update(cx, |view, cx| {
+                        if let Some(ix) = ix {
+                            view.insert_panel_at(panel, ix, cx);
+                        } else {
+                            view.add_panel(panel, cx);
+                        }
+                    })
+                });
             }
         }
     }
