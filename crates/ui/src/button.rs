@@ -6,9 +6,9 @@ use crate::{
     Disableable, Icon, Selectable, Sizable, Size,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Div, ElementId,
-    FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Corners, Div, Edges,
+    ElementId, FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -109,6 +109,8 @@ pub struct Button {
     selected: bool,
     style: ButtonStyle,
     rounded: ButtonRounded,
+    border_corners: Corners<bool>,
+    border_edges: Edges<bool>,
     size: Size,
     compact: bool,
     tooltip: Option<SharedString>,
@@ -134,6 +136,8 @@ impl Button {
             selected: false,
             style: ButtonStyle::Secondary,
             rounded: ButtonRounded::Medium,
+            border_corners: Corners::all(true),
+            border_edges: Edges::all(true),
             size: Size::Medium,
             tooltip: None,
             on_click: None,
@@ -188,6 +192,18 @@ impl Button {
     /// Set the border radius of the Button.
     pub fn rounded(mut self, rounded: impl Into<ButtonRounded>) -> Self {
         self.rounded = rounded.into();
+        self
+    }
+
+    /// Set the border corners side of the Button.
+    pub(crate) fn border_corners(mut self, corners: impl Into<Corners<bool>>) -> Self {
+        self.border_corners = corners.into();
+        self
+    }
+
+    /// Set the border edges of the Button.
+    pub(crate) fn border_edges(mut self, edges: impl Into<Edges<bool>>) -> Self {
+        self.border_edges = edges.into();
         self
     }
 
@@ -310,13 +326,30 @@ impl RenderOnce for Button {
                     }
                 }
             })
-            .map(|this| match self.rounded {
-                ButtonRounded::Small => this.rounded(px(cx.theme().radius * 0.5)),
-                ButtonRounded::Medium => this.rounded(px(cx.theme().radius)),
-                ButtonRounded::Large => this.rounded(px(cx.theme().radius * 2.0)),
-                ButtonRounded::Size(px) => this.rounded(px),
-                ButtonRounded::None => this.rounded_none(),
-            })
+            .when(
+                self.border_corners.top_left && self.border_corners.bottom_left,
+                |this| match self.rounded {
+                    ButtonRounded::Small => this.rounded_l(px(cx.theme().radius * 0.5)),
+                    ButtonRounded::Medium => this.rounded_l(px(cx.theme().radius)),
+                    ButtonRounded::Large => this.rounded_l(px(cx.theme().radius * 2.0)),
+                    ButtonRounded::Size(px) => this.rounded_l(px),
+                    ButtonRounded::None => this.rounded_none(),
+                },
+            )
+            .when(
+                self.border_corners.top_right && self.border_corners.bottom_right,
+                |this| match self.rounded {
+                    ButtonRounded::Small => this.rounded_r(px(cx.theme().radius * 0.5)),
+                    ButtonRounded::Medium => this.rounded_r(px(cx.theme().radius)),
+                    ButtonRounded::Large => this.rounded_r(px(cx.theme().radius * 2.0)),
+                    ButtonRounded::Size(px) => this.rounded_r(px),
+                    ButtonRounded::None => this.rounded_none(),
+                },
+            )
+            .when(self.border_edges.left, |this| this.border_l_1())
+            .when(self.border_edges.right, |this| this.border_r_1())
+            .when(self.border_edges.top, |this| this.border_t_1())
+            .when(self.border_edges.bottom, |this| this.border_b_1())
             .text_color(normal_style.fg)
             .when(self.selected, |this| {
                 let selected_style = style.selected(cx);
@@ -361,7 +394,6 @@ impl RenderOnce for Button {
                     .text_color(disabled_style.fg)
                     .border_color(disabled_style.border)
             })
-            .border_1()
             .child({
                 h_flex()
                     .id("label")
