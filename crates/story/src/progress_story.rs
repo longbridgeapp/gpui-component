@@ -21,6 +21,16 @@ pub struct ProgressStory {
     slider2_value: f32,
 }
 
+impl super::Story for ProgressStory {
+    fn title() -> &'static str {
+        "Progress"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl ProgressStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)

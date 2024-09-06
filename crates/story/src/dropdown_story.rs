@@ -55,6 +55,20 @@ pub struct DropdownStory {
     disabled_dropdown: View<Dropdown<Vec<SharedString>>>,
 }
 
+impl super::Story for DropdownStory {
+    fn title() -> &'static str {
+        "Dropdown"
+    }
+
+    fn description() -> &'static str {
+        "Displays a list of options for the user to pick from—triggered by a button."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl DropdownStory {
     fn new(cx: &mut WindowContext) -> View<Self> {
         let countries = vec![

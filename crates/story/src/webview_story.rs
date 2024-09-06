@@ -18,6 +18,16 @@ pub struct WebViewStory {
     address_input: View<TextInput>,
 }
 
+impl super::Story for WebViewStory {
+    fn title() -> &'static str {
+        "WebView"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl WebViewStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         let focus_handle = cx.focus_handle();

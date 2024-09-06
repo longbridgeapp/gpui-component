@@ -24,6 +24,16 @@ impl TooltipStory {
     }
 }
 
+impl super::Story for TooltipStory {
+    fn title() -> &'static str {
+        "Tooltip"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl Render for TooltipStory {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()

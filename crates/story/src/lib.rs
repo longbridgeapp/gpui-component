@@ -16,8 +16,6 @@ mod text_story;
 mod tooltip_story;
 mod webview_story;
 
-use std::sync::Arc;
-
 pub use button_story::ButtonStory;
 pub use calendar_story::CalendarStory;
 pub use dropdown_story::DropdownStory;
@@ -38,20 +36,19 @@ pub use webview_story::WebViewStory;
 
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
-    SharedString, StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext,
-    WindowContext,
+    FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
+    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
     divider::Divider,
-    dock::{Panel, PanelEvent, TabPanel, TitleStyle},
+    dock::{Panel, PanelEvent, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
     popup_menu::PopupMenu,
     theme::ActiveTheme,
-    v_flex, ContextModal, Placement,
+    v_flex, ContextModal,
 };
 
 pub fn init(cx: &mut AppContext) {
@@ -87,6 +84,7 @@ pub struct StoryContainer {
     width: Option<gpui::Pixels>,
     height: Option<gpui::Pixels>,
     story: Option<AnyView>,
+    story_klass: Option<SharedString>,
     closeable: bool,
 }
 
@@ -95,66 +93,59 @@ pub enum ContainerEvent {
     Close,
 }
 
+pub trait Story {
+    fn klass() -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
+    fn title() -> &'static str;
+    fn description() -> &'static str {
+        ""
+    }
+    fn closeable() -> bool {
+        true
+    }
+    fn title_bg() -> Option<Hsla> {
+        None
+    }
+    fn new_view(cx: &mut WindowContext) -> AnyView;
+}
+
 impl EventEmitter<ContainerEvent> for StoryContainer {}
 
 impl StoryContainer {
-    pub fn new(
-        name: impl Into<SharedString>,
-        description: impl Into<SharedString>,
-        closeable: bool,
-        cx: &mut WindowContext,
-    ) -> Self {
+    pub fn new(closeable: bool, cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
 
         Self {
             focus_handle,
-            name: name.into(),
+            name: "".into(),
             title_bg: None,
-            description: description.into(),
+            description: "".into(),
             width: None,
             height: None,
             story: None,
+            story_klass: None,
             closeable,
         }
     }
 
-    pub fn panel(
-        name: impl Into<SharedString>,
-        description: impl Into<SharedString>,
-        story: AnyView,
-        cx: &mut WindowContext,
-    ) -> View<Self> {
-        cx.new_view(|cx| Self::new(name, description, true, cx).story(story))
-    }
-
     #[allow(clippy::too_many_arguments)]
-    pub fn add_panel(
-        name: impl Into<SharedString>,
-        description: impl Into<SharedString>,
-        story: AnyView,
-        tab_panel: View<TabPanel>,
-        placement: Option<Placement>,
-        size: Option<Pixels>,
-        closeable: bool,
-        title_bg: Option<Hsla>,
-        cx: &mut WindowContext,
-    ) {
-        let name = name.into();
-        let description = description.into();
+    pub fn panel<S: Story>(cx: &mut WindowContext) -> View<Self> {
+        let name = S::title();
+        let description = S::description();
+        let story = S::new_view(cx);
+        let story_klass = S::klass();
 
-        tab_panel.update(cx, |panel, cx| {
-            let view = cx.new_view(|cx| {
-                Self::new(name, description, closeable, cx)
-                    .story(story)
-                    .title_bg(title_bg)
-            });
-            if let Some(placement) = placement {
-                panel.add_panel_at(Arc::new(view.clone()), placement, size, cx);
-            } else {
-                panel.add_panel(Arc::new(view.clone()), cx);
-            }
-            view
+        let view = cx.new_view(|cx| {
+            let mut story = Self::new(S::closeable(), cx).story(story, story_klass);
+            story.name = name.into();
+            story.description = description.into();
+            story.title_bg = S::title_bg();
+            story
         });
+
+        view
     }
 
     pub fn width(mut self, width: gpui::Pixels) -> Self {
@@ -167,13 +158,9 @@ impl StoryContainer {
         self
     }
 
-    pub fn story(mut self, story: AnyView) -> Self {
+    pub fn story(mut self, story: AnyView, story_klass: impl Into<SharedString>) -> Self {
         self.story = Some(story);
-        self
-    }
-
-    pub fn title_bg(mut self, title_bg: Option<Hsla>) -> Self {
-        self.title_bg = title_bg;
+        self.story_klass = Some(story_klass.into());
         self
     }
 

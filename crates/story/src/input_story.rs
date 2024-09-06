@@ -1,4 +1,8 @@
-use gpui::{actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext, WindowContext};
+use gpui::{
+    actions, div, px, AppContext, FocusHandle, InteractiveElement, IntoElement, KeyBinding,
+    ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
+    WindowContext,
+};
 
 use crate::section;
 use ui::{
@@ -8,11 +12,7 @@ use ui::{
     input::{InputEvent, OtpInput, TextInput},
     prelude::FluentBuilder as _,
     scroll::ScrollbarAxis,
-    v_flex,
-    FocusableCycle,
-    IconName,
-    Sizable,
-    StyledExt,
+    v_flex, FocusableCycle, IconName, Sizable, StyledExt,
 };
 
 actions!(input_story, [Tab, TabPrev]);
@@ -42,6 +42,24 @@ pub struct InputStory {
     otp_input_small: View<OtpInput>,
     otp_input_large: View<OtpInput>,
     opt_input_sized: View<OtpInput>,
+}
+
+impl super::Story for InputStory {
+    fn title() -> &'static str {
+        "Input"
+    }
+
+    fn description() -> &'static str {
+        "A control that allows the user to input text."
+    }
+
+    fn closeable() -> bool {
+        false
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
 }
 
 impl InputStory {

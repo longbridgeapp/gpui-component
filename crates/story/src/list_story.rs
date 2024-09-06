@@ -196,6 +196,20 @@ pub struct ListStory {
     selected_company: Option<Company>,
 }
 
+impl super::Story for ListStory {
+    fn title() -> &'static str {
+        "List"
+    }
+
+    fn description() -> &'static str {
+        "A list displays a series of items."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl ListStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)

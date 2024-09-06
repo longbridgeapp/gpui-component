@@ -60,6 +60,20 @@ impl ScrollableStory {
     }
 }
 
+impl super::Story for ScrollableStory {
+    fn title() -> &'static str {
+        "Scrollable"
+    }
+
+    fn description() -> &'static str {
+        "Add vertical or horizontal, or both scrollbars to a container."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl Render for ScrollableStory {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         let view = cx.view().clone();

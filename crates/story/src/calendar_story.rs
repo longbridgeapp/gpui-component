@@ -17,6 +17,20 @@ pub struct CalendarStory {
     default_range_mode_picker: View<DatePicker>,
 }
 
+impl super::Story for CalendarStory {
+    fn title() -> &'static str {
+        "Calendar"
+    }
+
+    fn description() -> &'static str {
+        "A date picker and calendar component."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl CalendarStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)
