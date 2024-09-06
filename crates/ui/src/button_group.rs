@@ -1,9 +1,9 @@
 use gpui::{
-    div, Div, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled,
-    WindowContext,
+    div, Corners, Div, Edges, ElementId, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, Styled, WindowContext,
 };
 
-use crate::button::{Button, ButtonBorderSide, ButtonRounded, ButtonRoundedSide};
+use crate::button::Button;
 
 #[derive(IntoElement)]
 pub struct ButtonGroup {
@@ -49,18 +49,45 @@ impl RenderOnce for ButtonGroup {
                     .enumerate()
                     .map(|(index, button)| {
                         if index == 0 {
-                            // First button: Rounded on the left side only
+                            // First
                             button
-                                .rounded_side(ButtonRoundedSide::Left)
-                                .border_side(ButtonBorderSide::NoRight)
+                                .border_corners(Corners {
+                                    top_left: true,
+                                    top_right: false,
+                                    bottom_left: true,
+                                    bottom_right: false,
+                                })
+                                .border_edges(Edges {
+                                    left: true,
+                                    top: true,
+                                    right: true,
+                                    bottom: true,
+                                })
                         } else if index == children_len - 1 {
-                            // Last button: Rounded on the right side only
-                            button.rounded_side(ButtonRoundedSide::Right)
-                        } else {
-                            // Middle buttons: No rounding
+                            // Last
                             button
-                                .rounded(ButtonRounded::None)
-                                .border_side(ButtonBorderSide::NoRight)
+                                .border_edges(Edges {
+                                    left: false,
+                                    top: true,
+                                    right: true,
+                                    bottom: true,
+                                })
+                                .border_corners(Corners {
+                                    top_left: false,
+                                    top_right: true,
+                                    bottom_left: false,
+                                    bottom_right: true,
+                                })
+                        } else {
+                            // Middle
+                            button
+                                .border_corners(Corners::all(false))
+                                .border_edges(Edges {
+                                    left: false,
+                                    top: true,
+                                    right: true,
+                                    bottom: true,
+                                })
                         }
                     })
                     .collect()
