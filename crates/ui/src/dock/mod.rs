@@ -89,15 +89,14 @@ impl DockItem {
     /// Create DockItem with tabs layout, items are displayed as tabs.
     ///
     /// The `active_ix` is the index of the active tab, if `None` the first tab is active.
-    pub fn tabs<P: Panel>(
-        items: Vec<View<P>>,
+    pub fn tabs(
+        items: Vec<Arc<dyn PanelView>>,
         active_ix: Option<usize>,
         dock_area: &View<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let mut new_items: Vec<Arc<dyn PanelView>> = vec![];
         for item in items.into_iter() {
-            let item: Arc<dyn PanelView> = Arc::new(item);
             new_items.push(item)
         }
         Self::new_tabs(new_items, active_ix, dock_area, cx)
