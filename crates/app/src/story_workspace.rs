@@ -59,18 +59,18 @@ impl StoryWorkspace {
                 DockItem::split(
                     Axis::Vertical,
                     vec![
-                        DockItem::panel(StoryContainer::panel(
+                        DockItem::tab(StoryContainer::panel(
                             "Icon",
                             "Icon use examples",
                             IconStory::view(cx).into(),
                             cx,
-                        )),
-                        DockItem::panel(StoryContainer::panel(
+                        ), &dock_area, cx),
+                        DockItem::tab(StoryContainer::panel(
                                 "Calendar",
                                 "A calendar component.",
                                 CalendarStory::view(cx).into(),
                             cx,
-                        )),
+                        ), &dock_area, cx),
                     ],
                     &dock_area,
                     cx,
@@ -80,83 +80,78 @@ impl StoryWorkspace {
                     vec![
                         DockItem::tabs(
                             vec![
-                                DockItem::panel(StoryContainer::panel(
+                              StoryContainer::panel(
                                     "Button",
                                     "Displays a button or a component that looks like a button.",
                                     ButtonStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Input",
                                     "A control that allows the user to input text.",
                                     InputStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                               StoryContainer::panel(
                                     "Dropdown",
                                     "Displays a list of options for the user to pick from—triggered by a button.",
                                     DropdownStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Modal",
                                    "Modal & Drawer use examples",
                                     ModalStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Popup",
                                    "A popup displays content on top of the main page.",
                                     PopupStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::tabs(
-                                    vec![DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                         "List",
                                         "A list displays a series of items.",
                                         ListStory::view(cx).into(),
                                         cx,
-                                    ))],
-                                    None,
-                                    &dock_area,
-                                    cx,
                                 ),
-                                DockItem::panel(StoryContainer::panel(
+                                StoryContainer::panel(
                                     "Switch",
                                     "A control that allows the user to toggle between two states.",
                                     SwitchStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Progress",
                                     "Progress use examples",
                                     ProgressStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Table",
                                     "Table use examples",
                                     TableStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Image",
                                     "Image use examples",
                                     ImageStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Resizable",
                                     "Resizable use examples",
                                     ResizableStory::view(cx).into(),
                                     cx,
-                                )),
-                                DockItem::panel(StoryContainer::panel(
+                                ),
+                                StoryContainer::panel(
                                     "Scrollable",
                                     "Scrollable use examples",
                                     ScrollableStory::view(cx).into(),
                                     cx,
-                                )),
+                                ),
                             ],
                             None,
                             &dock_area,
@@ -164,18 +159,19 @@ impl StoryWorkspace {
                         ),
                         DockItem::tabs(
                             vec![
-                            DockItem::panel(StoryContainer::panel(
-                                    "Progress",
-                                    "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
-                                    ProgressStory::view(cx).into(),
-                                cx,
-                            )),
-                            DockItem::panel(StoryContainer::panel(
-                                "Text",
-                                "Links, paragraphs, checkboxes, and more.",
-                                TextStory::view(cx).into(),
-                                cx,
-                            ))],
+                                StoryContainer::panel(
+                                            "Progress",
+                                            "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
+                                            ProgressStory::view(cx).into(),
+                                        cx,
+                                ),
+                                StoryContainer::panel(
+                                    "Text",
+                                    "Links, paragraphs, checkboxes, and more.",
+                                    TextStory::view(cx).into(),
+                                    cx,
+                                ),
+                            ],
                             None,
                             &dock_area,
                             cx,
@@ -186,24 +182,24 @@ impl StoryWorkspace {
                     cx,
                 ),
                 DockItem::split_with_sizes(Axis::Vertical, vec![
-                    DockItem::panel(StoryContainer::panel(
+                    DockItem::tab(StoryContainer::panel(
                         "Tooltip",
                         "Displays a short message when users hover over an element.",
                         TooltipStory::view(cx).into(),
                         cx,
-                    )),
-                    DockItem::panel(StoryContainer::panel(
+                    ), &dock_area, cx),
+                    DockItem::tab(StoryContainer::panel(
                             "Calendar",
                             "A calendar component.",
                             CalendarStory::view(cx).into(),
                         cx,
-                    )),
-                    DockItem::panel(StoryContainer::panel(
+                    ), &dock_area, cx),
+                    DockItem::tab(StoryContainer::panel(
                             "Image",
                             "Render SVG image and Chart",
                             ImageStory::view(cx).into(),
                         cx,
-                    )),
+                    ), &dock_area, cx),
                 ], vec![None, None, Some(px(300.))], &dock_area, cx),
 
             ],

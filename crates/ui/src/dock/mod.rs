@@ -32,12 +32,9 @@ pub enum DockItem {
         view: View<StackPanel>,
     },
     Tabs {
-        items: Vec<DockItem>,
+        items: Vec<Arc<dyn PanelView>>,
         active_ix: usize,
         view: View<TabPanel>,
-    },
-    Panel {
-        view: Arc<dyn PanelView>,
     },
 }
 
@@ -68,26 +65,12 @@ impl DockItem {
         let stack_panel = cx.new_view(|cx| {
             let mut stack_panel = StackPanel::new(axis, cx);
             for (i, item) in items.iter_mut().enumerate() {
-                // Always convert DockItem::Panel to DockItem::Tabs in split layout.
-                // This makes they can subscribe the Zoom event.
-                match item {
-                    DockItem::Panel { .. } => {
-                        *item = DockItem::tabs(vec![item.clone()], None, &dock_area, cx);
-                    }
-                    _ => {}
-                }
-
                 let view = item.view();
                 let size = sizes.get(i).copied().flatten();
                 stack_panel.add_panel(view.clone(), size, dock_area.downgrade(), cx)
             }
 
             for (i, item) in items.iter().enumerate() {
-                let item = match item {
-                    DockItem::Panel { .. } => Self::tabs(vec![item.clone()], None, &dock_area, cx),
-                    _ => item.clone(),
-                };
-
                 let view = item.view();
                 let size = sizes.get(i).copied().flatten();
                 stack_panel.add_panel(view.clone(), size, dock_area.downgrade(), cx)
@@ -106,8 +89,30 @@ impl DockItem {
     /// Create DockItem with tabs layout, items are displayed as tabs.
     ///
     /// The `active_ix` is the index of the active tab, if `None` the first tab is active.
-    pub fn tabs(
-        items: Vec<DockItem>,
+    pub fn tabs<P: Panel>(
+        items: Vec<View<P>>,
+        active_ix: Option<usize>,
+        dock_area: &View<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        let mut new_items: Vec<Arc<dyn PanelView>> = vec![];
+        for item in items.into_iter() {
+            let item: Arc<dyn PanelView> = Arc::new(item);
+            new_items.push(item)
+        }
+        Self::new_tabs(new_items, active_ix, dock_area, cx)
+    }
+
+    pub fn tab<P: Panel>(
+        item: View<P>,
+        dock_area: &View<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        Self::new_tabs(vec![Arc::new(item.clone())], None, dock_area, cx)
+    }
+
+    fn new_tabs(
+        items: Vec<Arc<dyn PanelView>>,
         active_ix: Option<usize>,
         dock_area: &View<DockArea>,
         cx: &mut WindowContext,
@@ -115,10 +120,8 @@ impl DockItem {
         let active_ix = active_ix.unwrap_or(0);
         let tab_panel = cx.new_view(|cx| {
             let mut tab_panel = TabPanel::new(None, dock_area.downgrade(), cx);
-
             for item in items.iter() {
-                let view = item.view();
-                tab_panel.add_panel(view, cx)
+                tab_panel.add_panel(item.clone(), cx)
             }
 
             tab_panel
@@ -131,22 +134,11 @@ impl DockItem {
         }
     }
 
-    /// Create DockItem with a single panel, the `view` must implement `Panel`.
-    pub fn panel<P>(view: View<P>) -> Self
-    where
-        P: Panel,
-    {
-        Self::Panel {
-            view: Arc::new(view),
-        }
-    }
-
     /// Returns the views of the dock item.
     fn view(&self) -> Arc<dyn PanelView> {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
-            Self::Panel { view } => view.clone(),
         }
     }
 
@@ -156,16 +148,7 @@ impl DockItem {
             Self::Split { items, .. } => {
                 items.iter().find_map(|item| item.find_panel(panel.clone()))
             }
-            Self::Tabs { items, .. } => {
-                items.iter().find_map(|item| item.find_panel(panel.clone()))
-            }
-            Self::Panel { view } => {
-                if view == &panel {
-                    Some(view.clone())
-                } else {
-                    None
-                }
-            }
+            Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
         }
     }
 }
@@ -245,11 +228,6 @@ impl DockArea {
                 // Because we always wrap the DockItem::Panel in a DockItem::Tabs
                 subscribe_zoom(view, dock_area.clone(), cx);
             }
-            DockItem::Panel { .. } => {
-                // The DockItem::Panel is not need to handle the zoom events
-                // Because the DockItem::Panel is always wrapped in a DockItem::Tabs
-                // So we only need to subscribe the zoom events on the TabPanel
-            }
         }
     }
 
@@ -272,7 +250,6 @@ impl DockArea {
         match &self.items {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
-            DockItem::Panel { view } => view.view().into_any_element(),
         }
     }
 }
