@@ -37,6 +37,24 @@ impl ButtonStory {
     }
 }
 
+impl super::Story for ButtonStory {
+    fn title() -> &'static str {
+        "Button"
+    }
+
+    fn description() -> &'static str {
+        "Displays a button or a component that looks like a button."
+    }
+
+    fn closeable() -> bool {
+        false
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl Render for ButtonStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let disabled = self.disabled;

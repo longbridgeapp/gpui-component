@@ -18,6 +18,20 @@ pub struct SwitchStory {
     switch3: bool,
 }
 
+impl super::Story for SwitchStory {
+    fn title() -> &'static str {
+        "Switch"
+    }
+
+    fn description() -> &'static str {
+        "A control that allows the user to toggle between two states."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl SwitchStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| Self::new(cx))

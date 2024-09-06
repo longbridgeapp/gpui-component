@@ -151,6 +151,20 @@ pub struct ModalStory {
     model_padding: bool,
 }
 
+impl super::Story for ModalStory {
+    fn title() -> &'static str {
+        "Modal"
+    }
+
+    fn description() -> &'static str {
+        "Modal & Drawer use examples"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl ModalStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)

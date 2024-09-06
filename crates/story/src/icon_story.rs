@@ -18,6 +18,20 @@ impl IconStory {
     }
 }
 
+impl super::Story for IconStory {
+    fn title() -> &'static str {
+        "Icon"
+    }
+
+    fn description() -> &'static str {
+        "Icon use examples"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl Render for IconStory {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex().gap_3().child(

@@ -13,6 +13,20 @@ pub struct ResizableStory {
     group2: View<ResizablePanelGroup>,
 }
 
+impl super::Story for ResizableStory {
+    fn title() -> &'static str {
+        "Resizable"
+    }
+
+    fn description() -> &'static str {
+        "The resizable panels."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl ResizableStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| Self::new(cx))

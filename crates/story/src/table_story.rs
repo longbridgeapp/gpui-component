@@ -362,6 +362,20 @@ pub struct TableStory {
     table: View<Table<CustomerTableDelegate>>,
 }
 
+impl super::Story for TableStory {
+    fn title() -> &'static str {
+        "Table"
+    }
+
+    fn description() -> &'static str {
+        "A complex data table with selection, sorting, column moving, and loading more."
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl TableStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(Self::new)

@@ -25,6 +25,20 @@ pub struct TextStory {
     masked: bool,
 }
 
+impl super::Story for TextStory {
+    fn title() -> &'static str {
+        "Text"
+    }
+
+    fn description() -> &'static str {
+        "The text render testing and examples"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl TextStory {
     pub(crate) fn new(_cx: &mut WindowContext) -> Self {
         Self {

@@ -10,6 +10,16 @@ pub struct ImageStory {
     inbox_img: SvgImg,
 }
 
+impl super::Story for ImageStory {
+    fn title() -> &'static str {
+        "Image"
+    }
+
+    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
+        Self::view(cx).into()
+    }
+}
+
 impl ImageStory {
     pub fn new(_: &WindowContext) -> Self {
         let chart = charts_rs::PieChart::from_json(PIE_JSON).unwrap();
