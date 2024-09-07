@@ -662,7 +662,7 @@ where
             .when(self.open, |this| {
                 this.child(
                     deferred(
-                        anchored().snap_to_window().child(
+                        anchored().snap_to_window_with_margin(px(8.)).child(
                             div()
                                 .occlude()
                                 .map(|this| match self.menu_width {

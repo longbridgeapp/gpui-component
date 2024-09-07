@@ -1,5 +1,5 @@
 use gpui::{
-    actions, anchored, deferred, div, prelude::FluentBuilder as _, AnchorCorner, AnyElement,
+    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, AnchorCorner, AnyElement,
     AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
     FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement, KeyBinding,
     LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render,
@@ -230,7 +230,9 @@ impl<M: ManagedView> Element for Popover<M> {
             if let Some(content_view) = element_state.content_view.borrow_mut().as_mut() {
                 is_open = true;
 
-                let mut anchored = anchored().snap_to_window().anchor(view.anchor);
+                let mut anchored = anchored()
+                    .snap_to_window_with_margin(px(8.))
+                    .anchor(view.anchor);
                 if let Some(trigger_bounds) = element_state.trigger_bounds {
                     anchored = anchored.position(view.resolved_corner(trigger_bounds));
                 }

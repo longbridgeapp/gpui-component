@@ -338,7 +338,7 @@ impl Render for ColorPicker {
                     deferred(
                         anchored()
                             .anchor(self.anchor)
-                            .snap_to_window()
+                            .snap_to_window_with_margin(px(8.))
                             .position(self.resolved_corner(self.bounds))
                             .child(
                                 div()
