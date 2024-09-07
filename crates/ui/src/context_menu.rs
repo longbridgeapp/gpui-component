@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    anchored, deferred, div, prelude::FluentBuilder, relative, AnchorCorner, AnyElement,
+    anchored, deferred, div, prelude::FluentBuilder, px, relative, AnchorCorner, AnyElement,
     AppContext, DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
     IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Position, Stateful,
     Style, View, ViewContext, WindowContext,
@@ -120,7 +120,7 @@ impl Element for ContextMenu {
                 let mut menu_element = deferred(
                     anchored()
                         .position(*position)
-                        .snap_to_window()
+                        .snap_to_window_with_margin(px(8.))
                         .anchor(anchor)
                         .when_some(menu_view, |this, menu| {
                             // Focus the menu, so that can be handle the action.
