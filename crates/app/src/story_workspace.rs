@@ -12,7 +12,7 @@ use std::sync::Arc;
 use ui::{
     button::Button,
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockItem},
+    dock::{DockArea, DockEvent, DockItem},
     drawer::Drawer,
     h_flex,
     modal::Modal,
@@ -119,6 +119,16 @@ impl StoryWorkspace {
         );
 
         dock_area.update(cx, |view, cx| view.set_root(dock_item, cx));
+
+        cx.subscribe(&dock_area, |_, dock_area, ev: &DockEvent, cx| match ev {
+            DockEvent::LayoutChanged => {
+                let json = dock_area.read(cx).dump(cx).unwrap();
+                // Save layout json to app dir layout.json
+                std::fs::write("layout.json", json).unwrap();
+            }
+            _ => {}
+        })
+        .detach();
 
         let locale_selector = cx.new_view(LocaleSelector::new);
 

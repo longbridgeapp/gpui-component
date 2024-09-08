@@ -89,6 +89,11 @@ impl ResizablePanelGroup {
         self
     }
 
+    /// Returns the sizes of the resizable panels.
+    pub(crate) fn sizes(&self) -> Vec<Pixels> {
+        self.sizes.clone()
+    }
+
     pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;

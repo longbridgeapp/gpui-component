@@ -28,6 +28,7 @@ pub use popup_story::PopupStory;
 pub use progress_story::ProgressStory;
 pub use resizable_story::ResizableStory;
 pub use scrollable_story::ScrollableStory;
+use serde::{Deserialize, Serialize};
 pub use switch_story::SwitchStory;
 pub use table_story::TableStory;
 pub use text_story::TextStory;
@@ -42,7 +43,7 @@ use gpui::{
 
 use ui::{
     divider::Divider,
-    dock::{Panel, PanelEvent, TitleStyle},
+    dock::{DockItemInfo, DockItemState, Panel, PanelEvent, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
@@ -95,7 +96,7 @@ pub enum ContainerEvent {
 
 pub trait Story {
     fn klass() -> &'static str {
-        std::any::type_name::<Self>()
+        std::any::type_name::<Self>().split("::").last().unwrap()
     }
 
     fn title() -> &'static str;
@@ -172,7 +173,16 @@ impl StoryContainer {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryState {
+    pub story_klass: SharedString,
+}
+
 impl Panel for StoryContainer {
+    fn panel_name(&self) -> &'static str {
+        "StoryContainer"
+    }
+
     fn title(&self, _cx: &WindowContext) -> SharedString {
         self.name.clone()
     }
@@ -195,6 +205,17 @@ impl Panel for StoryContainer {
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.track_focus(&self.focus_handle)
             .menu("Info", Box::new(PanelInfo))
+    }
+
+    fn dump(&self, _cx: &AppContext) -> DockItemState {
+        let mut state = DockItemState::new(self.panel_name());
+        let story_state = StoryState {
+            story_klass: self.story_klass.clone().unwrap(),
+        };
+        state.info = Some(DockItemInfo::custom(
+            serde_json::to_value(story_state).unwrap(),
+        ));
+        state
     }
 }
 

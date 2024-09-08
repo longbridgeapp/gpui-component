@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use crate::{
+    dock::DockItemInfo,
     h_flex,
     resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
     theme::ActiveTheme,
     Placement,
 };
 
-use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
+use super::{DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
     prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
@@ -24,8 +25,23 @@ pub struct StackPanel {
 }
 
 impl Panel for StackPanel {
+    fn panel_name(&self) -> &'static str {
+        "StackPanel"
+    }
+
     fn title(&self, _cx: &gpui::WindowContext) -> gpui::SharedString {
         "StackPanel".into()
+    }
+
+    fn dump(&self, cx: &AppContext) -> DockItemState {
+        let sizes = self.panel_group.read(cx).sizes();
+        let mut state = DockItemState::new(self.panel_name());
+        for panel in &self.panels {
+            state.add_child(panel.dump(cx));
+            state.info = Some(DockItemInfo::stack(sizes.clone(), self.axis));
+        }
+
+        state
     }
 }
 
@@ -166,9 +182,10 @@ impl StackPanel {
 
         self.panels.insert(ix, panel.clone());
         self.panel_group.update(cx, |view, cx| {
-            view.insert_child(Self::new_resizable_panel(panel, size), ix, cx)
+            view.insert_child(Self::new_resizable_panel(panel.clone(), size), ix, cx)
         });
 
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -180,6 +197,7 @@ impl StackPanel {
                 view.remove_child(ix, cx);
             });
 
+            cx.emit(PanelEvent::LayoutChanged);
             self.remove_self_if_empty(cx);
         } else {
             println!("Panel not found in stack panel.");
@@ -202,6 +220,7 @@ impl StackPanel {
                     cx,
                 );
             });
+            cx.emit(PanelEvent::LayoutChanged);
         }
     }
 
@@ -218,10 +237,11 @@ impl StackPanel {
         let view = cx.view().clone();
         if let Some(parent) = self.parent.as_ref() {
             parent.update(cx, |parent, cx| {
-                parent.remove_panel(Arc::new(view), cx);
+                parent.remove_panel(Arc::new(view.clone()), cx);
             });
         }
 
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 

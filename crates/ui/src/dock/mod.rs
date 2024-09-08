@@ -5,15 +5,19 @@ mod tab_panel;
 use std::sync::Arc;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyElement, AnyView, Axis, InteractiveElement as _,
-    IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled, View, ViewContext,
-    VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, EventEmitter,
+    InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled,
+    View, ViewContext, VisualContext, WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
 actions!(dock, [ToggleZoom, ClosePanel]);
+
+pub enum DockEvent {
+    LayoutChanged,
+}
 
 /// The main area of the dock.
 pub struct DockArea {
@@ -178,20 +182,21 @@ impl DockArea {
         cx.notify();
     }
 
+    /// Dump the dock panels layout to JSON string.
+    pub fn dump(&self, cx: &AppContext) -> Result<String, serde_json::Error> {
+        let root = self.items.view();
+        let state = root.dump(cx);
+        serde_json::to_string_pretty(&state)
+    }
+
     /// Subscribe event on the panels
     #[allow(clippy::only_used_in_recursion)]
     fn subscribe_item(&self, item: &DockItem, cx: &mut ViewContext<Self>) {
-        let dock_area = cx.view();
-
         /// Subscribe zoom event on the panel
-        fn subscribe_zoom<P: Panel>(
-            view: &View<P>,
-            dock_area: View<DockArea>,
-            cx: &mut ViewContext<DockArea>,
-        ) {
+        fn subscribe_zoom<P: Panel>(view: &View<P>, cx: &mut ViewContext<DockArea>) {
             cx.subscribe(view, move |_, panel, event, cx| match event {
                 PanelEvent::ZoomIn => {
-                    let dock_area = dock_area.clone();
+                    let dock_area = cx.view().clone();
                     let panel = panel.clone();
                     cx.spawn(|_, mut cx| async move {
                         let _ = cx.update(|cx| {
@@ -204,7 +209,7 @@ impl DockArea {
                     .detach();
                 }
                 PanelEvent::ZoomOut => {
-                    let dock_area = dock_area.clone();
+                    let dock_area = cx.view().clone();
                     cx.spawn(|_, mut cx| async move {
                         let _ = cx.update(|cx| {
                             let _ = dock_area.update(cx, |view, cx| view.set_zoomed_out(cx));
@@ -212,6 +217,7 @@ impl DockArea {
                     })
                     .detach()
                 }
+                PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
             })
             .detach();
         }
@@ -225,7 +231,7 @@ impl DockArea {
             DockItem::Tabs { view, .. } => {
                 // We need, only subscribe to the zoom events on the TabPanel
                 // Because we always wrap the DockItem::Panel in a DockItem::Tabs
-                subscribe_zoom(view, dock_area.clone(), cx);
+                subscribe_zoom(view, cx);
             }
         }
     }
@@ -252,7 +258,7 @@ impl DockArea {
         }
     }
 }
-
+impl EventEmitter<DockEvent> for DockArea {}
 impl Render for DockArea {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         // println!("Rendering dock area");

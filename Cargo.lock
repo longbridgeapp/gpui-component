@@ -4854,6 +4854,7 @@ dependencies = [
  "gpui",
  "regex",
  "serde",
+ "serde_json",
  "ui",
 ]
 

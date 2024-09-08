@@ -10,6 +10,7 @@ use rust_i18n::t;
 
 use crate::{
     button::Button,
+    dock::DockItemInfo,
     h_flex,
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
@@ -18,13 +19,9 @@ use crate::{
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
-use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
-
-#[derive(Debug)]
-pub enum PanelEvent {
-    ZoomIn,
-    ZoomOut,
-}
+use super::{
+    ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel, ToggleZoom,
+};
 
 #[derive(Clone)]
 pub(crate) struct DragPanel {
@@ -102,6 +99,7 @@ impl TabPanel {
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -118,6 +116,7 @@ impl TabPanel {
         self.panels.push(panel);
         // set the active panel to the new panel
         self.set_active_ix(self.panels.len() - 1, cx);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -140,6 +139,7 @@ impl TabPanel {
             .ok()
         })
         .detach();
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -159,13 +159,15 @@ impl TabPanel {
 
         self.panels.insert(ix, panel);
         self.set_active_ix(ix, cx);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
     /// Remove a panel from the tab panel
     pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         self.detach_panel(panel, cx);
-        self.remove_self_if_empty(cx)
+        self.remove_self_if_empty(cx);
+        cx.emit(PanelEvent::LayoutChanged);
     }
 
     fn detach_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
@@ -443,6 +445,7 @@ impl TabPanel {
         }
 
         self.remove_self_if_empty(cx);
+        cx.emit(PanelEvent::LayoutChanged);
     }
 
     /// Add panel with split placement
@@ -534,6 +537,8 @@ impl TabPanel {
             })
             .detach()
         }
+
+        cx.emit(PanelEvent::LayoutChanged);
     }
 
     fn on_action_toggle_zoom(&mut self, _: &ToggleZoom, cx: &mut ViewContext<Self>) {
@@ -553,6 +558,10 @@ impl TabPanel {
 }
 
 impl Panel for TabPanel {
+    fn panel_name(&self) -> &'static str {
+        "StackPanel"
+    }
+
     fn title(&self, cx: &WindowContext) -> gpui::SharedString {
         self.active_panel()
             .map(|panel| panel.title(cx))
@@ -571,6 +580,16 @@ impl Panel for TabPanel {
         } else {
             menu
         }
+    }
+
+    fn dump(&self, cx: &AppContext) -> DockItemState {
+        let mut state = DockItemState::new(self.panel_name());
+        println!("dump TabPanel: {}", self.panels.len());
+        for panel in self.panels.iter() {
+            state.add_child(panel.dump(cx));
+            state.info = Some(DockItemInfo::tabs(self.active_ix));
+        }
+        state
     }
 }
 impl FocusableView for TabPanel {
