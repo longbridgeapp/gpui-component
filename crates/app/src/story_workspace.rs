@@ -126,7 +126,6 @@ impl StoryWorkspace {
                 // Save layout json to app dir layout.json
                 std::fs::write("layout.json", json).unwrap();
             }
-            _ => {}
         })
         .detach();
 

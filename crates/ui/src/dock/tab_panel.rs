@@ -4,7 +4,7 @@ use gpui::{
     div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
     DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
     IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
-    View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    Task, View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -20,8 +20,16 @@ use crate::{
 };
 
 use super::{
-    ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel, ToggleZoom,
+    register_panel, ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel,
+    ToggleZoom,
 };
+
+pub fn init(cx: &mut AppContext) {
+    register_panel(cx, "TabPanel", |dock_area, cx| {
+        let view = cx.new_view(|cx| TabPanel::new(None, dock_area, cx));
+        Box::new(view)
+    })
+}
 
 #[derive(Clone)]
 pub(crate) struct DragPanel {
@@ -67,6 +75,42 @@ pub struct TabPanel {
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
+}
+
+impl Panel for TabPanel {
+    fn panel_name(&self) -> &'static str {
+        "TabPanel"
+    }
+
+    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
+        self.active_panel()
+            .map(|panel| panel.title(cx))
+            .unwrap_or("Empty Tab".into())
+    }
+
+    fn closeable(&self, cx: &WindowContext) -> bool {
+        self.active_panel()
+            .map(|panel| panel.closeable(cx))
+            .unwrap_or(false)
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        if let Some(panel) = self.active_panel() {
+            panel.popup_menu(menu, cx)
+        } else {
+            menu
+        }
+    }
+
+    fn dump(&self, cx: &AppContext) -> DockItemState {
+        let mut state = DockItemState::new(self.panel_name());
+        println!("dump TabPanel: {}", self.panels.len());
+        for panel in self.panels.iter() {
+            state.add_child(panel.dump(cx));
+            state.info = Some(DockItemInfo::tabs(self.active_ix));
+        }
+        state
+    }
 }
 
 impl TabPanel {
@@ -557,41 +601,6 @@ impl TabPanel {
     }
 }
 
-impl Panel for TabPanel {
-    fn panel_name(&self) -> &'static str {
-        "StackPanel"
-    }
-
-    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
-        self.active_panel()
-            .map(|panel| panel.title(cx))
-            .unwrap_or("Empty Tab".into())
-    }
-
-    fn closeable(&self, cx: &WindowContext) -> bool {
-        self.active_panel()
-            .map(|panel| panel.closeable(cx))
-            .unwrap_or(false)
-    }
-
-    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
-        if let Some(panel) = self.active_panel() {
-            panel.popup_menu(menu, cx)
-        } else {
-            menu
-        }
-    }
-
-    fn dump(&self, cx: &AppContext) -> DockItemState {
-        let mut state = DockItemState::new(self.panel_name());
-        println!("dump TabPanel: {}", self.panels.len());
-        for panel in self.panels.iter() {
-            state.add_child(panel.dump(cx));
-            state.info = Some(DockItemInfo::tabs(self.active_ix));
-        }
-        state
-    }
-}
 impl FocusableView for TabPanel {
     fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
         self.focus_handle.clone()

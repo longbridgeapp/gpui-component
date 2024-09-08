@@ -7,11 +7,16 @@ use std::sync::Arc;
 use gpui::{
     actions, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, EventEmitter,
     InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled,
-    View, ViewContext, VisualContext, WindowContext,
+    View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
+
+pub fn init(cx: &mut AppContext) {
+    stack_panel::init(cx);
+    tab_panel::init(cx);
+}
 
 actions!(dock, [ToggleZoom, ClosePanel]);
 
@@ -47,7 +52,7 @@ impl DockItem {
     pub fn split(
         axis: Axis,
         items: Vec<DockItem>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let sizes = vec![None; items.len()];
@@ -62,7 +67,7 @@ impl DockItem {
         axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let mut items = items;
@@ -71,13 +76,13 @@ impl DockItem {
             for (i, item) in items.iter_mut().enumerate() {
                 let view = item.view();
                 let size = sizes.get(i).copied().flatten();
-                stack_panel.add_panel(view.clone(), size, dock_area.downgrade(), cx)
+                stack_panel.add_panel(view.clone(), size, dock_area.clone(), cx)
             }
 
             for (i, item) in items.iter().enumerate() {
                 let view = item.view();
                 let size = sizes.get(i).copied().flatten();
-                stack_panel.add_panel(view.clone(), size, dock_area.downgrade(), cx)
+                stack_panel.add_panel(view.clone(), size, dock_area.clone(), cx)
             }
 
             stack_panel
@@ -96,7 +101,7 @@ impl DockItem {
     pub fn tabs(
         items: Vec<Arc<dyn PanelView>>,
         active_ix: Option<usize>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let mut new_items: Vec<Arc<dyn PanelView>> = vec![];
@@ -108,7 +113,7 @@ impl DockItem {
 
     pub fn tab<P: Panel>(
         item: View<P>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         Self::new_tabs(vec![Arc::new(item.clone())], None, dock_area, cx)
@@ -117,12 +122,12 @@ impl DockItem {
     fn new_tabs(
         items: Vec<Arc<dyn PanelView>>,
         active_ix: Option<usize>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let active_ix = active_ix.unwrap_or(0);
         let tab_panel = cx.new_view(|cx| {
-            let mut tab_panel = TabPanel::new(None, dock_area.downgrade(), cx);
+            let mut tab_panel = TabPanel::new(None, dock_area.clone(), cx);
             for item in items.iter() {
                 tab_panel.add_panel(item.clone(), cx)
             }

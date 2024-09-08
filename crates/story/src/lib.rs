@@ -38,12 +38,12 @@ pub use webview_story::WebViewStory;
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
     FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
-    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
     divider::Divider,
-    dock::{DockItemInfo, DockItemState, Panel, PanelEvent, TitleStyle},
+    dock::{register_panel, DockItemInfo, DockItemState, Panel, PanelEvent, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
@@ -56,6 +56,11 @@ pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
+
+    register_panel(cx, "StoryContainer", |dock_area, cx| {
+        let view = cx.new_view(|cx| StoryContainer::new(cx));
+        Box::new(view)
+    });
 }
 
 actions!(story, [PanelInfo]);
@@ -115,7 +120,7 @@ pub trait Story {
 impl EventEmitter<ContainerEvent> for StoryContainer {}
 
 impl StoryContainer {
-    pub fn new(closeable: bool, cx: &mut WindowContext) -> Self {
+    pub fn new(cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
 
         Self {
@@ -127,7 +132,7 @@ impl StoryContainer {
             height: None,
             story: None,
             story_klass: None,
-            closeable,
+            closeable: true,
         }
     }
 
@@ -139,7 +144,8 @@ impl StoryContainer {
         let story_klass = S::klass();
 
         let view = cx.new_view(|cx| {
-            let mut story = Self::new(S::closeable(), cx).story(story, story_klass);
+            let mut story = Self::new(cx).story(story, story_klass);
+            story.closeable = S::closeable();
             story.name = name.into();
             story.description = description.into();
             story.title_bg = S::title_bg();

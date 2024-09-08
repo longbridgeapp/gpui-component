@@ -1,11 +1,16 @@
+use std::{collections::HashMap, intrinsics::unreachable};
+
+use crate::popup_menu::PopupMenu;
+use anyhow::Result;
 use gpui::{
-    AnyView, AppContext, Axis, EventEmitter, FocusableView, Hsla, Pixels, SharedString, View,
-    WindowContext,
+    AnyView, AppContext, Axis, EventEmitter, FocusableView, Global, Hsla, Pixels, SharedString,
+    Task, View, WeakView, WindowContext,
 };
+use itertools::Itertools;
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 
-use crate::popup_menu::PopupMenu;
+use super::{DockArea, DockItem};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -44,6 +49,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         this
     }
 
+    /// Dump the panel, used to serialize the panel.
     fn dump(&self, cx: &AppContext) -> DockItemState;
 }
 
@@ -109,7 +115,7 @@ impl PartialEq for dyn PanelView {
 pub struct DockItemState {
     pub panel_name: String,
     pub children: Vec<DockItemState>,
-    pub info: Option<DockItemInfo>,
+    pub info: DockItemInfo,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,11 +154,53 @@ impl DockItemState {
         Self {
             panel_name: panel_name.to_string(),
             children: Vec::new(),
-            info: None,
+            info: DockItemInfo::Tabs { active_index: 0 },
         }
     }
 
     pub fn add_child(&mut self, panel: DockItemState) {
         self.children.push(panel);
     }
+
+    fn to_item(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
+        let info = self.info;
+        let f = cx.global::<PanelRegistry>().items.get(&self.panel_name).expect(&format!("The {} panel type is not registed in PanelRegistry.", self.panel_name));
+        let view = f(dock_area.clone(), info.clone(), cx);
+        let items: Vec<DockItem> = self.children.iter().map(|child| {
+            child.to_item(dock_area.clone(), cx)
+        }).collect();
+
+        match info {
+            DockItemInfo::Stack { sizes, axis } => {
+                let axis = if axis == 0 { Axis::Horizontal } else { Axis::Vertical };
+                DockItem::split_with_sizes(axis, items, sizes.into_iter().map(|s| Some(s)).collect_vec(), &dock_area, cx)
+            }
+            DockItemInfo::Tabs { active_index } => {
+                DockItem::tabs( items, Some(active_index), &dock_area, cx)
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+}
+
+pub struct PanelRegistry {
+    items: HashMap<
+        String,
+        fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>,
+    >,
+}
+impl Global for PanelRegistry {}
+
+/// Register the Panel init by panel_name to global registry.
+pub fn register_panel(
+    cx: &mut AppContext,
+    panel_name: &str,
+    deserialize: fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
+) {
+    cx.global_mut::<PanelRegistry>()
+        .items
+        .insert(panel_name.to_string(), deserialize)
+        .unwrap();
 }
