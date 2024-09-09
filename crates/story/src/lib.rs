@@ -297,15 +297,17 @@ impl Render for StoryContainer {
             .overflow_scroll()
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_panel_info))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_4()
-                    .p_4()
-                    .child(Label::new(self.description.clone()).text_size(px(16.0)))
-                    .child(Divider::horizontal().label("This is a divider")),
-            )
+            .when(self.description.len() > 0, |this| {
+                this.child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_4()
+                        .p_4()
+                        .child(Label::new(self.description.clone()).text_size(px(16.0)))
+                        .child(Divider::horizontal().label("This is a divider")),
+                )
+            })
             .when_some(self.story.clone(), |this, story| {
                 this.child(
                     v_flex()
