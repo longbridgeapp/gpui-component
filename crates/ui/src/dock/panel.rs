@@ -111,14 +111,14 @@ impl PartialEq for dyn PanelView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DockItemState {
     pub panel_name: String,
     pub children: Vec<DockItemState>,
     pub info: DockItemInfo,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DockItemInfo {
     #[serde(rename = "stack")]
     Stack {

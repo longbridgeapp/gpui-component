@@ -2,7 +2,7 @@ use anyhow::Result;
 use gpui::*;
 use prelude::FluentBuilder as _;
 use private::serde::Deserialize;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
     ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
@@ -42,6 +42,8 @@ pub struct StoryWorkspace {
     dock_area: View<DockArea>,
     locale_selector: View<LocaleSelector>,
     theme_color_picker: View<ColorPicker>,
+    last_layout_state: Option<DockItemState>,
+    _save_layout_task: Option<Task<()>>,
 }
 
 impl StoryWorkspace {
@@ -64,15 +66,19 @@ impl StoryWorkspace {
 
         dock_area.update(cx, |view, cx| view.set_root(dock_item, cx));
 
-        cx.subscribe(&dock_area, |_, dock_area, ev: &DockEvent, cx| match ev {
-            DockEvent::LayoutChanged => {
-                // Make debounce
+        cx.subscribe(&dock_area, |this, dock_area, ev: &DockEvent, cx| match ev {
+            DockEvent::LayoutChanged => this.save_layout(dock_area, cx),
+        })
+        .detach();
 
-                println!("Saving layout...");
-                let json = dock_area.read(cx).dump(cx).unwrap();
-                // Save layout json to app dir layout.json
-                std::fs::write("layout.json", json).unwrap();
-            }
+        let dock_area1 = dock_area.clone();
+        cx.on_app_quit(move |cx| {
+            let state = dock_area1.read(cx).dump(cx);
+
+            cx.background_executor().spawn(async move {
+                // Save layout before quitting
+                Self::save_state(&state).unwrap();
+            })
         })
         .detach();
 
@@ -106,7 +112,37 @@ impl StoryWorkspace {
             dock_area,
             locale_selector,
             theme_color_picker,
+            last_layout_state: None,
+            _save_layout_task: None,
         }
+    }
+
+    fn save_layout(&mut self, dock_area: View<DockArea>, cx: &mut ViewContext<Self>) {
+        self._save_layout_task = Some(cx.spawn(|this, mut cx| async move {
+            Timer::after(Duration::from_secs(1)).await;
+
+            let _ = cx.update(|cx| {
+                let dock_area = dock_area.read(cx);
+                let state = dock_area.dump(cx);
+
+                let last_layout_state = this.upgrade().unwrap().read(cx).last_layout_state.clone();
+                if Some(&state) == last_layout_state.as_ref() {
+                    return;
+                }
+
+                Self::save_state(&state).unwrap();
+                let _ = this.update(cx, |this, _| {
+                    this.last_layout_state = Some(state);
+                });
+            });
+        }));
+    }
+
+    fn save_state(state: &DockItemState) -> Result<()> {
+        println!("Save layout...");
+        let json = serde_json::to_string(state)?;
+        std::fs::write("layout.json", json)?;
+        Ok(())
     }
 
     fn load_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> Result<DockItem> {

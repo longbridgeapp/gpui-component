@@ -191,11 +191,12 @@ impl DockArea {
         cx.notify();
     }
 
-    /// Dump the dock panels layout to JSON string.
-    pub fn dump(&self, cx: &AppContext) -> Result<String, serde_json::Error> {
+    /// Dump the dock panels layout to DockItemState.
+    ///
+    /// See also `DockItemState::to_item` for the load DockItem from DockItemState.
+    pub fn dump(&self, cx: &AppContext) -> DockItemState {
         let root = self.items.view();
-        let state = root.dump(cx);
-        serde_json::to_string_pretty(&state)
+        root.dump(cx)
     }
 
     /// Subscribe event on the panels
