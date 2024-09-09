@@ -59,7 +59,7 @@ pub fn init(cx: &mut AppContext) {
 
     register_panel(cx, "StoryContainer", |_, info, cx| {
         let story_state = match info {
-            DockItemInfo::Custom(value) => StoryState::from_value(value),
+            DockItemInfo::Panel(value) => StoryState::from_value(value),
             _ => {
                 unreachable!("Invalid DockItemInfo: {:?}", info)
             }
@@ -278,7 +278,7 @@ impl Panel for StoryContainer {
         let story_state = StoryState {
             story_klass: self.story_klass.clone().unwrap(),
         };
-        state.info = DockItemInfo::custom(story_state.to_value());
+        state.info = DockItemInfo::panel(story_state.to_value());
         state
     }
 }

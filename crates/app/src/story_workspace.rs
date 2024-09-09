@@ -140,7 +140,7 @@ impl StoryWorkspace {
 
     fn save_state(state: &DockItemState) -> Result<()> {
         println!("Save layout...");
-        let json = serde_json::to_string(state)?;
+        let json = serde_json::to_string_pretty(state)?;
         std::fs::write("layout.json", json)?;
         Ok(())
     }

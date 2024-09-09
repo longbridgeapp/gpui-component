@@ -1,0 +1,161 @@
+{
+  "panel_name": "StackPanel",
+  "children": [
+    {
+      "panel_name": "StackPanel",
+      "children": [
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "IconStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        },
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "CalendarStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        }
+      ],
+      "info": { "stack": { "sizes": [584.0, 583.0], "axis": 1 } }
+    },
+    {
+      "panel_name": "StackPanel",
+      "children": [
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ButtonStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "InputStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "DropdownStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ModalStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "PopupStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ListStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "SwitchStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ProgressStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "TableStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ImageStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ResizableStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ScrollableStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        },
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ProgressStory" } }
+            },
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "TextStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        }
+      ],
+      "info": { "stack": { "sizes": [584.0, 583.0], "axis": 1 } }
+    },
+    {
+      "panel_name": "StackPanel",
+      "children": [
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "TooltipStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        },
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "CalendarStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        },
+        {
+          "panel_name": "TabPanel",
+          "children": [
+            {
+              "panel_name": "StoryContainer",
+              "children": [],
+              "info": { "panel": { "story_klass": "ImageStory" } }
+            }
+          ],
+          "info": { "tabs": { "active_index": 0 } }
+        }
+      ],
+      "info": { "stack": { "sizes": [434.0, 433.0, 300.0], "axis": 1 } }
+    }
+  ],
+  "info": { "stack": { "sizes": [300.0, 950.0, 350.0], "axis": 0 } }
+}

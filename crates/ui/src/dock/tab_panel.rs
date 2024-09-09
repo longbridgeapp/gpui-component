@@ -20,16 +20,8 @@ use crate::{
 };
 
 use super::{
-    register_panel, ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel,
-    ToggleZoom,
+    ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel, ToggleZoom,
 };
-
-pub fn init(cx: &mut AppContext) {
-    register_panel(cx, "TabPanel", |dock_area, _, cx| {
-        let view = cx.new_view(|cx| TabPanel::new(None, dock_area, cx));
-        Box::new(view)
-    })
-}
 
 #[derive(Clone)]
 pub(crate) struct DragPanel {

@@ -1,3 +1,4 @@
+mod invalid_panel;
 mod panel;
 mod stack_panel;
 mod tab_panel;
@@ -14,8 +15,7 @@ pub use stack_panel::*;
 pub use tab_panel::*;
 
 pub fn init(cx: &mut AppContext) {
-    stack_panel::init(cx);
-    tab_panel::init(cx);
+    cx.set_global(PanelRegistry::new());
 }
 
 actions!(dock, [ToggleZoom, ClosePanel]);

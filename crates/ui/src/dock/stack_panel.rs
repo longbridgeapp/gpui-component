@@ -11,21 +11,13 @@ use crate::{
     Placement,
 };
 
-use super::{register_panel, DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
+use super::{DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
     prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
 use smallvec::SmallVec;
-
-pub fn init(cx: &mut AppContext) {
-    register_panel(cx, "StackPanel", |_, info, cx| {
-        let axis = info.axis().unwrap_or(Axis::Horizontal);
-        let view = cx.new_view(|cx| StackPanel::new(axis, cx));
-        Box::new(view)
-    })
-}
 
 pub struct StackPanel {
     pub(super) parent: Option<View<StackPanel>>,

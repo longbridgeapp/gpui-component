@@ -1,15 +1,15 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::popup_menu::PopupMenu;
 use gpui::{
     AnyView, AppContext, Axis, EventEmitter, FocusableView, Global, Hsla, Pixels, SharedString,
-    View, WeakView, WindowContext,
+    View, VisualContext, WeakView, WindowContext,
 };
 use itertools::Itertools;
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 
-use super::{DockArea, DockItem};
+use super::{invalid_panel::InvalidPanel, DockArea, DockItem};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -130,8 +130,8 @@ pub enum DockItemInfo {
     },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
-    #[serde(rename = "custom")]
-    Custom(serde_json::Value),
+    #[serde(rename = "panel")]
+    Panel(serde_json::Value),
 }
 
 impl DockItemInfo {
@@ -146,8 +146,8 @@ impl DockItemInfo {
         Self::Tabs { active_index }
     }
 
-    pub fn custom(value: serde_json::Value) -> Self {
-        Self::Custom(value)
+    pub fn panel(value: serde_json::Value) -> Self {
+        Self::Panel(value)
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -176,12 +176,21 @@ impl DockItemInfo {
     }
 }
 
+impl Default for DockItemState {
+    fn default() -> Self {
+        Self {
+            panel_name: "".to_string(),
+            children: Vec::new(),
+            info: DockItemInfo::Panel(serde_json::Value::Null),
+        }
+    }
+}
+
 impl DockItemState {
     pub fn new(panel_name: &str) -> Self {
         Self {
             panel_name: panel_name.to_string(),
-            children: Vec::new(),
-            info: DockItemInfo::Tabs { active_index: 0 },
+            ..Default::default()
         }
     }
 
@@ -193,16 +202,6 @@ impl DockItemState {
         // TODO: Use the empty panel if the panel is not registered, for the compatibility.
 
         let info = self.info.clone();
-        let f = *cx
-            .global::<PanelRegistry>()
-            .items
-            .get(&self.panel_name)
-            .unwrap_or_else(|| {
-                panic!(
-                    "The {} panel type is not registed in PanelRegistry.",
-                    self.panel_name
-                )
-            });
 
         let items: Vec<DockItem> = self
             .children
@@ -237,8 +236,19 @@ impl DockItemState {
 
                 DockItem::tabs(items, Some(active_index), &dock_area, cx)
             }
-            DockItemInfo::Custom(_) => {
-                let view = f(dock_area.clone(), info.clone(), cx);
+            DockItemInfo::Panel(_) => {
+                let view = if let Some(f) = cx
+                    .global::<PanelRegistry>()
+                    .items
+                    .get(&self.panel_name)
+                    .cloned()
+                {
+                    f(dock_area.clone(), info.clone(), cx)
+                } else {
+                    // Show an invalid panel if the panel is not registered.
+                    Box::new(cx.new_view(|cx| InvalidPanel::new(&self.panel_name, cx)))
+                };
+
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
             }
         }
@@ -248,7 +258,7 @@ impl DockItemState {
 pub struct PanelRegistry {
     items: HashMap<
         String,
-        fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
+        Arc<dyn Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>,
     >,
 }
 impl PanelRegistry {
@@ -261,16 +271,32 @@ impl PanelRegistry {
 impl Global for PanelRegistry {}
 
 /// Register the Panel init by panel_name to global registry.
-pub fn register_panel(
-    cx: &mut AppContext,
-    panel_name: &str,
-    deserialize: fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
-) {
+pub fn register_panel<F>(cx: &mut AppContext, panel_name: &str, deserialize: F)
+where
+    F: Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView> + 'static,
+{
     if let None = cx.try_global::<PanelRegistry>() {
         cx.set_global(PanelRegistry::new());
     }
 
     cx.global_mut::<PanelRegistry>()
         .items
-        .insert(panel_name.to_string(), deserialize);
+        .insert(panel_name.to_string(), Arc::new(deserialize));
+}
+
+
+#[cfg(test)]
+mod tests {
+use super::*;
+    #[test]
+    fn test_deserialize_item_state() {
+        let json = include_str!("../../tests/fixtures/layout.json");
+        let state: DockItemState = serde_json::from_str(json).unwrap();
+        assert_eq!(state.panel_name, "StackPanel");
+        assert_eq!(state.children.len(), 3);
+        assert_eq!(state.children[0].panel_name, "StackPanel");
+        assert_eq!(state.children[1].children.len(), 2);
+        assert_eq!(state.children[1].children[0].panel_name, "TabPanel");
+        assert_eq!(state.children[1].panel_name, "StackPanel");
+    }
 }
