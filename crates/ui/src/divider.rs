@@ -1,5 +1,5 @@
 use gpui::{div, prelude::FluentBuilder as _, RenderOnce};
-use gpui::{Axis, Div, IntoElement, ParentElement, SharedString, Styled};
+use gpui::{px, Axis, Div, IntoElement, ParentElement, SharedString, Styled};
 
 use crate::theme::ActiveTheme;
 use crate::StyledExt as _;
@@ -45,18 +45,22 @@ impl RenderOnce for Divider {
         let theme = cx.theme();
 
         self.base
+            .flex()
+            .flex_shrink_0()
+            .items_center()
+            .justify_center()
             .map(|this| match self.axis {
-                Axis::Vertical => this.flex().flex_row().items_center().h_full(),
-                Axis::Horizontal => this.h_flex().w_full(),
+                Axis::Vertical => this.h_full(),
+                Axis::Horizontal => this.w_full(),
             })
             .child(
                 div()
                     .absolute()
                     .map(|this| match self.axis {
-                        Axis::Vertical => this.v_flex().w_0().h_full().border_l_1(),
-                        Axis::Horizontal => this.h_flex().h_0().w_full().border_b_1(),
+                        Axis::Vertical => this.w(px(1.)).h_full(),
+                        Axis::Horizontal => this.h(px(1.)).w_full(),
                     })
-                    .border_color(cx.theme().border),
+                    .bg(cx.theme().border),
             )
             .when_some(self.label, |this, label| {
                 this.child(

@@ -248,6 +248,7 @@ impl ColorPicker {
                         .child(
                             div()
                                 .bg(hovered_color)
+                                .flex_shrink_0()
                                 .border_1()
                                 .border_color(hovered_color.darken(0.2))
                                 .size_5()
