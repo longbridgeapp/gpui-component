@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use anyhow::Result;
 use app_state::AppState;
@@ -21,50 +21,44 @@ fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
 }
 
 fn main() {
-    let join_handle = thread::Builder::new()
-        .stack_size(8 * 1024 * 1024) // Set the stack size to 8MB
-        .spawn(|| {
-            let app_state = Arc::new(AppState {});
+    let app_state = Arc::new(AppState {});
 
-            let app = App::new().with_assets(Assets);
+    let app = App::new().with_assets(Assets);
 
-            app.run(move |cx| {
-                AppState::set_global(Arc::downgrade(&app_state), cx);
+    app.run(move |cx| {
+        AppState::set_global(Arc::downgrade(&app_state), cx);
 
-                if let Err(e) = init(app_state.clone(), cx) {
-                    log::error!("{}", e);
-                    return;
-                }
+        if let Err(e) = init(app_state.clone(), cx) {
+            log::error!("{}", e);
+            return;
+        }
 
-                cx.on_action(quit);
+        cx.on_action(quit);
 
-                cx.set_menus(vec![
-                    Menu {
-                        name: "GPUI App".into(),
-                        items: vec![MenuItem::action("Quit", Quit)],
-                    },
-                    Menu {
-                        name: "Edit".into(),
-                        items: vec![
-                            MenuItem::os_action("Undo", Undo, gpui::OsAction::Undo),
-                            MenuItem::os_action("Redo", Redo, gpui::OsAction::Redo),
-                            MenuItem::separator(),
-                            MenuItem::os_action("Cut", Cut, gpui::OsAction::Cut),
-                            MenuItem::os_action("Copy", Copy, gpui::OsAction::Copy),
-                            MenuItem::os_action("Paste", Paste, gpui::OsAction::Paste),
-                        ],
-                    },
-                ]);
-                cx.activate(true);
+        cx.set_menus(vec![
+            Menu {
+                name: "GPUI App".into(),
+                items: vec![MenuItem::action("Quit", Quit)],
+            },
+            Menu {
+                name: "Edit".into(),
+                items: vec![
+                    MenuItem::os_action("Undo", Undo, gpui::OsAction::Undo),
+                    MenuItem::os_action("Redo", Redo, gpui::OsAction::Redo),
+                    MenuItem::separator(),
+                    MenuItem::os_action("Cut", Cut, gpui::OsAction::Cut),
+                    MenuItem::os_action("Copy", Copy, gpui::OsAction::Copy),
+                    MenuItem::os_action("Paste", Paste, gpui::OsAction::Paste),
+                ],
+            },
+        ]);
+        cx.activate(true);
 
-                story_workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
-                    // do something
-                })
-                .detach();
-            });
+        story_workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
+            // do something
         })
-        .unwrap();
-    join_handle.join().unwrap();
+        .detach();
+    });
 }
 
 fn quit(_: &Quit, cx: &mut AppContext) {
