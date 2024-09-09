@@ -66,6 +66,9 @@ impl StoryWorkspace {
 
         cx.subscribe(&dock_area, |_, dock_area, ev: &DockEvent, cx| match ev {
             DockEvent::LayoutChanged => {
+                // Make debounce
+
+                println!("Saving layout...");
                 let json = dock_area.read(cx).dump(cx).unwrap();
                 // Save layout json to app dir layout.json
                 std::fs::write("layout.json", json).unwrap();

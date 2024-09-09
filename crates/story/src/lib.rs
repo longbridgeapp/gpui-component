@@ -71,7 +71,6 @@ pub fn init(cx: &mut AppContext) {
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
             container.name = title.into();
             container.description = description.into();
-
             container
         });
         Box::new(view)
@@ -222,23 +221,23 @@ impl StoryState {
         }
 
         match self.story_klass.to_string().as_str() {
-            "Button" => story!(ButtonStory),
-            "Calendar" => story!(CalendarStory),
-            "Dropdown" => story!(DropdownStory),
-            "Icon" => story!(IconStory),
-            "Image" => story!(ImageStory),
-            "Input" => story!(InputStory),
-            "List" => story!(ListStory),
-            "Modal" => story!(ModalStory),
-            "Popup" => story!(PopupStory),
-            "Progress" => story!(ProgressStory),
-            "Resizable" => story!(ResizableStory),
-            "Scrollable" => story!(ScrollableStory),
-            "Switch" => story!(SwitchStory),
-            "Table" => story!(TableStory),
-            "Text" => story!(TextStory),
-            "Tooltip" => story!(TooltipStory),
-            "WebView" => story!(WebViewStory),
+            "ButtonStory" => story!(ButtonStory),
+            "CalendarStory" => story!(CalendarStory),
+            "DropdownStory" => story!(DropdownStory),
+            "IconStory" => story!(IconStory),
+            "ImageStory" => story!(ImageStory),
+            "InputStory" => story!(InputStory),
+            "ListStory" => story!(ListStory),
+            "ModalStory" => story!(ModalStory),
+            "PopupStory" => story!(PopupStory),
+            "ProgressStory" => story!(ProgressStory),
+            "ResizableStory" => story!(ResizableStory),
+            "ScrollableStory" => story!(ScrollableStory),
+            "SwitchStory" => story!(SwitchStory),
+            "TableStory" => story!(TableStory),
+            "TextStory" => story!(TextStory),
+            "TooltipStory" => story!(TooltipStory),
+            "WebViewStory" => story!(WebViewStory),
             _ => {
                 unreachable!("Invalid story klass: {}", self.story_klass)
             }

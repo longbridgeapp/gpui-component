@@ -3,7 +3,10 @@ use std::sync::Arc;
 use crate::{
     dock::DockItemInfo,
     h_flex,
-    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
+    resizable::{
+        h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelEvent,
+        ResizablePanelGroup,
+    },
     theme::ActiveTheme,
     Placement,
 };
@@ -55,18 +58,26 @@ impl Panel for StackPanel {
 
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
+        let panel_group = cx.new_view(|cx| {
+            if axis == Axis::Horizontal {
+                h_resizable(cx)
+            } else {
+                v_resizable(cx)
+            }
+        });
+
+        // Bubble up the resize event.
+        cx.subscribe(&panel_group, |_, _, _: &ResizablePanelEvent, cx| {
+            cx.emit(PanelEvent::LayoutChanged)
+        })
+        .detach();
+
         Self {
             axis,
             parent: None,
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
-            panel_group: cx.new_view(|cx| {
-                if axis == Axis::Horizontal {
-                    h_resizable(cx)
-                } else {
-                    v_resizable(cx)
-                }
-            }),
+            panel_group,
         }
     }
 

@@ -21,6 +21,10 @@ pub fn init(cx: &mut AppContext) {
 actions!(dock, [ToggleZoom, ClosePanel]);
 
 pub enum DockEvent {
+    /// The layout of the dock has changed, subscribers this to save the layout.
+    ///
+    /// This event is emitted when every time the layout of the dock has changed,
+    /// So it emits may be too frequently, you may want to debounce the event.
     LayoutChanged,
 }
 
@@ -131,7 +135,7 @@ impl DockItem {
             for item in items.iter() {
                 tab_panel.add_panel(item.clone(), cx)
             }
-
+            tab_panel.active_ix = active_ix;
             tab_panel
         });
 
@@ -228,10 +232,16 @@ impl DockArea {
         }
 
         match item {
-            DockItem::Split { items, .. } => {
+            DockItem::Split { items, view, .. } => {
                 for item in items {
                     self.subscribe_item(item, cx);
                 }
+
+                cx.subscribe(view, move |_, _, event, cx| match event {
+                    PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+                    _ => {}
+                })
+                .detach();
             }
             DockItem::Tabs { view, .. } => {
                 // We need, only subscribe to the zoom events on the TabPanel

@@ -25,7 +25,8 @@ pub struct TitleStyle {
 pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// The name of the panel used to serialize, deserialize and identify the panel.
     ///
-    /// When you have defined a panel, this must not be changed.
+    /// This is used to identify the panel when deserializing the panel.
+    /// Once you have defined a panel name, this must not be changed.
     fn panel_name(&self) -> &'static str;
 
     /// The title of the panel, default is `None`.
@@ -187,6 +188,8 @@ impl DockItemState {
     }
 
     pub fn to_item(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
+        // TODO: Use the empty panel if the panel is not registered, for the compatibility.
+
         let info = self.info.clone();
         let f = *cx
             .global::<PanelRegistry>()
@@ -212,22 +215,24 @@ impl DockItemState {
                 } else {
                     Axis::Vertical
                 };
-                DockItem::split_with_sizes(
-                    axis,
-                    items,
-                    sizes.into_iter().map(|s| Some(s)).collect_vec(),
-                    &dock_area,
-                    cx,
-                )
+                let sizes = sizes.iter().map(|s| Some(*s)).collect_vec();
+                DockItem::split_with_sizes(axis, items, sizes, &dock_area, cx)
             }
             DockItemInfo::Tabs { active_index } => {
+                if items.len() == 1 {
+                    return items[0].clone();
+                }
+
                 let items = items
                     .iter()
-                    .map(|_| {
-                        let view = f(dock_area.clone(), info.clone(), cx);
-                        view.into()
+                    .flat_map(|item| match item {
+                        DockItem::Tabs { items, .. } => items.clone(),
+                        _ => {
+                            unreachable!("Invalid DockItem type in DockItemInfo::Tabs")
+                        }
                     })
                     .collect_vec();
+
                 DockItem::tabs(items, Some(active_index), &dock_area, cx)
             }
             DockItemInfo::Custom(_) => {
@@ -262,8 +267,6 @@ pub fn register_panel(
     if let None = cx.try_global::<PanelRegistry>() {
         cx.set_global(PanelRegistry::new());
     }
-
-    println!("----------- register_panel: {}", panel_name);
 
     cx.global_mut::<PanelRegistry>()
         .items
