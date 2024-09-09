@@ -593,7 +593,7 @@ impl Calendar {
                         let active = (ix + 1) as u8 == self.current_month;
 
                         self.item_button(ix, month.to_string(), active, false, false, cx)
-                            .w(relative(0.3))
+                            .w(relative(0.3)).text_sm()
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.current_month = (ix + 1) as u8;
                                 view.set_view_mode(ViewMode::Day, cx);
