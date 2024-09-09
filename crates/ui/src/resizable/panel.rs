@@ -7,7 +7,7 @@ use gpui::{
     ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{dock::PanelEvent, h_flex, theme::ActiveTheme, v_flex, AxisExt};
+use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
 const PANEL_MIN_SIZE: Pixels = px(100.);
 const HANDLE_PADDING: Pixels = px(4.);

@@ -66,7 +66,6 @@ pub fn init(cx: &mut AppContext) {
         };
 
         let view = cx.new_view(|cx| {
-            println!("Creating story: {:?}", story_state);
             let (title, description, story) = story_state.to_story(cx);
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
             container.name = title.into();
