@@ -181,7 +181,7 @@ impl DockItemState {
         Self {
             panel_name: panel_name.to_string(),
             children: Vec::new(),
-            info: DockItemInfo::Tabs { active_index: 0 },
+            info: DockItemInfo::Custom(serde_json::Value::Null),
         }
     }
 
