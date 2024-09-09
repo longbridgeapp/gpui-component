@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::popup_menu::PopupMenu;
 use gpui::{
@@ -193,10 +193,11 @@ impl DockItemState {
         // TODO: Use the empty panel if the panel is not registered, for the compatibility.
 
         let info = self.info.clone();
-        let f = *cx
+        let f = cx
             .global::<PanelRegistry>()
             .items
             .get(&self.panel_name)
+            .cloned()
             .unwrap_or_else(|| {
                 panic!(
                     "The {} panel type is not registed in PanelRegistry.",
@@ -248,7 +249,7 @@ impl DockItemState {
 pub struct PanelRegistry {
     items: HashMap<
         String,
-        fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
+        Arc<dyn Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>,
     >,
 }
 impl PanelRegistry {
@@ -261,16 +262,15 @@ impl PanelRegistry {
 impl Global for PanelRegistry {}
 
 /// Register the Panel init by panel_name to global registry.
-pub fn register_panel(
-    cx: &mut AppContext,
-    panel_name: &str,
-    deserialize: fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
-) {
+pub fn register_panel<F>(cx: &mut AppContext, panel_name: &str, deserialize: F)
+where
+    F: Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView> + 'static,
+{
     if let None = cx.try_global::<PanelRegistry>() {
         cx.set_global(PanelRegistry::new());
     }
 
     cx.global_mut::<PanelRegistry>()
         .items
-        .insert(panel_name.to_string(), deserialize);
+        .insert(panel_name.to_string(), Arc::new(deserialize));
 }
