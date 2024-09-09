@@ -11,14 +11,15 @@ use crate::{
 use super::{register_panel, DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
     prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, EventEmitter, FocusHandle,
-    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, Task, View, ViewContext,
+    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
 use smallvec::SmallVec;
 
 pub fn init(cx: &mut AppContext) {
     register_panel(cx, "StackPanel", |_, info, cx| {
-        let view = cx.new_view(|cx| StackPanel::new(info.axis, cx));
+        let axis = info.axis().unwrap_or(Axis::Horizontal);
+        let view = cx.new_view(|cx| StackPanel::new(axis, cx));
         Box::new(view)
     })
 }
@@ -45,7 +46,7 @@ impl Panel for StackPanel {
         let mut state = DockItemState::new(self.panel_name());
         for panel in &self.panels {
             state.add_child(panel.dump(cx));
-            state.info = Some(DockItemInfo::stack(sizes.clone(), self.axis));
+            state.info = DockItemInfo::stack(sizes.clone(), self.axis);
         }
 
         state

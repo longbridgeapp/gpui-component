@@ -2294,6 +2294,7 @@ dependencies = [
  "log",
  "rust-embed",
  "serde",
+ "serde_json",
  "story",
  "ui",
  "workspace",

@@ -1,10 +1,9 @@
-use std::{collections::HashMap, intrinsics::unreachable};
+use std::collections::HashMap;
 
 use crate::popup_menu::PopupMenu;
-use anyhow::Result;
 use gpui::{
     AnyView, AppContext, Axis, EventEmitter, FocusableView, Global, Hsla, Pixels, SharedString,
-    Task, View, WeakView, WindowContext,
+    View, WeakView, WindowContext,
 };
 use itertools::Itertools;
 use rust_i18n::t;
@@ -147,6 +146,31 @@ impl DockItemInfo {
     pub fn custom(value: serde_json::Value) -> Self {
         Self::Custom(value)
     }
+
+    pub fn axis(&self) -> Option<Axis> {
+        match self {
+            Self::Stack { axis, .. } => Some(if *axis == 0 {
+                Axis::Horizontal
+            } else {
+                Axis::Vertical
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn sizes(&self) -> Option<&Vec<Pixels>> {
+        match self {
+            Self::Stack { sizes, .. } => Some(sizes),
+            _ => None,
+        }
+    }
+
+    pub fn active_index(&self) -> Option<usize> {
+        match self {
+            Self::Tabs { active_index } => Some(*active_index),
+            _ => None,
+        }
+    }
 }
 
 impl DockItemState {
@@ -162,24 +186,53 @@ impl DockItemState {
         self.children.push(panel);
     }
 
-    fn to_item(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
-        let info = self.info;
-        let f = cx.global::<PanelRegistry>().items.get(&self.panel_name).expect(&format!("The {} panel type is not registed in PanelRegistry.", self.panel_name));
-        let view = f(dock_area.clone(), info.clone(), cx);
-        let items: Vec<DockItem> = self.children.iter().map(|child| {
-            child.to_item(dock_area.clone(), cx)
-        }).collect();
+    pub fn to_item(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
+        let info = self.info.clone();
+        let f = *cx
+            .global::<PanelRegistry>()
+            .items
+            .get(&self.panel_name)
+            .unwrap_or_else(|| {
+                panic!(
+                    "The {} panel type is not registed in PanelRegistry.",
+                    self.panel_name
+                )
+            });
+
+        let items: Vec<DockItem> = self
+            .children
+            .iter()
+            .map(|child| child.to_item(dock_area.clone(), cx))
+            .collect();
 
         match info {
             DockItemInfo::Stack { sizes, axis } => {
-                let axis = if axis == 0 { Axis::Horizontal } else { Axis::Vertical };
-                DockItem::split_with_sizes(axis, items, sizes.into_iter().map(|s| Some(s)).collect_vec(), &dock_area, cx)
+                let axis = if axis == 0 {
+                    Axis::Horizontal
+                } else {
+                    Axis::Vertical
+                };
+                DockItem::split_with_sizes(
+                    axis,
+                    items,
+                    sizes.into_iter().map(|s| Some(s)).collect_vec(),
+                    &dock_area,
+                    cx,
+                )
             }
             DockItemInfo::Tabs { active_index } => {
-                DockItem::tabs( items, Some(active_index), &dock_area, cx)
+                let items = items
+                    .iter()
+                    .map(|_| {
+                        let view = f(dock_area.clone(), info.clone(), cx);
+                        view.into()
+                    })
+                    .collect_vec();
+                DockItem::tabs(items, Some(active_index), &dock_area, cx)
             }
-            _ => {
-                unreachable!()
+            DockItemInfo::Custom(_) => {
+                let view = f(dock_area.clone(), info.clone(), cx);
+                DockItem::tabs(vec![view.into()], None, &dock_area, cx)
             }
         }
     }
@@ -188,8 +241,15 @@ impl DockItemState {
 pub struct PanelRegistry {
     items: HashMap<
         String,
-        fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>,
+        fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
     >,
+}
+impl PanelRegistry {
+    pub fn new() -> Self {
+        Self {
+            items: HashMap::new(),
+        }
+    }
 }
 impl Global for PanelRegistry {}
 
@@ -199,8 +259,13 @@ pub fn register_panel(
     panel_name: &str,
     deserialize: fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>,
 ) {
+    if let None = cx.try_global::<PanelRegistry>() {
+        cx.set_global(PanelRegistry::new());
+    }
+
+    println!("----------- register_panel: {}", panel_name);
+
     cx.global_mut::<PanelRegistry>()
         .items
-        .insert(panel_name.to_string(), deserialize)
-        .unwrap();
+        .insert(panel_name.to_string(), deserialize);
 }

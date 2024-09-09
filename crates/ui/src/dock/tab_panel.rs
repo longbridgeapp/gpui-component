@@ -4,7 +4,7 @@ use gpui::{
     div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
     DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
     IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
-    Task, View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -25,7 +25,7 @@ use super::{
 };
 
 pub fn init(cx: &mut AppContext) {
-    register_panel(cx, "TabPanel", |dock_area, cx| {
+    register_panel(cx, "TabPanel", |dock_area, _, cx| {
         let view = cx.new_view(|cx| TabPanel::new(None, dock_area, cx));
         Box::new(view)
     })
@@ -104,10 +104,9 @@ impl Panel for TabPanel {
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
         let mut state = DockItemState::new(self.panel_name());
-        println!("dump TabPanel: {}", self.panels.len());
         for panel in self.panels.iter() {
             state.add_child(panel.dump(cx));
-            state.info = Some(DockItemInfo::tabs(self.active_ix));
+            state.info = DockItemInfo::tabs(self.active_ix);
         }
         state
     }

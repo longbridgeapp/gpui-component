@@ -38,7 +38,7 @@ pub use webview_story::WebViewStory;
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
     FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
-    StatefulInteractiveElement, Styled as _, Task, View, ViewContext, VisualContext, WindowContext,
+    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -57,8 +57,23 @@ pub fn init(cx: &mut AppContext) {
     dropdown_story::init(cx);
     popup_story::init(cx);
 
-    register_panel(cx, "StoryContainer", |dock_area, cx| {
-        let view = cx.new_view(|cx| StoryContainer::new(cx));
+    register_panel(cx, "StoryContainer", |_, info, cx| {
+        let story_state = match info {
+            DockItemInfo::Custom(value) => StoryState::from_value(value),
+            _ => {
+                unreachable!("Invalid DockItemInfo: {:?}", info)
+            }
+        };
+
+        let view = cx.new_view(|cx| {
+            println!("Creating story: {:?}", story_state);
+            let (title, description, story) = story_state.to_story(cx);
+            let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
+            container.name = title.into();
+            container.description = description.into();
+
+            container
+        });
         Box::new(view)
     });
 }
@@ -184,6 +199,53 @@ pub struct StoryState {
     pub story_klass: SharedString,
 }
 
+impl StoryState {
+    fn to_value(&self) -> serde_json::Value {
+        serde_json::json!({
+            "story_klass": self.story_klass,
+        })
+    }
+
+    fn from_value(value: serde_json::Value) -> Self {
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn to_story(&self, cx: &mut WindowContext) -> (&'static str, &'static str, AnyView) {
+        macro_rules! story {
+            ($klass:tt) => {
+                (
+                    $klass::title(),
+                    $klass::description(),
+                    $klass::view(cx).into(),
+                )
+            };
+        }
+
+        match self.story_klass.to_string().as_str() {
+            "Button" => story!(ButtonStory),
+            "Calendar" => story!(CalendarStory),
+            "Dropdown" => story!(DropdownStory),
+            "Icon" => story!(IconStory),
+            "Image" => story!(ImageStory),
+            "Input" => story!(InputStory),
+            "List" => story!(ListStory),
+            "Modal" => story!(ModalStory),
+            "Popup" => story!(PopupStory),
+            "Progress" => story!(ProgressStory),
+            "Resizable" => story!(ResizableStory),
+            "Scrollable" => story!(ScrollableStory),
+            "Switch" => story!(SwitchStory),
+            "Table" => story!(TableStory),
+            "Text" => story!(TextStory),
+            "Tooltip" => story!(TooltipStory),
+            "WebView" => story!(WebViewStory),
+            _ => {
+                unreachable!("Invalid story klass: {}", self.story_klass)
+            }
+        }
+    }
+}
+
 impl Panel for StoryContainer {
     fn panel_name(&self) -> &'static str {
         "StoryContainer"
@@ -218,9 +280,7 @@ impl Panel for StoryContainer {
         let story_state = StoryState {
             story_klass: self.story_klass.clone().unwrap(),
         };
-        state.info = Some(DockItemInfo::custom(
-            serde_json::to_value(story_state).unwrap(),
-        ));
+        state.info = DockItemInfo::custom(story_state.to_value());
         state
     }
 }
