@@ -50,7 +50,9 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     }
 
     /// Dump the panel, used to serialize the panel.
-    fn dump(&self, cx: &AppContext) -> DockItemState;
+    fn dump(&self, _cx: &AppContext) -> DockItemState {
+        DockItemState::new(self.panel_name())
+    }
 }
 
 pub trait PanelView: 'static + Send + Sync {
