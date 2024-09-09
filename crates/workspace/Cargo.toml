@@ -7,12 +7,12 @@ edition = "2021"
 gpui.workspace = true
 ui.workspace = true
 anyhow.workspace = true
-windows = { version = "0.57.0", features = ["Wdk", "Wdk_System", "Wdk_System_SystemServices"] }
-schemars = "0.7.0"
-parking_lot = "0.12.1"
-serde = "1.0.203"
-smallvec = "1.13.2"
-log = "0"
+windows.workspace = true
+schemars = "0"
+parking_lot = "0"
+serde.workspace = true
+smallvec.workspace = true
+log.workspace = true
 
 [lints]
 workspace = true
