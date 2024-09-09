@@ -10,6 +10,7 @@ use rust_i18n::t;
 
 use crate::{
     button::Button,
+    dock::DockItemInfo,
     h_flex,
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
@@ -18,12 +19,16 @@ use crate::{
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
-use super::{ClosePanel, DockArea, Panel, PanelView, StackPanel, ToggleZoom};
+use super::{
+    register_panel, ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel,
+    ToggleZoom,
+};
 
-#[derive(Debug)]
-pub enum PanelEvent {
-    ZoomIn,
-    ZoomOut,
+pub fn init(cx: &mut AppContext) {
+    register_panel(cx, "TabPanel", |dock_area, _, cx| {
+        let view = cx.new_view(|cx| TabPanel::new(None, dock_area, cx));
+        Box::new(view)
+    })
 }
 
 #[derive(Clone)]
@@ -72,6 +77,41 @@ pub struct TabPanel {
     will_split_placement: Option<Placement>,
 }
 
+impl Panel for TabPanel {
+    fn panel_name(&self) -> &'static str {
+        "TabPanel"
+    }
+
+    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
+        self.active_panel()
+            .map(|panel| panel.title(cx))
+            .unwrap_or("Empty Tab".into())
+    }
+
+    fn closeable(&self, cx: &WindowContext) -> bool {
+        self.active_panel()
+            .map(|panel| panel.closeable(cx))
+            .unwrap_or(false)
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        if let Some(panel) = self.active_panel() {
+            panel.popup_menu(menu, cx)
+        } else {
+            menu
+        }
+    }
+
+    fn dump(&self, cx: &AppContext) -> DockItemState {
+        let mut state = DockItemState::new(self.panel_name());
+        for panel in self.panels.iter() {
+            state.add_child(panel.dump(cx));
+            state.info = DockItemInfo::tabs(self.active_ix);
+        }
+        state
+    }
+}
+
 impl TabPanel {
     pub fn new(
         stack_panel: Option<View<StackPanel>>,
@@ -102,6 +142,7 @@ impl TabPanel {
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -118,6 +159,7 @@ impl TabPanel {
         self.panels.push(panel);
         // set the active panel to the new panel
         self.set_active_ix(self.panels.len() - 1, cx);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -140,6 +182,7 @@ impl TabPanel {
             .ok()
         })
         .detach();
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -159,13 +202,15 @@ impl TabPanel {
 
         self.panels.insert(ix, panel);
         self.set_active_ix(ix, cx);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
     /// Remove a panel from the tab panel
     pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         self.detach_panel(panel, cx);
-        self.remove_self_if_empty(cx)
+        self.remove_self_if_empty(cx);
+        cx.emit(PanelEvent::LayoutChanged);
     }
 
     fn detach_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
@@ -443,6 +488,7 @@ impl TabPanel {
         }
 
         self.remove_self_if_empty(cx);
+        cx.emit(PanelEvent::LayoutChanged);
     }
 
     /// Add panel with split placement
@@ -534,6 +580,8 @@ impl TabPanel {
             })
             .detach()
         }
+
+        cx.emit(PanelEvent::LayoutChanged);
     }
 
     fn on_action_toggle_zoom(&mut self, _: &ToggleZoom, cx: &mut ViewContext<Self>) {
@@ -552,27 +600,6 @@ impl TabPanel {
     }
 }
 
-impl Panel for TabPanel {
-    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
-        self.active_panel()
-            .map(|panel| panel.title(cx))
-            .unwrap_or("Empty Tab".into())
-    }
-
-    fn closeable(&self, cx: &WindowContext) -> bool {
-        self.active_panel()
-            .map(|panel| panel.closeable(cx))
-            .unwrap_or(false)
-    }
-
-    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
-        if let Some(panel) = self.active_panel() {
-            panel.popup_menu(menu, cx)
-        } else {
-            menu
-        }
-    }
-}
 impl FocusableView for TabPanel {
     fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
         self.focus_handle.clone()

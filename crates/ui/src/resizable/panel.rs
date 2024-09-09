@@ -2,15 +2,19 @@ use std::rc::Rc;
 
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
-    Entity, EntityId, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent,
-    ParentElement, Pixels, Render, StatefulInteractiveElement, Style, Styled, View, ViewContext,
-    VisualContext as _, WindowContext,
+    Entity, EntityId, EventEmitter, InteractiveElement as _, IntoElement, MouseMoveEvent,
+    MouseUpEvent, ParentElement, Pixels, Render, StatefulInteractiveElement, Style, Styled, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
 
 const PANEL_MIN_SIZE: Pixels = px(100.);
 const HANDLE_PADDING: Pixels = px(4.);
+
+pub enum ResizablePanelEvent {
+    Resized,
+}
 
 #[derive(Clone, Render)]
 pub struct DragPanel(pub (EntityId, usize, Axis));
@@ -87,6 +91,11 @@ impl ResizablePanelGroup {
     pub fn size(mut self, size: Pixels) -> Self {
         self.size = Some(size);
         self
+    }
+
+    /// Returns the sizes of the resizable panels.
+    pub(crate) fn sizes(&self) -> Vec<Pixels> {
+        self.sizes.clone()
     }
 
     pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) {
@@ -189,6 +198,11 @@ impl ResizablePanelGroup {
             )
     }
 
+    fn done_resizing(&mut self, cx: &mut ViewContext<Self>) {
+        cx.emit(ResizablePanelEvent::Resized);
+        self.resizing_panel_ix = None;
+    }
+
     fn sync_real_panel_sizes(&mut self, cx: &WindowContext) {
         for (i, panel) in self.panels.iter().enumerate() {
             self.sizes[i] = panel.read(cx).bounds.size.along(self.axis)
@@ -256,7 +270,7 @@ impl ResizablePanelGroup {
         }
     }
 }
-
+impl EventEmitter<ResizablePanelEvent> for ResizablePanelGroup {}
 impl Render for ResizablePanelGroup {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
@@ -477,7 +491,7 @@ impl Element for ResizePanelGroupElement {
             let view = self.view.clone();
             move |_: &MouseUpEvent, phase, cx| {
                 if phase.bubble() {
-                    view.update(cx, |view, _| view.resizing_panel_ix = None);
+                    view.update(cx, |view, cx| view.done_resizing(cx));
                 }
             }
         })

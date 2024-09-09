@@ -28,6 +28,7 @@ pub use popup_story::PopupStory;
 pub use progress_story::ProgressStory;
 pub use resizable_story::ResizableStory;
 pub use scrollable_story::ScrollableStory;
+use serde::{Deserialize, Serialize};
 pub use switch_story::SwitchStory;
 pub use table_story::TableStory;
 pub use text_story::TextStory;
@@ -42,7 +43,7 @@ use gpui::{
 
 use ui::{
     divider::Divider,
-    dock::{Panel, PanelEvent, TitleStyle},
+    dock::{register_panel, DockItemInfo, DockItemState, Panel, PanelEvent, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
@@ -55,6 +56,24 @@ pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
+
+    register_panel(cx, "StoryContainer", |_, info, cx| {
+        let story_state = match info {
+            DockItemInfo::Custom(value) => StoryState::from_value(value),
+            _ => {
+                unreachable!("Invalid DockItemInfo: {:?}", info)
+            }
+        };
+
+        let view = cx.new_view(|cx| {
+            let (title, description, story) = story_state.to_story(cx);
+            let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
+            container.name = title.into();
+            container.description = description.into();
+            container
+        });
+        Box::new(view)
+    });
 }
 
 actions!(story, [PanelInfo]);
@@ -95,7 +114,7 @@ pub enum ContainerEvent {
 
 pub trait Story {
     fn klass() -> &'static str {
-        std::any::type_name::<Self>()
+        std::any::type_name::<Self>().split("::").last().unwrap()
     }
 
     fn title() -> &'static str;
@@ -114,7 +133,7 @@ pub trait Story {
 impl EventEmitter<ContainerEvent> for StoryContainer {}
 
 impl StoryContainer {
-    pub fn new(closeable: bool, cx: &mut WindowContext) -> Self {
+    pub fn new(cx: &mut WindowContext) -> Self {
         let focus_handle = cx.focus_handle();
 
         Self {
@@ -126,7 +145,7 @@ impl StoryContainer {
             height: None,
             story: None,
             story_klass: None,
-            closeable,
+            closeable: true,
         }
     }
 
@@ -138,7 +157,8 @@ impl StoryContainer {
         let story_klass = S::klass();
 
         let view = cx.new_view(|cx| {
-            let mut story = Self::new(S::closeable(), cx).story(story, story_klass);
+            let mut story = Self::new(cx).story(story, story_klass);
+            story.closeable = S::closeable();
             story.name = name.into();
             story.description = description.into();
             story.title_bg = S::title_bg();
@@ -172,7 +192,63 @@ impl StoryContainer {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryState {
+    pub story_klass: SharedString,
+}
+
+impl StoryState {
+    fn to_value(&self) -> serde_json::Value {
+        serde_json::json!({
+            "story_klass": self.story_klass,
+        })
+    }
+
+    fn from_value(value: serde_json::Value) -> Self {
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn to_story(&self, cx: &mut WindowContext) -> (&'static str, &'static str, AnyView) {
+        macro_rules! story {
+            ($klass:tt) => {
+                (
+                    $klass::title(),
+                    $klass::description(),
+                    $klass::view(cx).into(),
+                )
+            };
+        }
+
+        match self.story_klass.to_string().as_str() {
+            "ButtonStory" => story!(ButtonStory),
+            "CalendarStory" => story!(CalendarStory),
+            "DropdownStory" => story!(DropdownStory),
+            "IconStory" => story!(IconStory),
+            "ImageStory" => story!(ImageStory),
+            "InputStory" => story!(InputStory),
+            "ListStory" => story!(ListStory),
+            "ModalStory" => story!(ModalStory),
+            "PopupStory" => story!(PopupStory),
+            "ProgressStory" => story!(ProgressStory),
+            "ResizableStory" => story!(ResizableStory),
+            "ScrollableStory" => story!(ScrollableStory),
+            "SwitchStory" => story!(SwitchStory),
+            "TableStory" => story!(TableStory),
+            "TextStory" => story!(TextStory),
+            "TooltipStory" => story!(TooltipStory),
+            "WebViewStory" => story!(WebViewStory),
+            _ => {
+                unreachable!("Invalid story klass: {}", self.story_klass)
+            }
+        }
+    }
+}
+
 impl Panel for StoryContainer {
+    fn panel_name(&self) -> &'static str {
+        "StoryContainer"
+    }
+
     fn title(&self, _cx: &WindowContext) -> SharedString {
         self.name.clone()
     }
@@ -195,6 +271,15 @@ impl Panel for StoryContainer {
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.track_focus(&self.focus_handle)
             .menu("Info", Box::new(PanelInfo))
+    }
+
+    fn dump(&self, _cx: &AppContext) -> DockItemState {
+        let mut state = DockItemState::new(self.panel_name());
+        let story_state = StoryState {
+            story_klass: self.story_klass.clone().unwrap(),
+        };
+        state.info = DockItemInfo::custom(story_state.to_value());
+        state
     }
 }
 

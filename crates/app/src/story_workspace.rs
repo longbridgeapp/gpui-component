@@ -1,18 +1,17 @@
+use anyhow::Result;
 use gpui::*;
 use prelude::FluentBuilder as _;
 use private::serde::Deserialize;
+use std::sync::Arc;
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
     ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
     SwitchStory, TableStory, TextStory, TooltipStory,
 };
-use workspace::TitleBar;
-
-use std::sync::Arc;
 use ui::{
     button::Button,
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockItem},
+    dock::{DockArea, DockEvent, DockItem, DockItemState},
     drawer::Drawer,
     h_flex,
     modal::Modal,
@@ -20,6 +19,7 @@ use ui::{
     theme::{ActiveTheme, Colorize as _, Theme},
     ContextModal, IconName, Root, Sizable,
 };
+use workspace::TitleBar;
 
 use crate::app_state::AppState;
 
@@ -52,8 +52,73 @@ impl StoryWorkspace {
         .detach();
 
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", cx));
+        let weak_dock_area = dock_area.downgrade();
 
-        let dock_item = DockItem::split_with_sizes(
+        let dock_item = match Self::load_layout(&weak_dock_area, cx) {
+            Ok(item) => item,
+            Err(err) => {
+                eprintln!("load layout error: {:?}", err);
+                Self::init_default_layout(&weak_dock_area, cx)
+            }
+        };
+
+        dock_area.update(cx, |view, cx| view.set_root(dock_item, cx));
+
+        cx.subscribe(&dock_area, |_, dock_area, ev: &DockEvent, cx| match ev {
+            DockEvent::LayoutChanged => {
+                // Make debounce
+
+                println!("Saving layout...");
+                let json = dock_area.read(cx).dump(cx).unwrap();
+                // Save layout json to app dir layout.json
+                std::fs::write("layout.json", json).unwrap();
+            }
+        })
+        .detach();
+
+        let locale_selector = cx.new_view(LocaleSelector::new);
+
+        let theme_color_picker = cx.new_view(|cx| {
+            let mut picker = ColorPicker::new("theme-color-picker", cx)
+                .xsmall()
+                .anchor(AnchorCorner::TopRight)
+                .label("Primary Color");
+            picker.set_value(cx.theme().primary, cx);
+            picker
+        });
+        cx.subscribe(
+            &theme_color_picker,
+            |_, _, ev: &ColorPickerEvent, cx| match ev {
+                ColorPickerEvent::Change(color) => {
+                    if let Some(color) = color {
+                        let theme = cx.global_mut::<Theme>();
+                        theme.primary = *color;
+                        theme.primary_hover = color.lighten(0.1);
+                        theme.primary_active = color.darken(0.1);
+                        cx.refresh();
+                    }
+                }
+            },
+        )
+        .detach();
+
+        Self {
+            dock_area,
+            locale_selector,
+            theme_color_picker,
+        }
+    }
+
+    fn load_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> Result<DockItem> {
+        let fname = "layout.json";
+        let json = std::fs::read_to_string(fname)?;
+        let state = serde_json::from_str::<DockItemState>(&json)?;
+
+        return Ok(state.to_item(dock_area.clone(), cx));
+    }
+
+    fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
+        DockItem::split_with_sizes(
             Axis::Horizontal,
             vec![
                 DockItem::split(
@@ -116,41 +181,7 @@ impl StoryWorkspace {
             vec![Some(px(300.)), None, Some(px(350.))],
             &dock_area,
             cx,
-        );
-
-        dock_area.update(cx, |view, cx| view.set_root(dock_item, cx));
-
-        let locale_selector = cx.new_view(LocaleSelector::new);
-
-        let theme_color_picker = cx.new_view(|cx| {
-            let mut picker = ColorPicker::new("theme-color-picker", cx)
-                .xsmall()
-                .anchor(AnchorCorner::TopRight)
-                .label("Primary Color");
-            picker.set_value(cx.theme().primary, cx);
-            picker
-        });
-        cx.subscribe(
-            &theme_color_picker,
-            |_, _, ev: &ColorPickerEvent, cx| match ev {
-                ColorPickerEvent::Change(color) => {
-                    if let Some(color) = color {
-                        let theme = cx.global_mut::<Theme>();
-                        theme.primary = *color;
-                        theme.primary_hover = color.lighten(0.1);
-                        theme.primary_active = color.darken(0.1);
-                        cx.refresh();
-                    }
-                }
-            },
         )
-        .detach();
-
-        Self {
-            dock_area,
-            locale_selector,
-            theme_color_picker,
-        }
     }
 
     pub fn new_local(

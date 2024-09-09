@@ -5,15 +5,28 @@ mod tab_panel;
 use std::sync::Arc;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyElement, AnyView, Axis, InteractiveElement as _,
-    IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled, View, ViewContext,
-    VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, EventEmitter,
+    InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled,
+    View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
+pub fn init(cx: &mut AppContext) {
+    stack_panel::init(cx);
+    tab_panel::init(cx);
+}
+
 actions!(dock, [ToggleZoom, ClosePanel]);
+
+pub enum DockEvent {
+    /// The layout of the dock has changed, subscribers this to save the layout.
+    ///
+    /// This event is emitted when every time the layout of the dock has changed,
+    /// So it emits may be too frequently, you may want to debounce the event.
+    LayoutChanged,
+}
 
 /// The main area of the dock.
 pub struct DockArea {
@@ -43,7 +56,7 @@ impl DockItem {
     pub fn split(
         axis: Axis,
         items: Vec<DockItem>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let sizes = vec![None; items.len()];
@@ -58,7 +71,7 @@ impl DockItem {
         axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let mut items = items;
@@ -67,13 +80,13 @@ impl DockItem {
             for (i, item) in items.iter_mut().enumerate() {
                 let view = item.view();
                 let size = sizes.get(i).copied().flatten();
-                stack_panel.add_panel(view.clone(), size, dock_area.downgrade(), cx)
+                stack_panel.add_panel(view.clone(), size, dock_area.clone(), cx)
             }
 
             for (i, item) in items.iter().enumerate() {
                 let view = item.view();
                 let size = sizes.get(i).copied().flatten();
-                stack_panel.add_panel(view.clone(), size, dock_area.downgrade(), cx)
+                stack_panel.add_panel(view.clone(), size, dock_area.clone(), cx)
             }
 
             stack_panel
@@ -92,7 +105,7 @@ impl DockItem {
     pub fn tabs(
         items: Vec<Arc<dyn PanelView>>,
         active_ix: Option<usize>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let mut new_items: Vec<Arc<dyn PanelView>> = vec![];
@@ -104,7 +117,7 @@ impl DockItem {
 
     pub fn tab<P: Panel>(
         item: View<P>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         Self::new_tabs(vec![Arc::new(item.clone())], None, dock_area, cx)
@@ -113,16 +126,16 @@ impl DockItem {
     fn new_tabs(
         items: Vec<Arc<dyn PanelView>>,
         active_ix: Option<usize>,
-        dock_area: &View<DockArea>,
+        dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let active_ix = active_ix.unwrap_or(0);
         let tab_panel = cx.new_view(|cx| {
-            let mut tab_panel = TabPanel::new(None, dock_area.downgrade(), cx);
+            let mut tab_panel = TabPanel::new(None, dock_area.clone(), cx);
             for item in items.iter() {
                 tab_panel.add_panel(item.clone(), cx)
             }
-
+            tab_panel.active_ix = active_ix;
             tab_panel
         });
 
@@ -178,20 +191,21 @@ impl DockArea {
         cx.notify();
     }
 
+    /// Dump the dock panels layout to JSON string.
+    pub fn dump(&self, cx: &AppContext) -> Result<String, serde_json::Error> {
+        let root = self.items.view();
+        let state = root.dump(cx);
+        serde_json::to_string_pretty(&state)
+    }
+
     /// Subscribe event on the panels
     #[allow(clippy::only_used_in_recursion)]
     fn subscribe_item(&self, item: &DockItem, cx: &mut ViewContext<Self>) {
-        let dock_area = cx.view();
-
         /// Subscribe zoom event on the panel
-        fn subscribe_zoom<P: Panel>(
-            view: &View<P>,
-            dock_area: View<DockArea>,
-            cx: &mut ViewContext<DockArea>,
-        ) {
+        fn subscribe_zoom<P: Panel>(view: &View<P>, cx: &mut ViewContext<DockArea>) {
             cx.subscribe(view, move |_, panel, event, cx| match event {
                 PanelEvent::ZoomIn => {
-                    let dock_area = dock_area.clone();
+                    let dock_area = cx.view().clone();
                     let panel = panel.clone();
                     cx.spawn(|_, mut cx| async move {
                         let _ = cx.update(|cx| {
@@ -204,7 +218,7 @@ impl DockArea {
                     .detach();
                 }
                 PanelEvent::ZoomOut => {
-                    let dock_area = dock_area.clone();
+                    let dock_area = cx.view().clone();
                     cx.spawn(|_, mut cx| async move {
                         let _ = cx.update(|cx| {
                             let _ = dock_area.update(cx, |view, cx| view.set_zoomed_out(cx));
@@ -212,20 +226,27 @@ impl DockArea {
                     })
                     .detach()
                 }
+                PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
             })
             .detach();
         }
 
         match item {
-            DockItem::Split { items, .. } => {
+            DockItem::Split { items, view, .. } => {
                 for item in items {
                     self.subscribe_item(item, cx);
                 }
+
+                cx.subscribe(view, move |_, _, event, cx| match event {
+                    PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+                    _ => {}
+                })
+                .detach();
             }
             DockItem::Tabs { view, .. } => {
                 // We need, only subscribe to the zoom events on the TabPanel
                 // Because we always wrap the DockItem::Panel in a DockItem::Tabs
-                subscribe_zoom(view, dock_area.clone(), cx);
+                subscribe_zoom(view, cx);
             }
         }
     }
@@ -252,7 +273,7 @@ impl DockArea {
         }
     }
 }
-
+impl EventEmitter<DockEvent> for DockArea {}
 impl Render for DockArea {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         // println!("Rendering dock area");

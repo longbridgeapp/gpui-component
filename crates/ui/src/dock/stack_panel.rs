@@ -1,19 +1,31 @@
 use std::sync::Arc;
 
 use crate::{
+    dock::DockItemInfo,
     h_flex,
-    resizable::{h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelGroup},
+    resizable::{
+        h_resizable, resizable_panel, v_resizable, ResizablePanel, ResizablePanelEvent,
+        ResizablePanelGroup,
+    },
     theme::ActiveTheme,
     Placement,
 };
 
-use super::{DockArea, Panel, PanelEvent, PanelView, TabPanel};
+use super::{register_panel, DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
     prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
     VisualContext, WeakView,
 };
 use smallvec::SmallVec;
+
+pub fn init(cx: &mut AppContext) {
+    register_panel(cx, "StackPanel", |_, info, cx| {
+        let axis = info.axis().unwrap_or(Axis::Horizontal);
+        let view = cx.new_view(|cx| StackPanel::new(axis, cx));
+        Box::new(view)
+    })
+}
 
 pub struct StackPanel {
     pub(super) parent: Option<View<StackPanel>>,
@@ -24,25 +36,48 @@ pub struct StackPanel {
 }
 
 impl Panel for StackPanel {
+    fn panel_name(&self) -> &'static str {
+        "StackPanel"
+    }
+
     fn title(&self, _cx: &gpui::WindowContext) -> gpui::SharedString {
         "StackPanel".into()
+    }
+
+    fn dump(&self, cx: &AppContext) -> DockItemState {
+        let sizes = self.panel_group.read(cx).sizes();
+        let mut state = DockItemState::new(self.panel_name());
+        for panel in &self.panels {
+            state.add_child(panel.dump(cx));
+            state.info = DockItemInfo::stack(sizes.clone(), self.axis);
+        }
+
+        state
     }
 }
 
 impl StackPanel {
     pub fn new(axis: Axis, cx: &mut ViewContext<Self>) -> Self {
+        let panel_group = cx.new_view(|cx| {
+            if axis == Axis::Horizontal {
+                h_resizable(cx)
+            } else {
+                v_resizable(cx)
+            }
+        });
+
+        // Bubble up the resize event.
+        cx.subscribe(&panel_group, |_, _, _: &ResizablePanelEvent, cx| {
+            cx.emit(PanelEvent::LayoutChanged)
+        })
+        .detach();
+
         Self {
             axis,
             parent: None,
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
-            panel_group: cx.new_view(|cx| {
-                if axis == Axis::Horizontal {
-                    h_resizable(cx)
-                } else {
-                    v_resizable(cx)
-                }
-            }),
+            panel_group,
         }
     }
 
@@ -166,9 +201,10 @@ impl StackPanel {
 
         self.panels.insert(ix, panel.clone());
         self.panel_group.update(cx, |view, cx| {
-            view.insert_child(Self::new_resizable_panel(panel, size), ix, cx)
+            view.insert_child(Self::new_resizable_panel(panel.clone(), size), ix, cx)
         });
 
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
@@ -180,6 +216,7 @@ impl StackPanel {
                 view.remove_child(ix, cx);
             });
 
+            cx.emit(PanelEvent::LayoutChanged);
             self.remove_self_if_empty(cx);
         } else {
             println!("Panel not found in stack panel.");
@@ -202,6 +239,7 @@ impl StackPanel {
                     cx,
                 );
             });
+            cx.emit(PanelEvent::LayoutChanged);
         }
     }
 
@@ -218,10 +256,11 @@ impl StackPanel {
         let view = cx.view().clone();
         if let Some(parent) = self.parent.as_ref() {
             parent.update(cx, |parent, cx| {
-                parent.remove_panel(Arc::new(view), cx);
+                parent.remove_panel(Arc::new(view.clone()), cx);
             });
         }
 
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 

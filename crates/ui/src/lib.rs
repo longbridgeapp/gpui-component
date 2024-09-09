@@ -58,13 +58,14 @@ pub use svg_img::*;
 
 /// Initialize the UI module.
 pub fn init(cx: &mut gpui::AppContext) {
+    context_menu::init(cx);
+    date_picker::init(cx);
+    dock::init(cx);
+    dropdown::init(cx);
     input::init(cx);
     list::init(cx);
-    dropdown::init(cx);
-    date_picker::init(cx);
     popover::init(cx);
     popup_menu::init(cx);
-    context_menu::init(cx);
     table::init(cx);
     webview::init(cx)
 }
