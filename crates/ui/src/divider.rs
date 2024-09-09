@@ -1,8 +1,9 @@
-use gpui::{div, prelude::FluentBuilder as _, RenderOnce};
-use gpui::{px, Axis, Div, IntoElement, ParentElement, SharedString, Styled};
+use gpui::{
+    div, prelude::FluentBuilder as _, px, Axis, Div, IntoElement, ParentElement, RenderOnce,
+    SharedString, Styled,
+};
 
 use crate::theme::ActiveTheme;
-use crate::StyledExt as _;
 
 #[derive(IntoElement)]
 pub struct Divider {
