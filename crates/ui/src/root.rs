@@ -3,14 +3,13 @@ use gpui::{
     Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
-    collections::BTreeMap,
     ops::{Deref, DerefMut},
     rc::Rc,
 };
 
 use crate::{
     drawer::Drawer,
-    modal::{Modal, ModalId},
+    modal::Modal,
     notification::{Notification, NotificationList},
     theme::ActiveTheme,
 };
@@ -29,15 +28,15 @@ pub trait ContextModal: Sized {
     fn close_drawer(&mut self);
 
     /// Opens a Modal.
-    fn open_modal<F>(&mut self, id: ModalId, build: F)
+    fn open_modal<F>(&mut self, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static;
 
     /// Return true, if there is an active Modal.
     fn has_active_modal(&self) -> bool;
 
-    /// Closes the active Modal.
-    fn close_modal(&mut self, id: ModalId);
+    /// Closes the last active Modal.
+    fn close_modal(&mut self);
 
     /// Closes all active Modals.
     fn close_all_modals(&mut self);
@@ -73,14 +72,13 @@ impl<'a> ContextModal for WindowContext<'a> {
         })
     }
 
-    fn open_modal<F>(&mut self, id: ModalId, build: F)
+    fn open_modal<F>(&mut self, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
         Root::update(self, move |root, cx| {
             root.previous_focus_handle = cx.focused();
-            root.active_modals.remove(&id);
-            root.active_modals.insert(id, Rc::new(build));
+            root.active_modals.push(Rc::new(build));
             cx.notify();
         })
     }
@@ -89,9 +87,9 @@ impl<'a> ContextModal for WindowContext<'a> {
         Root::read(&self).active_modals.len() > 0
     }
 
-    fn close_modal(&mut self, id: ModalId) {
+    fn close_modal(&mut self) {
         Root::update(self, move |root, cx| {
-            root.active_modals.remove(&id);
+            root.active_modals.pop();
             root.focus_back(cx);
             cx.notify();
         })
@@ -140,21 +138,23 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().close_drawer()
     }
 
-    fn open_modal<F>(&mut self, id: ModalId, build: F)
+    fn open_modal<F>(&mut self, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
-        self.deref_mut().open_modal(id, build)
+        self.deref_mut().open_modal(build)
     }
 
     fn has_active_drawer(&self) -> bool {
         self.deref().has_active_drawer()
     }
 
-    fn close_modal(&mut self, id: ModalId) {
-        self.deref_mut().close_modal(id)
+    /// Close the last active modal.
+    fn close_modal(&mut self) {
+        self.deref_mut().close_modal()
     }
 
+    /// Close all modals.
     fn close_all_modals(&mut self) {
         self.deref_mut().close_all_modals()
     }
@@ -180,7 +180,7 @@ pub struct Root {
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
-    active_modals: BTreeMap<ModalId, Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
+    active_modals: Vec<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     pub notification: View<NotificationList>,
     child: AnyView,
 }
@@ -190,7 +190,7 @@ impl Root {
         Self {
             previous_focus_handle: None,
             active_drawer: None,
-            active_modals: BTreeMap::new(),
+            active_modals: Vec::new(),
             notification: cx.new_view(NotificationList::new),
             child,
         }
@@ -268,8 +268,8 @@ impl Root {
         }
 
         Some(
-            div().children(active_modals.iter().enumerate().map(|(i, (id, builder))| {
-                let mut modal = Modal::new(*id, cx);
+            div().children(active_modals.iter().enumerate().map(|(i, builder)| {
+                let mut modal = Modal::new(cx);
                 modal = builder(modal, cx);
                 modal.offset_top = px(i as f32 * 16.);
 

@@ -14,7 +14,6 @@ use ui::{
     h_flex,
     input::TextInput,
     list::{List, ListDelegate, ListItem},
-    modal::ModalId,
     notification::{Notification, NotificationType},
     theme::ActiveTheme as _,
     v_flex, ContextModal as _, Icon, IconName, Placement,
@@ -323,9 +322,7 @@ impl ModalStory {
 
         input1.focus_handle(cx).focus(cx);
 
-        struct MyModal;
-        let modal_id = ModalId::id::<MyModal>();
-        cx.open_modal(modal_id, move |modal, cx| {
+        cx.open_modal(move |modal, cx| {
             modal
                 .title("Form Modal")
                 .overlay(overlay)
@@ -352,7 +349,7 @@ impl ModalStory {
                                     let input1 = input1.clone();
                                     let date_picker = date_picker.clone();
                                     move |_, cx| {
-                                        cx.close_modal(modal_id);
+                                        cx.close_modal();
 
                                         view.update(cx, |view, cx| {
                                             view.selected_value = Some(
@@ -371,9 +368,7 @@ impl ModalStory {
                             Button::new("new-modal", cx)
                                 .label("Open Other Modal")
                                 .on_click(move |_, cx| {
-                                    struct SubModal;
-                                    let sub_modal_id = ModalId::id::<SubModal>();
-                                    cx.open_modal(sub_modal_id, move |modal, _| {
+                                    cx.open_modal(move |modal, _| {
                                         modal
                                             .title("Other Modal")
                                             .child("This is another modal.")
@@ -385,7 +380,7 @@ impl ModalStory {
                             Button::new("cancel", cx)
                                 .label("Cancel")
                                 .on_click(move |_, cx| {
-                                    cx.close_modal(modal_id);
+                                    cx.close_modal();
                                 }),
                         ),
                 )
