@@ -327,7 +327,6 @@ impl ModalStory {
         let modal_id = ModalId::id::<MyModal>();
         cx.open_modal(modal_id, move |modal, cx| {
             modal
-                // .margin_top(px(33.))
                 .title("Form Modal")
                 .overlay(overlay)
                 .show_close(modal_show_close)

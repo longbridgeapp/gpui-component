@@ -1,6 +1,6 @@
 use gpui::{
-    div, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render, Styled,
-    View, ViewContext, VisualContext as _, WindowContext,
+    div, px, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render,
+    Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
     collections::BTreeMap,
@@ -267,20 +267,23 @@ impl Root {
             return None;
         }
 
-        Some(div().children(active_modals.iter().map(|(id, builder)| {
-            let mut modal = Modal::new(*id, cx);
-            modal = builder(modal, cx);
+        Some(
+            div().children(active_modals.iter().enumerate().map(|(i, (id, builder))| {
+                let mut modal = Modal::new(*id, cx);
+                modal = builder(modal, cx);
+                modal.offset_top = px(i as f32 * 16.);
 
-            // Keep only have one overlay, we only render the first modal with overlay.
-            if has_overlay {
-                modal = modal.overlay(false);
-            }
-            if modal.has_overlay() {
-                has_overlay = true;
-            }
+                // Keep only have one overlay, we only render the first modal with overlay.
+                if has_overlay {
+                    modal.overlay_visible = false;
+                }
+                if modal.has_overlay() {
+                    has_overlay = true;
+                }
 
-            modal
-        })))
+                modal
+            })),
+        )
     }
 }
 
