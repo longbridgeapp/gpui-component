@@ -18,7 +18,6 @@ use crate::{
 actions!(dropdown, [Up, Down, Enter, Escape]);
 
 const CONTEXT: &str = "Dropdown";
-
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
         KeyBinding::new("up", Up, Some(CONTEXT)),

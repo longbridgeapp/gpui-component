@@ -1,15 +1,23 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _, AnyElement,
-    Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    Pixels, Point, RenderOnce, Styled, WindowContext,
+    actions, anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _,
+    AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement,
+    KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, Styled, WindowContext,
 };
+use rust_i18n::t;
 
 use crate::{
     animation::cubic_bezier, button::Button, theme::ActiveTheme as _, v_flex, ContextModal,
     IconName, Sizable as _,
 };
+
+actions!(modal, [Escape]);
+
+const CONTEXT: &str = "Modal";
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([KeyBinding::new("escape", Escape, Some(CONTEXT))])
+}
 
 #[derive(IntoElement)]
 pub struct Modal {
@@ -156,6 +164,14 @@ impl RenderOnce for Modal {
                 .child(
                     self.base
                         .id("modal")
+                        .key_context(CONTEXT)
+                        .on_action({
+                            let on_close = self.on_close.clone();
+                            move |_: &Escape, cx| {
+                                on_close(&ClickEvent::default(), cx);
+                                cx.close_modal();
+                            }
+                        })
                         .absolute()
                         .occlude()
                         .relative()

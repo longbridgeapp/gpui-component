@@ -64,10 +64,11 @@ pub fn init(cx: &mut gpui::AppContext) {
     dropdown::init(cx);
     input::init(cx);
     list::init(cx);
+    modal::init(cx);
     popover::init(cx);
     popup_menu::init(cx);
     table::init(cx);
-    webview::init(cx)
+    webview::init(cx);
 }
 
 rust_i18n::i18n!("locales", fallback = "en");
