@@ -442,27 +442,24 @@ impl Render for PopupMenu {
                 let group_id = format!("item:{}", ix);
                 let this = ListItem::new(("menu-item", ix))
                     .group(group_id.clone())
-                    .p_0()
                     .relative()
-                    .py_1p5()
-                    .px_2()
-                    .rounded_md()
                     .text_sm()
-                    .line_height(rems(1.25))
+                    .py_0()
+                    .px_2()
+                    .h(px(28.))
+                    .rounded_md()
                     .items_center()
                     .on_mouse_enter(cx.listener(move |this, _, cx| {
                         this.hovered_menu_ix = Some(ix);
                         cx.notify();
                     }));
                 match item {
-                    PopupMenuItem::Separator => this.disabled(true).child(
+                    PopupMenuItem::Separator => this.h_auto().p_0().disabled(true).child(
                         div()
-                            .p_0()
                             .rounded_none()
                             .h(px(1.))
                             .mx_neg_1()
-                            .my_px()
-                            .border_0()
+                            .my_0p5()
                             .bg(cx.theme().muted),
                     ),
                     PopupMenuItem::Item {

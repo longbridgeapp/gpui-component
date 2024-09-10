@@ -1,9 +1,10 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    actions, anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _,
-    AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement,
-    KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, Styled, WindowContext,
+    actions, anchored, div, hsla, prelude::FluentBuilder, px, relative, Animation,
+    AnimationExt as _, AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement,
+    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, Styled,
+    WindowContext,
 };
 
 use crate::{
@@ -193,7 +194,9 @@ impl RenderOnce for Modal {
                         .top(y)
                         .w(self.width)
                         .when_some(self.max_width, |this, w| this.max_w(w))
-                        .children(self.title)
+                        .when_some(self.title, |this, title| {
+                            this.child(div().line_height(relative(1.)).child(title))
+                        })
                         .when(self.show_close, |this| {
                             this.child(
                                 Button::new("close", cx)
