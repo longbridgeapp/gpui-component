@@ -1,6 +1,6 @@
 use gpui::{
-    div, AnyView, FocusHandle, InteractiveElement, ParentElement as _, Render, Styled, View,
-    ViewContext, VisualContext as _, WindowContext,
+    div, px, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render,
+    Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
     ops::{Deref, DerefMut},
@@ -35,8 +35,11 @@ pub trait ContextModal: Sized {
     /// Return true, if there is an active Modal.
     fn has_active_modal(&self) -> bool;
 
-    /// Closes the active Modal.
+    /// Closes the last active Modal.
     fn close_modal(&mut self);
+
+    /// Closes all active Modals.
+    fn close_all_modals(&mut self);
 
     /// Pushes a notification to the notification list.
     fn push_notification(&mut self, note: impl Into<Notification>);
@@ -75,18 +78,26 @@ impl<'a> ContextModal for WindowContext<'a> {
     {
         Root::update(self, move |root, cx| {
             root.previous_focus_handle = cx.focused();
-            root.active_modal = Some(Rc::new(build));
+            root.active_modals.push(Rc::new(build));
             cx.notify();
         })
     }
 
     fn has_active_modal(&self) -> bool {
-        Root::read(&self).active_modal.is_some()
+        Root::read(&self).active_modals.len() > 0
     }
 
     fn close_modal(&mut self) {
+        Root::update(self, move |root, cx| {
+            root.active_modals.pop();
+            root.focus_back(cx);
+            cx.notify();
+        })
+    }
+
+    fn close_all_modals(&mut self) {
         Root::update(self, |root, cx| {
-            root.active_modal = None;
+            root.active_modals.clear();
             root.focus_back(cx);
             cx.notify();
         })
@@ -138,8 +149,14 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref().has_active_drawer()
     }
 
+    /// Close the last active modal.
     fn close_modal(&mut self) {
         self.deref_mut().close_modal()
+    }
+
+    /// Close all modals.
+    fn close_all_modals(&mut self) {
+        self.deref_mut().close_all_modals()
     }
 
     fn push_notification(&mut self, note: impl Into<Notification>) {
@@ -162,8 +179,8 @@ pub struct Root {
     /// Used to store the focus handle of the previus revious view.
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
-    pub active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
-    pub active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
+    active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
+    active_modals: Vec<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     pub notification: View<NotificationList>,
     child: AnyView,
 }
@@ -173,7 +190,7 @@ impl Root {
         Self {
             previous_focus_handle: None,
             active_drawer: None,
-            active_modal: None,
+            active_modals: Vec::new(),
             notification: cx.new_view(NotificationList::new),
             child,
         }
@@ -207,10 +224,71 @@ impl Root {
             cx.focus(&handle);
         }
     }
+
+    // Render Notification layer.
+    pub fn render_notification_layer(cx: &mut WindowContext) -> Option<impl IntoElement> {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        Some(div().child(root.read(cx).notification.clone()))
+    }
+
+    /// Render the Drawer layer.
+    pub fn render_drawer_layer(cx: &mut WindowContext) -> Option<impl IntoElement> {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        if let Some(builder) = root.read(cx).active_drawer.clone() {
+            let drawer = Drawer::new(cx);
+            return Some(builder(drawer, cx));
+        }
+
+        None
+    }
+
+    /// Render the Modal layer.
+    pub fn render_modal_layer(cx: &mut WindowContext) -> Option<impl IntoElement> {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        let active_modals = root.read(cx).active_modals.clone();
+        let mut has_overlay = false;
+
+        if active_modals.is_empty() {
+            return None;
+        }
+
+        Some(
+            div().children(active_modals.iter().enumerate().map(|(i, builder)| {
+                let mut modal = Modal::new(cx);
+                modal = builder(modal, cx);
+                modal.offset_top = px(i as f32 * 16.);
+
+                // Keep only have one overlay, we only render the first modal with overlay.
+                if has_overlay {
+                    modal.overlay_visible = false;
+                }
+                if modal.has_overlay() {
+                    has_overlay = true;
+                }
+
+                modal
+            })),
+        )
+    }
 }
 
 impl Render for Root {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         div()
             .id("root")
             .size_full()

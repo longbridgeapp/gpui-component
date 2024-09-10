@@ -321,9 +321,9 @@ impl ModalStory {
         let view = cx.view().clone();
 
         input1.focus_handle(cx).focus(cx);
+
         cx.open_modal(move |modal, cx| {
             modal
-                .margin_top(px(33.))
                 .title("Form Modal")
                 .overlay(overlay)
                 .show_close(modal_show_close)
@@ -348,7 +348,6 @@ impl ModalStory {
                                     let view = view.clone();
                                     let input1 = input1.clone();
                                     let date_picker = date_picker.clone();
-
                                     move |_, cx| {
                                         cx.close_modal();
 
@@ -365,9 +364,25 @@ impl ModalStory {
                                     }
                                 }),
                         )
-                        .child(Button::new("cancel", cx).label("Cancel").on_click(|_, cx| {
-                            cx.close_modal();
-                        })),
+                        .child(
+                            Button::new("new-modal", cx)
+                                .label("Open Other Modal")
+                                .on_click(move |_, cx| {
+                                    cx.open_modal(move |modal, _| {
+                                        modal
+                                            .title("Other Modal")
+                                            .child("This is another modal.")
+                                            .min_h(px(300.))
+                                    });
+                                }),
+                        )
+                        .child(
+                            Button::new("cancel", cx)
+                                .label("Cancel")
+                                .on_click(move |_, cx| {
+                                    cx.close_modal();
+                                }),
+                        ),
                 )
         });
     }

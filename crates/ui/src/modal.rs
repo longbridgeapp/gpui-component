@@ -1,15 +1,22 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _, AnyElement,
-    Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    Pixels, Point, RenderOnce, Styled, WindowContext,
+    actions, anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _,
+    AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement,
+    KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, Styled, WindowContext,
 };
 
 use crate::{
     animation::cubic_bezier, button::Button, theme::ActiveTheme as _, v_flex, ContextModal,
     IconName, Sizable as _,
 };
+
+actions!(modal, [Escape]);
+
+const CONTEXT: &str = "Modal";
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([KeyBinding::new("escape", Escape, Some(CONTEXT))])
+}
 
 #[derive(IntoElement)]
 pub struct Modal {
@@ -20,9 +27,12 @@ pub struct Modal {
     width: Pixels,
     max_width: Option<Pixels>,
     margin_top: Option<Pixels>,
+    /// Used to offset the modal from the top when modal is a sub-modal.
+    pub(crate) offset_top: Pixels,
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
     show_close: bool,
     overlay: bool,
+    pub(crate) overlay_visible: bool,
 }
 
 pub(crate) fn overlay_color(overlay: bool, cx: &WindowContext) -> Hsla {
@@ -55,9 +65,11 @@ impl Modal {
             footer: None,
             content: v_flex(),
             margin_top: None,
+            offset_top: px(0.),
             width: px(480.),
             max_width: None,
             overlay: true,
+            overlay_visible: true,
             on_close: Rc::new(|_, _| {}),
             show_close: true,
         }
@@ -113,6 +125,10 @@ impl Modal {
         self.overlay = overlay;
         self
     }
+
+    pub(crate) fn has_overlay(&self) -> bool {
+        self.overlay
+    }
 }
 
 impl ParentElement for Modal {
@@ -135,7 +151,7 @@ impl RenderOnce for Modal {
             origin: Point::default(),
             size: view_size,
         };
-        let y = self.margin_top.unwrap_or(view_size.height / 10.);
+        let y = self.margin_top.unwrap_or(view_size.height / 10.) + self.offset_top;
         let x = bounds.center().x - self.width / 2.;
 
         anchored().snap_to_window().child(
@@ -143,7 +159,9 @@ impl RenderOnce for Modal {
                 .occlude()
                 .w(view_size.width)
                 .h(view_size.height)
-                .bg(overlay_color(self.overlay, cx))
+                .when(self.overlay_visible, |this| {
+                    this.bg(overlay_color(self.overlay, cx))
+                })
                 .when(self.overlay, |this| {
                     this.on_mouse_down(MouseButton::Left, {
                         let on_close = self.on_close.clone();
@@ -156,6 +174,18 @@ impl RenderOnce for Modal {
                 .child(
                     self.base
                         .id("modal")
+                        .key_context(CONTEXT)
+                        .on_action({
+                            let on_close = self.on_close.clone();
+                            move |_: &Escape, cx| {
+                                // FIXME:
+                                //
+                                // Here some Modal have no focus_handle, so it will not work will Escape key.
+                                // But by now, we `cx.close_modal()` going to close the last active model, so the Escape is unexpected to work.
+                                on_close(&ClickEvent::default(), cx);
+                                cx.close_modal();
+                            }
+                        })
                         .absolute()
                         .occlude()
                         .relative()
