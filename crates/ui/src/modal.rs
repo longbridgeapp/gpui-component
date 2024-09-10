@@ -1,11 +1,10 @@
-use std::{rc::Rc, time::Duration};
+use std::{any::TypeId, rc::Rc, time::Duration};
 
 use gpui::{
     actions, anchored, div, hsla, prelude::FluentBuilder, px, Animation, AnimationExt as _,
     AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement, IntoElement,
     KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, Styled, WindowContext,
 };
-use rust_i18n::t;
 
 use crate::{
     animation::cubic_bezier, button::Button, theme::ActiveTheme as _, v_flex, ContextModal,
@@ -19,8 +18,26 @@ pub fn init(cx: &mut AppContext) {
     cx.bind_keys([KeyBinding::new("escape", Escape, Some(CONTEXT))])
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
+pub enum ModalId {
+    Id(TypeId),
+}
+
+impl ModalId {
+    pub fn id<T: 'static>() -> Self {
+        Self::Id(TypeId::of::<T>())
+    }
+}
+
+impl From<TypeId> for ModalId {
+    fn from(type_id: TypeId) -> Self {
+        Self::Id(type_id)
+    }
+}
+
 #[derive(IntoElement)]
 pub struct Modal {
+    id: ModalId,
     base: Div,
     title: Option<AnyElement>,
     footer: Option<AnyElement>,
@@ -46,7 +63,7 @@ pub(crate) fn overlay_color(overlay: bool, cx: &WindowContext) -> Hsla {
 }
 
 impl Modal {
-    pub fn new(cx: &mut WindowContext) -> Self {
+    pub fn new(id: ModalId, cx: &mut WindowContext) -> Self {
         let base = v_flex()
             .bg(cx.theme().background)
             .border_1()
@@ -58,6 +75,7 @@ impl Modal {
             .gap_4();
 
         Self {
+            id,
             base,
             title: None,
             footer: None,
@@ -69,6 +87,11 @@ impl Modal {
             on_close: Rc::new(|_, _| {}),
             show_close: true,
         }
+    }
+
+    /// The id of the modal.
+    pub fn id(&self) -> &ModalId {
+        &self.id
     }
 
     /// Sets the title of the modal.
@@ -121,6 +144,10 @@ impl Modal {
         self.overlay = overlay;
         self
     }
+
+    pub(crate) fn has_overlay(&self) -> bool {
+        self.overlay
+    }
 }
 
 impl ParentElement for Modal {
@@ -157,7 +184,7 @@ impl RenderOnce for Modal {
                         let on_close = self.on_close.clone();
                         move |_, cx| {
                             on_close(&ClickEvent::default(), cx);
-                            cx.close_modal();
+                            cx.close_modal(self.id);
                         }
                     })
                 })
@@ -167,9 +194,10 @@ impl RenderOnce for Modal {
                         .key_context(CONTEXT)
                         .on_action({
                             let on_close = self.on_close.clone();
+                            let id = self.id;
                             move |_: &Escape, cx| {
                                 on_close(&ClickEvent::default(), cx);
-                                cx.close_modal();
+                                cx.close_modal(id);
                             }
                         })
                         .absolute()
@@ -191,7 +219,7 @@ impl RenderOnce for Modal {
                                     .icon(IconName::Close)
                                     .on_click(move |_, cx| {
                                         on_close(&ClickEvent::default(), cx);
-                                        cx.close_modal();
+                                        cx.close_modal(self.id);
                                     }),
                             )
                         })

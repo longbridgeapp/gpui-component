@@ -1,15 +1,16 @@
 use gpui::{
-    div, AnyView, FocusHandle, InteractiveElement, ParentElement as _, Render, Styled, View,
-    ViewContext, VisualContext as _, WindowContext,
+    div, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render, Styled,
+    View, ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
+    collections::BTreeMap,
     ops::{Deref, DerefMut},
     rc::Rc,
 };
 
 use crate::{
     drawer::Drawer,
-    modal::Modal,
+    modal::{Modal, ModalId},
     notification::{Notification, NotificationList},
     theme::ActiveTheme,
 };
@@ -28,7 +29,7 @@ pub trait ContextModal: Sized {
     fn close_drawer(&mut self);
 
     /// Opens a Modal.
-    fn open_modal<F>(&mut self, build: F)
+    fn open_modal<F>(&mut self, id: ModalId, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static;
 
@@ -36,7 +37,10 @@ pub trait ContextModal: Sized {
     fn has_active_modal(&self) -> bool;
 
     /// Closes the active Modal.
-    fn close_modal(&mut self);
+    fn close_modal(&mut self, id: ModalId);
+
+    /// Closes all active Modals.
+    fn close_all_modals(&mut self);
 
     /// Pushes a notification to the notification list.
     fn push_notification(&mut self, note: impl Into<Notification>);
@@ -69,24 +73,33 @@ impl<'a> ContextModal for WindowContext<'a> {
         })
     }
 
-    fn open_modal<F>(&mut self, build: F)
+    fn open_modal<F>(&mut self, id: ModalId, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
         Root::update(self, move |root, cx| {
             root.previous_focus_handle = cx.focused();
-            root.active_modal = Some(Rc::new(build));
+            root.active_modals.remove(&id);
+            root.active_modals.insert(id, Rc::new(build));
             cx.notify();
         })
     }
 
     fn has_active_modal(&self) -> bool {
-        Root::read(&self).active_modal.is_some()
+        Root::read(&self).active_modals.len() > 0
     }
 
-    fn close_modal(&mut self) {
+    fn close_modal(&mut self, id: ModalId) {
+        Root::update(self, move |root, cx| {
+            root.active_modals.remove(&id);
+            root.focus_back(cx);
+            cx.notify();
+        })
+    }
+
+    fn close_all_modals(&mut self) {
         Root::update(self, |root, cx| {
-            root.active_modal = None;
+            root.active_modals.clear();
             root.focus_back(cx);
             cx.notify();
         })
@@ -127,19 +140,23 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
         self.deref_mut().close_drawer()
     }
 
-    fn open_modal<F>(&mut self, build: F)
+    fn open_modal<F>(&mut self, id: ModalId, build: F)
     where
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
-        self.deref_mut().open_modal(build)
+        self.deref_mut().open_modal(id, build)
     }
 
     fn has_active_drawer(&self) -> bool {
         self.deref().has_active_drawer()
     }
 
-    fn close_modal(&mut self) {
-        self.deref_mut().close_modal()
+    fn close_modal(&mut self, id: ModalId) {
+        self.deref_mut().close_modal(id)
+    }
+
+    fn close_all_modals(&mut self) {
+        self.deref_mut().close_all_modals()
     }
 
     fn push_notification(&mut self, note: impl Into<Notification>) {
@@ -162,8 +179,8 @@ pub struct Root {
     /// Used to store the focus handle of the previus revious view.
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
-    pub active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
-    pub active_modal: Option<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
+    active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
+    active_modals: BTreeMap<ModalId, Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
     pub notification: View<NotificationList>,
     child: AnyView,
 }
@@ -173,7 +190,7 @@ impl Root {
         Self {
             previous_focus_handle: None,
             active_drawer: None,
-            active_modal: None,
+            active_modals: BTreeMap::new(),
             notification: cx.new_view(NotificationList::new),
             child,
         }
@@ -207,10 +224,68 @@ impl Root {
             cx.focus(&handle);
         }
     }
+
+    // Render Notification layer.
+    pub fn render_notification_layer(cx: &mut WindowContext) -> Option<impl IntoElement> {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        Some(div().child(root.read(cx).notification.clone()))
+    }
+
+    /// Render the Drawer layer.
+    pub fn render_drawer_layer(cx: &mut WindowContext) -> Option<impl IntoElement> {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        if let Some(builder) = root.read(cx).active_drawer.clone() {
+            let drawer = Drawer::new(cx);
+            return Some(builder(drawer, cx));
+        }
+
+        None
+    }
+
+    /// Render the Modal layer.
+    pub fn render_modal_layer(cx: &mut WindowContext) -> Option<impl IntoElement> {
+        let root = cx
+            .window_handle()
+            .downcast::<Root>()
+            .and_then(|w| w.root_view(cx).ok())
+            .expect("The window root view should be of type `ui::Root`.");
+
+        let active_modals = root.read(cx).active_modals.clone();
+        let mut has_overlay = false;
+
+        if active_modals.is_empty() {
+            return None;
+        }
+
+        Some(div().children(active_modals.iter().map(|(id, builder)| {
+            let mut modal = Modal::new(*id, cx);
+            modal = builder(modal, cx);
+
+            // Keep only have one overlay, we only render the first modal with overlay.
+            if has_overlay {
+                modal = modal.overlay(false);
+            }
+            if modal.has_overlay() {
+                has_overlay = true;
+            }
+
+            modal
+        })))
+    }
 }
 
 impl Render for Root {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         div()
             .id("root")
             .size_full()

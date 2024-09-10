@@ -12,9 +12,7 @@ use ui::{
     button::Button,
     color_picker::{ColorPicker, ColorPickerEvent},
     dock::{DockArea, DockEvent, DockItem, DockItemState},
-    drawer::Drawer,
     h_flex,
-    modal::Modal,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
     ContextModal, IconName, Root, Sizable,
@@ -281,10 +279,9 @@ pub fn open_new(
 
 impl Render for StoryWorkspace {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let active_modal = Root::read(cx).active_modal.clone();
-        let active_drawer = Root::read(cx).active_drawer.clone();
-        let has_active_modal = active_modal.is_some();
-        let notification_view = Root::read(cx).notification.clone();
+        let drawer_layer = Root::render_drawer_layer(cx);
+        let modal_layer = Root::render_modal_layer(cx);
+        let notification_layer = Root::render_notification_layer(cx);
         let notifications_count = cx.notifications().len();
 
         div()
@@ -374,17 +371,9 @@ impl Render for StoryWorkspace {
                     ),
             )
             .child(self.dock_area.clone())
-            .when(!has_active_modal, |this| {
-                this.when_some(active_drawer, |this, builder| {
-                    let drawer = Drawer::new(cx);
-                    this.child(builder(drawer, cx))
-                })
-            })
-            .when_some(active_modal, |this, builder| {
-                let modal = Modal::new(cx);
-                this.child(builder(modal, cx))
-            })
-            .child(div().absolute().top_8().child(notification_view))
+            .children(drawer_layer)
+            .children(modal_layer)
+            .child(div().absolute().top_8().children(notification_layer))
     }
 }
 
