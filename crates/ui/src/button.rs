@@ -3,13 +3,12 @@ use crate::{
     indicator::Indicator,
     theme::{ActiveTheme, Colorize as _},
     tooltip::Tooltip,
-    Disableable, Icon, Selectable, Sizable, Size, StyledExt,
+    Disableable, Icon, Selectable, Sizable, Size,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, relative, rems, AnyElement, ClickEvent, Corners, Div,
-    Edges, ElementId, FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled,
-    WindowContext,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Corners, Div, Edges,
+    ElementId, FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
