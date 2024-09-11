@@ -522,19 +522,25 @@ impl Element for Scrollbar {
                                 // We need to keep the thumb bar still at the origin down position
                                 let drag_pos = state.get().drag_pos;
 
-                                let percentage = if is_vertical {
+                                let percentage = (if is_vertical {
                                     (event.position.y - drag_pos.y - bounds.origin.y)
                                         / (bounds.size.height - thumb_length)
                                 } else {
                                     (event.position.x - drag_pos.x - bounds.origin.x)
-                                        / (bounds.size.width - thumb_length)
-                                }
-                                .min(1.);
+                                        / (bounds.size.width - thumb_length - margin_end)
+                                })
+                                .clamp(0., 1.);
 
                                 let offset = if is_vertical {
-                                    point(scroll_handle.offset().x, -scroll_area_size * percentage)
+                                    point(
+                                        scroll_handle.offset().x,
+                                        -(scroll_area_size - container_size) * percentage,
+                                    )
                                 } else {
-                                    point(-scroll_area_size * percentage, scroll_handle.offset().y)
+                                    point(
+                                        -(scroll_area_size - container_size) * percentage,
+                                        scroll_handle.offset().y,
+                                    )
                                 };
 
                                 scroll_handle.set_offset(offset);
