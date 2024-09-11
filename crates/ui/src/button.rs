@@ -299,6 +299,7 @@ impl RenderOnce for Button {
             .items_center()
             .justify_center()
             .cursor_pointer()
+            .overflow_hidden()
             .when(!style.no_padding(), |this| {
                 if self.label.is_none() && self.children.is_empty() {
                     // Icon Button
@@ -311,18 +312,10 @@ impl RenderOnce for Button {
                 } else {
                     // Normal Button
                     match self.size {
-                        Size::Size(size) => this.p(size * 0.2),
-                        Size::XSmall => this.h_5().p_1(),
-                        Size::Small => this
-                            .px_3()
-                            .py_2()
-                            .h_6()
-                            .when(self.compact, |this| this.p_2()),
-                        _ => this
-                            .px_4()
-                            .py_2()
-                            .h_8()
-                            .when(self.compact, |this| this.p_2()),
+                        Size::Size(size) => this.px(size * 0.2),
+                        Size::XSmall => this.h_5().px_1(),
+                        Size::Small => this.h_6().px_3().when(self.compact, |this| this.px_2()),
+                        _ => this.h_8().px_4().when(self.compact, |this| this.px_2()),
                     }
                 }
             })
@@ -399,13 +392,13 @@ impl RenderOnce for Button {
                     .id("label")
                     .items_center()
                     .justify_center()
+                    .h_full()
                     .gap_2()
                     .map(|this| match self.size {
                         Size::XSmall => this.text_xs(),
                         Size::Small => this.text_sm(),
                         _ => this.text_base(),
                     })
-                    .line_height(relative(1.))
                     .when(!self.loading, |this| {
                         this.when_some(self.icon, |this, icon| {
                             this.child(icon.with_size(icon_size))
@@ -414,7 +407,16 @@ impl RenderOnce for Button {
                     .when(self.loading, |this| {
                         this.child(Indicator::new().with_size(self.size))
                     })
-                    .when_some(self.label, |this, label| this.child(label))
+                    .when_some(self.label, |this, label| {
+                        this.child(
+                            div()
+                                // FIXME: Move down 3px to vertically center the text
+                                .mt(px(2.))
+                                .flex_none()
+                                .line_height(relative(1.))
+                                .child(label),
+                        )
+                    })
                     .children(self.children)
             })
             .when(self.loading, |this| this.bg(normal_style.bg.opacity(0.8)))
