@@ -379,26 +379,26 @@ impl Element for Scrollbar {
                             )
                         };
 
-                    let border_width = px(1.);
+                    let border_width = px(0.);
                     let thumb_bounds = if is_vertical {
                         Bounds::from_corners(
                             point(
                                 bounds.origin.x + inset + border_width,
-                                bounds.origin.y + thumb_start,
+                                bounds.origin.y + thumb_start + inset,
                             ),
                             point(
                                 bounds.origin.x + self.width - inset,
-                                bounds.origin.y + thumb_end,
+                                bounds.origin.y + thumb_end - inset,
                             ),
                         )
                     } else {
                         Bounds::from_corners(
                             point(
-                                bounds.origin.x + thumb_start,
+                                bounds.origin.x + thumb_start + inset,
                                 bounds.origin.y + inset + border_width,
                             ),
                             point(
-                                bounds.origin.x + thumb_end,
+                                bounds.origin.x + thumb_end - inset,
                                 bounds.origin.y + self.width - inset,
                             ),
                         )
@@ -420,10 +420,10 @@ impl Element for Scrollbar {
                                 }
                             } else {
                                 Edges {
-                                    top: px(1.),
+                                    top: border_width,
                                     right: px(0.),
                                     bottom: px(0.),
-                                    left: border_width,
+                                    left: px(0.),
                                 }
                             },
                             border_color: bar_border,
