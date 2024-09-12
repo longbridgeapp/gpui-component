@@ -1,6 +1,6 @@
 use gpui::{
-    div, px, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render,
-    Styled, View, ViewContext, VisualContext as _, WindowContext,
+    div, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render, Styled,
+    View, ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
     ops::{Deref, DerefMut},
@@ -54,7 +54,9 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
     {
         Root::update(self, move |root, cx| {
-            root.previous_focus_handle = cx.focused();
+            if root.active_drawer.is_none() {
+                root.previous_focus_handle = cx.focused();
+            }
             root.active_drawer = Some(Rc::new(build));
             cx.notify();
         })
@@ -77,8 +79,19 @@ impl<'a> ContextModal for WindowContext<'a> {
         F: Fn(Modal, &mut WindowContext) -> Modal + 'static,
     {
         Root::update(self, move |root, cx| {
-            root.previous_focus_handle = cx.focused();
-            root.active_modals.push(Rc::new(build));
+            // Only save focus handle if there are no active modals.
+            // This is used to restore focus when all modals are closed.
+            if root.active_modals.len() == 0 {
+                root.previous_focus_handle = cx.focused();
+            }
+
+            let focus_handle = cx.focus_handle();
+            focus_handle.focus(cx);
+
+            root.active_modals.push(ActiveModal {
+                focus_handle,
+                builder: Rc::new(build),
+            });
             cx.notify();
         })
     }
@@ -90,7 +103,9 @@ impl<'a> ContextModal for WindowContext<'a> {
     fn close_modal(&mut self) {
         Root::update(self, move |root, cx| {
             root.active_modals.pop();
-            root.focus_back(cx);
+            if root.active_modals.len() == 0 {
+                root.focus_back(cx);
+            }
             cx.notify();
         })
     }
@@ -180,9 +195,15 @@ pub struct Root {
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
     active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
-    active_modals: Vec<Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>>,
+    active_modals: Vec<ActiveModal>,
     pub notification: View<NotificationList>,
     child: AnyView,
+}
+
+#[derive(Clone)]
+struct ActiveModal {
+    focus_handle: FocusHandle,
+    builder: Rc<dyn Fn(Modal, &mut WindowContext) -> Modal + 'static>,
 }
 
 impl Root {
@@ -220,7 +241,7 @@ impl Root {
     }
 
     fn focus_back(&mut self, cx: &mut WindowContext) {
-        if let Some(handle) = self.previous_focus_handle.take() {
+        if let Some(handle) = self.previous_focus_handle.clone() {
             cx.focus(&handle);
         }
     }
@@ -267,11 +288,27 @@ impl Root {
             return None;
         }
 
+        let modals_len = active_modals.len();
+
         Some(
-            div().children(active_modals.iter().enumerate().map(|(i, builder)| {
+            div().children(active_modals.iter().enumerate().map(|(i, active_modal)| {
                 let mut modal = Modal::new(cx);
-                modal = builder(modal, cx);
-                modal.offset_top = px(i as f32 * 16.);
+
+                modal = (active_modal.builder)(modal, cx);
+                modal.layer_ix = i;
+                // Give the modal the focus handle, because `modal` is a temporary value, is not possible to
+                // keep the focus handle in the modal.
+                //
+                // So we keep the focus handle in the `active_modal`, this is owned by the `Root`.
+                modal.focus_handle = active_modal.focus_handle.clone();
+
+                // Focus to the top modal.
+                if i == modals_len - 1 {
+                    // Check to avoid focus, when the modal is already focused.
+                    if !modal.focus_handle.contains_focused(cx) {
+                        cx.focus(&modal.focus_handle);
+                    }
+                }
 
                 // Keep only have one overlay, we only render the first modal with overlay.
                 if has_overlay {

@@ -2,9 +2,9 @@ use std::{sync::Arc, time::Duration};
 
 use fake::Fake;
 use gpui::{
-    div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView, IntoElement, ParentElement,
-    Render, SharedString, Styled, Task, Timer, View, ViewContext, VisualContext as _, WeakView,
-    WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Render, SharedString, Styled, Task, Timer,
+    View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 
 use ui::{
@@ -18,6 +18,8 @@ use ui::{
     theme::ActiveTheme as _,
     v_flex, ContextModal as _, Icon, IconName, Placement,
 };
+
+actions!(modal_story, [TestAction]);
 
 pub struct ListItemDeletegate {
     story: WeakView<ModalStory>,
@@ -145,6 +147,7 @@ pub struct ModalStory {
     selected_value: Option<SharedString>,
     list: View<List<ListItemDeletegate>>,
     input1: View<TextInput>,
+    input2: View<TextInput>,
     date_picker: View<DatePicker>,
     modal_overlay: bool,
     model_show_close: bool,
@@ -160,8 +163,8 @@ impl super::Story for ModalStory {
         "Modal & Drawer use examples"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
@@ -241,6 +244,7 @@ impl ModalStory {
         });
 
         let input1 = cx.new_view(|cx| TextInput::new(cx).placeholder("Your Name"));
+        let input2 = cx.new_view(|cx| TextInput::new(cx).placeholder("Input on the Window"));
         let date_picker =
             cx.new_view(|cx| DatePicker::new("birthday-picker", cx).placeholder("Date of Birth"));
 
@@ -250,6 +254,7 @@ impl ModalStory {
             selected_value: None,
             list,
             input1,
+            input2,
             date_picker,
             modal_overlay: true,
             model_show_close: true,
@@ -268,7 +273,6 @@ impl ModalStory {
         };
 
         let overlay = self.modal_overlay;
-        input.focus_handle(cx).focus(cx);
         cx.open_drawer(move |this, cx| {
             this.margin_top(px(33.))
                 .placement(placement)
@@ -320,9 +324,8 @@ impl ModalStory {
         let date_picker = self.date_picker.clone();
         let view = cx.view().clone();
 
-        input1.focus_handle(cx).focus(cx);
-
         cx.open_modal(move |modal, cx| {
+            input1.focus_handle(cx).focus(cx);
             modal
                 .title("Form Modal")
                 .overlay(overlay)
@@ -386,6 +389,10 @@ impl ModalStory {
                 )
         });
     }
+
+    fn on_action_test_action(&mut self, _: &TestAction, cx: &mut ViewContext<Self>) {
+        cx.push_notification("You have clicked the TestAction.");
+    }
 }
 
 impl FocusableView for ModalStory {
@@ -396,135 +403,155 @@ impl FocusableView for ModalStory {
 
 impl Render for ModalStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().size_full().child(
-            v_flex()
-                .gap_6()
-                .child(
-                    h_flex()
-                        .items_center()
-                        .gap_3()
-                        .child(
-                            Checkbox::new("modal-overlay")
-                                .label("Modal Overlay")
-                                .checked(self.modal_overlay)
-                                .on_click(cx.listener(|view, _, cx| {
-                                    view.modal_overlay = !view.modal_overlay;
-                                    cx.notify();
-                                })),
-                        )
-                        .child(
-                            Checkbox::new("modal-show-close")
-                                .label("Model Close Button")
-                                .checked(self.model_show_close)
-                                .on_click(cx.listener(|view, _, cx| {
-                                    view.model_show_close = !view.model_show_close;
-                                    cx.notify();
-                                })),
-                        )
-                        .child(
-                            Checkbox::new("modal-padding")
-                                .label("Model Padding")
-                                .checked(self.model_padding)
-                                .on_click(cx.listener(|view, _, cx| {
-                                    view.model_padding = !view.model_padding;
-                                    cx.notify();
-                                })),
-                        ),
-                )
-                .child(
-                    h_flex()
-                        .items_start()
-                        .gap_3()
-                        .child(
-                            Button::new("show-drawer-left", cx)
-                                .label("Left Drawer...")
-                                .on_click(cx.listener(|this, _, cx| {
-                                    this.open_drawer_at(Placement::Left, cx)
-                                })),
-                        )
-                        .child(
-                            Button::new("show-drawer-top", cx)
-                                .label("Top Drawer...")
-                                .on_click(cx.listener(|this, _, cx| {
-                                    this.open_drawer_at(Placement::Top, cx)
-                                })),
-                        )
-                        .child(
-                            Button::new("show-drawer", cx)
-                                .label("Right Drawer...")
-                                .on_click(cx.listener(|this, _, cx| {
-                                    this.open_drawer_at(Placement::Right, cx)
-                                })),
-                        )
-                        .child(
-                            Button::new("show-drawer", cx)
-                                .label("Bottom Drawer...")
-                                .on_click(cx.listener(|this, _, cx| {
-                                    this.open_drawer_at(Placement::Bottom, cx)
-                                })),
-                        ),
-                )
-                .when_some(self.selected_value.clone(), |this, selected_value| {
-                    this.child(
-                        h_flex().gap_1().child("You have selected:").child(
-                            div()
-                                .child(selected_value.to_string())
-                                .text_color(gpui::red()),
-                        ),
+        div()
+            .id("modal-story")
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::on_action_test_action))
+            .size_full()
+            .child(
+                v_flex()
+                    .gap_6()
+                    .child(
+                        h_flex()
+                            .items_center()
+                            .gap_3()
+                            .child(
+                                Checkbox::new("modal-overlay")
+                                    .label("Modal Overlay")
+                                    .checked(self.modal_overlay)
+                                    .on_click(cx.listener(|view, _, cx| {
+                                        view.modal_overlay = !view.modal_overlay;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(
+                                Checkbox::new("modal-show-close")
+                                    .label("Model Close Button")
+                                    .checked(self.model_show_close)
+                                    .on_click(cx.listener(|view, _, cx| {
+                                        view.model_show_close = !view.model_show_close;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(
+                                Checkbox::new("modal-padding")
+                                    .label("Model Padding")
+                                    .checked(self.model_padding)
+                                    .on_click(cx.listener(|view, _, cx| {
+                                        view.model_padding = !view.model_padding;
+                                        cx.notify();
+                                    })),
+                            ),
                     )
-                })
-                .child(
-                    Button::new("show-modal", cx)
-                        .label("Open Modal...")
-                        .on_click(cx.listener(|this, _, cx| this.show_modal(cx))),
-                )
-                .child(
-                    h_flex()
-                        .gap_3()
-                        .child(
-                            Button::new("show-notify-info", cx)
-                                .label("Info Notify...")
-                                .on_click(cx.listener(|_, _, cx| {
-                                    cx.push_notification("You have been saved file successfully.")
-                                })),
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .child("Test Focus Back")
+                            .child(self.input2.clone())
+                            .child(
+                                Button::new("test-action", cx)
+                                    .label("Test Dispatch Action")
+                                    .on_click(|_, cx| {
+                                        cx.dispatch_action(Box::new(TestAction));
+                                    }).tooltip("This button for test dispatch action, to make sure when Modal close,\nthis still can handle the action."),
+                            ),
+                    )
+                    .child(
+                        h_flex()
+                            .items_start()
+                            .gap_3()
+                            .child(
+                                Button::new("show-drawer-left", cx)
+                                    .label("Left Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.open_drawer_at(Placement::Left, cx)
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-drawer-top", cx)
+                                    .label("Top Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.open_drawer_at(Placement::Top, cx)
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-drawer", cx)
+                                    .label("Right Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.open_drawer_at(Placement::Right, cx)
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-drawer", cx)
+                                    .label("Bottom Drawer...")
+                                    .on_click(cx.listener(|this, _, cx| {
+                                        this.open_drawer_at(Placement::Bottom, cx)
+                                    })),
+                            ),
+                    )
+                    .when_some(self.selected_value.clone(), |this, selected_value| {
+                        this.child(
+                            h_flex().gap_1().child("You have selected:").child(
+                                div()
+                                    .child(selected_value.to_string())
+                                    .text_color(gpui::red()),
+                            ),
                         )
-                        .child(
-                            Button::new("show-notify-error", cx)
-                                .label("Error Notify...")
-                                .on_click(cx.listener(|_, _, cx| {
-                                    cx.push_notification((
+                    })
+                    .child(
+                        Button::new("show-modal", cx)
+                            .label("Open Modal...")
+                            .on_click(cx.listener(|this, _, cx| this.show_modal(cx))),
+                    )
+                    .child(
+                        h_flex()
+                            .gap_3()
+                            .child(
+                                Button::new("show-notify-info", cx)
+                                    .label("Info Notify...")
+                                    .on_click(cx.listener(|_, _, cx| {
+                                        cx.push_notification(
+                                            "You have been saved file successfully.",
+                                        )
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-notify-error", cx)
+                                    .label("Error Notify...")
+                                    .on_click(cx.listener(|_, _, cx| {
+                                        cx.push_notification((
                                         NotificationType::Error,
                                         "There have some error occurred. Please try again later.",
                                     ))
-                                })),
-                        )
-                        .child(
-                            Button::new("show-notify-success", cx)
-                                .label("Success Notify...")
-                                .on_click(cx.listener(|_, _, cx| {
-                                    cx.push_notification((
-                                        NotificationType::Success,
-                                        "We have received your payment successfully.",
-                                    ))
-                                })),
-                        )
-                        .child(
-                            Button::new("show-notify-warning", cx)
-                                .label("Warning Notify...")
-                                .on_click(cx.listener(|_, _, cx| {
-                                    struct WarningNotification;
-                                    cx.push_notification(Notification::warning(
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-notify-success", cx)
+                                    .label("Success Notify...")
+                                    .on_click(cx.listener(|_, _, cx| {
+                                        cx.push_notification((
+                                            NotificationType::Success,
+                                            "We have received your payment successfully.",
+                                        ))
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-notify-warning", cx)
+                                    .label("Warning Notify...")
+                                    .on_click(cx.listener(|_, _, cx| {
+                                        struct WarningNotification;
+                                        cx.push_notification(Notification::warning(
                                         "The network is not stable, please check your connection.",
                                     ).id1::<WarningNotification>("test"))
-                                })),
-                        )
-                        .child(
-                            Button::new("show-notify-warning", cx)
-                                .label("Notification with Title")
-                                .on_click(cx.listener(|_, _, cx| {
-                                    struct TestNotification;
+                                    })),
+                            )
+                            .child(
+                                Button::new("show-notify-warning", cx)
+                                    .label("Notification with Title")
+                                    .on_click(cx.listener(|_, _, cx| {
+                                        struct TestNotification;
 
-                                    cx.push_notification(
+                                        cx.push_notification(
                                         Notification::new(
                                             "你已经成功保存了文件，但是有一些警告信息需要你注意。",
                                         )
@@ -540,9 +567,9 @@ impl Render for ModalStory {
                                             }),
                                         ),
                                     )
-                                })),
-                        ),
-                ),
-        )
+                                    })),
+                            ),
+                    ),
+            )
     }
 }

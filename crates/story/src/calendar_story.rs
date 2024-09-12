@@ -26,8 +26,8 @@ impl super::Story for CalendarStory {
         "A date picker and calendar component."
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
@@ -102,6 +102,12 @@ impl CalendarStory {
             default_range_mode_picker,
             date_picker_value: None,
         }
+    }
+}
+
+impl gpui::FocusableView for CalendarStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> gpui::FocusHandle {
+        self.date_picker.focus_handle(cx)
     }
 }
 

@@ -64,8 +64,14 @@ impl super::Story for DropdownStory {
         "Displays a list of options for the user to pick from—triggered by a button."
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
+    }
+}
+
+impl gpui::FocusableView for DropdownStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> gpui::FocusHandle {
+        self.fruit_dropdown.focus_handle(cx)
     }
 }
 

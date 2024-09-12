@@ -36,9 +36,10 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
-    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
+    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
+    SharedString, StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
@@ -112,7 +113,7 @@ pub enum ContainerEvent {
     Close,
 }
 
-pub trait Story {
+pub trait Story: FocusableView {
     fn klass() -> &'static str {
         std::any::type_name::<Self>().split("::").last().unwrap()
     }
@@ -127,7 +128,7 @@ pub trait Story {
     fn title_bg() -> Option<Hsla> {
         None
     }
-    fn new_view(cx: &mut WindowContext) -> AnyView;
+    fn new_view(cx: &mut WindowContext) -> View<impl FocusableView>;
 }
 
 impl EventEmitter<ContainerEvent> for StoryContainer {}
@@ -155,9 +156,11 @@ impl StoryContainer {
         let description = S::description();
         let story = S::new_view(cx);
         let story_klass = S::klass();
+        let focus_handle = story.focus_handle(cx);
 
         let view = cx.new_view(|cx| {
-            let mut story = Self::new(cx).story(story, story_klass);
+            let mut story = Self::new(cx).story(story.into(), story_klass);
+            story.focus_handle = focus_handle;
             story.closeable = S::closeable();
             story.name = name.into();
             story.description = description.into();
@@ -249,8 +252,8 @@ impl Panel for StoryContainer {
         "StoryContainer"
     }
 
-    fn title(&self, _cx: &WindowContext) -> SharedString {
-        self.name.clone()
+    fn title(&self, _cx: &WindowContext) -> AnyElement {
+        self.name.clone().into_any_element()
     }
 
     fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle> {

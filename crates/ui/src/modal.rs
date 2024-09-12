@@ -2,9 +2,9 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     actions, anchored, div, hsla, prelude::FluentBuilder, px, relative, Animation,
-    AnimationExt as _, AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement,
-    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, Styled,
-    WindowContext,
+    AnimationExt as _, AnyElement, AppContext, Bounds, ClickEvent, Div, FocusHandle, Hsla,
+    InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point,
+    RenderOnce, SharedString, Styled, WindowContext,
 };
 
 use crate::{
@@ -28,11 +28,14 @@ pub struct Modal {
     width: Pixels,
     max_width: Option<Pixels>,
     margin_top: Option<Pixels>,
-    /// Used to offset the modal from the top when modal is a sub-modal.
-    pub(crate) offset_top: Pixels,
+
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
     show_close: bool,
     overlay: bool,
+
+    /// This will be change when open the modal, the focus handle is create when open the modal.
+    pub(crate) focus_handle: FocusHandle,
+    pub(crate) layer_ix: usize,
     pub(crate) overlay_visible: bool,
 }
 
@@ -62,14 +65,15 @@ impl Modal {
 
         Self {
             base,
+            focus_handle: cx.focus_handle(),
             title: None,
             footer: None,
             content: v_flex(),
             margin_top: None,
-            offset_top: px(0.),
             width: px(480.),
             max_width: None,
             overlay: true,
+            layer_ix: 0,
             overlay_visible: true,
             on_close: Rc::new(|_, _| {}),
             show_close: true,
@@ -146,13 +150,15 @@ impl Styled for Modal {
 
 impl RenderOnce for Modal {
     fn render(self, cx: &mut WindowContext) -> impl gpui::IntoElement {
+        let layer_ix = self.layer_ix;
         let on_close = self.on_close.clone();
         let view_size = cx.viewport_size();
         let bounds = Bounds {
             origin: Point::default(),
             size: view_size,
         };
-        let y = self.margin_top.unwrap_or(view_size.height / 10.) + self.offset_top;
+        let offset_top = px(layer_ix as f32 * 16.);
+        let y = self.margin_top.unwrap_or(view_size.height / 10.) + offset_top;
         let x = bounds.center().x - self.width / 2.;
 
         anchored().snap_to_window().child(
@@ -174,8 +180,9 @@ impl RenderOnce for Modal {
                 })
                 .child(
                     self.base
-                        .id("modal")
+                        .id(SharedString::from(format!("modal-{layer_ix}")))
                         .key_context(CONTEXT)
+                        .track_focus(&self.focus_handle)
                         .on_action({
                             let on_close = self.on_close.clone();
                             move |_: &Escape, cx| {
@@ -199,17 +206,20 @@ impl RenderOnce for Modal {
                         })
                         .when(self.show_close, |this| {
                             this.child(
-                                Button::new("close", cx)
-                                    .absolute()
-                                    .top_2()
-                                    .right_2()
-                                    .small()
-                                    .ghost()
-                                    .icon(IconName::Close)
-                                    .on_click(move |_, cx| {
-                                        on_close(&ClickEvent::default(), cx);
-                                        cx.close_modal();
-                                    }),
+                                Button::new(
+                                    SharedString::from(format!("modal-close-{layer_ix}")),
+                                    cx,
+                                )
+                                .absolute()
+                                .top_2()
+                                .right_2()
+                                .small()
+                                .ghost()
+                                .icon(IconName::Close)
+                                .on_click(move |_, cx| {
+                                    on_close(&ClickEvent::default(), cx);
+                                    cx.close_modal();
+                                }),
                             )
                         })
                         .child(self.content)

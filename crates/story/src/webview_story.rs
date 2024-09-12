@@ -23,8 +23,8 @@ impl super::Story for WebViewStory {
         "WebView"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 

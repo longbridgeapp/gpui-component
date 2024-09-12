@@ -1,6 +1,6 @@
 use gpui::{
-    px, ClickEvent, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
-    VisualContext as _, WindowContext,
+    px, ClickEvent, FocusableView, IntoElement, ParentElement as _, Render, Styled as _, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 use ui::{
@@ -16,6 +16,7 @@ use ui::{
 use crate::section;
 
 pub struct ButtonStory {
+    focus_handle: gpui::FocusHandle,
     disabled: bool,
     loading: bool,
     selected: bool,
@@ -24,7 +25,8 @@ pub struct ButtonStory {
 
 impl ButtonStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|_| Self {
+        cx.new_view(|cx| Self {
+            focus_handle: cx.focus_handle(),
             disabled: false,
             loading: false,
             selected: false,
@@ -50,8 +52,14 @@ impl super::Story for ButtonStory {
         false
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
+    }
+}
+
+impl FocusableView for ButtonStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 

@@ -1,6 +1,6 @@
 use gpui::{
     div, CursorStyle, InteractiveElement, ParentElement, Render, StatefulInteractiveElement,
-    Styled, View, VisualContext as _, WindowContext,
+    Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 
 use ui::{
@@ -12,15 +12,19 @@ use ui::{
     v_flex,
 };
 
-pub struct TooltipStory;
+pub struct TooltipStory {
+    focus_handle: gpui::FocusHandle,
+}
 
 impl TooltipStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
-    fn new(_: &mut WindowContext) -> Self {
-        Self {}
+    fn new(cx: &mut ViewContext<Self>) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
     }
 }
 
@@ -29,11 +33,15 @@ impl super::Story for TooltipStory {
         "Tooltip"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
-
+impl gpui::FocusableView for TooltipStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
+    }
+}
 impl Render for TooltipStory {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()

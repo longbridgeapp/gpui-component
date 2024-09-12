@@ -32,8 +32,8 @@ impl Panel for StackPanel {
         "StackPanel"
     }
 
-    fn title(&self, _cx: &gpui::WindowContext) -> gpui::SharedString {
-        "StackPanel".into()
+    fn title(&self, _cx: &gpui::WindowContext) -> gpui::AnyElement {
+        "StackPanel".into_any_element()
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {

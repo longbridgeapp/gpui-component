@@ -1,4 +1,6 @@
-use gpui::{px, rems, ParentElement, Render, Styled, View, VisualContext as _, WindowContext};
+use gpui::{
+    px, rems, ParentElement, Render, Styled, View, ViewContext, VisualContext as _, WindowContext,
+};
 use ui::{
     button::{Button, ButtonStyle},
     h_flex,
@@ -6,15 +8,19 @@ use ui::{
     v_flex, Icon, IconName,
 };
 
-pub struct IconStory {}
+pub struct IconStory {
+    focus_handle: gpui::FocusHandle,
+}
 
 impl IconStory {
-    pub fn new(_: &WindowContext) -> Self {
-        Self {}
+    fn new(cx: &mut ViewContext<Self>) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
     }
 
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 }
 
@@ -27,8 +33,14 @@ impl super::Story for IconStory {
         "Icon use examples"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
+    }
+}
+
+impl gpui::FocusableView for IconStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 

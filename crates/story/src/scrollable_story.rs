@@ -12,6 +12,7 @@ use ui::theme::ActiveTheme;
 use ui::{h_flex, v_flex, StyledExt as _};
 
 pub struct ScrollableStory {
+    focus_handle: gpui::FocusHandle,
     scroll_handle: ScrollHandle,
     scroll_size: gpui::Size<Pixels>,
     scroll_state: Rc<Cell<ScrollbarState>>,
@@ -21,8 +22,9 @@ pub struct ScrollableStory {
 }
 
 impl ScrollableStory {
-    fn new() -> Self {
+    fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
+            focus_handle: cx.focus_handle(),
             scroll_handle: ScrollHandle::new(),
             scroll_state: Rc::new(Cell::new(ScrollbarState::default())),
             scroll_size: gpui::Size::default(),
@@ -33,7 +35,7 @@ impl ScrollableStory {
     }
 
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|_| Self::new())
+        cx.new_view(Self::new)
     }
 
     pub fn change_test_cases(&mut self, n: usize, cx: &mut ViewContext<Self>) {
@@ -69,8 +71,14 @@ impl super::Story for ScrollableStory {
         "Add vertical or horizontal, or both scrollbars to a container."
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
+    }
+}
+
+impl gpui::FocusableView for ScrollableStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 

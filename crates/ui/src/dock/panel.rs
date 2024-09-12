@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::popup_menu::PopupMenu;
 use gpui::{
-    AnyView, AppContext, Axis, EventEmitter, FocusableView, Global, Hsla, Pixels, SharedString,
-    View, VisualContext, WeakView, WindowContext,
+    AnyElement, AnyView, AppContext, Axis, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
+    IntoElement, Pixels, SharedString, View, VisualContext, WeakView, WindowContext,
 };
 use itertools::Itertools;
 use rust_i18n::t;
@@ -29,9 +29,9 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// Once you have defined a panel name, this must not be changed.
     fn panel_name(&self) -> &'static str;
 
-    /// The title of the panel, default is `None`.
-    fn title(&self, _cx: &WindowContext) -> SharedString {
-        t!("Dock.Unnamed").into()
+    /// The title of the panel
+    fn title(&self, _cx: &WindowContext) -> AnyElement {
+        SharedString::from(t!("Dock.Unnamed")).into_any_element()
     }
 
     /// The theme of the panel title, default is `None`.
@@ -56,7 +56,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 }
 
 pub trait PanelView: 'static + Send + Sync {
-    fn title(&self, _cx: &WindowContext) -> SharedString;
+    fn title(&self, _cx: &WindowContext) -> AnyElement;
 
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
 
@@ -66,11 +66,13 @@ pub trait PanelView: 'static + Send + Sync {
 
     fn view(&self) -> AnyView;
 
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle;
+
     fn dump(&self, cx: &AppContext) -> DockItemState;
 }
 
 impl<T: Panel> PanelView for View<T> {
-    fn title(&self, cx: &WindowContext) -> SharedString {
+    fn title(&self, cx: &WindowContext) -> AnyElement {
         self.read(cx).title(cx)
     }
 
@@ -88,6 +90,10 @@ impl<T: Panel> PanelView for View<T> {
 
     fn view(&self) -> AnyView {
         self.clone().into()
+    }
+
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        self.read(cx).focus_handle(cx)
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
@@ -284,10 +290,9 @@ where
         .insert(panel_name.to_string(), Arc::new(deserialize));
 }
 
-
 #[cfg(test)]
 mod tests {
-use super::*;
+    use super::*;
     #[test]
     fn test_deserialize_item_state() {
         let json = include_str!("../../tests/fixtures/layout.json");

@@ -14,6 +14,7 @@ use ui::{
 };
 
 pub struct ProgressStory {
+    focus_handle: gpui::FocusHandle,
     value: f32,
     slider1: View<Slider>,
     slider1_value: f32,
@@ -26,8 +27,8 @@ impl super::Story for ProgressStory {
         "Progress"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
@@ -62,6 +63,7 @@ impl ProgressStory {
         .detach();
 
         Self {
+            focus_handle: cx.focus_handle(),
             value: 50.,
             slider1_value: 15.,
             slider2_value: 1.,
@@ -72,6 +74,12 @@ impl ProgressStory {
 
     pub fn set_value(&mut self, value: f32) {
         self.value = value;
+    }
+}
+
+impl gpui::FocusableView for ProgressStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 

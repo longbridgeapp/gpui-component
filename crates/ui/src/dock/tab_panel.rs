@@ -15,7 +15,6 @@ use crate::{
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    tooltip::Tooltip,
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
@@ -74,10 +73,10 @@ impl Panel for TabPanel {
         "TabPanel"
     }
 
-    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
+    fn title(&self, cx: &WindowContext) -> gpui::AnyElement {
         self.active_panel()
             .map(|panel| panel.title(cx))
-            .unwrap_or("Empty Tab".into())
+            .unwrap_or("Empty Tab".into_any_element())
     }
 
     fn closeable(&self, cx: &WindowContext) -> bool {
@@ -134,6 +133,7 @@ impl TabPanel {
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
+        self.focus_active_panel(cx);
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
@@ -278,7 +278,6 @@ impl TabPanel {
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
-            let title = panel.title(cx);
             let title_style = panel.title_style(cx);
 
             return h_flex()
@@ -297,8 +296,7 @@ impl TabPanel {
                         .min_w_16()
                         .overflow_hidden()
                         .text_ellipsis()
-                        .child(title.clone())
-                        .tooltip(move |cx| Tooltip::new(title.clone(), cx))
+                        .child(panel.title(cx))
                         .on_drag(
                             DragPanel {
                                 panel: panel.clone(),
@@ -576,6 +574,12 @@ impl TabPanel {
         cx.emit(PanelEvent::LayoutChanged);
     }
 
+    fn focus_active_panel(&self, cx: &mut ViewContext<Self>) {
+        if let Some(active_panel) = self.active_panel() {
+            active_panel.focus_handle(cx).focus(cx);
+        }
+    }
+
     fn on_action_toggle_zoom(&mut self, _: &ToggleZoom, cx: &mut ViewContext<Self>) {
         self.is_zoomed = !self.is_zoomed;
         if self.is_zoomed {
@@ -593,17 +597,22 @@ impl TabPanel {
 }
 
 impl FocusableView for TabPanel {
-    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
-        self.focus_handle.clone()
+    fn focus_handle(&self, cx: &AppContext) -> gpui::FocusHandle {
+        if let Some(active_panel) = self.active_panel() {
+            active_panel.focus_handle(cx)
+        } else {
+            self.focus_handle.clone()
+        }
     }
 }
 impl EventEmitter<DismissEvent> for TabPanel {}
 impl EventEmitter<PanelEvent> for TabPanel {}
 impl Render for TabPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
+        let focus_handle = self.focus_handle(cx);
         v_flex()
             .id("tab-panel")
-            .track_focus(&self.focus_handle)
+            .track_focus(&focus_handle)
             .on_action(cx.listener(Self::on_action_toggle_zoom))
             .on_action(cx.listener(Self::on_action_close_panel))
             .size_full()
