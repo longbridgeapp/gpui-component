@@ -5,6 +5,10 @@ use gpui::{
     ViewContext, WindowAppearance, WindowContext,
 };
 
+pub fn init(cx: &mut AppContext) {
+    Theme::sync_system_appearance(cx)
+}
+
 pub trait ActiveTheme {
     fn theme(&self) -> &Theme;
 }
@@ -328,7 +332,7 @@ impl Theme {
 impl From<Colors> for Theme {
     fn from(colors: Colors) -> Self {
         Theme {
-            mode: ThemeMode::Dark,
+            mode: ThemeMode::default(),
             transparent: Hsla::transparent_black(),
             font_size: 14.0,
             font_family: if cfg!(target_os = "macos") {
@@ -397,9 +401,10 @@ impl From<Colors> for Theme {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq)]
+#[derive(Debug, Default, PartialEq, PartialOrd, Eq)]
 pub enum ThemeMode {
     Light,
+    #[default]
     Dark,
 }
 
@@ -410,15 +415,6 @@ impl ThemeMode {
 }
 
 impl Theme {
-    fn new() -> Self {
-        Self::from(Colors::dark())
-    }
-
-    pub fn init(cx: &mut AppContext) {
-        cx.set_global(Theme::new());
-        Self::sync_system_appearance(cx)
-    }
-
     /// Sync the theme with the system appearance
     pub fn sync_system_appearance(cx: &mut AppContext) {
         match cx.window_appearance() {
