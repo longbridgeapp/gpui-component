@@ -1,6 +1,6 @@
 use gpui::{
-    div, px, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render,
-    Styled, View, ViewContext, VisualContext as _, WindowContext,
+    div, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render, Styled,
+    View, ViewContext, VisualContext as _, WindowContext,
 };
 use std::{
     ops::{Deref, DerefMut},
@@ -271,7 +271,7 @@ impl Root {
             div().children(active_modals.iter().enumerate().map(|(i, builder)| {
                 let mut modal = Modal::new(cx);
                 modal = builder(modal, cx);
-                modal.offset_top = px(i as f32 * 16.);
+                modal.layer_ix = i;
 
                 // Keep only have one overlay, we only render the first modal with overlay.
                 if has_overlay {
