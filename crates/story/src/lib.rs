@@ -36,9 +36,10 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AnyView, AppContext, Div, EventEmitter,
-    FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
-    StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
+    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
+    SharedString, StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
@@ -251,8 +252,8 @@ impl Panel for StoryContainer {
         "StoryContainer"
     }
 
-    fn title(&self, _cx: &WindowContext) -> SharedString {
-        self.name.clone()
+    fn title(&self, _cx: &WindowContext) -> AnyElement {
+        self.name.clone().into_any_element()
     }
 
     fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle> {

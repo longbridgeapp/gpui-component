@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::popup_menu::PopupMenu;
 use gpui::{
-    AnyView, AppContext, Axis, EventEmitter, FocusHandle, FocusableView, Global, Hsla, Pixels,
-    SharedString, View, VisualContext, WeakView, WindowContext,
+    AnyElement, AnyView, AppContext, Axis, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
+    IntoElement, Pixels, SharedString, View, VisualContext, WeakView, WindowContext,
 };
 use itertools::Itertools;
 use rust_i18n::t;
@@ -29,9 +29,9 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// Once you have defined a panel name, this must not be changed.
     fn panel_name(&self) -> &'static str;
 
-    /// The title of the panel, default is `None`.
-    fn title(&self, _cx: &WindowContext) -> SharedString {
-        t!("Dock.Unnamed").into()
+    /// The title of the panel
+    fn title(&self, _cx: &WindowContext) -> AnyElement {
+        SharedString::from(t!("Dock.Unnamed")).into_any_element()
     }
 
     /// The theme of the panel title, default is `None`.
@@ -56,7 +56,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 }
 
 pub trait PanelView: 'static + Send + Sync {
-    fn title(&self, _cx: &WindowContext) -> SharedString;
+    fn title(&self, _cx: &WindowContext) -> AnyElement;
 
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
 
@@ -72,7 +72,7 @@ pub trait PanelView: 'static + Send + Sync {
 }
 
 impl<T: Panel> PanelView for View<T> {
-    fn title(&self, cx: &WindowContext) -> SharedString {
+    fn title(&self, cx: &WindowContext) -> AnyElement {
         self.read(cx).title(cx)
     }
 

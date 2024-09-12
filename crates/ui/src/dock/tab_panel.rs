@@ -15,7 +15,6 @@ use crate::{
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    tooltip::Tooltip,
     v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
@@ -74,10 +73,10 @@ impl Panel for TabPanel {
         "TabPanel"
     }
 
-    fn title(&self, cx: &WindowContext) -> gpui::SharedString {
+    fn title(&self, cx: &WindowContext) -> gpui::AnyElement {
         self.active_panel()
             .map(|panel| panel.title(cx))
-            .unwrap_or("Empty Tab".into())
+            .unwrap_or("Empty Tab".into_any_element())
     }
 
     fn closeable(&self, cx: &WindowContext) -> bool {
@@ -279,7 +278,6 @@ impl TabPanel {
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
-            let title = panel.title(cx);
             let title_style = panel.title_style(cx);
 
             return h_flex()
@@ -298,8 +296,7 @@ impl TabPanel {
                         .min_w_16()
                         .overflow_hidden()
                         .text_ellipsis()
-                        .child(title.clone())
-                        .tooltip(move |cx| Tooltip::new(title.clone(), cx))
+                        .child(panel.title(cx))
                         .on_drag(
                             DragPanel {
                                 panel: panel.clone(),
