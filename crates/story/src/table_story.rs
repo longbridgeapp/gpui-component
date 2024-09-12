@@ -371,8 +371,14 @@ impl super::Story for TableStory {
         "A complex data table with selection, sorting, column moving, and loading more."
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
+    }
+}
+
+impl gpui::FocusableView for TableStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> gpui::FocusHandle {
+        self.table.focus_handle(cx)
     }
 }
 

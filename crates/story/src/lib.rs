@@ -112,7 +112,7 @@ pub enum ContainerEvent {
     Close,
 }
 
-pub trait Story {
+pub trait Story: FocusableView {
     fn klass() -> &'static str {
         std::any::type_name::<Self>().split("::").last().unwrap()
     }
@@ -127,7 +127,7 @@ pub trait Story {
     fn title_bg() -> Option<Hsla> {
         None
     }
-    fn new_view(cx: &mut WindowContext) -> AnyView;
+    fn new_view(cx: &mut WindowContext) -> View<impl FocusableView>;
 }
 
 impl EventEmitter<ContainerEvent> for StoryContainer {}
@@ -155,9 +155,11 @@ impl StoryContainer {
         let description = S::description();
         let story = S::new_view(cx);
         let story_klass = S::klass();
+        let focus_handle = story.focus_handle(cx);
 
         let view = cx.new_view(|cx| {
-            let mut story = Self::new(cx).story(story, story_klass);
+            let mut story = Self::new(cx).story(story.into(), story_klass);
+            story.focus_handle = focus_handle;
             story.closeable = S::closeable();
             story.name = name.into();
             story.description = description.into();

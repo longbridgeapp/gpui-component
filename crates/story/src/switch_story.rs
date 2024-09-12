@@ -11,8 +11,8 @@ use ui::{
     v_flex, Disableable as _, Sizable, StyledExt,
 };
 
-#[derive(Default)]
 pub struct SwitchStory {
+    focus_handle: gpui::FocusHandle,
     switch1: bool,
     switch2: bool,
     switch3: bool,
@@ -27,22 +27,29 @@ impl super::Story for SwitchStory {
         "A control that allows the user to toggle between two states."
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
 impl SwitchStory {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|cx| Self::new(cx))
+        cx.new_view(Self::new)
     }
 
-    pub fn new(_: &mut WindowContext) -> Self {
+    fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
+            focus_handle: cx.focus_handle(),
             switch1: true,
             switch2: false,
             switch3: true,
         }
+    }
+}
+
+impl gpui::FocusableView for SwitchStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 

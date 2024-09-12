@@ -134,6 +134,7 @@ impl TabPanel {
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
+        self.focus_active_panel(cx);
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
@@ -576,6 +577,12 @@ impl TabPanel {
         cx.emit(PanelEvent::LayoutChanged);
     }
 
+    fn focus_active_panel(&self, cx: &mut ViewContext<Self>) {
+        if let Some(active_panel) = self.active_panel() {
+            active_panel.focus_handle(cx).focus(cx);
+        }
+    }
+
     fn on_action_toggle_zoom(&mut self, _: &ToggleZoom, cx: &mut ViewContext<Self>) {
         self.is_zoomed = !self.is_zoomed;
         if self.is_zoomed {
@@ -593,17 +600,22 @@ impl TabPanel {
 }
 
 impl FocusableView for TabPanel {
-    fn focus_handle(&self, _: &AppContext) -> gpui::FocusHandle {
-        self.focus_handle.clone()
+    fn focus_handle(&self, cx: &AppContext) -> gpui::FocusHandle {
+        if let Some(active_panel) = self.active_panel() {
+            active_panel.focus_handle(cx)
+        } else {
+            self.focus_handle.clone()
+        }
     }
 }
 impl EventEmitter<DismissEvent> for TabPanel {}
 impl EventEmitter<PanelEvent> for TabPanel {}
 impl Render for TabPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
+        let focus_handle = self.focus_handle(cx);
         v_flex()
             .id("tab-panel")
-            .track_focus(&self.focus_handle)
+            .track_focus(&focus_handle)
             .on_action(cx.listener(Self::on_action_toggle_zoom))
             .on_action(cx.listener(Self::on_action_close_panel))
             .size_full()

@@ -5,6 +5,7 @@ const GOOGLE_LOGO: &str = include_str!("./fixtures/google.svg");
 const PIE_JSON: &str = include_str!("./fixtures/pie.json");
 
 pub struct ImageStory {
+    focus_handle: gpui::FocusHandle,
     google_logo: SvgImg,
     pie_chart: SvgImg,
     inbox_img: SvgImg,
@@ -15,16 +16,17 @@ impl super::Story for ImageStory {
         "Image"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
 impl ImageStory {
-    pub fn new(_: &WindowContext) -> Self {
+    pub fn new(cx: &mut WindowContext) -> Self {
         let chart = charts_rs::PieChart::from_json(PIE_JSON).unwrap();
 
         Self {
+            focus_handle: cx.focus_handle(),
             google_logo: svg_img().source(GOOGLE_LOGO.as_bytes(), px(300.), px(300.)),
             pie_chart: svg_img().source(chart.svg().unwrap().as_bytes(), px(400.), px(400.)),
             inbox_img: svg_img().source("icons/inbox.svg", px(300.), px(300.)),
@@ -33,6 +35,12 @@ impl ImageStory {
 
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| Self::new(cx))
+    }
+}
+
+impl gpui::FocusableView for ImageStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 

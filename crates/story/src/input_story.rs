@@ -57,8 +57,8 @@ impl super::Story for InputStory {
         false
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
@@ -218,6 +218,11 @@ impl FocusableCycle for InputStory {
             self.otp_input.focus_handle(cx),
         ]
         .to_vec()
+    }
+}
+impl gpui::FocusableView for InputStory {
+    fn focus_handle(&self, cx: &gpui::AppContext) -> gpui::FocusHandle {
+        self.input1.focus_handle(cx)
     }
 }
 

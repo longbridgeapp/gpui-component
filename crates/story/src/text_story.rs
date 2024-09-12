@@ -17,6 +17,7 @@ use ui::{
 use crate::section;
 
 pub struct TextStory {
+    focus_handle: gpui::FocusHandle,
     check1: bool,
     check2: bool,
     check3: bool,
@@ -34,14 +35,15 @@ impl super::Story for TextStory {
         "The text render testing and examples"
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
     }
 }
 
 impl TextStory {
-    pub(crate) fn new(_cx: &mut WindowContext) -> Self {
+    pub(crate) fn new(cx: &mut WindowContext) -> Self {
         Self {
+            focus_handle: cx.focus_handle(),
             check1: false,
             check2: false,
             check3: true,
@@ -60,7 +62,11 @@ impl TextStory {
         println!("Check value changed: {}", checked);
     }
 }
-
+impl gpui::FocusableView for TextStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
+    }
+}
 impl Render for TextStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()

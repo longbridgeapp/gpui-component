@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::popup_menu::PopupMenu;
 use gpui::{
-    AnyView, AppContext, Axis, EventEmitter, FocusableView, Global, Hsla, Pixels, SharedString,
-    View, VisualContext, WeakView, WindowContext,
+    AnyView, AppContext, Axis, EventEmitter, FocusHandle, FocusableView, Global, Hsla, Pixels,
+    SharedString, View, VisualContext, WeakView, WindowContext,
 };
 use itertools::Itertools;
 use rust_i18n::t;
@@ -66,6 +66,8 @@ pub trait PanelView: 'static + Send + Sync {
 
     fn view(&self) -> AnyView;
 
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle;
+
     fn dump(&self, cx: &AppContext) -> DockItemState;
 }
 
@@ -88,6 +90,10 @@ impl<T: Panel> PanelView for View<T> {
 
     fn view(&self) -> AnyView {
         self.clone().into()
+    }
+
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        self.read(cx).focus_handle(cx)
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
@@ -284,10 +290,9 @@ where
         .insert(panel_name.to_string(), Arc::new(deserialize));
 }
 
-
 #[cfg(test)]
 mod tests {
-use super::*;
+    use super::*;
     #[test]
     fn test_deserialize_item_state() {
         let json = include_str!("../../tests/fixtures/layout.json");

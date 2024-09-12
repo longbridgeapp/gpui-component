@@ -9,6 +9,7 @@ use ui::{
 };
 
 pub struct ResizableStory {
+    focus_handle: gpui::FocusHandle,
     group1: View<ResizablePanelGroup>,
     group2: View<ResizablePanelGroup>,
 }
@@ -22,8 +23,14 @@ impl super::Story for ResizableStory {
         "The resizable panels."
     }
 
-    fn new_view(cx: &mut WindowContext) -> gpui::AnyView {
-        Self::view(cx).into()
+    fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
+        Self::view(cx)
+    }
+}
+
+impl gpui::FocusableView for ResizableStory {
+    fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
+        self.focus_handle.clone()
     }
 }
 
@@ -97,7 +104,11 @@ impl ResizableStory {
                     cx,
                 )
         });
-        Self { group1, group2 }
+        Self {
+            focus_handle: cx.focus_handle(),
+            group1,
+            group2,
+        }
     }
 }
 

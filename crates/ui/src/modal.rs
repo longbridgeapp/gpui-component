@@ -2,9 +2,9 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     actions, anchored, div, hsla, prelude::FluentBuilder, px, relative, Animation,
-    AnimationExt as _, AnyElement, AppContext, Bounds, ClickEvent, Div, Hsla, InteractiveElement,
-    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString,
-    Styled, WindowContext,
+    AnimationExt as _, AnyElement, AppContext, Bounds, ClickEvent, Div, FocusHandle, Hsla,
+    InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point,
+    RenderOnce, SharedString, Styled, WindowContext,
 };
 
 use crate::{
@@ -33,6 +33,8 @@ pub struct Modal {
     show_close: bool,
     overlay: bool,
 
+    /// This will be change when open the modal
+    pub(crate) focus_handle: FocusHandle,
     pub(crate) layer_ix: usize,
     pub(crate) overlay_visible: bool,
 }
@@ -63,6 +65,7 @@ impl Modal {
 
         Self {
             base,
+            focus_handle: cx.focus_handle(),
             title: None,
             footer: None,
             content: v_flex(),
@@ -161,6 +164,7 @@ impl RenderOnce for Modal {
         anchored().snap_to_window().child(
             div()
                 .occlude()
+                .track_focus(&self.focus_handle)
                 .w(view_size.width)
                 .h(view_size.height)
                 .when(self.overlay_visible, |this| {
