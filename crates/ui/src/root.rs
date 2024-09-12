@@ -304,6 +304,7 @@ impl Root {
 
                 // Focus to the top modal.
                 if i == modals_len - 1 {
+                    // Check to avoid focus, when the modal is already focused.
                     if !modal.focus_handle.contains_focused(cx) {
                         cx.focus(&modal.focus_handle);
                     }

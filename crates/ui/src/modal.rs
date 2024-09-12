@@ -9,7 +9,7 @@ use gpui::{
 
 use crate::{
     animation::cubic_bezier, button::Button, theme::ActiveTheme as _, v_flex, ContextModal,
-    IconName, Sizable as _, StyledExt,
+    IconName, Sizable as _,
 };
 
 actions!(modal, [Escape]);
