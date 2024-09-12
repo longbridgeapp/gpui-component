@@ -9,7 +9,7 @@ use gpui::{
 
 use crate::{
     animation::cubic_bezier, button::Button, theme::ActiveTheme as _, v_flex, ContextModal,
-    IconName, Sizable as _,
+    IconName, Sizable as _, StyledExt,
 };
 
 actions!(modal, [Escape]);
@@ -33,7 +33,7 @@ pub struct Modal {
     show_close: bool,
     overlay: bool,
 
-    /// This will be change when open the modal
+    /// This will be change when open the modal, the focus handle is create when open the modal.
     pub(crate) focus_handle: FocusHandle,
     pub(crate) layer_ix: usize,
     pub(crate) overlay_visible: bool,
@@ -164,7 +164,6 @@ impl RenderOnce for Modal {
         anchored().snap_to_window().child(
             div()
                 .occlude()
-                .track_focus(&self.focus_handle)
                 .w(view_size.width)
                 .h(view_size.height)
                 .when(self.overlay_visible, |this| {
@@ -183,6 +182,7 @@ impl RenderOnce for Modal {
                     self.base
                         .id(SharedString::from(format!("modal-{layer_ix}")))
                         .key_context(CONTEXT)
+                        .track_focus(&self.focus_handle)
                         .on_action({
                             let on_close = self.on_close.clone();
                             move |_: &Escape, cx| {

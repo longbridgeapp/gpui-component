@@ -85,8 +85,11 @@ impl<'a> ContextModal for WindowContext<'a> {
                 root.previous_focus_handle = cx.focused();
             }
 
+            let focus_handle = cx.focus_handle();
+            focus_handle.focus(cx);
+
             root.active_modals.push(ActiveModal {
-                focus_handle: cx.focus_handle(),
+                focus_handle,
                 builder: Rc::new(build),
             });
             cx.notify();
