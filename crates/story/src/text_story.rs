@@ -164,7 +164,7 @@ impl Render for TextStory {
                         .child(
                             div().w(px(300.)).child(
                                 Checkbox::new("longlong-checkbox")
-                                .label("Warp: Label should support text wrap in default, if the text is too long, it should wrap to the next line.")
+                                .label("The long long label text, it should ellipsis when the text is too long.")
                             ),
                         )
                 ),
@@ -219,7 +219,7 @@ impl Render for TextStory {
                         .child(
                               div().w(px(200.)).child(
                                   Radio::new("radio3")
-                                      .label("Warp: A long long long text radio label")
+                                      .label("A long long long text radio label")
                                       .checked(true)
                                       .disabled(true),
                               ),

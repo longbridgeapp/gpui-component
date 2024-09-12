@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder, rems, svg, CursorStyle, ElementId, InteractiveElement,
+    div, prelude::FluentBuilder, relative, svg, CursorStyle, ElementId, InteractiveElement,
     IntoElement, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
     WindowContext,
 };
@@ -60,7 +60,8 @@ impl RenderOnce for Radio {
             .gap_x_2()
             .cursor(CursorStyle::PointingHand)
             .text_color(cx.theme().foreground)
-            .items_start()
+            .items_center()
+            .line_height(relative(1.))
             .child(
                 div()
                     .relative()
@@ -90,8 +91,8 @@ impl RenderOnce for Radio {
                 this.child(
                     div()
                         .size_full()
-                        .overflow_hidden()
-                        .line_height(rems(1.2))
+                        .overflow_x_hidden()
+                        .text_ellipsis()
                         .child(label),
                 )
             })

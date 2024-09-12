@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, rems, svg, ElementId, InteractiveElement, IntoElement,
+    div, prelude::FluentBuilder as _, relative, svg, ElementId, InteractiveElement, IntoElement,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _,
     WindowContext,
 };
@@ -78,7 +78,8 @@ impl RenderOnce for Checkbox {
             .id(self.id)
             .group(group_id.clone())
             .gap_2()
-            .items_start()
+            .items_center()
+            .line_height(relative(1.))
             .child(
                 v_flex()
                     .relative()
@@ -116,8 +117,8 @@ impl RenderOnce for Checkbox {
                     this.text_color(cx.theme().foreground).child(
                         div()
                             .w_full()
-                            .overflow_hidden()
-                            .line_height(rems(1.2))
+                            .overflow_x_hidden()
+                            .text_ellipsis()
                             .child(label),
                     )
                 } else {
