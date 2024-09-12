@@ -106,7 +106,7 @@ pub struct Button {
     label: Option<SharedString>,
     children: Vec<AnyElement>,
     disabled: bool,
-    selected: bool,
+    pub(crate) selected: bool,
     style: ButtonStyle,
     rounded: ButtonRounded,
     border_corners: Corners<bool>,
@@ -115,6 +115,7 @@ pub struct Button {
     compact: bool,
     tooltip: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
+    pub(crate) stop_propagation: bool,
     loading: bool,
 }
 
@@ -141,6 +142,7 @@ impl Button {
             size: Size::Medium,
             tooltip: None,
             on_click: None,
+            stop_propagation: true,
             loading: false,
             compact: false,
             children: Vec::new(),
@@ -245,6 +247,11 @@ impl Button {
 
     pub fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
+        self
+    }
+
+    pub fn stop_propagation(mut self, val: bool) -> Self {
+        self.stop_propagation = val;
         self
     }
 }
@@ -371,9 +378,12 @@ impl RenderOnce for Button {
             .when_some(
                 self.on_click.filter(|_| !self.disabled && !self.loading),
                 |this, on_click| {
-                    this.on_mouse_down(MouseButton::Left, |_, cx| {
+                    let stop_propagation = self.stop_propagation;
+                    this.on_mouse_down(MouseButton::Left, move |_, cx| {
                         cx.prevent_default();
-                        cx.stop_propagation()
+                        if stop_propagation {
+                            cx.stop_propagation();
+                        }
                     })
                     .on_click(move |event, cx| {
                         (on_click)(event, cx);

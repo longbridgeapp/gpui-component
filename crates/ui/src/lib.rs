@@ -39,6 +39,7 @@ pub mod switch;
 pub mod tab;
 pub mod table;
 pub mod theme;
+pub mod toggle_button;
 pub mod tooltip;
 pub mod webview;
 
