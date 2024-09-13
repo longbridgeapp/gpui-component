@@ -9,7 +9,7 @@ use story::{
     SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
-    button::Button,
+    button::{Button, ButtonStyled as _},
     color_picker::{ColorPicker, ColorPickerEvent},
     dock::{DockArea, DockEvent, DockItem, DockItemState},
     h_flex,

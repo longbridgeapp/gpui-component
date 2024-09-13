@@ -4,7 +4,10 @@ use gpui::{
 };
 use std::{cell::Cell, rc::Rc};
 
-use crate::{button::Button, Disableable};
+use crate::{
+    button::{Button, ButtonStyle, ButtonStyled},
+    Disableable, Sizable, Size,
+};
 
 #[derive(IntoElement)]
 pub struct ButtonGroup {
@@ -13,6 +16,12 @@ pub struct ButtonGroup {
     children: Vec<Button>,
     multiple: bool,
     disabled: bool,
+
+    // The button props
+    compact: Option<bool>,
+    style: Option<ButtonStyle>,
+    size: Option<Size>,
+
     on_click: Option<Box<dyn Fn(&Vec<usize>, &mut WindowContext) + 'static>>,
 }
 
@@ -30,6 +39,9 @@ impl ButtonGroup {
             base: div(),
             children: Vec::new(),
             id: id.into(),
+            style: None,
+            size: None,
+            compact: None,
             multiple: false,
             disabled: false,
             on_click: None,
@@ -42,15 +54,30 @@ impl ButtonGroup {
         self
     }
 
-    /// Sets the multiple selection mode.
+    /// With the multiple selection mode.
     pub fn multiple(mut self, multiple: bool) -> Self {
         self.multiple = multiple;
         self
     }
 
+    /// With the compact mode for the ButtonGroup.
+    pub fn compact(mut self) -> Self {
+        self.compact = Some(true);
+        self
+    }
+
     /// Sets the on_click handler for the ButtonGroup.
+    ///
+    /// The handler first argument is a vector of the selected button indices.
     pub fn on_click(mut self, handler: impl Fn(&Vec<usize>, &mut WindowContext) + 'static) -> Self {
         self.on_click = Some(Box::new(handler));
+        self
+    }
+}
+
+impl Sizable for ButtonGroup {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = Some(size.into());
         self
     }
 }
@@ -61,15 +88,22 @@ impl Styled for ButtonGroup {
     }
 }
 
+impl ButtonStyled for ButtonGroup {
+    fn with_style(mut self, style: ButtonStyle) -> Self {
+        self.style = Some(style);
+        self
+    }
+}
+
 impl RenderOnce for ButtonGroup {
     fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
         let children_len = self.children.len();
-        let mut selected: Vec<usize> = Vec::new();
-        let shared_state = Rc::new(Cell::new(None)); // Shared state to store the child index
+        let mut selected_ixs: Vec<usize> = Vec::new();
+        let state = Rc::new(Cell::new(None));
 
-        for (child_index, child) in self.children.iter().enumerate() {
+        for (ix, child) in self.children.iter().enumerate() {
             if child.selected {
-                selected.push(child_index);
+                selected_ixs.push(ix);
             }
         }
 
@@ -82,7 +116,7 @@ impl RenderOnce for ButtonGroup {
                     .into_iter()
                     .enumerate()
                     .map(|(child_index, child)| {
-                        let shared_state_clone = Rc::clone(&shared_state);
+                        let state = Rc::clone(&state);
                         let child = if children_len == 1 {
                             child
                         } else if child_index == 0 {
@@ -127,8 +161,11 @@ impl RenderOnce for ButtonGroup {
                                 })
                         }
                         .stop_propagation(false)
-                        .on_click(move |_, cx| {
-                            shared_state_clone.set(Some(child_index));
+                        .when_some(self.size, |this, size| this.with_size(size))
+                        .when_some(self.style, |this, style| this.style(style))
+                        .when_some(self.compact, |this, _| this.compact())
+                        .on_click(move |_, _| {
+                            state.set(Some(child_index));
                         });
 
                         child
@@ -138,21 +175,21 @@ impl RenderOnce for ButtonGroup {
                 self.on_click.filter(|_| !self.disabled),
                 move |this, on_click| {
                     this.on_click(move |_, cx| {
-                        let mut selected = selected.clone();
-                        if let Some(index) = shared_state.get() {
+                        let mut selected_ixs = selected_ixs.clone();
+                        if let Some(ix) = state.get() {
                             if self.multiple {
-                                if let Some(pos) = selected.iter().position(|&i| i == index) {
-                                    selected.remove(pos); // Toggle off if already selected
+                                if let Some(pos) = selected_ixs.iter().position(|&i| i == ix) {
+                                    selected_ixs.remove(pos);
                                 } else {
-                                    selected.push(index); // Toggle on if not selected
+                                    selected_ixs.push(ix);
                                 }
                             } else {
-                                selected.clear(); // Clear the existing selection
-                                selected.push(index); // Replace with the new selection
+                                selected_ixs.clear();
+                                selected_ixs.push(ix);
                             }
                         }
 
-                        on_click(&selected, cx);
+                        on_click(&selected_ixs, cx);
                     })
                 },
             )

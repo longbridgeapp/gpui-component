@@ -9,7 +9,10 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    button::Button, h_flex, theme::ActiveTheme, v_flex, Disableable as _, IconName, Selectable,
+    button::{Button, ButtonStyled as _},
+    h_flex,
+    theme::ActiveTheme,
+    v_flex, Disableable as _, IconName, Selectable,
 };
 
 use super::utils::days_in_month;
@@ -593,7 +596,8 @@ impl Calendar {
                         let active = (ix + 1) as u8 == self.current_month;
 
                         self.item_button(ix, month.to_string(), active, false, false, cx)
-                            .w(relative(0.3)).text_sm()
+                            .w(relative(0.3))
+                            .text_sm()
                             .on_click(cx.listener(move |view, _, cx| {
                                 view.current_month = (ix + 1) as u8;
                                 view.set_view_mode(ViewMode::Day, cx);
