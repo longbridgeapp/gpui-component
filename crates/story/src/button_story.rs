@@ -10,7 +10,6 @@ use ui::{
     h_flex,
     prelude::FluentBuilder,
     theme::ActiveTheme,
-    toggle_button::ToggleButton,
     v_flex, Disableable as _, Icon, IconName, Selectable as _, Sizable as _,
 };
 
@@ -21,7 +20,7 @@ pub struct ButtonStory {
     loading: bool,
     selected: bool,
     compact: bool,
-    exclusive: bool,
+    multiple: bool,
 }
 
 impl ButtonStory {
@@ -31,7 +30,7 @@ impl ButtonStory {
             loading: false,
             selected: false,
             compact: false,
-            exclusive: false,
+            multiple: false,
         })
     }
 
@@ -64,7 +63,7 @@ impl Render for ButtonStory {
         let loading = self.loading;
         let selected = self.selected;
         let compact = self.compact;
-        let exclusive = self.exclusive;
+        let multiple = self.multiple;
 
         v_flex()
             .gap_6()
@@ -105,49 +104,6 @@ impl Render for ButtonStory {
                             .checked(self.compact)
                             .on_click(cx.listener(|view, _, cx| {
                                 view.compact = !view.compact;
-                                cx.notify();
-                            })),
-                    ),
-            )
-            .child(
-                section("Toggle Button", cx)
-                    .child(
-                        Checkbox::new("exclusive-button")
-                            .label("Exclusive")
-                            .checked(self.exclusive)
-                            .on_click(cx.listener(|view, _, cx| {
-                                view.exclusive = !view.exclusive;
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        ToggleButton::new("toggle-button-group")
-                            .exclusive(exclusive)
-                            .child(
-                                Button::new("disabled-toggle-button", cx)
-                                    .label("Disabled")
-                                    .selected(disabled),
-                            )
-                            .child(
-                                Button::new("loading-toggle-button", cx)
-                                    .label("Loading")
-                                    .selected(loading),
-                            )
-                            .child(
-                                Button::new("selected-toggle-button", cx)
-                                    .label("Selected")
-                                    .selected(selected),
-                            )
-                            .child(
-                                Button::new("compact-toggle-button", cx)
-                                    .label("Compact")
-                                    .selected(compact),
-                            )
-                            .on_click(cx.listener(|view, selected: &Vec<usize>, cx| {
-                                view.disabled = selected.contains(&0);
-                                view.loading = selected.contains(&1);
-                                view.selected = selected.contains(&2);
-                                view.compact = selected.contains(&3);
                                 cx.notify();
                             })),
                     ),
@@ -474,6 +430,7 @@ impl Render for ButtonStory {
             .child(
                 section("Button Group", cx).child(
                     ButtonGroup::new("button-group")
+                        .disabled(disabled)
                         .child(
                             Button::new("button-one", cx)
                                 .label("One")
@@ -502,6 +459,49 @@ impl Render for ButtonStory {
                                 .on_click(Self::on_click),
                         ),
                 ),
+            )
+            .child(
+                section("Toggle Button Group", cx)
+                    .child(
+                        Checkbox::new("multiple-button")
+                            .label("Multiple")
+                            .checked(self.multiple)
+                            .on_click(cx.listener(|view, _, cx| {
+                                view.multiple = !view.multiple;
+                                cx.notify();
+                            })),
+                    )
+                    .child(
+                        ButtonGroup::new("toggle-button-group")
+                            .multiple(multiple)
+                            .child(
+                                Button::new("disabled-toggle-button", cx)
+                                    .label("Disabled")
+                                    .selected(disabled),
+                            )
+                            .child(
+                                Button::new("loading-toggle-button", cx)
+                                    .label("Loading")
+                                    .selected(loading),
+                            )
+                            .child(
+                                Button::new("selected-toggle-button", cx)
+                                    .label("Selected")
+                                    .selected(selected),
+                            )
+                            .child(
+                                Button::new("compact-toggle-button", cx)
+                                    .label("Compact")
+                                    .selected(compact),
+                            )
+                            .on_click(cx.listener(|view, selected: &Vec<usize>, cx| {
+                                view.disabled = selected.contains(&0);
+                                view.loading = selected.contains(&1);
+                                view.selected = selected.contains(&2);
+                                view.compact = selected.contains(&3);
+                                cx.notify();
+                            })),
+                    ),
             )
             .child(
                 section("Icon Button", cx)
