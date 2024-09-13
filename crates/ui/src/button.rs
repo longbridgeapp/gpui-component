@@ -34,6 +34,45 @@ pub struct ButtonCustomStyle {
     active: Hsla,
 }
 
+pub trait ButtonStyled: Sized {
+    fn with_style(self, style: ButtonStyle) -> Self;
+
+    /// With the primary style for the Button.
+    fn primary(self) -> Self {
+        self.with_style(ButtonStyle::Primary)
+    }
+
+    /// With the danger style for the Button.
+    fn danger(self) -> Self {
+        self.with_style(ButtonStyle::Danger)
+    }
+
+    /// With the outline style for the Button.
+    fn outline(self) -> Self {
+        self.with_style(ButtonStyle::Outline)
+    }
+
+    /// With the ghost style for the Button.
+    fn ghost(self) -> Self {
+        self.with_style(ButtonStyle::Ghost)
+    }
+
+    /// With the link style for the Button.
+    fn link(self) -> Self {
+        self.with_style(ButtonStyle::Link)
+    }
+
+    /// With the text style for the Button, it will no padding look like a normal text.
+    fn text(self) -> Self {
+        self.with_style(ButtonStyle::Text)
+    }
+
+    /// With the custom style for the Button.
+    fn custom(self, style: ButtonCustomStyle) -> Self {
+        self.with_style(ButtonStyle::Custom(style))
+    }
+}
+
 impl ButtonCustomStyle {
     pub fn new(cx: &WindowContext) -> Self {
         Self {
@@ -149,48 +188,6 @@ impl Button {
         }
     }
 
-    /// With the primary style for the Button.
-    pub fn primary(mut self) -> Self {
-        self.style = ButtonStyle::Primary;
-        self
-    }
-
-    /// With the secondary style for the Button.
-    pub fn danger(mut self) -> Self {
-        self.style = ButtonStyle::Danger;
-        self
-    }
-
-    /// With the ghost style for the Button.
-    pub fn ghost(mut self) -> Self {
-        self.style = ButtonStyle::Ghost;
-        self
-    }
-
-    /// With the outline style for the Button.
-    pub fn outline(mut self) -> Self {
-        self.style = ButtonStyle::Outline;
-        self
-    }
-
-    /// With the link style for the Button.
-    pub fn link(mut self) -> Self {
-        self.style = ButtonStyle::Link;
-        self
-    }
-
-    /// With the text style for the Button, it will no padding look like a normal text.
-    pub fn text(mut self) -> Self {
-        self.style = ButtonStyle::Text;
-        self
-    }
-
-    /// With the custom style for the Button.
-    pub fn custom(mut self, custom: ButtonCustomStyle) -> Self {
-        self.style = ButtonStyle::Custom(custom);
-        self
-    }
-
     /// Set the border radius of the Button.
     pub fn rounded(mut self, rounded: impl Into<ButtonRounded>) -> Self {
         self.rounded = rounded.into();
@@ -273,6 +270,13 @@ impl Selectable for Button {
 impl Sizable for Button {
     fn with_size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
+        self
+    }
+}
+
+impl ButtonStyled for Button {
+    fn with_style(mut self, style: ButtonStyle) -> Self {
+        self.style = style;
         self
     }
 }

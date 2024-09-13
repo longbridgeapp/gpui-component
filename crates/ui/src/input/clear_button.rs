@@ -1,6 +1,9 @@
 use gpui::{px, WindowContext};
 
-use crate::{button::Button, IconName, Sizable as _};
+use crate::{
+    button::{Button, ButtonStyled as _},
+    IconName, Sizable as _,
+};
 
 pub(crate) struct ClearButton {}
 
