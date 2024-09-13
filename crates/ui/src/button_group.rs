@@ -127,9 +127,8 @@ impl RenderOnce for ButtonGroup {
                                 })
                         }
                         .stop_propagation(false)
-                        .on_click(move |_, ctx| {
-                            shared_state_clone.set(Some(child_index)); // Record child_index into shared state
-                            ctx.refresh();
+                        .on_click(move |_, cx| {
+                            shared_state_clone.set(Some(child_index));
                         });
 
                         child
@@ -154,7 +153,6 @@ impl RenderOnce for ButtonGroup {
                         }
 
                         on_click(&selected, cx);
-                        cx.refresh()
                     })
                 },
             )
