@@ -93,6 +93,7 @@ impl RenderOnce for Radio {
                         .size_full()
                         .overflow_x_hidden()
                         .text_ellipsis()
+                        .line_height(relative(1.))
                         .child(label),
                 )
             })

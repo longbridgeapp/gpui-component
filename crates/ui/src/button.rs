@@ -3,12 +3,12 @@ use crate::{
     indicator::Indicator,
     theme::{ActiveTheme, Colorize as _},
     tooltip::Tooltip,
-    Disableable, Icon, Selectable, Sizable, Size,
+    Disableable, Icon, Selectable, Sizable, Size, StyledExt,
 };
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, ClickEvent, Corners, Div, Edges, ElementId,
-    FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
-    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Corners, Div, Edges,
+    ElementId, FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
+    Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -392,7 +392,6 @@ impl RenderOnce for Button {
                     .id("label")
                     .items_center()
                     .justify_center()
-                    // .h_full()
                     .gap_2()
                     .map(|this| match self.size {
                         Size::XSmall => this.text_xs(),
@@ -407,7 +406,9 @@ impl RenderOnce for Button {
                     .when(self.loading, |this| {
                         this.child(Indicator::new().with_size(self.size))
                     })
-                    .when_some(self.label, |this, label| this.child(label))
+                    .when_some(self.label, |this, label| {
+                        this.child(div().flex_none().line_height(relative(1.)).child(label))
+                    })
                     .children(self.children)
             })
             .when(self.loading, |this| this.bg(normal_style.bg.opacity(0.8)))

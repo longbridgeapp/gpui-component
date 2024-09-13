@@ -119,6 +119,7 @@ impl RenderOnce for Checkbox {
                             .w_full()
                             .overflow_x_hidden()
                             .text_ellipsis()
+                            .line_height(relative(1.))
                             .child(label),
                     )
                 } else {
