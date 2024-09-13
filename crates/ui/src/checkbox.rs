@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, rems, svg, ElementId, InteractiveElement, IntoElement,
+    div, prelude::FluentBuilder as _, relative, svg, ElementId, InteractiveElement, IntoElement,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _,
     WindowContext,
 };
@@ -117,7 +117,7 @@ impl RenderOnce for Checkbox {
                         div()
                             .w_full()
                             .overflow_hidden()
-                            .line_height(rems(1.2))
+                            .line_height(relative(1.))
                             .child(label),
                     )
                 } else {
