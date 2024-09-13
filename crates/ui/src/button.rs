@@ -422,14 +422,7 @@ impl RenderOnce for Button {
                         this.child(Indicator::new().with_size(self.size))
                     })
                     .when_some(self.label, |this, label| {
-                        this.child(
-                            div()
-                                // FIXME: Move down 3px to vertically center the text
-                                .mt(px(2.))
-                                .flex_none()
-                                .line_height(relative(1.))
-                                .child(label),
-                        )
+                        this.child(div().flex_none().line_height(relative(1.)).child(label))
                     })
                     .children(self.children)
             })

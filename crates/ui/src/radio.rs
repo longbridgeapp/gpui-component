@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder, rems, svg, CursorStyle, ElementId, InteractiveElement,
+    div, prelude::FluentBuilder, relative, svg, CursorStyle, ElementId, InteractiveElement,
     IntoElement, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
     WindowContext,
 };
@@ -91,7 +91,7 @@ impl RenderOnce for Radio {
                     div()
                         .size_full()
                         .overflow_hidden()
-                        .line_height(rems(1.2))
+                        .line_height(relative(1.))
                         .child(label),
                 )
             })
