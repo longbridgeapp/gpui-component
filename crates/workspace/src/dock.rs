@@ -219,11 +219,9 @@ impl Dock {
         for entry in &mut self.panel_entries {
             if entry.panel.id() == panel.entity_id() {
                 if zoomed != entry.panel.is_zoomed(cx) {
-                    println!("----------- set zoom on");
                     entry.panel.set_zoomed(zoomed, cx);
                 }
             } else if entry.panel.is_zoomed(cx) {
-                // println!("----------- set zoom off");
                 entry.panel.set_zoomed(false, cx);
             }
         }
