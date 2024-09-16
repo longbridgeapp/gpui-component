@@ -292,6 +292,13 @@ impl RenderOnce for Button {
             _ => self.size,
         };
 
+        // Hotfix the font vertical center for macOS.
+        let text_offset_top = if cfg!(target_os = "windows") {
+            px(0.)
+        } else {
+            px(2.)
+        };
+
         self.base
             .id(self.id)
             .track_focus(&self.focus_handle)
@@ -407,7 +414,13 @@ impl RenderOnce for Button {
                         this.child(Indicator::new().with_size(self.size))
                     })
                     .when_some(self.label, |this, label| {
-                        this.child(div().flex_none().line_height(relative(1.)).child(label))
+                        this.child(
+                            div()
+                                .flex_none()
+                                .mt(text_offset_top)
+                                .line_height(relative(1.))
+                                .child(label),
+                        )
                     })
                     .children(self.children)
             })
