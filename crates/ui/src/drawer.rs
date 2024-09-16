@@ -8,8 +8,13 @@ use gpui::{
 };
 
 use crate::{
-    button::Button, h_flex, modal::overlay_color, root::ContextModal as _, scroll::ScrollbarAxis,
-    theme::ActiveTheme, v_flex, IconName, Placement, Sizable, StyledExt as _,
+    button::{Button, ButtonStyled as _},
+    h_flex,
+    modal::overlay_color,
+    root::ContextModal as _,
+    scroll::ScrollbarAxis,
+    theme::ActiveTheme,
+    v_flex, IconName, Placement, Sizable, StyledExt as _,
 };
 
 #[derive(IntoElement)]

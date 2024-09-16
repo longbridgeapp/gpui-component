@@ -6,7 +6,7 @@ use gpui::{
 };
 use serde::Deserialize;
 use ui::{
-    button::Button,
+    button::{Button, ButtonStyled as _},
     context_menu::ContextMenuExt,
     divider::Divider,
     h_flex,

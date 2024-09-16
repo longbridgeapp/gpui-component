@@ -4,7 +4,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonCustomStyle},
+    button::{Button, ButtonCustomStyle, ButtonStyled as _},
     button_group::ButtonGroup,
     checkbox::Checkbox,
     h_flex,
@@ -21,6 +21,7 @@ pub struct ButtonStory {
     loading: bool,
     selected: bool,
     compact: bool,
+    toggle_multiple: bool,
 }
 
 impl ButtonStory {
@@ -31,6 +32,7 @@ impl ButtonStory {
             loading: false,
             selected: false,
             compact: false,
+            toggle_multiple: false,
         })
     }
 
@@ -69,6 +71,7 @@ impl Render for ButtonStory {
         let loading = self.loading;
         let selected = self.selected;
         let compact = self.compact;
+        let toggle_multiple = self.toggle_multiple;
 
         v_flex()
             .gap_6()
@@ -433,36 +436,82 @@ impl Render for ButtonStory {
                     ),
             )
             .child(
-                section("Button Group", cx).child(
-                    ButtonGroup::new("button-group")
-                        .child(
-                            Button::new("button-one", cx)
-                                .label("One")
-                                .disabled(disabled)
-                                .selected(selected)
-                                .loading(loading)
-                                .when(compact, |this| this.compact())
-                                .on_click(Self::on_click),
-                        )
-                        .child(
-                            Button::new("button-two", cx)
-                                .label("Two")
-                                .disabled(disabled)
-                                .selected(selected)
-                                .loading(loading)
-                                .when(compact, |this| this.compact())
-                                .on_click(Self::on_click),
-                        )
-                        .child(
-                            Button::new("button-three", cx)
-                                .label("Three")
-                                .disabled(disabled)
-                                .selected(selected)
-                                .loading(loading)
-                                .when(compact, |this| this.compact())
-                                .on_click(Self::on_click),
-                        ),
-                ),
+                section("Button Group", cx)
+                    .child(
+                        ButtonGroup::new("button-group")
+                            .small()
+                            .disabled(disabled)
+                            .child(
+                                Button::new("button-one", cx)
+                                    .label("One")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .when(compact, |this| this.compact())
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-two", cx)
+                                    .label("Two")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .when(compact, |this| this.compact())
+                                    .on_click(Self::on_click),
+                            )
+                            .child(
+                                Button::new("button-three", cx)
+                                    .label("Three")
+                                    .disabled(disabled)
+                                    .selected(selected)
+                                    .when(compact, |this| this.compact())
+                                    .on_click(Self::on_click),
+                            ),
+                    )
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .child(
+                                Checkbox::new("multiple-button")
+                                    .label("Multiple")
+                                    .checked(toggle_multiple)
+                                    .on_click(cx.listener(|view, _, cx| {
+                                        view.toggle_multiple = !view.toggle_multiple;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(
+                                ButtonGroup::new("toggle-button-group")
+                                    .primary()
+                                    .compact()
+                                    .multiple(toggle_multiple)
+                                    .child(
+                                        Button::new("disabled-toggle-button", cx)
+                                            .label("Disabled")
+                                            .selected(disabled),
+                                    )
+                                    .child(
+                                        Button::new("loading-toggle-button", cx)
+                                            .label("Loading")
+                                            .selected(loading),
+                                    )
+                                    .child(
+                                        Button::new("selected-toggle-button", cx)
+                                            .label("Selected")
+                                            .selected(selected),
+                                    )
+                                    .child(
+                                        Button::new("compact-toggle-button", cx)
+                                            .label("Compact")
+                                            .selected(compact),
+                                    )
+                                    .on_click(cx.listener(|view, selected: &Vec<usize>, cx| {
+                                        view.disabled = selected.contains(&0);
+                                        view.loading = selected.contains(&1);
+                                        view.selected = selected.contains(&2);
+                                        view.compact = selected.contains(&3);
+                                        cx.notify();
+                                    })),
+                            ),
+                    ),
             )
             .child(
                 section("Icon Button", cx)

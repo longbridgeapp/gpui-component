@@ -8,8 +8,11 @@ use gpui::{
 use smol::Timer;
 
 use crate::{
-    animation::cubic_bezier, button::Button, h_flex, theme::ActiveTheme as _, v_flex, Icon,
-    IconName, Sizable as _, StyledExt,
+    animation::cubic_bezier,
+    button::{Button, ButtonStyled as _},
+    h_flex,
+    theme::ActiveTheme as _,
+    v_flex, Icon, IconName, Sizable as _, StyledExt,
 };
 
 pub enum NotificationType {

@@ -9,7 +9,7 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    button::Button,
+    button::{Button, ButtonStyled as _},
     dock::DockItemInfo,
     h_flex,
     popup_menu::{PopupMenu, PopupMenuExt},
@@ -581,12 +581,12 @@ impl TabPanel {
     }
 
     fn on_action_toggle_zoom(&mut self, _: &ToggleZoom, cx: &mut ViewContext<Self>) {
-        self.is_zoomed = !self.is_zoomed;
-        if self.is_zoomed {
+        if !self.is_zoomed {
             cx.emit(PanelEvent::ZoomIn)
         } else {
             cx.emit(PanelEvent::ZoomOut)
         }
+        self.is_zoomed = !self.is_zoomed;
     }
 
     fn on_action_close_panel(&mut self, _: &ClosePanel, cx: &mut ViewContext<Self>) {

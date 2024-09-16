@@ -34,6 +34,45 @@ pub struct ButtonCustomStyle {
     active: Hsla,
 }
 
+pub trait ButtonStyled: Sized {
+    fn with_style(self, style: ButtonStyle) -> Self;
+
+    /// With the primary style for the Button.
+    fn primary(self) -> Self {
+        self.with_style(ButtonStyle::Primary)
+    }
+
+    /// With the danger style for the Button.
+    fn danger(self) -> Self {
+        self.with_style(ButtonStyle::Danger)
+    }
+
+    /// With the outline style for the Button.
+    fn outline(self) -> Self {
+        self.with_style(ButtonStyle::Outline)
+    }
+
+    /// With the ghost style for the Button.
+    fn ghost(self) -> Self {
+        self.with_style(ButtonStyle::Ghost)
+    }
+
+    /// With the link style for the Button.
+    fn link(self) -> Self {
+        self.with_style(ButtonStyle::Link)
+    }
+
+    /// With the text style for the Button, it will no padding look like a normal text.
+    fn text(self) -> Self {
+        self.with_style(ButtonStyle::Text)
+    }
+
+    /// With the custom style for the Button.
+    fn custom(self, style: ButtonCustomStyle) -> Self {
+        self.with_style(ButtonStyle::Custom(style))
+    }
+}
+
 impl ButtonCustomStyle {
     pub fn new(cx: &WindowContext) -> Self {
         Self {
@@ -106,7 +145,7 @@ pub struct Button {
     label: Option<SharedString>,
     children: Vec<AnyElement>,
     disabled: bool,
-    selected: bool,
+    pub(crate) selected: bool,
     style: ButtonStyle,
     rounded: ButtonRounded,
     border_corners: Corners<bool>,
@@ -115,6 +154,7 @@ pub struct Button {
     compact: bool,
     tooltip: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
+    pub(crate) stop_propagation: bool,
     loading: bool,
 }
 
@@ -141,52 +181,11 @@ impl Button {
             size: Size::Medium,
             tooltip: None,
             on_click: None,
+            stop_propagation: true,
             loading: false,
             compact: false,
             children: Vec::new(),
         }
-    }
-
-    /// With the primary style for the Button.
-    pub fn primary(mut self) -> Self {
-        self.style = ButtonStyle::Primary;
-        self
-    }
-
-    /// With the secondary style for the Button.
-    pub fn danger(mut self) -> Self {
-        self.style = ButtonStyle::Danger;
-        self
-    }
-
-    /// With the ghost style for the Button.
-    pub fn ghost(mut self) -> Self {
-        self.style = ButtonStyle::Ghost;
-        self
-    }
-
-    /// With the outline style for the Button.
-    pub fn outline(mut self) -> Self {
-        self.style = ButtonStyle::Outline;
-        self
-    }
-
-    /// With the link style for the Button.
-    pub fn link(mut self) -> Self {
-        self.style = ButtonStyle::Link;
-        self
-    }
-
-    /// With the text style for the Button, it will no padding look like a normal text.
-    pub fn text(mut self) -> Self {
-        self.style = ButtonStyle::Text;
-        self
-    }
-
-    /// With the custom style for the Button.
-    pub fn custom(mut self, custom: ButtonCustomStyle) -> Self {
-        self.style = ButtonStyle::Custom(custom);
-        self
     }
 
     /// Set the border radius of the Button.
@@ -247,6 +246,11 @@ impl Button {
         self.on_click = Some(Box::new(handler));
         self
     }
+
+    pub fn stop_propagation(mut self, val: bool) -> Self {
+        self.stop_propagation = val;
+        self
+    }
 }
 
 impl Disableable for Button {
@@ -266,6 +270,13 @@ impl Selectable for Button {
 impl Sizable for Button {
     fn with_size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
+        self
+    }
+}
+
+impl ButtonStyled for Button {
+    fn with_style(mut self, style: ButtonStyle) -> Self {
+        self.style = style;
         self
     }
 }
@@ -378,9 +389,12 @@ impl RenderOnce for Button {
             .when_some(
                 self.on_click.filter(|_| !self.disabled && !self.loading),
                 |this, on_click| {
-                    this.on_mouse_down(MouseButton::Left, |_, cx| {
+                    let stop_propagation = self.stop_propagation;
+                    this.on_mouse_down(MouseButton::Left, move |_, cx| {
                         cx.prevent_default();
-                        cx.stop_propagation()
+                        if stop_propagation {
+                            cx.stop_propagation();
+                        }
                     })
                     .on_click(move |event, cx| {
                         (on_click)(event, cx);
