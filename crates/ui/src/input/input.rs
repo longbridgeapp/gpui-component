@@ -235,6 +235,12 @@ impl TextInput {
         cx.notify();
     }
 
+    /// Set the Input size
+    pub fn set_size(&mut self, size: Size, cx: &mut ViewContext<Self>) {
+        self.size = size;
+        cx.notify();
+    }
+
     /// Set the appearance of the input field.
     pub fn appearance(mut self, appearance: bool) -> Self {
         self.appearance = appearance;

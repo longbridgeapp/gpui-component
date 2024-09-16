@@ -4,8 +4,8 @@ use std::{cell::Cell, rc::Rc};
 use crate::input::{InputEvent, TextInput};
 use crate::scroll::ScrollbarState;
 use crate::theme::ActiveTheme;
-use crate::IconName;
 use crate::{scroll::Scrollbar, v_flex};
+use crate::{IconName, Size};
 use gpui::{
     actions, div, prelude::FluentBuilder, uniform_list, AppContext, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
@@ -77,6 +77,7 @@ pub struct List<D: ListDelegate> {
     vertical_scroll_handle: UniformListScrollHandle,
     scrollbar_state: Rc<Cell<ScrollbarState>>,
 
+    pub(crate) size: Size,
     selected_index: Option<usize>,
     _search_task: Task<()>,
 }
@@ -108,8 +109,19 @@ where
             max_height: None,
             enable_scrollbar: true,
             loading: false,
+            size: Size::default(),
             _search_task: Task::Ready(None),
         }
+    }
+
+    /// Set the size
+    pub fn set_size(&mut self, size: Size, cx: &mut ViewContext<Self>) {
+        if let Some(input) = &self.query_input {
+            input.update(cx, |input, cx| {
+                input.set_size(size, cx);
+            })
+        }
+        self.size = size;
     }
 
     pub fn max_h(mut self, height: impl Into<Length>) -> Self {
@@ -125,6 +137,12 @@ where
     pub fn no_query(mut self) -> Self {
         self.query_input = None;
         self
+    }
+
+    pub fn set_query_input(&mut self, query_input: View<TextInput>, cx: &mut ViewContext<Self>) {
+        cx.subscribe(&query_input, Self::on_query_input_event)
+            .detach();
+        self.query_input = Some(query_input);
     }
 
     pub fn delegate(&self) -> &D {
@@ -318,8 +336,10 @@ where
             .when_some(self.query_input.clone(), |this, input| {
                 this.child(
                     div()
-                        .py_1()
-                        .px_2()
+                        .map(|this| match self.size {
+                            Size::Small => this.py_0().px_1p5(),
+                            _ => this.py_1().px_2(),
+                        })
                         .border_b_1()
                         .border_color(cx.theme().border)
                         .child(input),
