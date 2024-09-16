@@ -50,7 +50,7 @@ pub struct DropdownStory {
     country_dropdown: View<Dropdown<Vec<Country>>>,
     fruit_dropdown: View<Dropdown<SearchableVec<SharedString>>>,
     simple_dropdown1: View<Dropdown<Vec<SharedString>>>,
-    simple_dropdown2: View<Dropdown<Vec<SharedString>>>,
+    simple_dropdown2: View<Dropdown<SearchableVec<SharedString>>>,
     simple_dropdown3: View<Dropdown<Vec<SharedString>>>,
     disabled_dropdown: View<Dropdown<Vec<SharedString>>>,
 }
@@ -131,12 +131,12 @@ impl DropdownStory {
                 simple_dropdown2: cx.new_view(|cx| {
                     Dropdown::new(
                         "string-list2",
-                        vec![
+                        SearchableVec::new(vec![
                             "Rust".into(),
                             "Go".into(),
                             "C++".into(),
                             "JavaScript".into(),
-                        ],
+                        ]),
                         None,
                         cx,
                     )

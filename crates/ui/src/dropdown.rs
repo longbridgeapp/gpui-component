@@ -568,6 +568,12 @@ where
         let allow_open = !(self.open || self.disabled);
         let outline_visible = is_focused && !self.disabled;
 
+        // If the size has change, set size to self.list, to change the QueryInput size.
+        if self.list.read(cx).size != self.size {
+            self.list
+                .update(cx, |this, cx| this.set_size(self.size, cx))
+        }
+
         div()
             .id(self.id.clone())
             .key_context(CONTEXT)
