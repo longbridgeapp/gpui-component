@@ -202,36 +202,6 @@ impl DockArea {
     /// Subscribe event on the panels
     #[allow(clippy::only_used_in_recursion)]
     fn subscribe_item(&self, item: &DockItem, cx: &mut ViewContext<Self>) {
-        /// Subscribe zoom event on the panel
-        fn subscribe_zoom<P: Panel>(view: &View<P>, cx: &mut ViewContext<DockArea>) {
-            cx.subscribe(view, move |_, panel, event, cx| match event {
-                PanelEvent::ZoomIn => {
-                    let dock_area = cx.view().clone();
-                    let panel = panel.clone();
-                    cx.spawn(|_, mut cx| async move {
-                        let _ = cx.update(|cx| {
-                            let _ = dock_area.update(cx, |dock, cx| {
-                                dock.set_zoomed_in(panel, cx);
-                                cx.notify();
-                            });
-                        });
-                    })
-                    .detach();
-                }
-                PanelEvent::ZoomOut => {
-                    let dock_area = cx.view().clone();
-                    cx.spawn(|_, mut cx| async move {
-                        let _ = cx.update(|cx| {
-                            let _ = dock_area.update(cx, |view, cx| view.set_zoomed_out(cx));
-                        });
-                    })
-                    .detach()
-                }
-                PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
-            })
-            .detach();
-        }
-
         match item {
             DockItem::Split { items, view, .. } => {
                 for item in items {
@@ -244,12 +214,40 @@ impl DockArea {
                 })
                 .detach();
             }
-            DockItem::Tabs { view, .. } => {
-                // We need, only subscribe to the zoom events on the TabPanel
-                // Because we always wrap the DockItem::Panel in a DockItem::Tabs
-                subscribe_zoom(view, cx);
+            DockItem::Tabs { .. } => {
+                // We subscribe the tab panel event is in StackPanel insert_panel
             }
         }
+    }
+
+    /// Subscribe zoom event on the panel
+    pub(crate) fn subscribe_panel<P: Panel>(view: &View<P>, cx: &mut ViewContext<DockArea>) {
+        cx.subscribe(view, move |_, panel, event, cx| match event {
+            PanelEvent::ZoomIn => {
+                let dock_area = cx.view().clone();
+                let panel = panel.clone();
+                cx.spawn(|_, mut cx| async move {
+                    let _ = cx.update(|cx| {
+                        let _ = dock_area.update(cx, |dock, cx| {
+                            dock.set_zoomed_in(panel, cx);
+                            cx.notify();
+                        });
+                    });
+                })
+                .detach();
+            }
+            PanelEvent::ZoomOut => {
+                let dock_area = cx.view().clone();
+                cx.spawn(|_, mut cx| async move {
+                    let _ = cx.update(|cx| {
+                        let _ = dock_area.update(cx, |view, cx| view.set_zoomed_out(cx));
+                    });
+                })
+                .detach()
+            }
+            PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+        })
+        .detach();
     }
 
     /// Returns the ID of the dock area.
