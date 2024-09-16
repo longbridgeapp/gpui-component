@@ -60,7 +60,8 @@ impl RenderOnce for Radio {
             .gap_x_2()
             .cursor(CursorStyle::PointingHand)
             .text_color(cx.theme().foreground)
-            .items_start()
+            .items_center()
+            .line_height(relative(1.))
             .child(
                 div()
                     .relative()
@@ -90,7 +91,8 @@ impl RenderOnce for Radio {
                 this.child(
                     div()
                         .size_full()
-                        .overflow_hidden()
+                        .overflow_x_hidden()
+                        .text_ellipsis()
                         .line_height(relative(1.))
                         .child(label),
                 )

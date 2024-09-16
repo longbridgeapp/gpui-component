@@ -78,7 +78,8 @@ impl RenderOnce for Checkbox {
             .id(self.id)
             .group(group_id.clone())
             .gap_2()
-            .items_start()
+            .items_center()
+            .line_height(relative(1.))
             .child(
                 v_flex()
                     .relative()
@@ -116,7 +117,8 @@ impl RenderOnce for Checkbox {
                     this.text_color(cx.theme().foreground).child(
                         div()
                             .w_full()
-                            .overflow_hidden()
+                            .overflow_x_hidden()
+                            .text_ellipsis()
                             .line_height(relative(1.))
                             .child(label),
                     )
