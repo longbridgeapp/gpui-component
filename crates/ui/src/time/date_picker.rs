@@ -65,6 +65,7 @@ impl DatePicker {
         cx.subscribe(&calendar, |this, _, ev: &CalendarEvent, cx| match ev {
             CalendarEvent::Selected(date) => {
                 this.update_date(*date, true, cx);
+                this.focus_handle.focus(cx);
             }
         })
         .detach();
@@ -138,6 +139,7 @@ impl DatePicker {
 
     fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
         self.open = false;
+        self.focus_handle.focus(cx);
         cx.notify();
     }
 
@@ -195,7 +197,7 @@ impl Render for DatePicker {
             .id(self.id.clone())
             .key_context("DatePicker")
             .track_focus(&self.focus_handle)
-            .on_action(cx.listener(Self::escape))
+            .when(self.open, |this| this.on_action(cx.listener(Self::escape)))
             .w_full()
             .relative()
             .map(|this| match self.width {

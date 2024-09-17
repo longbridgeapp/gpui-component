@@ -11,6 +11,7 @@ use ui::{
     button::{Button, ButtonStyle, ButtonStyled as _},
     checkbox::Checkbox,
     date_picker::DatePicker,
+    dropdown::Dropdown,
     h_flex,
     input::TextInput,
     list::{List, ListDelegate, ListItem},
@@ -149,6 +150,7 @@ pub struct ModalStory {
     input1: View<TextInput>,
     input2: View<TextInput>,
     date_picker: View<DatePicker>,
+    dropdown: View<Dropdown<Vec<String>>>,
     modal_overlay: bool,
     model_show_close: bool,
     model_padding: bool,
@@ -247,6 +249,18 @@ impl ModalStory {
         let input2 = cx.new_view(|cx| TextInput::new(cx).placeholder("Input on the Window"));
         let date_picker =
             cx.new_view(|cx| DatePicker::new("birthday-picker", cx).placeholder("Date of Birth"));
+        let dropdown = cx.new_view(|cx| {
+            Dropdown::new(
+                "dropdown1",
+                vec![
+                    "Option 1".to_string(),
+                    "Option 2".to_string(),
+                    "Option 3".to_string(),
+                ],
+                None,
+                cx,
+            )
+        });
 
         Self {
             focus_handle: cx.focus_handle(),
@@ -256,6 +270,7 @@ impl ModalStory {
             input1,
             input2,
             date_picker,
+            dropdown,
             modal_overlay: true,
             model_show_close: true,
             model_padding: true,
@@ -322,10 +337,10 @@ impl ModalStory {
         let modal_padding = self.model_padding;
         let input1 = self.input1.clone();
         let date_picker = self.date_picker.clone();
+        let dropdown = self.dropdown.clone();
         let view = cx.view().clone();
 
         cx.open_modal(move |modal, cx| {
-            input1.focus_handle(cx).focus(cx);
             modal
                 .title("Form Modal")
                 .overlay(overlay)
@@ -337,6 +352,7 @@ impl ModalStory {
                         .child("This is a modal dialog.")
                         .child("You can put anything here.")
                         .child(input1.clone())
+                        .child(dropdown.clone())
                         .child(date_picker.clone()),
                 )
                 .footer(
@@ -388,6 +404,8 @@ impl ModalStory {
                         ),
                 )
         });
+
+        self.input1.focus_handle(cx).focus(cx);
     }
 
     fn on_action_test_action(&mut self, _: &TestAction, cx: &mut ViewContext<Self>) {

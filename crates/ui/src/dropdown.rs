@@ -150,29 +150,32 @@ where
     }
 
     fn cancel(&mut self, cx: &mut ViewContext<List<Self>>) {
-        if let Some(view) = self.dropdown.upgrade() {
-            cx.update_view(&view, |view, cx| {
-                view.focus(cx);
-                view.open = false;
+        let dropdown = self.dropdown.clone();
+        cx.defer(move |_, cx| {
+            _ = dropdown.update(cx, |this, cx| {
+                this.open = false;
+                this.focus(cx);
             });
-        }
+        });
     }
 
     fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
         self.selected_index = ix;
 
-        if let Some(view) = self.dropdown.upgrade() {
-            cx.update_view(&view, |view, cx| {
-                let selected_value = self
-                    .selected_index
-                    .and_then(|ix| self.delegate.get(ix))
-                    .map(|item| item.value().clone());
+        let selected_value = self
+            .selected_index
+            .and_then(|ix| self.delegate.get(ix))
+            .map(|item| item.value().clone());
+        let dropdown = self.dropdown.clone();
+
+        cx.defer(move |_, cx| {
+            _ = dropdown.update(cx, |this, cx| {
                 cx.emit(DropdownEvent::Confirm(selected_value.clone()));
-                view.focus(cx);
-                view.selected_value = selected_value;
-                view.open = false;
+                this.selected_value = selected_value;
+                this.open = false;
+                this.focus(cx);
             });
-        }
+        });
     }
 
     fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) -> Task<()> {
@@ -469,6 +472,9 @@ where
     }
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
+        // Propagate the event to the parent view, for example to the Modal to support ENTER to confirm.
+        cx.propagate();
+
         if !self.open {
             self.open = true;
             cx.notify();
@@ -489,6 +495,9 @@ where
     }
 
     fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
+        // Propagate the event to the parent view, for example to the Modal to support ESC to close.
+        cx.propagate();
+
         self.open = false;
         cx.notify();
     }
@@ -566,7 +575,7 @@ where
         let view = cx.view().clone();
         let bounds = self.bounds;
         let allow_open = !(self.open || self.disabled);
-        let outline_visible = is_focused && !self.disabled;
+        let outline_visible = self.open || is_focused && !self.disabled;
 
         // If the size has change, set size to self.list, to change the QueryInput size.
         if self.list.read(cx).size != self.size {
@@ -676,7 +685,6 @@ where
                                 })
                                 .child(
                                     v_flex()
-                                        .track_focus(&self.list.focus_handle(cx))
                                         .occlude()
                                         .mt_1p5()
                                         .bg(cx.theme().background)
@@ -688,7 +696,10 @@ where
                                             cx.dispatch_action(Box::new(Escape));
                                         })
                                         .child(self.list.clone()),
-                                ),
+                                )
+                                .on_mouse_down_out(cx.listener(|this, _, cx| {
+                                    this.escape(&Escape, cx);
+                                })),
                         ),
                     )
                     .with_priority(1),

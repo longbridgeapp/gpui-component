@@ -156,6 +156,8 @@ impl ColorPicker {
     }
 
     fn on_escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
+        cx.propagate();
+
         self.open = false;
         cx.notify();
     }
@@ -343,7 +345,6 @@ impl Render for ColorPicker {
                             .position(self.resolved_corner(self.bounds))
                             .child(
                                 div()
-                                    .track_focus(&self.focus_handle)
                                     .occlude()
                                     .map(|this| match self.anchor {
                                         AnchorCorner::TopLeft | AnchorCorner::TopRight => {
