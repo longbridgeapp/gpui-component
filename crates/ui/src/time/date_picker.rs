@@ -137,6 +137,8 @@ impl DatePicker {
     }
 
     fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
+        cx.propagate();
+
         self.open = false;
         cx.notify();
     }

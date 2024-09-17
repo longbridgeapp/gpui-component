@@ -11,7 +11,7 @@ use crate::{
     animation::cubic_bezier,
     button::{Button, ButtonStyled as _},
     theme::ActiveTheme as _,
-    v_flex, ContextModal, IconName, Sizable as _, StyledExt,
+    v_flex, ContextModal, IconName, Sizable as _,
 };
 
 actions!(modal, [Escape]);
