@@ -86,7 +86,9 @@ impl<'a> ContextModal for WindowContext<'a> {
             }
 
             let focus_handle = cx.focus_handle();
-            focus_handle.focus(cx);
+            if !focus_handle.contains_focused(cx) {
+                focus_handle.focus(cx);
+            }
 
             root.active_modals.push(ActiveModal {
                 focus_handle,
