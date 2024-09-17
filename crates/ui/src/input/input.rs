@@ -410,12 +410,6 @@ impl TextInput {
         self.is_selecting = false;
     }
 
-    fn on_mouse_move(&mut self, event: &MouseMoveEvent, cx: &mut ViewContext<Self>) {
-        if self.is_selecting {
-            self.select_to(self.index_for_mouse_position(event.position), cx);
-        }
-    }
-
     fn show_character_palette(&mut self, _: &ShowCharacterPalette, cx: &mut ViewContext<Self>) {
         cx.show_character_palette();
     }
@@ -657,6 +651,48 @@ impl TextInput {
         self.pause_blink_cursor(cx)
     }
 
+    fn on_drag_move(&mut self, event: &MouseMoveEvent, cx: &mut ViewContext<Self>) {
+        if self.text.is_empty() {
+            return;
+        }
+
+        if self.last_layout.is_none() {
+            return;
+        }
+
+        if !self.focus_handle.is_focused(cx) {
+            return;
+        }
+
+        if !self.is_selecting {
+            return;
+        }
+
+        let offset = self.offset_of_position(event.position);
+        self.select_to(offset, cx);
+    }
+
+    fn offset_of_position(&self, position: Point<Pixels>) -> usize {
+        let bounds = self.last_bounds.unwrap_or_default();
+        let position = position - bounds.origin;
+        self.last_layout
+            .as_ref()
+            .map(|line| match line.index_for_x(position.x) {
+                Some(ix) => ix,
+                None => {
+                    let last_index = line.len();
+                    // If the mouse is on the right side of the last character, move to the end
+                    // Otherwise, move to the start of the line
+                    if position.x > line.x_for_index(last_index) {
+                        last_index
+                    } else {
+                        0
+                    }
+                }
+            })
+            .unwrap_or(0)
+    }
+
     fn is_valid_input(&self, new_text: &str) -> bool {
         if new_text.is_empty() {
             return true;
@@ -806,6 +842,21 @@ impl FocusableView for TextInput {
 
 struct TextElement {
     input: View<TextInput>,
+}
+impl TextElement {
+    fn paint_mouse_listeners(&mut self, cx: &mut WindowContext) {
+        cx.on_mouse_event({
+            let input = self.input.clone();
+
+            move |event: &MouseMoveEvent, _, cx| {
+                if event.pressed_button == Some(MouseButton::Left) {
+                    input.update(cx, |input, cx| {
+                        input.on_drag_move(event, cx);
+                    });
+                }
+            }
+        });
+    }
 }
 struct PrepaintState {
     scroll_offset: Point<Pixels>,
@@ -1015,6 +1066,8 @@ impl Element for TextElement {
             input.last_layout = Some(line);
             input.last_bounds = Some(bounds);
         });
+
+        self.paint_mouse_listeners(cx);
     }
 }
 
@@ -1057,8 +1110,8 @@ impl Render for TextInput {
             .on_key_down(cx.listener(Self::on_key_down_for_blink_cursor))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
-            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
-            .on_mouse_move(cx.listener(Self::on_mouse_move))
+            // .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
+            // .on_mouse_move(cx.listener(Self::on_mouse_move))
             .size_full()
             .line_height(rems(1.25))
             .text_size(rems(0.875))
