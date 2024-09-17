@@ -113,6 +113,9 @@ impl OtpInput {
                     let ix = ix - 1;
                     chars.remove(ix);
                 }
+
+                cx.prevent_default();
+                cx.stop_propagation();
             }
             _ => {
                 let c = key.chars().next().unwrap();
@@ -124,6 +127,9 @@ impl OtpInput {
                 }
 
                 chars.push(c);
+
+                cx.prevent_default();
+                cx.stop_propagation();
             }
         }
 
