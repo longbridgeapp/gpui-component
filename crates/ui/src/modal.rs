@@ -185,7 +185,6 @@ impl RenderOnce for Modal {
                         .id(SharedString::from(format!("modal-{layer_ix}")))
                         .key_context(CONTEXT)
                         .track_focus(&self.focus_handle)
-                        .debug_focused(&self.focus_handle, cx)
                         .on_action({
                             let on_close = self.on_close.clone();
                             move |_: &Escape, cx| {
