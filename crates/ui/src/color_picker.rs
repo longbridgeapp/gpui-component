@@ -13,7 +13,7 @@ use crate::{
     popover::Escape,
     theme::{ActiveTheme as _, Colorize},
     tooltip::Tooltip,
-    v_flex, ColorExt as _, Sizable, Size, StyleSized, StyledExt,
+    v_flex, ColorExt as _, Sizable, Size, StyleSized,
 };
 
 const KEY_CONTEXT: &'static str = "ColorPicker";
