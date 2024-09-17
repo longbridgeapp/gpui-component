@@ -86,9 +86,7 @@ impl<'a> ContextModal for WindowContext<'a> {
             }
 
             let focus_handle = cx.focus_handle();
-            if !focus_handle.contains_focused(cx) {
-                focus_handle.focus(cx);
-            }
+            focus_handle.focus(cx);
 
             root.active_modals.push(ActiveModal {
                 focus_handle,
@@ -105,7 +103,12 @@ impl<'a> ContextModal for WindowContext<'a> {
     fn close_modal(&mut self) {
         Root::update(self, move |root, cx| {
             root.active_modals.pop();
-            if root.active_modals.len() == 0 {
+
+            if let Some(top_modal) = root.active_modals.last() {
+                // Focus the next modal.
+                top_modal.focus_handle.focus(cx);
+            } else {
+                // Restore focus if there are no more modals.
                 root.focus_back(cx);
             }
             cx.notify();
@@ -290,8 +293,6 @@ impl Root {
             return None;
         }
 
-        let modals_len = active_modals.len();
-
         Some(
             div().children(active_modals.iter().enumerate().map(|(i, active_modal)| {
                 let mut modal = Modal::new(cx);
@@ -303,14 +304,6 @@ impl Root {
                 //
                 // So we keep the focus handle in the `active_modal`, this is owned by the `Root`.
                 modal.focus_handle = active_modal.focus_handle.clone();
-
-                // Focus to the top modal.
-                if i == modals_len - 1 {
-                    // Check to avoid focus, when the modal is already focused.
-                    if !modal.focus_handle.contains_focused(cx) {
-                        cx.focus(&modal.focus_handle);
-                    }
-                }
 
                 // Keep only have one overlay, we only render the first modal with overlay.
                 if has_overlay {

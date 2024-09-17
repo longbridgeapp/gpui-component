@@ -85,7 +85,7 @@ pub trait StyledExt: Styled + Sized {
     /// Render a 1px blue border, when if the element is focused
     fn debug_focused(self, focus_handle: &FocusHandle, cx: &WindowContext) -> Self {
         if cfg!(debug_assertions) {
-            if focus_handle.is_focused(cx) {
+            if focus_handle.contains_focused(cx) {
                 self.debug_blue()
             } else {
                 self
