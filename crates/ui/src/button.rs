@@ -594,6 +594,7 @@ impl ButtonStyle {
             ButtonStyle::Link | ButtonStyle::Ghost | ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Primary => cx.theme().primary.opacity(0.15),
             ButtonStyle::Danger => cx.theme().destructive.opacity(0.15),
+            ButtonStyle::Custom(style) => style.color.opacity(0.15),
             _ => cx.theme().secondary.darken(0.2).grayscale(),
         };
         let fg = match self {

@@ -194,11 +194,31 @@ impl Render for ButtonStory {
                                 Button::new("button-6-custom", cx)
                                     .custom(
                                         ButtonCustomStyle::new(cx)
-                                            .color(cx.theme().muted)
-                                            .foreground(cx.theme().destructive)
-                                            .border(cx.theme().scrollbar)
-                                            .hover(cx.theme().tab_active_foreground)
-                                            .active(cx.theme().selection),
+                                            .color(if cx.theme().mode.is_dark() {
+                                                ui::green_900()
+                                            } else {
+                                                ui::green_500()
+                                            })
+                                            .foreground(if cx.theme().mode.is_dark() {
+                                                ui::white()
+                                            } else {
+                                                ui::black()
+                                            })
+                                            .border(if cx.theme().mode.is_dark() {
+                                                ui::green_800()
+                                            } else {
+                                                ui::green_600()
+                                            })
+                                            .hover(if cx.theme().mode.is_dark() {
+                                                ui::green_800()
+                                            } else {
+                                                ui::green_500()
+                                            })
+                                            .active(if cx.theme().mode.is_dark() {
+                                                ui::green_950()
+                                            } else {
+                                                ui::green_600()
+                                            }),
                                     )
                                     .label("Custom Button")
                                     .disabled(disabled)
