@@ -474,7 +474,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.11.0",
+ "itertools 0.13.0",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -944,7 +944,7 @@ dependencies = [
 [[package]]
 name = "collections"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "rustc-hash",
 ]
@@ -1275,7 +1275,7 @@ dependencies = [
 [[package]]
 name = "derive_refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2203,7 +2203,7 @@ dependencies = [
 [[package]]
 name = "gpui"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "anyhow",
  "as-raw-xcb-connection",
@@ -2303,7 +2303,7 @@ dependencies = [
 [[package]]
 name = "gpui_macros"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2498,7 +2498,7 @@ dependencies = [
 [[package]]
 name = "http_client"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -3049,7 +3049,7 @@ dependencies = [
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -4150,7 +4150,7 @@ dependencies = [
 [[package]]
 name = "refineable"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "derive_refineable",
 ]
@@ -4485,7 +4485,7 @@ checksum = "d369a96f978623eb3dc28807c4852d6cc617fed53da5d3c400feff1ef34a714a"
 [[package]]
 name = "semantic_version"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "anyhow",
  "serde",
@@ -4934,7 +4934,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "sum_tree"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "arrayvec",
  "log",
@@ -5553,7 +5553,7 @@ checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 [[package]]
 name = "util"
 version = "0.1.0"
-source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#51b28135964ad6d78dfa38f87353efeefd6ec884"
+source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#3d634cea8003d129f881a6a3104ead2cfed0ae46"
 dependencies = [
  "anyhow",
  "async-fs 1.6.0",
@@ -6474,7 +6474,7 @@ dependencies = [
 [[package]]
 name = "xim"
 version = "0.4.0"
-source = "git+https://github.com/npmania/xim-rs?rev=27132caffc5b9bc9c432ca4afad184ab6e7c16af#27132caffc5b9bc9c432ca4afad184ab6e7c16af"
+source = "git+https://github.com/XDeme1/xim-rs?rev=d50d461764c2213655cd9cf65a0ea94c70d3c4fd#d50d461764c2213655cd9cf65a0ea94c70d3c4fd"
 dependencies = [
  "ahash",
  "hashbrown 0.14.5",
@@ -6487,7 +6487,7 @@ dependencies = [
 [[package]]
 name = "xim-ctext"
 version = "0.3.0"
-source = "git+https://github.com/npmania/xim-rs?rev=27132caffc5b9bc9c432ca4afad184ab6e7c16af#27132caffc5b9bc9c432ca4afad184ab6e7c16af"
+source = "git+https://github.com/XDeme1/xim-rs?rev=d50d461764c2213655cd9cf65a0ea94c70d3c4fd#d50d461764c2213655cd9cf65a0ea94c70d3c4fd"
 dependencies = [
  "encoding_rs",
 ]
@@ -6495,7 +6495,7 @@ dependencies = [
 [[package]]
 name = "xim-parser"
 version = "0.2.1"
-source = "git+https://github.com/npmania/xim-rs?rev=27132caffc5b9bc9c432ca4afad184ab6e7c16af#27132caffc5b9bc9c432ca4afad184ab6e7c16af"
+source = "git+https://github.com/XDeme1/xim-rs?rev=d50d461764c2213655cd9cf65a0ea94c70d3c4fd#d50d461764c2213655cd9cf65a0ea94c70d3c4fd"
 dependencies = [
  "bitflags 2.6.0",
 ]
