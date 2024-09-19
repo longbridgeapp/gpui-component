@@ -14,7 +14,7 @@ use ui::{
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenuExt,
     switch::Switch,
-    v_flex, IconName, Sizable,
+    v_flex, ContextModal, IconName, Sizable,
 };
 
 #[derive(Clone, PartialEq, Deserialize)]
@@ -309,10 +309,32 @@ impl Render for PopupStory {
                                                 )
                                                 .child(Divider::horizontal())
                                                 .child(
-                                                    Button::new("info1", cx)
-                                                        .label("Yes")
-                                                        .w(px(80.))
-                                                        .small(),
+                                                    h_flex()
+                                                        .gap_4()
+                                                        .child(
+                                                            Button::new("info1", cx)
+                                                                .label("Ok")
+                                                                .w(px(80.))
+                                                                .small()
+                                                                .on_click(cx.listener(
+                                                                    |_, _, cx| {
+                                                                        cx.push_notification(
+                                                                            "You have clicked Ok.",
+                                                                        );
+                                                                        cx.emit(DismissEvent);
+                                                                    },
+                                                                )),
+                                                        )
+                                                        .child(
+                                                            Button::new("close", cx)
+                                                                .label("Cancel")
+                                                                .small()
+                                                                .on_click(cx.listener(
+                                                                    |_, _, cx| {
+                                                                        cx.emit(DismissEvent);
+                                                                    },
+                                                                )),
+                                                        ),
                                                 )
                                                 .into_any()
                                         })

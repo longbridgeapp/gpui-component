@@ -19,14 +19,14 @@ pub fn init(cx: &mut AppContext) {
 
 pub struct PopoverContent {
     focus_handle: FocusHandle,
-    content: Rc<dyn Fn(&mut WindowContext) -> AnyElement>,
+    content: Rc<dyn Fn(&mut ViewContext<Self>) -> AnyElement>,
     max_width: Option<Pixels>,
 }
 
 impl PopoverContent {
     pub fn new<B>(cx: &mut WindowContext, content: B) -> Self
     where
-        B: Fn(&mut WindowContext) -> AnyElement + 'static,
+        B: Fn(&mut ViewContext<Self>) -> AnyElement + 'static,
     {
         let focus_handle = cx.focus_handle();
 
