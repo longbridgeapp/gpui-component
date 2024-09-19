@@ -135,7 +135,7 @@ impl Notification {
 
     /// Set the title of the notification, default is None.
     ///
-    /// If tilte is None, the notification will not have a title.
+    /// If title is None, the notification will not have a title.
     pub fn title(mut self, title: impl Into<SharedString>) -> Self {
         self.title = Some(title.into());
         self
@@ -305,23 +305,15 @@ impl NotificationList {
         })
         .detach();
 
-        self.notifications.push_back(notification);
+        self.notifications.push_back(notification.clone());
         if autohide {
             // Sleep for 5 seconds to autohide the notification
-            cx.spawn(|view, mut cx| async move {
+            cx.spawn(|_, mut cx| async move {
                 Timer::after(Duration::from_secs(5)).await;
-                let _ = view.update(&mut cx, |view, cx| {
-                    if let Some(ix) = view
-                        .notifications
-                        .iter()
-                        .position(|note| note.read(cx).autohide)
-                    {
-                        if let Some(note) = view.notifications.get(ix) {
-                            note.update(cx, |note, cx| note.dismiss(&ClickEvent::default(), cx));
-                        }
-                    }
-                    cx.notify()
-                });
+
+                notification
+                    .update(&mut cx, |note, cx| note.dismiss(&ClickEvent::default(), cx))
+                    .expect("failed to auto hide notification");
             })
             .detach();
         }

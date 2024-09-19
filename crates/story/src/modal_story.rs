@@ -530,6 +530,9 @@ impl Render for ModalStory {
                                     .on_click(cx.listener(|_, _, cx| {
                                         cx.push_notification(
                                             "You have been saved file successfully.",
+                                        );
+                                        cx.push_notification(
+                                            "You have been saved file successfully.",
                                         )
                                     })),
                             )
