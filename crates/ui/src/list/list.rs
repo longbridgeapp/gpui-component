@@ -1,17 +1,18 @@
 use std::time::Duration;
 use std::{cell::Cell, rc::Rc};
 
-use crate::input::{InputEvent, TextInput};
-use crate::scroll::ScrollbarState;
-use crate::theme::ActiveTheme;
-use crate::{scroll::Scrollbar, v_flex};
-use crate::{IconName, Size};
-use gpui::{
-    actions, div, prelude::FluentBuilder, uniform_list, AppContext, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, KeyBinding, Length, ListSizingBehavior, MouseButton,
-    ParentElement, Render, Styled, Task, UniformListScrollHandle, View, ViewContext, VisualContext,
+use crate::{
+    input::{InputEvent, TextInput},
+    scroll::{Scrollbar, ScrollbarState},
+    theme::ActiveTheme,
+    v_flex, IconName, Size,
 };
-use gpui::{Entity, SharedString, WindowContext};
+use gpui::{
+    actions, div, prelude::FluentBuilder, uniform_list, AnyElement, AppContext, Entity,
+    FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, Length,
+    ListSizingBehavior, MouseButton, ParentElement, Render, SharedString, Styled, Task,
+    UniformListScrollHandle, View, ViewContext, VisualContext, WindowContext,
+};
 use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -48,6 +49,17 @@ pub trait ListDelegate: Sized + 'static {
     /// Return a Element to show when list is empty.
     fn render_empty(&self, cx: &mut ViewContext<List<Self>>) -> impl IntoElement {
         div()
+    }
+
+    /// Returns Some(AnyElement) to render the initial state of the list.
+    ///
+    /// This can be used to show a view for the list before the user has interacted with it.
+    ///
+    /// For example: The last search results, or the last selected item.
+    ///
+    /// Default is None, that means no initial state.
+    fn render_initial(&self, cx: &mut ViewContext<List<Self>>) -> Option<AnyElement> {
+        None
     }
 
     /// Return the confirmed index of the selected item.
@@ -322,6 +334,16 @@ where
 
         let selected_bg = cx.theme().list_active;
 
+        let inital_view = if let Some(input) = &self.query_input {
+            if input.read(cx).text().is_empty() {
+                self.delegate().render_initial(cx)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         v_flex()
             .key_context("List")
             .id("list")
@@ -345,52 +367,61 @@ where
                         .child(input),
                 )
             })
-            .child(
-                v_flex()
-                    .flex_grow()
-                    .relative()
-                    .when_some(self.max_height, |this, h| this.max_h(h))
-                    .overflow_hidden()
-                    .when(items_count == 0, |this| {
-                        this.child(self.delegate().render_empty(cx))
-                    })
-                    .when(items_count > 0, |this| {
-                        this.child(
-                            uniform_list(view, "uniform-list", items_count, {
-                                move |list, visible_range, cx| {
-                                    visible_range
-                                        .map(|ix| {
-                                            div()
-                                                .id("list-item")
-                                                .w_full()
-                                                .children(list.delegate.render_item(ix, cx))
-                                                .when_some(
-                                                    list.selected_index,
-                                                    |this, selected_index| {
-                                                        this.when(ix == selected_index, |this| {
-                                                            this.bg(selected_bg)
-                                                        })
-                                                    },
-                                                )
-                                                .on_mouse_down(
-                                                    MouseButton::Left,
-                                                    cx.listener(move |this, _, cx| {
-                                                        cx.stop_propagation();
-                                                        this.selected_index = Some(ix);
-                                                        this.on_action_confirm(&Confirm, cx);
-                                                    }),
-                                                )
-                                        })
-                                        .collect::<Vec<_>>()
-                                }
-                            })
+            .map(|this| {
+                if let Some(view) = inital_view {
+                    this.child(view)
+                } else {
+                    this.child(
+                        v_flex()
                             .flex_grow()
-                            .with_sizing_behavior(sizing_behavior)
-                            .track_scroll(vertical_scroll_handle)
-                            .into_any_element(),
-                        )
-                    })
-                    .children(self.render_scrollbar(cx)),
-            )
+                            .relative()
+                            .when_some(self.max_height, |this, h| this.max_h(h))
+                            .overflow_hidden()
+                            .when(items_count == 0, |this| {
+                                this.child(self.delegate().render_empty(cx))
+                            })
+                            .when(items_count > 0, |this| {
+                                this.child(
+                                    uniform_list(view, "uniform-list", items_count, {
+                                        move |list, visible_range, cx| {
+                                            visible_range
+                                                .map(|ix| {
+                                                    div()
+                                                        .id("list-item")
+                                                        .w_full()
+                                                        .children(list.delegate.render_item(ix, cx))
+                                                        .when_some(
+                                                            list.selected_index,
+                                                            |this, selected_index| {
+                                                                this.when(
+                                                                    ix == selected_index,
+                                                                    |this| this.bg(selected_bg),
+                                                                )
+                                                            },
+                                                        )
+                                                        .on_mouse_down(
+                                                            MouseButton::Left,
+                                                            cx.listener(move |this, _, cx| {
+                                                                cx.stop_propagation();
+                                                                this.selected_index = Some(ix);
+                                                                this.on_action_confirm(
+                                                                    &Confirm, cx,
+                                                                );
+                                                            }),
+                                                        )
+                                                })
+                                                .collect::<Vec<_>>()
+                                        }
+                                    })
+                                    .flex_grow()
+                                    .with_sizing_behavior(sizing_behavior)
+                                    .track_scroll(vertical_scroll_handle)
+                                    .into_any_element(),
+                                )
+                            })
+                            .children(self.render_scrollbar(cx)),
+                    )
+                }
+            })
     }
 }

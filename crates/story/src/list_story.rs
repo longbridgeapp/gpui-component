@@ -2,16 +2,15 @@ use core::time;
 
 use fake::Fake;
 use gpui::{
-    actions, div, px, ElementId, FocusHandle, FocusableView, InteractiveElement, IntoElement,
-    ParentElement, Render, RenderOnce, Styled, Task, Timer, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, div, px, relative, AnyElement, ElementId, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, Task, Timer, View,
+    ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
     h_flex,
     label::Label,
-    list::ListItem,
-    list::{List, ListDelegate},
+    list::{List, ListDelegate, ListItem},
     theme::{hsl, ActiveTheme},
     v_flex,
 };
@@ -165,6 +164,37 @@ impl ListDelegate for CompanyListDelegate {
         if let Some(_) = ix {
             cx.dispatch_action(Box::new(SelectedCompany));
         }
+    }
+
+    fn render_initial(&self, cx: &mut ViewContext<List<Self>>) -> Option<AnyElement> {
+        let histories = ["BABA", "BIDU", "GOOGL", "LB", "LP", "LBW"];
+
+        let input_history = histories
+            .into_iter()
+            .map(|name| {
+                div()
+                    .rounded_xl()
+                    .min_w(px(30.))
+                    .border_1()
+                    .rounded_md()
+                    .border_color(cx.theme().muted_foreground.opacity(0.3))
+                    .line_height(relative(1.))
+                    .p_1()
+                    .child(div().child(name).text_xs())
+            })
+            .collect::<Vec<_>>();
+
+
+        let element = v_flex()
+            .p_4()
+            .child(
+                v_flex()
+                    .gap_y_2()
+                    .child("History")
+                    .child(h_flex().gap_x_4().children(input_history)),
+            )
+            .into_any_element();
+        Some(element)
     }
 
     fn set_selected_index(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {
