@@ -262,6 +262,11 @@ where
         self
     }
 
+    pub fn set_stripe(&mut self, stripe: bool, cx: &mut ViewContext<Self>) {
+        self.stripe = stripe;
+        cx.notify();
+    }
+
     /// Set to use border style of the table, default to true.
     pub fn border(mut self, border: bool) -> Self {
         self.border = border;
