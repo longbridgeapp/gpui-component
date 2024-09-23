@@ -205,8 +205,6 @@ impl DockItemState {
     }
 
     pub fn to_item(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
-        // TODO: Use the empty panel if the panel is not registered, for the compatibility.
-
         let info = self.info.clone();
 
         let items: Vec<DockItem> = self
@@ -252,7 +250,9 @@ impl DockItemState {
                     f(dock_area.clone(), info.clone(), cx)
                 } else {
                     // Show an invalid panel if the panel is not registered.
-                    Box::new(cx.new_view(|cx| InvalidPanel::new(&self.panel_name, cx)))
+                    Box::new(
+                        cx.new_view(|cx| InvalidPanel::new(&self.panel_name, info.clone(), cx)),
+                    )
                 };
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
