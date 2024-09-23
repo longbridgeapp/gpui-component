@@ -9,6 +9,7 @@ use ui::{
     checkbox::Checkbox,
     h_flex,
     indicator::Indicator,
+    input::{InputEvent, TextInput},
     label::Label,
     prelude::FluentBuilder as _,
     table::{ColSort, Table, TableDelegate, TableEvent},
@@ -120,6 +121,12 @@ impl CustomerTableDelegate {
             loading: false,
             is_eof: false,
         }
+    }
+
+    fn update_customers(&mut self, size: usize) {
+        self.customers = randome_customers(size);
+        self.is_eof = false;
+        self.loading = false;
     }
 }
 
@@ -360,6 +367,8 @@ impl TableDelegate for CustomerTableDelegate {
 
 pub struct TableStory {
     table: View<Table<CustomerTableDelegate>>,
+    num_customers_input: View<TextInput>,
+    stripe: bool,
 }
 
 impl super::Story for TableStory {
@@ -388,12 +397,49 @@ impl TableStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
+        // Create the number input field with validation for positive integers
+        let num_customers_input = cx.new_view(|cx| {
+            let mut input = TextInput::new(cx)
+                .placeholder("Enter number of customers")
+                .validate(|s| s.parse::<usize>().is_ok());
+            input.set_text("5000", cx);
+            input
+        });
+
         let delegate = CustomerTableDelegate::new(5000);
         let table = cx.new_view(|cx| Table::new(delegate, cx));
 
         cx.subscribe(&table, Self::on_table_event).detach();
+        cx.subscribe(&num_customers_input, Self::on_num_customers_input_change)
+            .detach();
 
-        Self { table }
+        Self {
+            table,
+            num_customers_input,
+            stripe: false,
+        }
+    }
+
+    // Event handler for changes in the number input field
+    fn on_num_customers_input_change(
+        &mut self,
+        _: View<TextInput>,
+        event: &InputEvent,
+        cx: &mut ViewContext<Self>,
+    ) {
+        match event {
+            // Update when the user presses Enter or the input loses focus
+            InputEvent::PressEnter | InputEvent::Blur => {
+                let text = self.num_customers_input.read(cx).text().to_string();
+                if let Ok(num) = text.parse::<usize>() {
+                    self.table.update(cx, |table, _| {
+                        table.delegate_mut().update_customers(num);
+                    });
+                    cx.notify();
+                }
+            }
+            _ => {}
+        }
     }
 
     fn toggle_loop_selection(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
@@ -432,6 +478,16 @@ impl TableStory {
         let table = self.table.clone();
         table.update(cx, |table, cx| {
             table.delegate_mut().col_selection = *checked;
+            cx.notify();
+        });
+    }
+
+    fn toggle_stripe(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
+        self.stripe = *checked;
+        let stripe = self.stripe;
+        let table = self.table.clone();
+        table.update(cx, |table, cx| {
+            table.set_stripe(stripe, cx);
             cx.notify();
         });
     }
@@ -493,11 +549,31 @@ impl Render for TableStory {
                             .selected(delegate.col_selection)
                             .on_click(cx.listener(Self::toggle_col_selection)),
                     )
-                    .when(delegate.loading, |this| {
-                        this.child(h_flex().gap_1().child(Indicator::new()).child("Loading..."))
-                    })
-                    .child(format!("Total Rows: {}", delegate.rows_count()))
-                    .when(delegate.is_eof, |this| this.child("Is loaded all data.")),
+                    .child(
+                        Checkbox::new("stripe")
+                            .label("Stripe")
+                            .selected(self.stripe)
+                            .on_click(cx.listener(Self::toggle_stripe)),
+                    ),
+            )
+            .child(
+                h_flex().items_center().gap_2().child(
+                    h_flex()
+                        .items_center()
+                        .gap_1()
+                        .child(Label::new("Number of Customers:"))
+                        .child(
+                            h_flex()
+                                .min_w_32()
+                                .child(self.num_customers_input.clone())
+                                .into_any_element(),
+                        )
+                        .when(delegate.loading, |this| {
+                            this.child(h_flex().gap_1().child(Indicator::new()).child("Loading..."))
+                        })
+                        .child(format!("Total Rows: {}", delegate.rows_count()))
+                        .when(delegate.is_eof, |this| this.child("All data loaded.")),
+                ),
             )
             .child(self.table.clone())
     }
