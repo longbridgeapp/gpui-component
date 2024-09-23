@@ -123,14 +123,15 @@ impl Element for ScrollableMask {
             }
 
             cx.on_mouse_event({
+                let hitbox = hitbox.clone();
                 let mouse_position = cx.mouse_position();
                 let scroll_handle = self.scroll_handle.clone();
                 let old_offset = scroll_handle.offset();
                 let view_id = self.view.entity_id();
                 let is_horizontal = self.axis == ScrollableAxis::Horizontal;
 
-                move |event: &ScrollWheelEvent, _, cx| {
-                    if bounds.contains(&mouse_position) {
+                move |event: &ScrollWheelEvent, phase, cx| {
+                    if bounds.contains(&mouse_position) && phase.bubble() && hitbox.is_hovered(cx) {
                         let delta = event.delta.pixel_delta(line_height);
 
                         if is_horizontal && !delta.x.is_zero() {
