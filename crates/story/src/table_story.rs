@@ -383,6 +383,10 @@ impl super::Story for TableStory {
     fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
         Self::view(cx)
     }
+
+    fn closeable() -> bool {
+        false
+    }
 }
 
 impl gpui::FocusableView for TableStory {
