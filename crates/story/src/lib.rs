@@ -67,12 +67,14 @@ pub fn init(cx: &mut AppContext) {
         };
 
         let view = cx.new_view(|cx| {
-            let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
+            let (title, description, closeable, zoomable, collapsible, story) =
+                story_state.to_story(cx);
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
             container.name = title.into();
             container.description = description.into();
             container.closeable = closeable;
             container.zoomable = zoomable;
+            container.collapsible = collapsible;
             container
         });
         Box::new(view)
@@ -109,6 +111,7 @@ pub struct StoryContainer {
     story_klass: Option<SharedString>,
     closeable: bool,
     zoomable: bool,
+    collapsible: bool,
 }
 
 #[derive(Debug)]
@@ -130,6 +133,9 @@ pub trait Story: FocusableView {
     }
     fn zoomable() -> bool {
         true
+    }
+    fn collapsible() -> bool {
+        false
     }
     fn title_bg() -> Option<Hsla> {
         None
@@ -154,6 +160,7 @@ impl StoryContainer {
             story_klass: None,
             closeable: true,
             zoomable: true,
+            collapsible: false,
         }
     }
 
@@ -169,6 +176,7 @@ impl StoryContainer {
             story.focus_handle = focus_handle;
             story.closeable = S::closeable();
             story.zoomable = S::zoomable();
+            story.collapsible = S::collapsible();
             story.name = name.into();
             story.description = description.into();
             story.title_bg = S::title_bg();
@@ -221,7 +229,7 @@ impl StoryState {
     fn to_story(
         &self,
         cx: &mut WindowContext,
-    ) -> (&'static str, &'static str, bool, bool, AnyView) {
+    ) -> (&'static str, &'static str, bool, bool, bool, AnyView) {
         macro_rules! story {
             ($klass:tt) => {
                 (
@@ -229,6 +237,7 @@ impl StoryState {
                     $klass::description(),
                     $klass::closeable(),
                     $klass::zoomable(),
+                    $klass::collapsible(),
                     $klass::view(cx).into(),
                 )
             };
@@ -285,6 +294,10 @@ impl Panel for StoryContainer {
 
     fn zoomable(&self, _cx: &WindowContext) -> bool {
         self.zoomable
+    }
+
+    fn collapsible(&self, _cx: &WindowContext) -> bool {
+        self.collapsible
     }
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {

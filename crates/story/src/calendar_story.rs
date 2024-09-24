@@ -29,6 +29,10 @@ impl super::Story for CalendarStory {
     fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
         Self::view(cx)
     }
+
+    fn collapsible() -> bool {
+        true
+    }
 }
 
 impl CalendarStory {

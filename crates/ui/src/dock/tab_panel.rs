@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
-    DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
-    View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, Axis, DefiniteLength,
+    DismissEvent, DragMoveEvent, Element, Empty, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _, WeakView,
+    WindowContext,
 };
 use rust_i18n::t;
 
@@ -63,6 +64,7 @@ pub struct TabPanel {
     tab_bar_scroll_handle: ScrollHandle,
 
     is_zoomed: bool,
+    is_collapsed: bool,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -92,8 +94,11 @@ impl Panel for TabPanel {
     }
 
     fn collapsible(&self, cx: &WindowContext) -> bool {
-        self.active_panel()
-            .map(|panel| panel.collapsible(cx))
+        self.stack_panel
+            .as_ref()
+            .and_then(|stack_panel| {
+                Some(stack_panel.read(cx).axis == Axis::Vertical && self.panels.len() > 1)
+            })
             .unwrap_or(false)
     }
 
@@ -130,6 +135,7 @@ impl TabPanel {
             tab_bar_scroll_handle: ScrollHandle::new(),
             will_split_placement: None,
             is_zoomed: false,
+            is_collapsed: false,
         }
     }
 
@@ -146,6 +152,17 @@ impl TabPanel {
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
         self.focus_active_panel(cx);
+        cx.emit(PanelEvent::LayoutChanged);
+        cx.notify();
+    }
+
+    /// Toggle the Panel between collapsed and not collapsed
+    pub fn toggle_collapsed(&mut self, cx: &mut ViewContext<Self>) {
+        if !self.collapsible(cx) {
+            return;
+        }
+
+        self.is_collapsed = !self.is_collapsed;
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
@@ -293,8 +310,28 @@ impl TabPanel {
             )
     }
 
+    /// Render the preifx element for Panel title, such as Collapse/Expand icon
+    fn render_prefix_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let is_collapsible = self.collapsible(cx);
+
+        h_flex()
+            .gap_2()
+            .items_center()
+            .when(is_collapsible, |this| {
+                this.child(
+                    Button::new("collapse", cx)
+                        .icon(IconName::PanelBottom)
+                        .xsmall()
+                        .ghost()
+                        .selected(self.is_collapsed)
+                        .on_click(cx.listener(|view, _, cx| view.toggle_collapsed(cx))),
+                )
+            })
+    }
+
     fn render_tabs(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
+        let is_collapsible = self.collapsible(cx);
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
@@ -304,31 +341,37 @@ impl TabPanel {
                 .justify_between()
                 .items_center()
                 .line_height(rems(1.0))
-                .pr_3()
                 .when_some(title_style, |this, theme| {
                     this.bg(theme.background).text_color(theme.foreground)
                 })
                 .child(
-                    div()
-                        .id("tab")
-                        .py_2()
-                        .px_3()
-                        .min_w_16()
-                        .overflow_hidden()
-                        .text_ellipsis()
-                        .child(panel.title(cx))
-                        .on_drag(
-                            DragPanel {
-                                panel: panel.clone(),
-                                tab_panel: view,
-                            },
-                            |drag, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
-                            },
+                    h_flex()
+                        .items_center()
+                        .when(is_collapsible, |this| {
+                            this.child(div().pl_3().pr_2().child(self.render_prefix_buttons(cx)))
+                        })
+                        .child(
+                            div()
+                                .id("tab")
+                                .py_2()
+                                .px_3()
+                                .min_w_16()
+                                .overflow_hidden()
+                                .text_ellipsis()
+                                .child(panel.title(cx))
+                                .on_drag(
+                                    DragPanel {
+                                        panel: panel.clone(),
+                                        tab_panel: view,
+                                    },
+                                    |drag, cx| {
+                                        cx.stop_propagation();
+                                        cx.new_view(|_| drag.clone())
+                                    },
+                                ),
                         ),
                 )
-                .child(self.render_menu_button(cx))
+                .child(div().pr_3().pl_2().child(self.render_menu_button(cx)))
                 .into_any_element();
         }
 
@@ -336,6 +379,21 @@ impl TabPanel {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
+            .when(is_collapsible, |this| {
+                this.prefix(
+                    h_flex()
+                        .items_center()
+                        .top_0()
+                        .left_0()
+                        .border_r_1()
+                        .border_b_1()
+                        .h_full()
+                        .border_color(cx.theme().border)
+                        .bg(cx.theme().tab_bar)
+                        .px_3()
+                        .child(self.render_prefix_buttons(cx)),
+                )
+            })
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 let active = ix == self.active_ix;
                 Tab::new(("tab", ix), panel.title(cx))

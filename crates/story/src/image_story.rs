@@ -19,6 +19,10 @@ impl super::Story for ImageStory {
     fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
         Self::view(cx)
     }
+
+    fn collapsible() -> bool {
+        true
+    }
 }
 
 impl ImageStory {

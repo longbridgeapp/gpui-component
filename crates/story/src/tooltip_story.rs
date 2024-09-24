@@ -40,6 +40,10 @@ impl super::Story for TooltipStory {
     fn zoomable() -> bool {
         false
     }
+
+    fn collapsible() -> bool {
+        true
+    }
 }
 impl gpui::FocusableView for TooltipStory {
     fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {

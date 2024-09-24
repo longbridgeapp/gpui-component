@@ -40,6 +40,10 @@ impl super::Story for IconStory {
     fn zoomable() -> bool {
         false
     }
+
+    fn collapsible() -> bool {
+        true
+    }
 }
 
 impl gpui::FocusableView for IconStory {
