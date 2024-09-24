@@ -691,7 +691,7 @@ where
                                         .border_1()
                                         .border_color(cx.theme().border)
                                         .rounded(px(cx.theme().radius))
-                                        .shadow_sm()
+                                        .shadow_md()
                                         .on_mouse_down_out(|_, cx| {
                                             cx.dispatch_action(Box::new(Escape));
                                         })
