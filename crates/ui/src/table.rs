@@ -742,6 +742,28 @@ where
         let cols_count: usize = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
+        let row_height = self.vertical_scroll_handle.0.borrow().last_item_height;
+        let total_height = self
+            .vertical_scroll_handle
+            .0
+            .borrow()
+            .base_handle
+            .bounds()
+            .size
+            .height;
+
+        // Calculate the extra rows needed to fill the table for stripe style.
+        let mut extra_rows_needed = 0;
+        if let Some(row_height) = row_height {
+            if row_height > px(0.) {
+                let actual_height = row_height * rows_count as f32;
+                let remaining_height = total_height - actual_height;
+                if remaining_height > px(0.) {
+                    extra_rows_needed = (remaining_height / row_height).ceil() as usize;
+                }
+            }
+        }
+
         fn last_empty_col(_: &mut WindowContext) -> Div {
             h_flex().w(px(100.)).h_full().flex_shrink_0()
         }
@@ -798,32 +820,6 @@ where
                 if rows_count == 0 {
                     this.child(div().size_full().child(self.delegate.render_empty(cx)))
                 } else {
-                    let extra_rows_needed = {
-                        let row_height = self.vertical_scroll_handle.0.borrow().last_item_height;
-                        let container_height = self
-                            .vertical_scroll_handle
-                            .0
-                            .borrow()
-                            .base_handle
-                            .bounds()
-                            .size
-                            .height;
-                        if let Some(row_height) = row_height {
-                            if row_height > gpui::Pixels(0.0) {
-                                let total_rows_height = row_height * rows_count as f32;
-                                let remaining_height = container_height - total_rows_height;
-                                if remaining_height > gpui::Pixels(0.0) {
-                                    (remaining_height / row_height).ceil() as usize
-                                } else {
-                                    0
-                                }
-                            } else {
-                                0
-                            }
-                        } else {
-                            0
-                        }
-                    };
                     this.child(
                         h_flex().id("table-body").flex_grow().size_full().child(
                             uniform_list(
@@ -869,7 +865,8 @@ where
                                                         })
                                                         .children((0..cols_count).map(|col_ix| {
                                                             table
-                                                                .col_wrap(col_ix, cx) // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
+                                                                // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
+                                                                .col_wrap(col_ix, cx)
                                                                 .left(
                                                                     horizontal_scroll_handle
                                                                         .offset()
@@ -913,6 +910,7 @@ where
                                                             }),
                                                         )
                                                 } else {
+                                                    // Render fake rows to fill the rest table space
                                                     table
                                                         .delegate
                                                         .render_tr(row_ix, cx)
