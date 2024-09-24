@@ -788,6 +788,7 @@ where
                     .flex_grow()
                     .h_10()
                     .w_full()
+                    .flex_shrink_0()
                     .border_b_1()
                     .border_color(cx.theme().border)
                     .child(
