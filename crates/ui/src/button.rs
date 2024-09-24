@@ -30,6 +30,7 @@ pub struct ButtonCustomStyle {
     color: Hsla,
     foreground: Hsla,
     border: Hsla,
+    shadow: bool,
     hover: Hsla,
     active: Hsla,
 }
@@ -81,6 +82,7 @@ impl ButtonCustomStyle {
             border: cx.theme().border,
             hover: cx.theme().secondary_hover,
             active: cx.theme().secondary_active,
+            shadow: true,
         }
     }
 
@@ -106,6 +108,11 @@ impl ButtonCustomStyle {
 
     pub fn active(mut self, color: Hsla) -> Self {
         self.active = color;
+        self
+    }
+
+    pub fn shadow(mut self, shadow: bool) -> Self {
+        self.shadow = shadow;
         self
     }
 }
@@ -318,6 +325,9 @@ impl RenderOnce for Button {
             .justify_center()
             .cursor_pointer()
             .overflow_hidden()
+            .when(cx.theme().shadow && normal_style.shadow, |this| {
+                this.shadow_sm()
+            })
             .when(!style.no_padding(), |this| {
                 if self.label.is_none() && self.children.is_empty() {
                     // Icon Button
@@ -450,6 +460,7 @@ struct ButtonStyles {
     border: Hsla,
     fg: Hsla,
     underline: bool,
+    shadow: bool,
 }
 
 impl ButtonStyle {
@@ -496,17 +507,27 @@ impl ButtonStyle {
         }
     }
 
+    fn shadow(&self, _: &WindowContext) -> bool {
+        match self {
+            ButtonStyle::Primary | ButtonStyle::Secondary | ButtonStyle::Danger => true,
+            ButtonStyle::Custom(c) => c.shadow,
+            _ => false,
+        }
+    }
+
     fn normal(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = self.bg_color(cx);
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
         let underline = self.underline(cx);
+        let shadow = self.shadow(cx);
 
         ButtonStyles {
             bg,
             border,
             fg,
             underline,
+            shadow,
         }
     }
 
@@ -526,12 +547,14 @@ impl ButtonStyle {
             _ => self.text_color(cx),
         };
         let underline = self.underline(cx);
+        let shadow = self.shadow(cx);
 
         ButtonStyles {
             bg,
             border,
             fg,
             underline,
+            shadow,
         }
     }
 
@@ -553,12 +576,14 @@ impl ButtonStyle {
             _ => self.text_color(cx),
         };
         let underline = self.underline(cx);
+        let shadow = self.shadow(cx);
 
         ButtonStyles {
             bg,
             border,
             fg,
             underline,
+            shadow,
         }
     }
 
@@ -580,12 +605,14 @@ impl ButtonStyle {
             _ => self.text_color(cx),
         };
         let underline = self.underline(cx);
+        let shadow = self.shadow(cx);
 
         ButtonStyles {
             bg,
             border,
             fg,
             underline,
+            shadow,
         }
     }
 
@@ -606,12 +633,14 @@ impl ButtonStyle {
 
         let border = bg;
         let underline = self.underline(cx);
+        let shadow = self.shadow(cx);
 
         ButtonStyles {
             bg,
             border,
             fg,
             underline,
+            shadow,
         }
     }
 }

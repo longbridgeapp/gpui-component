@@ -9,7 +9,7 @@ use ui::{
     checkbox::Checkbox,
     h_flex,
     prelude::FluentBuilder,
-    theme::ActiveTheme,
+    theme::{ActiveTheme, Theme},
     v_flex, Disableable as _, Icon, IconName, Selectable as _, Sizable as _,
 };
 
@@ -113,6 +113,17 @@ impl Render for ButtonStory {
                             .on_click(cx.listener(|view, _, cx| {
                                 view.compact = !view.compact;
                                 cx.notify();
+                            })),
+                    )
+                    .child(
+                        Checkbox::new("shadow-button")
+                            .label("Shadow")
+                            .checked(cx.theme().shadow)
+                            .on_click(cx.listener(|_, _, cx| {
+                                let mut theme = cx.theme().clone();
+                                theme.shadow = !theme.shadow;
+                                cx.set_global::<Theme>(theme);
+                                cx.refresh();
                             })),
                     ),
             )

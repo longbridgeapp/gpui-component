@@ -212,7 +212,7 @@ impl Render for OtpInput {
                     .border_color(cx.theme().input)
                     .bg(cx.theme().background)
                     .when(is_input_focused, |this| this.border_color(cx.theme().ring))
-                    .shadow_sm()
+                    .when(cx.theme().shadow, |this| this.shadow_sm())
                     .items_center()
                     .justify_center()
                     .rounded_md()
