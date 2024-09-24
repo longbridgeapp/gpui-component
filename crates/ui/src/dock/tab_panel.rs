@@ -85,6 +85,18 @@ impl Panel for TabPanel {
             .unwrap_or(false)
     }
 
+    fn zoomable(&self, cx: &WindowContext) -> bool {
+        self.active_panel()
+            .map(|panel| panel.zoomable(cx))
+            .unwrap_or(false)
+    }
+
+    fn collapsible(&self, cx: &WindowContext) -> bool {
+        self.active_panel()
+            .map(|panel| panel.collapsible(cx))
+            .unwrap_or(false)
+    }
+
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
         if let Some(panel) = self.active_panel() {
             panel.popup_menu(menu, cx)
@@ -140,6 +152,12 @@ impl TabPanel {
 
     /// Add a panel to the end of the tabs
     pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        assert_ne!(
+            panel.panel_name(cx),
+            "StackPanel",
+            "can not allows add `StackPanel` to `TabPanel`"
+        );
+
         if self
             .panels
             .iter()
@@ -228,8 +246,10 @@ impl TabPanel {
     }
 
     fn render_menu_button(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let is_zoomed = self.is_zoomed;
         let closeable = self.closeable(cx);
+        let zoomable = self.zoomable(cx);
+
+        let is_zoomed = self.is_zoomed && zoomable;
         let view = cx.view().clone();
         let build_popup_menu = move |this, cx: &WindowContext| view.read(cx).popup_menu(this, cx);
 
@@ -256,14 +276,14 @@ impl TabPanel {
                     .ghost()
                     .popup_menu(move |this, cx| {
                         build_popup_menu(this, cx)
-                            .menu(
-                                if is_zoomed {
+                            .when(zoomable, |this| {
+                                let name = if is_zoomed {
                                     t!("Dock.Zoom Out")
                                 } else {
                                     t!("Dock.Zoom In")
-                                },
-                                Box::new(ToggleZoom),
-                            )
+                                };
+                                this.separator().menu(name, Box::new(ToggleZoom))
+                            })
                             .when(closeable, |this| {
                                 this.separator()
                                     .menu(t!("Dock.Close"), Box::new(ClosePanel))
@@ -581,6 +601,10 @@ impl TabPanel {
     }
 
     fn on_action_toggle_zoom(&mut self, _: &ToggleZoom, cx: &mut ViewContext<Self>) {
+        if !self.zoomable(cx) {
+            return;
+        }
+
         if !self.is_zoomed {
             cx.emit(PanelEvent::ZoomIn)
         } else {

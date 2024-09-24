@@ -67,10 +67,12 @@ pub fn init(cx: &mut AppContext) {
         };
 
         let view = cx.new_view(|cx| {
-            let (title, description, story) = story_state.to_story(cx);
+            let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
             container.name = title.into();
             container.description = description.into();
+            container.closeable = closeable;
+            container.zoomable = zoomable;
             container
         });
         Box::new(view)
@@ -106,6 +108,7 @@ pub struct StoryContainer {
     story: Option<AnyView>,
     story_klass: Option<SharedString>,
     closeable: bool,
+    zoomable: bool,
 }
 
 #[derive(Debug)]
@@ -123,6 +126,9 @@ pub trait Story: FocusableView {
         ""
     }
     fn closeable() -> bool {
+        true
+    }
+    fn zoomable() -> bool {
         true
     }
     fn title_bg() -> Option<Hsla> {
@@ -147,10 +153,10 @@ impl StoryContainer {
             story: None,
             story_klass: None,
             closeable: true,
+            zoomable: true,
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn panel<S: Story>(cx: &mut WindowContext) -> View<Self> {
         let name = S::title();
         let description = S::description();
@@ -162,6 +168,7 @@ impl StoryContainer {
             let mut story = Self::new(cx).story(story.into(), story_klass);
             story.focus_handle = focus_handle;
             story.closeable = S::closeable();
+            story.zoomable = S::zoomable();
             story.name = name.into();
             story.description = description.into();
             story.title_bg = S::title_bg();
@@ -211,12 +218,17 @@ impl StoryState {
         serde_json::from_value(value).unwrap()
     }
 
-    fn to_story(&self, cx: &mut WindowContext) -> (&'static str, &'static str, AnyView) {
+    fn to_story(
+        &self,
+        cx: &mut WindowContext,
+    ) -> (&'static str, &'static str, bool, bool, AnyView) {
         macro_rules! story {
             ($klass:tt) => {
                 (
                     $klass::title(),
                     $klass::description(),
+                    $klass::closeable(),
+                    $klass::zoomable(),
                     $klass::view(cx).into(),
                 )
             };
@@ -269,6 +281,10 @@ impl Panel for StoryContainer {
 
     fn closeable(&self, _cx: &WindowContext) -> bool {
         self.closeable
+    }
+
+    fn zoomable(&self, _cx: &WindowContext) -> bool {
+        self.zoomable
     }
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {

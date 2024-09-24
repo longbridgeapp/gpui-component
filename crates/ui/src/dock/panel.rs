@@ -44,6 +44,16 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         true
     }
 
+    /// Return true if the panel is zoomable, default is `false`.
+    fn zoomable(&self, _cx: &WindowContext) -> bool {
+        true
+    }
+
+    /// Return true if the panel is collapsable, default is `false`.
+    fn collapsible(&self, _cx: &WindowContext) -> bool {
+        false
+    }
+
     /// The addition popup menu of the panel, default is `None`.
     fn popup_menu(&self, this: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         this
@@ -56,11 +66,14 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 }
 
 pub trait PanelView: 'static + Send + Sync {
+    fn panel_name(&self, _cx: &WindowContext) -> &'static str;
     fn title(&self, _cx: &WindowContext) -> AnyElement;
 
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
 
     fn closeable(&self, cx: &WindowContext) -> bool;
+    fn zoomable(&self, cx: &WindowContext) -> bool;
+    fn collapsible(&self, cx: &WindowContext) -> bool;
 
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
 
@@ -72,6 +85,9 @@ pub trait PanelView: 'static + Send + Sync {
 }
 
 impl<T: Panel> PanelView for View<T> {
+    fn panel_name(&self, cx: &WindowContext) -> &'static str {
+        self.read(cx).panel_name()
+    }
     fn title(&self, cx: &WindowContext) -> AnyElement {
         self.read(cx).title(cx)
     }
@@ -82,6 +98,14 @@ impl<T: Panel> PanelView for View<T> {
 
     fn closeable(&self, cx: &WindowContext) -> bool {
         self.read(cx).closeable(cx)
+    }
+
+    fn zoomable(&self, cx: &WindowContext) -> bool {
+        self.read(cx).zoomable(cx)
+    }
+
+    fn collapsible(&self, cx: &WindowContext) -> bool {
+        self.read(cx).collapsible(cx)
     }
 
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {

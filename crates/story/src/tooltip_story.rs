@@ -36,6 +36,10 @@ impl super::Story for TooltipStory {
     fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
         Self::view(cx)
     }
+
+    fn zoomable() -> bool {
+        false
+    }
 }
 impl gpui::FocusableView for TooltipStory {
     fn focus_handle(&self, _: &gpui::AppContext) -> gpui::FocusHandle {
