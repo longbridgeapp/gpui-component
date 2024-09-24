@@ -257,7 +257,7 @@ impl Colors {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Theme {
     pub mode: ThemeMode,
     pub transparent: Hsla,
@@ -290,6 +290,8 @@ pub struct Theme {
     pub border: Hsla,
     pub input: Hsla,
     pub ring: Hsla,
+    /// Set to true to enable shadow for Button, Input, Dropdown, DatePicker ...
+    pub shadow: bool,
     pub selection: Hsla,
     pub scrollbar: Hsla,
     pub scrollbar_thumb: Hsla,
@@ -343,6 +345,7 @@ impl From<Colors> for Theme {
                 "FreeMono".into()
             },
             radius: 4.0,
+            shadow: true,
             title_bar_background: colors.title_bar_background,
             background: colors.background,
             foreground: colors.foreground,
@@ -401,7 +404,7 @@ impl From<Colors> for Theme {
     }
 }
 
-#[derive(Debug, Default, PartialEq, PartialOrd, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd, Eq)]
 pub enum ThemeMode {
     Light,
     #[default]

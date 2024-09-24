@@ -1,8 +1,9 @@
 use crate::{theme::ActiveTheme, tooltip::Tooltip};
 use gpui::{
-    canvas, div, px, relative, Axis, Bounds, DragMoveEvent, EntityId, EventEmitter,
-    InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement as _, Pixels,
-    Point, Render, StatefulInteractiveElement as _, Styled, ViewContext, VisualContext as _,
+    canvas, div, prelude::FluentBuilder as _, px, relative, Axis, Bounds, DragMoveEvent, EntityId,
+    EventEmitter, InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement as _,
+    Pixels, Point, Render, StatefulInteractiveElement as _, Styled, ViewContext,
+    VisualContext as _,
 };
 
 #[derive(Clone, Render)]
@@ -142,7 +143,7 @@ impl Slider {
             .rounded_full()
             .border_1()
             .border_color(cx.theme().slider_bar.opacity(0.9))
-            .shadow_md()
+            .when(cx.theme().shadow, |this| this.shadow_md())
             .bg(cx.theme().slider_thumb)
             .tooltip(move |cx| Tooltip::new(format!("{}", value), cx))
     }

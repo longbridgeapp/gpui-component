@@ -605,7 +605,7 @@ where
                     .border_1()
                     .border_color(cx.theme().input)
                     .rounded(px(cx.theme().radius))
-                    .shadow_sm()
+                    .when(cx.theme().shadow, |this| this.shadow_sm())
                     .map(|this| {
                         if self.disabled {
                             this.cursor_not_allowed()
@@ -691,7 +691,7 @@ where
                                         .border_1()
                                         .border_color(cx.theme().border)
                                         .rounded(px(cx.theme().radius))
-                                        .shadow_md()
+                                        .shadow_sm()
                                         .on_mouse_down_out(|_, cx| {
                                             cx.dispatch_action(Box::new(Escape));
                                         })
