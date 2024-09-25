@@ -402,7 +402,7 @@ impl Render for ButtonStory {
                                 Button::new("button-xs-1", cx)
                                     .label("Primary Button")
                                     .primary()
-                                    .small()
+                                    .xsmall()
                                     .disabled(disabled)
                                     .selected(selected)
                                     .loading(loading)
