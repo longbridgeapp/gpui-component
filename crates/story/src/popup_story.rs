@@ -13,7 +13,7 @@ use ui::{
     input::TextInput,
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenuExt,
-    switch::Switch,
+    switch::{Switch, SwitchState},
     v_flex, ContextModal, IconName, Sizable,
 };
 
@@ -76,7 +76,7 @@ pub struct PopupStory {
     focus_handle: FocusHandle,
     form: View<Form>,
     message: String,
-    window_mode: bool,
+    window_mode: SwitchState,
 }
 
 impl super::Story for PopupStory {
@@ -104,7 +104,7 @@ impl PopupStory {
             form,
             focus_handle: cx.focus_handle(),
             message: "".to_string(),
-            window_mode: false,
+            window_mode: SwitchState::new(false),
         }
     }
 
@@ -125,7 +125,7 @@ impl PopupStory {
         cx.notify()
     }
     fn on_toggle_window_mode(&mut self, _: &ToggleWindowMode, cx: &mut ViewContext<Self>) {
-        self.window_mode = !self.window_mode;
+        self.window_mode.toggle();
         cx.notify()
     }
     fn on_action_info(&mut self, info: &Info, cx: &mut ViewContext<Self>) {
@@ -171,7 +171,7 @@ impl Render for PopupStory {
                         .submenu("Settings", cx, move |menu, _| {
                             menu.menu_with_check(
                                 "Toggle Window Mode",
-                                window_mode,
+                                window_mode.into(),
                                 Box::new(ToggleWindowMode),
                             )
                             .separator()
@@ -261,7 +261,7 @@ impl Render for PopupStory {
                                     .separator()
                                     .menu_with_check(
                                         "Window Mode",
-                                        window_mode,
+                                        window_mode.get(),
                                         Box::new(ToggleWindowMode),
                                     )
                                     .separator()

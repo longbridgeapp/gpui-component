@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::{h_flex, theme::ActiveTheme, Disableable, Sizable, Size};
@@ -7,7 +8,64 @@ use gpui::{
     Styled as _, WindowContext,
 };
 
-type OnClick = Box<dyn Fn(&bool, &mut WindowContext) + 'static>;
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct SwitchState {
+    checked: bool,
+    prev_checked: Option<bool>,
+}
+
+impl SwitchState {
+    pub fn new(checked: bool) -> Self {
+        Self {
+            checked,
+            prev_checked: None,
+        }
+    }
+
+    pub fn get(&self) -> bool {
+        self.checked
+    }
+
+    pub fn set(&mut self, checked: bool) {
+        self.prev_checked = Some(self.checked);
+        self.checked = checked;
+    }
+
+    pub fn toggle(&mut self) {
+        self.prev_checked = Some(self.checked);
+        self.checked = !self.checked;
+    }
+
+    fn toggled(mut self) -> Self {
+        self.prev_checked = Some(self.checked);
+        self.checked = !self.checked;
+        self
+    }
+
+    fn refreshed(mut self) -> Self {
+        self.prev_checked = Some(self.checked);
+        self
+    }
+}
+
+impl From<bool> for SwitchState {
+    fn from(checked: bool) -> Self {
+        SwitchState::new(checked)
+    }
+}
+impl From<SwitchState> for bool {
+    fn from(state: SwitchState) -> Self {
+        state.checked
+    }
+}
+
+impl From<&SwitchState> for bool {
+    fn from(state: &SwitchState) -> Self {
+        state.checked
+    }
+}
+
+type OnClick = Arc<dyn Fn(&SwitchState, &mut WindowContext) + 'static>;
 
 pub enum LabelSide {
     Left,
@@ -24,7 +82,7 @@ impl LabelSide {
 pub struct Switch {
     id: ElementId,
     base: Stateful<Div>,
-    checked: bool,
+    state: SwitchState,
     disabled: bool,
     label: Option<SharedString>,
     label_side: LabelSide,
@@ -38,7 +96,7 @@ impl Switch {
         Self {
             id: id.clone(),
             base: div().id(id),
-            checked: false,
+            state: SwitchState::new(false),
             disabled: false,
             label: None,
             on_click: None,
@@ -47,8 +105,8 @@ impl Switch {
         }
     }
 
-    pub fn checked(mut self, checked: bool) -> Self {
-        self.checked = checked;
+    pub fn checked(mut self, state: SwitchState) -> Self {
+        self.state = state;
         self
     }
 
@@ -57,8 +115,11 @@ impl Switch {
         self
     }
 
-    pub fn on_click(mut self, handler: impl Fn(&bool, &mut WindowContext) + 'static) -> Self {
-        self.on_click = Some(Box::new(handler));
+    pub fn on_click(
+        mut self,
+        handler: impl Fn(&SwitchState, &mut WindowContext) + 'static,
+    ) -> Self {
+        self.on_click = Some(Arc::new(handler));
         self
     }
 
@@ -85,9 +146,11 @@ impl Disableable for Switch {
 impl RenderOnce for Switch {
     fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
         let theme = cx.theme();
-        let checked = self.checked;
+        let checked = self.state.get();
+        let prev_checked = self.state.prev_checked;
+        eprintln!("prev_checked={:?}, checked={:?}", prev_checked, checked);
 
-        let (bg, toggle_bg) = match self.checked {
+        let (bg, toggle_bg) = match checked {
             true => (theme.primary, theme.background),
             false => (theme.input, theme.background),
         };
@@ -130,19 +193,28 @@ impl RenderOnce for Switch {
                             .rounded_full()
                             .bg(toggle_bg)
                             .size(bar_width)
-                            .with_animation(
-                                ElementId::NamedInteger("move".into(), checked as usize),
-                                Animation::new(Duration::from_secs_f64(0.15)),
-                                move |this, delta| {
+                            .map(|this| {
+                                if prev_checked.map_or(false, |prev| prev != checked) {
+                                    this.with_animation(
+                                        ElementId::NamedInteger("move".into(), checked as usize),
+                                        Animation::new(Duration::from_secs_f64(0.15)),
+                                        move |this, delta| {
+                                            let max_x = bg_width - bar_width - inset * 2;
+                                            let x = if checked {
+                                                max_x * delta
+                                            } else {
+                                                max_x - max_x * delta
+                                            };
+                                            this.left(x)
+                                        },
+                                    )
+                                    .into_any_element()
+                                } else {
                                     let max_x = bg_width - bar_width - inset * 2;
-                                    let x = if checked {
-                                        max_x * delta
-                                    } else {
-                                        max_x - max_x * delta
-                                    };
-                                    this.left(x)
-                                },
-                            ),
+                                    let x = if checked { max_x } else { px(0.) };
+                                    this.left(x).into_any_element()
+                                }
+                            }),
                     ),
             )
             .when_some(self.label, |this, label| {
@@ -152,11 +224,20 @@ impl RenderOnce for Switch {
                 }))
             })
             .when_some(
-                self.on_click.filter(|_| !self.disabled),
+                self.on_click.clone().filter(|_| !self.disabled),
                 |this, on_click| {
                     this.on_mouse_down(gpui::MouseButton::Left, move |_, cx| {
                         cx.stop_propagation();
-                        on_click(&!self.checked, cx);
+                        on_click(&self.state.toggled(), cx);
+                    })
+                },
+            )
+            .when_some(
+                self.on_click.filter(|_| !self.disabled),
+                |this, on_click| {
+                    this.on_mouse_up(gpui::MouseButton::Left, move |_, cx| {
+                        cx.stop_propagation();
+                        on_click(&self.state.refreshed(), cx);
                     })
                 },
             )

@@ -6,16 +6,16 @@ use gpui::{
 use ui::{
     h_flex,
     label::Label,
-    switch::{LabelSide, Switch},
+    switch::{LabelSide, Switch, SwitchState},
     theme::ActiveTheme,
     v_flex, Disableable as _, Sizable, StyledExt,
 };
 
 pub struct SwitchStory {
     focus_handle: gpui::FocusHandle,
-    switch1: bool,
-    switch2: bool,
-    switch3: bool,
+    switch1: SwitchState,
+    switch2: SwitchState,
+    switch3: SwitchState,
 }
 
 impl super::Story for SwitchStory {
@@ -40,9 +40,9 @@ impl SwitchStory {
     fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
-            switch1: true,
-            switch2: false,
-            switch3: true,
+            switch1: SwitchState::new(true),
+            switch2: SwitchState::new(false),
+            switch3: SwitchState::new(true),
         }
     }
 }
@@ -124,7 +124,7 @@ impl Render for SwitchStory {
                         }))
                         .child(
                             Switch::new("switch3_1").label("Airplane Mode")
-                                .checked(true)
+                                .checked(true.into())
                                 .disabled(true)
                                 .on_click(|ev, _| {
                                     println!("Switch value changed: {:?}", ev);
