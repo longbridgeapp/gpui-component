@@ -2,8 +2,8 @@ use std::time::{self, Duration};
 
 use fake::{Fake, Faker};
 use gpui::{
-    div, img, AnyElement, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer,
-    View, ViewContext, VisualContext as _, WindowContext,
+    div, AnyElement, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
     checkbox::Checkbox,
@@ -13,8 +13,7 @@ use ui::{
     label::Label,
     prelude::FluentBuilder as _,
     table::{ColSort, Table, TableDelegate, TableEvent},
-    theme::ActiveTheme as _,
-    v_flex, Icon, IconName, Selectable,
+    v_flex, Selectable,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -307,7 +306,7 @@ impl TableDelegate for StockTableDelegate {
         &self,
         row_ix: usize,
         col_ix: usize,
-        cx: &mut ViewContext<Table<Self>>,
+        _cx: &mut ViewContext<Table<Self>>,
     ) -> impl IntoElement {
         let stock = self.stocks.get(row_ix).unwrap();
         let col = self.columns.get(col_ix).unwrap();
@@ -499,7 +498,8 @@ impl TableStory {
         // Spawn a background to random refresh the list
         cx.spawn(move |this, mut cx| async move {
             loop {
-                Timer::after(time::Duration::from_millis(100)).await;
+                let delay = (80..150).fake::<u64>();
+                Timer::after(time::Duration::from_millis(delay)).await;
 
                 this.update(&mut cx, |this, cx| {
                     if !this.refresh_data {
@@ -509,8 +509,9 @@ impl TableStory {
                     this.table.update(cx, |table, _| {
                         table.delegate_mut().stocks.iter_mut().enumerate().for_each(
                             |(i, stock)| {
+                                let n = (3..10).fake::<usize>();
                                 // update 30% of the stocks
-                                if i % 3 == 0 {
+                                if i % n == 0 {
                                     stock.random_update();
                                 }
                             },
