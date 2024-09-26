@@ -4,10 +4,10 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName,
+    v_flex, Icon, IconName, StyledExt,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
+    actions, canvas, div, prelude::FluentBuilder, px, size, uniform_list, AppContext, Bounds, Div,
     DragMoveEvent, Entity, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
     IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, ScrollHandle,
     SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
@@ -96,13 +96,15 @@ pub enum TableEvent {
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
-    /// The bounds of the table.
+    /// The bounds of the table container.
     bounds: Bounds<Pixels>,
-    horizontal_scroll_handle: ScrollHandle,
-    vertical_scroll_handle: UniformListScrollHandle,
+
     col_groups: Vec<ColGroup>,
 
+    vertical_scroll_handle: UniformListScrollHandle,
     scrollbar_state: Rc<Cell<ScrollbarState>>,
+    horizontal_scroll_handle: ScrollHandle,
+    horizontal_scrollbar_state: Rc<Cell<ScrollbarState>>,
 
     selection_state: SelectionState,
     selected_row: Option<usize>,
@@ -235,6 +237,7 @@ where
             horizontal_scroll_handle: ScrollHandle::new(),
             vertical_scroll_handle: UniformListScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
+            horizontal_scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             selection_state: SelectionState::Row,
             selected_row: None,
             selected_col: None,
@@ -421,6 +424,25 @@ where
                     self.delegate.rows_count(),
                 )),
         )
+    }
+
+    fn render_horizontal_scrollbar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let state = self.horizontal_scrollbar_state.clone();
+
+        div()
+            .absolute()
+            .top_0()
+            .left_0()
+            .right_0()
+            .bottom_0()
+            .size_full()
+            .child(Scrollbar::horizontal(
+                cx.view().entity_id(),
+                state,
+                self.horizontal_scroll_handle.clone(),
+                // self.horizontal_scroll_handle.child_bounds().size,
+                size(px(6000.), px(50.)),
+            ))
     }
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -972,6 +994,7 @@ where
                 move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
                 |_, _, _| {},
             ))
+            .child(self.render_horizontal_scrollbar(cx))
             .when(rows_count > 0, |this| {
                 this.children(self.render_scrollbar(cx))
             })
