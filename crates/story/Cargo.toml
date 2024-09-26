@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 ui.workspace = true
 gpui.workspace = true
-fake = "2.9.2"
+fake = { version = "2.10.0", features = ["dummy"] }
 charts-rs = "0.3"
 regex = "1"
 chrono = "0.4"
