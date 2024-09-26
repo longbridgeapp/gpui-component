@@ -162,9 +162,11 @@ impl Render for PopupStory {
             }))
             .context_menu({
                 move |this, cx| {
-                    this.menu("Cut", Box::new(Cut))
+                    this.separator()
+                        .menu("Cut", Box::new(Cut))
                         .menu("Copy", Box::new(Copy))
                         .menu("Paste", Box::new(Paste))
+                        .separator()
                         .separator()
                         .submenu("Settings", cx, move |menu, _| {
                             menu.menu_with_check(
@@ -179,6 +181,7 @@ impl Render for PopupStory {
                         })
                         .separator()
                         .menu("Search All", Box::new(SearchAll))
+                        .separator()
                 }
             })
             .gap_6()
