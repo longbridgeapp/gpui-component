@@ -1,8 +1,8 @@
-use std::time::Duration;
+use std::time::{self, Duration};
 
-use fake::Fake;
+use fake::{Fake, Faker};
 use gpui::{
-    div, img, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer, View,
+    div, AnyElement, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer, View,
     ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
@@ -13,50 +13,125 @@ use ui::{
     label::Label,
     prelude::FluentBuilder as _,
     table::{ColSort, Table, TableDelegate, TableEvent},
-    theme::ActiveTheme as _,
-    v_flex, Icon, IconName, Selectable,
+    v_flex, Selectable,
 };
 
-struct Customer {
+#[derive(Clone, Debug, Default)]
+struct Stock {
     id: usize,
-    login: String,
-    first_name: String,
-    last_name: String,
-    company: String,
-    city: String,
-    country: String,
-    email: String,
-    phone: String,
-    gender: usize,
-    age: usize,
-    verified: bool,
-    confirmed: bool,
+    symbol: String,
+    name: String,
+    price: f64,
+    change: f64,
+    change_percent: f64,
+    volume: f64,
+    turnover: f64,
+    market_cap: f64,
+    ttm: f64,
+    five_mins_ranking: f64,
+    th60_days_ranking: f64,
+    year_change_percent: f64,
+    bid: f64,
+    bid_volume: f64,
+    ask: f64,
+    ask_volume: f64,
+    open: f64,
+    prev_close: f64,
+    high: f64,
+    low: f64,
+    turnover_rate: f64,
+    rise_rate: f64,
+    amplitude: f64,
+    pe_status: f64,
+    pb_status: f64,
+    volume_ratio: f64,
+    bid_ask_ratio: f64,
+    latest_pre_close: f64,
+    latest_post_close: f64,
+    pre_market_cap: f64,
+    pre_market_percent: f64,
+    pre_market_change: f64,
+    post_market_cap: f64,
+    post_market_percent: f64,
+    post_market_change: f64,
+    float_cap: f64,
+    shares: i64,
+    shares_float: i64,
+    day_5_ranking: f64,
+    day_10_ranking: f64,
+    day_30_ranking: f64,
+    day_120_ranking: f64,
+    day_250_ranking: f64,
 }
 
-impl Customer {
-    fn render_avatar(&self, _: &mut WindowContext) -> impl IntoElement {
-        let image_id = self.id % 70 + 1;
-        let avatar_url = format!("https://i.pravatar.cc/40?image={}", image_id);
-        img(avatar_url).size_5().rounded_full()
+impl Stock {
+    fn random_update(&mut self) {
+        self.price = (-300.0..999.999).fake::<f64>();
+        self.change = (-0.1..5.0).fake::<f64>();
+        self.change_percent = (-0.1..0.1).fake::<f64>();
+        self.volume = (-300.0..999.999).fake::<f64>();
+        self.turnover = (-300.0..999.999).fake::<f64>();
+        self.market_cap = (-1000.0..9999.999).fake::<f64>();
+        self.ttm = (-1000.0..9999.999).fake::<f64>();
+        self.five_mins_ranking = self.five_mins_ranking * (1.0 + (-0.2..0.2).fake::<f64>());
+        self.bid = self.price * (1.0 + (-0.2..0.2).fake::<f64>());
+        self.bid_volume = (100.0..1000.0).fake::<f64>();
+        self.ask = self.price * (1.0 + (-0.2..0.2).fake::<f64>());
+        self.ask_volume = (100.0..1000.0).fake::<f64>();
+        self.bid_ask_ratio = self.bid / self.ask;
+        self.volume_ratio = self.volume / self.turnover;
+        self.high = self.price * (1.0 + (0.0..1.5).fake::<f64>());
+        self.low = self.price * (1.0 + (-1.5..0.0).fake::<f64>());
     }
 }
 
-fn randome_customers(size: usize) -> Vec<Customer> {
+fn random_stocks(size: usize) -> Vec<Stock> {
     (0..size)
-        .map(|id| Customer {
+        .map(|id| Stock {
             id,
-            login: fake::faker::internet::en::Username().fake::<String>(),
-            first_name: fake::faker::name::en::FirstName().fake::<String>(),
-            last_name: fake::faker::name::en::LastName().fake::<String>(),
-            company: fake::faker::company::en::CompanyName().fake::<String>(),
-            city: fake::faker::address::en::CityName().fake::<String>(),
-            country: fake::faker::address::en::CountryName().fake::<String>(),
-            email: fake::faker::internet::en::FreeEmail().fake::<String>(),
-            phone: fake::faker::phone_number::en::PhoneNumber().fake::<String>(),
-            gender: (0..=1).fake(),
-            age: (18..80).fake(),
-            verified: (0..=1).fake::<u8>() == 1,
-            confirmed: (0..=1).fake::<u8>() == 1,
+            symbol: Faker.fake::<String>(),
+            name: Faker.fake::<String>(),
+            change: (-100.0..100.0).fake(),
+            change_percent: (-1.0..1.0).fake(),
+            volume: (0.0..1000.0).fake(),
+            turnover: (0.0..1000.0).fake(),
+            market_cap: (0.0..1000.0).fake(),
+            ttm: (0.0..1000.0).fake(),
+            five_mins_ranking: (0.0..1000.0).fake(),
+            th60_days_ranking: (0.0..1000.0).fake(),
+            year_change_percent: (-1.0..1.0).fake(),
+            bid: (0.0..1000.0).fake(),
+            bid_volume: (0.0..1000.0).fake(),
+            ask: (0.0..1000.0).fake(),
+            ask_volume: (0.0..1000.0).fake(),
+            open: (0.0..1000.0).fake(),
+            prev_close: (0.0..1000.0).fake(),
+            high: (0.0..1000.0).fake(),
+            low: (0.0..1000.0).fake(),
+            turnover_rate: (0.0..1.0).fake(),
+            rise_rate: (0.0..1.0).fake(),
+            amplitude: (0.0..1000.0).fake(),
+            pe_status: (0.0..1000.0).fake(),
+            pb_status: (0.0..1000.0).fake(),
+            volume_ratio: (0.0..1.0).fake(),
+            bid_ask_ratio: (0.0..1.0).fake(),
+            latest_pre_close: (0.0..1000.0).fake(),
+            latest_post_close: (0.0..1000.0).fake(),
+            pre_market_cap: (0.0..1000.0).fake(),
+            pre_market_percent: (-1.0..1.0).fake(),
+            pre_market_change: (-100.0..100.0).fake(),
+            post_market_cap: (0.0..1000.0).fake(),
+            post_market_percent: (-1.0..1.0).fake(),
+            post_market_change: (-100.0..100.0).fake(),
+            float_cap: (0.0..1000.0).fake(),
+            shares: (100000..9999999).fake(),
+            shares_float: (100000..9999999).fake(),
+            day_5_ranking: (0.0..1000.0).fake(),
+            day_10_ranking: (0.0..1000.0).fake(),
+            day_30_ranking: (0.0..1000.0).fake(),
+            day_120_ranking: (0.0..1000.0).fake(),
+            day_250_ranking: (0.0..1000.0).fake(),
+            ..Default::default()
         })
         .collect()
 }
@@ -81,8 +156,8 @@ impl Column {
     }
 }
 
-struct CustomerTableDelegate {
-    customers: Vec<Customer>,
+struct StockTableDelegate {
+    stocks: Vec<Stock>,
     columns: Vec<Column>,
     loop_selection: bool,
     col_resize: bool,
@@ -93,25 +168,67 @@ struct CustomerTableDelegate {
     is_eof: bool,
 }
 
-impl CustomerTableDelegate {
+impl StockTableDelegate {
     fn new(size: usize) -> Self {
         Self {
-            customers: randome_customers(size),
+            stocks: random_stocks(size),
             columns: vec![
-                Column::new("id", "ID", Some(ColSort::Ascending)),
-                Column::new("login", "Login", Some(ColSort::Default)),
-                Column::new("first_name", "First Name", Some(ColSort::Default)),
-                Column::new("last_name", "Last Name", Some(ColSort::Default)),
-                Column::new("company", "Company", Some(ColSort::Default)),
-                Column::new("city", "City", Some(ColSort::Default)),
-                Column::new("country", "Country", Some(ColSort::Default)),
-                Column::new("email", "Email", Some(ColSort::Default)),
-                Column::new("phone", "Phone", None),
-                Column::new("gender", "Gender", None),
-                Column::new("age", "Age", Some(ColSort::Default)),
-                Column::new("verified", "Verified", None),
-                Column::new("confirmed", "Confirmed", None),
-                Column::new("twitter", "Twitter", None),
+                Column::new("id", "ID", None),
+                Column::new("symbol", "Symbol", Some(ColSort::Ascending)),
+                Column::new("name", "Name", None),
+                Column::new("price", "Price", Some(ColSort::Ascending)),
+                Column::new("change", "Chg", Some(ColSort::Ascending)),
+                Column::new("change_percent", "Chg%", Some(ColSort::Ascending)),
+                Column::new("volume", "Volume", Some(ColSort::Ascending)),
+                Column::new("turnover", "Turnover", Some(ColSort::Ascending)),
+                Column::new("market_cap", "Market Cap", Some(ColSort::Ascending)),
+                Column::new("ttm", "TTM", Some(ColSort::Ascending)),
+                Column::new("five_mins_ranking", "5m Ranking", Some(ColSort::Ascending)),
+                Column::new("th60_days_ranking", "60d Ranking", Some(ColSort::Ascending)),
+                Column::new("year_change_percent", "Year Chg%", Some(ColSort::Ascending)),
+                Column::new("bid", "Bid", Some(ColSort::Ascending)),
+                Column::new("bid_volume", "Bid Vol", Some(ColSort::Ascending)),
+                Column::new("ask", "Ask", Some(ColSort::Ascending)),
+                Column::new("ask_volume", "Ask Vol", Some(ColSort::Ascending)),
+                Column::new("open", "Open", Some(ColSort::Ascending)),
+                Column::new("prev_close", "Prev Close", Some(ColSort::Ascending)),
+                Column::new("high", "High", Some(ColSort::Ascending)),
+                Column::new("low", "Low", Some(ColSort::Ascending)),
+                Column::new("turnover_rate", "Turnover Rate", Some(ColSort::Ascending)),
+                Column::new("rise_rate", "Rise Rate", Some(ColSort::Ascending)),
+                Column::new("amplitude", "Amplitude", Some(ColSort::Ascending)),
+                Column::new("pe_status", "P/E", Some(ColSort::Ascending)),
+                Column::new("pb_status", "P/B", Some(ColSort::Ascending)),
+                Column::new("volume_ratio", "Volume Ratio", Some(ColSort::Ascending)),
+                Column::new("bid_ask_ratio", "Bid Ask Ratio", Some(ColSort::Ascending)),
+                Column::new(
+                    "latest_pre_close",
+                    "Latest Pre Close",
+                    Some(ColSort::Ascending),
+                ),
+                Column::new(
+                    "latest_post_close",
+                    "Latest Post Close",
+                    Some(ColSort::Ascending),
+                ),
+                Column::new("pre_market_cap", "Pre Mkt Cap", Some(ColSort::Ascending)),
+                Column::new("pre_market_percent", "Pre Mkt%", Some(ColSort::Ascending)),
+                Column::new("pre_market_change", "Pre Mkt Chg", Some(ColSort::Ascending)),
+                Column::new("post_market_cap", "Post Mkt Cap", Some(ColSort::Ascending)),
+                Column::new("post_market_percent", "Post Mkt%", Some(ColSort::Ascending)),
+                Column::new(
+                    "post_market_change",
+                    "Post Mkt Chg",
+                    Some(ColSort::Ascending),
+                ),
+                Column::new("float_cap", "Float Cap", Some(ColSort::Ascending)),
+                Column::new("shares", "Shares", Some(ColSort::Ascending)),
+                Column::new("shares_float", "Float Shares", Some(ColSort::Ascending)),
+                Column::new("day_5_ranking", "5d Ranking", Some(ColSort::Ascending)),
+                Column::new("day_10_ranking", "10d Ranking", Some(ColSort::Ascending)),
+                Column::new("day_30_ranking", "30d Ranking", Some(ColSort::Ascending)),
+                Column::new("day_120_ranking", "120d Ranking", Some(ColSort::Ascending)),
+                Column::new("day_250_ranking", "250d Ranking", Some(ColSort::Ascending)),
             ],
             loop_selection: true,
             col_resize: true,
@@ -123,20 +240,37 @@ impl CustomerTableDelegate {
         }
     }
 
-    fn update_customers(&mut self, size: usize) {
-        self.customers = randome_customers(size);
+    fn update_stocks(&mut self, size: usize) {
+        self.stocks = random_stocks(size);
         self.is_eof = false;
         self.loading = false;
     }
+
+    fn render_value_cell(&self, val: f64) -> AnyElement {
+        let this = div().child(format!("{:.3}", val));
+        // Val is a 0.0 .. n.0
+        // 30% to red, 30% to green, others to default
+        let right_num = ((val - val.floor()) * 1000.).floor() as i32;
+
+        let this = if right_num % 3 == 0 {
+            this.text_color(ui::red_600()).bg(ui::red_50())
+        } else if right_num % 3 == 1 {
+            this.text_color(ui::green_600()).bg(ui::green_50())
+        } else {
+            this
+        };
+
+        this.into_any_element()
+    }
 }
 
-impl TableDelegate for CustomerTableDelegate {
+impl TableDelegate for StockTableDelegate {
     fn cols_count(&self) -> usize {
         self.columns.len()
     }
 
     fn rows_count(&self) -> usize {
-        self.customers.len()
+        self.stocks.len()
     }
 
     fn col_name(&self, col_ix: usize) -> SharedString {
@@ -151,21 +285,7 @@ impl TableDelegate for CustomerTableDelegate {
         if let Some(col) = self.columns.get(col_ix) {
             Some(
                 match col.id.as_ref() {
-                    "id" => 100.0,
-                    "login" => 220.0,
-                    "first_name" => 150.0,
-                    "last_name" => 150.0,
-                    "company" => 300.0,
-                    "city" => 200.0,
-                    "country" => 200.0,
-                    "email" => 350.0,
-                    "phone" => 240.0,
-                    "gender" => 80.0,
-                    "age" => 90.0,
-                    "verified" => 90.0,
-                    "confirmed" => 90.0,
-                    "twitter" => 90.0,
-                    _ => 200.0,
+                    _ => 120.0,
                 }
                 .into(),
             )
@@ -186,50 +306,63 @@ impl TableDelegate for CustomerTableDelegate {
         &self,
         row_ix: usize,
         col_ix: usize,
-        cx: &mut ViewContext<Table<Self>>,
+        _cx: &mut ViewContext<Table<Self>>,
     ) -> impl IntoElement {
-        let customer = self.customers.get(row_ix).unwrap();
-
+        let stock = self.stocks.get(row_ix).unwrap();
         let col = self.columns.get(col_ix).unwrap();
+
         match col.id.as_ref() {
-            "id" => customer.id.to_string().into_any_element(),
-            "login" => h_flex()
-                .items_center()
-                .gap_2()
-                .child(customer.render_avatar(cx))
-                .child(customer.login.clone())
+            "id" => stock.id.to_string().into_any_element(),
+            "name" => stock.name.clone().into_any_element(),
+            "symbol" => stock.symbol.clone().into_any_element(),
+            "price" => self.render_value_cell(stock.price),
+            "change" => self.render_value_cell(stock.change),
+            "change_percent" => self.render_value_cell(stock.change_percent),
+            "volume" => self.render_value_cell(stock.volume),
+            "turnover" => self.render_value_cell(stock.turnover),
+            "market_cap" => self.render_value_cell(stock.market_cap),
+            "ttm" => self.render_value_cell(stock.ttm),
+            "five_mins_ranking" => self.render_value_cell(stock.five_mins_ranking),
+            "th60_days_ranking" => stock.th60_days_ranking.to_string().into_any_element(),
+            "year_change_percent" => (stock.year_change_percent * 100.0)
+                .to_string()
                 .into_any_element(),
-            "first_name" => customer.first_name.clone().into_any_element(),
-            "last_name" => customer.last_name.clone().into_any_element(),
-            "company" => h_flex()
-                .items_center()
-                .justify_between()
-                .gap_1()
-                .child(customer.company.clone())
-                .child(IconName::Info)
+            "bid" => self.render_value_cell(stock.bid),
+            "bid_volume" => self.render_value_cell(stock.bid_volume),
+            "ask" => self.render_value_cell(stock.ask),
+            "ask_volume" => self.render_value_cell(stock.ask_volume),
+            "open" => stock.open.to_string().into_any_element(),
+            "prev_close" => stock.prev_close.to_string().into_any_element(),
+            "high" => self.render_value_cell(stock.high),
+            "low" => self.render_value_cell(stock.low),
+            "turnover_rate" => (stock.turnover_rate * 100.0).to_string().into_any_element(),
+            "rise_rate" => (stock.rise_rate * 100.0).to_string().into_any_element(),
+            "amplitude" => (stock.amplitude * 100.0).to_string().into_any_element(),
+            "pe_status" => stock.pe_status.to_string().into_any_element(),
+            "pb_status" => stock.pb_status.to_string().into_any_element(),
+            "volume_ratio" => self.render_value_cell(stock.volume_ratio),
+            "bid_ask_ratio" => self.render_value_cell(stock.bid_ask_ratio),
+            "latest_pre_close" => stock.latest_pre_close.to_string().into_any_element(),
+            "latest_post_close" => stock.latest_post_close.to_string().into_any_element(),
+            "pre_market_cap" => stock.pre_market_cap.to_string().into_any_element(),
+            "pre_market_percent" => (stock.pre_market_percent * 100.0)
+                .to_string()
                 .into_any_element(),
-            "city" => customer.city.clone().into_any_element(),
-            "country" => customer.country.clone().into_any_element(),
-            "email" => customer.email.clone().into_any_element(),
-            "phone" => customer.phone.clone().into_any_element(),
-            "gender" => match customer.gender {
-                0 => "Male",
-                1 => "Famale",
-                _ => "",
-            }
-            .into_any_element(),
-            "age" => customer.age.to_string().into_any_element(),
-            "verified" => match customer.verified {
-                true => "Yes".to_string().into_any_element(),
-                false => "No".to_string().into_any_element(),
-            },
-            "confirmed" => match customer.confirmed {
-                true => Icon::new(IconName::Check).size_4().into_any_element(),
-                false => div().into_any_element(),
-            },
-            _ => Label::new("--")
-                .text_color(cx.theme().muted_foreground)
+            "pre_market_change" => stock.pre_market_change.to_string().into_any_element(),
+            "post_market_cap" => stock.post_market_cap.to_string().into_any_element(),
+            "post_market_percent" => (stock.post_market_percent * 100.0)
+                .to_string()
                 .into_any_element(),
+            "post_market_change" => stock.post_market_change.to_string().into_any_element(),
+            "float_cap" => stock.float_cap.to_string().into_any_element(),
+            "shares" => stock.shares.to_string().into_any_element(),
+            "shares_float" => stock.shares_float.to_string().into_any_element(),
+            "day_5_ranking" => stock.day_5_ranking.to_string().into_any_element(),
+            "day_10_ranking" => stock.day_10_ranking.to_string().into_any_element(),
+            "day_30_ranking" => stock.day_30_ranking.to_string().into_any_element(),
+            "day_120_ranking" => stock.day_120_ranking.to_string().into_any_element(),
+            "day_250_ranking" => stock.day_250_ranking.to_string().into_any_element(),
+            _ => "--".to_string().into_any_element(),
         }
     }
 
@@ -264,67 +397,11 @@ impl TableDelegate for CustomerTableDelegate {
             let asc = matches!(sort, ColSort::Ascending);
 
             match col.id.as_ref() {
-                "id" => self.customers.sort_by(|a, b| {
+                "id" => self.stocks.sort_by(|a, b| {
                     if asc {
                         a.id.cmp(&b.id)
                     } else {
                         b.id.cmp(&a.id)
-                    }
-                }),
-                "login" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.login.cmp(&b.login)
-                    } else {
-                        b.login.cmp(&a.login)
-                    }
-                }),
-                "first_name" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.first_name.cmp(&b.first_name)
-                    } else {
-                        b.first_name.cmp(&a.first_name)
-                    }
-                }),
-                "last_name" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.last_name.cmp(&b.last_name)
-                    } else {
-                        b.last_name.cmp(&a.last_name)
-                    }
-                }),
-                "company" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.company.cmp(&b.company)
-                    } else {
-                        b.company.cmp(&a.company)
-                    }
-                }),
-                "city" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.city.cmp(&b.city)
-                    } else {
-                        b.city.cmp(&a.city)
-                    }
-                }),
-                "country" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.country.cmp(&b.country)
-                    } else {
-                        b.country.cmp(&a.country)
-                    }
-                }),
-                "email" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.email.cmp(&b.email)
-                    } else {
-                        b.email.cmp(&a.email)
-                    }
-                }),
-                "age" => self.customers.sort_by(|a, b| {
-                    if asc {
-                        a.age.cmp(&b.age)
-                    } else {
-                        b.age.cmp(&a.age)
                     }
                 }),
                 _ => {}
@@ -355,9 +432,9 @@ impl TableDelegate for CustomerTableDelegate {
 
             cx.update(|cx| {
                 let _ = view.update(cx, |view, _| {
-                    view.delegate_mut().customers.extend(randome_customers(200));
+                    view.delegate_mut().stocks.extend(random_stocks(200));
                     view.delegate_mut().loading = false;
-                    view.delegate_mut().is_eof = view.delegate().customers.len() >= 6000;
+                    view.delegate_mut().is_eof = view.delegate().stocks.len() >= 6000;
                 });
             })
         })
@@ -366,9 +443,10 @@ impl TableDelegate for CustomerTableDelegate {
 }
 
 pub struct TableStory {
-    table: View<Table<CustomerTableDelegate>>,
-    num_customers_input: View<TextInput>,
+    table: View<Table<StockTableDelegate>>,
+    num_stocks_input: View<TextInput>,
     stripe: bool,
+    refresh_data: bool,
 }
 
 impl super::Story for TableStory {
@@ -402,30 +480,60 @@ impl TableStory {
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
         // Create the number input field with validation for positive integers
-        let num_customers_input = cx.new_view(|cx| {
+        let num_stocks_input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx)
-                .placeholder("Enter number of customers")
+                .placeholder("Enter number of Stocks to display")
                 .validate(|s| s.parse::<usize>().is_ok());
             input.set_text("5000", cx);
             input
         });
 
-        let delegate = CustomerTableDelegate::new(5000);
+        let delegate = StockTableDelegate::new(5000);
         let table = cx.new_view(|cx| Table::new(delegate, cx));
 
         cx.subscribe(&table, Self::on_table_event).detach();
-        cx.subscribe(&num_customers_input, Self::on_num_customers_input_change)
+        cx.subscribe(&num_stocks_input, Self::on_num_stocks_input_change)
             .detach();
+
+        // Spawn a background to random refresh the list
+        cx.spawn(move |this, mut cx| async move {
+            loop {
+                let delay = (80..150).fake::<u64>();
+                Timer::after(time::Duration::from_millis(delay)).await;
+
+                this.update(&mut cx, |this, cx| {
+                    if !this.refresh_data {
+                        return;
+                    }
+
+                    this.table.update(cx, |table, _| {
+                        table.delegate_mut().stocks.iter_mut().enumerate().for_each(
+                            |(i, stock)| {
+                                let n = (3..10).fake::<usize>();
+                                // update 30% of the stocks
+                                if i % n == 0 {
+                                    stock.random_update();
+                                }
+                            },
+                        );
+                    });
+                    cx.notify();
+                })
+                .ok();
+            }
+        })
+        .detach();
 
         Self {
             table,
-            num_customers_input,
+            num_stocks_input,
             stripe: false,
+            refresh_data: false,
         }
     }
 
     // Event handler for changes in the number input field
-    fn on_num_customers_input_change(
+    fn on_num_stocks_input_change(
         &mut self,
         _: View<TextInput>,
         event: &InputEvent,
@@ -434,10 +542,10 @@ impl TableStory {
         match event {
             // Update when the user presses Enter or the input loses focus
             InputEvent::PressEnter | InputEvent::Blur => {
-                let text = self.num_customers_input.read(cx).text().to_string();
+                let text = self.num_stocks_input.read(cx).text().to_string();
                 if let Ok(num) = text.parse::<usize>() {
                     self.table.update(cx, |table, _| {
-                        table.delegate_mut().update_customers(num);
+                        table.delegate_mut().update_stocks(num);
                     });
                     cx.notify();
                 }
@@ -496,9 +604,14 @@ impl TableStory {
         });
     }
 
+    fn toggle_refresh_data(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
+        self.refresh_data = *checked;
+        cx.notify();
+    }
+
     fn on_table_event(
         &mut self,
-        _: View<Table<CustomerTableDelegate>>,
+        _: View<Table<StockTableDelegate>>,
         event: &TableEvent,
         _cx: &mut ViewContext<Self>,
     ) {
@@ -558,6 +671,12 @@ impl Render for TableStory {
                             .label("Stripe")
                             .selected(self.stripe)
                             .on_click(cx.listener(Self::toggle_stripe)),
+                    )
+                    .child(
+                        Checkbox::new("refresh-data")
+                            .label("Refresh Data")
+                            .selected(self.refresh_data)
+                            .on_click(cx.listener(Self::toggle_refresh_data)),
                     ),
             )
             .child(
@@ -565,11 +684,11 @@ impl Render for TableStory {
                     h_flex()
                         .items_center()
                         .gap_1()
-                        .child(Label::new("Number of Customers:"))
+                        .child(Label::new("Number of Stocks:"))
                         .child(
                             h_flex()
                                 .min_w_32()
-                                .child(self.num_customers_input.clone())
+                                .child(self.num_stocks_input.clone())
                                 .into_any_element(),
                         )
                         .when(delegate.loading, |this| {
