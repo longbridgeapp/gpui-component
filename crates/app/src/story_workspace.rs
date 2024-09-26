@@ -1,7 +1,7 @@
 use anyhow::Result;
 use gpui::*;
 use prelude::FluentBuilder as _;
-use private::serde::Deserialize;
+use serde::Deserialize;
 use std::{sync::Arc, time::Duration};
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
