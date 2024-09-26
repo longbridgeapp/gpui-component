@@ -1,6 +1,6 @@
 use gpui::{
     div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseMoveEvent, ParentElement, RenderOnce, SharedString, Stateful,
+    IntoElement, MouseButton, MouseMoveEvent, ParentElement, RenderOnce, SharedString, Stateful,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use smallvec::SmallVec;
@@ -128,7 +128,12 @@ impl RenderOnce for ListItem {
             .justify_between()
             .when_some(self.on_click, |this, on_click| {
                 if !self.disabled {
-                    this.cursor_pointer().on_click(on_click)
+                    this.cursor_pointer()
+                        .on_mouse_down(MouseButton::Left, move |_, cx| {
+                            cx.stop_propagation();
+                            cx.prevent_default();
+                        })
+                        .on_click(on_click)
                 } else {
                     this
                 }
