@@ -259,7 +259,7 @@ impl TabPanel {
             .items_center()
             .when(self.is_zoomed, |this| {
                 this.child(
-                    Button::new("zoom", cx)
+                    Button::new("zoom")
                         .icon(IconName::Minimize)
                         .xsmall()
                         .ghost()
@@ -270,7 +270,7 @@ impl TabPanel {
                 )
             })
             .child(
-                Button::new("menu", cx)
+                Button::new("menu")
                     .icon(IconName::Ellipsis)
                     .xsmall()
                     .ghost()

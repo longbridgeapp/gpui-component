@@ -470,7 +470,7 @@ impl Calendar {
             .justify_between()
             .items_center()
             .child(
-                Button::new("prev", cx)
+                Button::new("prev")
                     .icon(IconName::ArrowLeft)
                     .ghost()
                     .disabled(disabled)
@@ -488,7 +488,7 @@ impl Calendar {
                         .justify_center()
                         .gap_3()
                         .child(
-                            Button::new("month", cx)
+                            Button::new("month")
                                 .ghost()
                                 .label(self.month_name(0))
                                 .selected(self.view_mode.is_month())
@@ -503,7 +503,7 @@ impl Calendar {
                                 })),
                         )
                         .child(
-                            Button::new("year", cx)
+                            Button::new("year")
                                 .ghost()
                                 .label(current_year.to_string())
                                 .compact()
@@ -531,7 +531,7 @@ impl Calendar {
                 ))
             })
             .child(
-                Button::new("next", cx)
+                Button::new("next")
                     .icon(IconName::ArrowRight)
                     .ghost()
                     .disabled(disabled)

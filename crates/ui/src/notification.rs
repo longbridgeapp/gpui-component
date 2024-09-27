@@ -251,7 +251,7 @@ impl Render for Notification {
                         .invisible()
                         .group_hover("", |this| this.visible())
                         .child(
-                            Button::new("close", cx)
+                            Button::new("close")
                                 .icon(IconName::Close)
                                 .ghost()
                                 .xsmall()

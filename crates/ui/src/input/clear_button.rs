@@ -8,8 +8,8 @@ use crate::{
 pub(crate) struct ClearButton {}
 
 impl ClearButton {
-    pub fn new(cx: &mut WindowContext) -> Button {
-        Button::new("clean", cx)
+    pub fn new(_: &mut WindowContext) -> Button {
+        Button::new("clean")
             .icon(IconName::CircleX)
             .ghost()
             .with_size(px(14.))

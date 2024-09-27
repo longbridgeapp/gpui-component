@@ -61,7 +61,7 @@ impl Render for IconStory {
                 )
                 .child(Icon::new(IconName::Maximize).size(px(55.)))
                 .child(
-                    Button::new("like1", cx)
+                    Button::new("like1")
                         .icon(
                             Icon::new(IconName::Heart)
                                 .text_color(ui::gray_500())
@@ -70,7 +70,7 @@ impl Render for IconStory {
                         .style(ButtonStyle::Ghost),
                 )
                 .child(
-                    Button::new("like2", cx)
+                    Button::new("like2")
                         .icon(
                             Icon::new(IconName::HeartOff)
                                 .text_color(ui::red_500())

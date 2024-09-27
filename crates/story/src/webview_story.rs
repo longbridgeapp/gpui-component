@@ -103,7 +103,7 @@ impl Render for WebViewStory {
                     .gap_2()
                     .items_center()
                     .child(
-                        Button::new("go-back", cx)
+                        Button::new("go-back")
                             .icon(IconName::ArrowLeft)
                             .on_click(cx.listener(Self::go_back)),
                     )

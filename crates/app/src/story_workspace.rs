@@ -310,7 +310,7 @@ impl Render for StoryWorkspace {
                             .gap_2()
                             .child(self.theme_color_picker.clone())
                             .child(
-                                Button::new("theme-mode", cx)
+                                Button::new("theme-mode")
                                     .map(|this| {
                                         if cx.theme().mode.is_dark() {
                                             this.icon(IconName::Sun)
@@ -331,7 +331,7 @@ impl Render for StoryWorkspace {
                             )
                             .child(self.locale_selector.clone())
                             .child(
-                                Button::new("github", cx)
+                                Button::new("github")
                                     .icon(IconName::GitHub)
                                     .small()
                                     .ghost()
@@ -343,7 +343,7 @@ impl Render for StoryWorkspace {
                                 div()
                                     .relative()
                                     .child(
-                                        Button::new("bell", cx)
+                                        Button::new("bell")
                                             .small()
                                             .ghost()
                                             .compact()
@@ -403,7 +403,7 @@ impl Render for LocaleSelector {
             .track_focus(&focus_handle)
             .on_action(cx.listener(Self::on_select_locale))
             .child(
-                Button::new("btn", cx)
+                Button::new("btn")
                     .small()
                     .ghost()
                     .icon(IconName::Globe)

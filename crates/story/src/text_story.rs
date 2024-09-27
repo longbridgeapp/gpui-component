@@ -117,7 +117,7 @@ impl Render for TextStory {
                             h_flex()
                                 .child(Label::new("9,182,1 USD").text_2xl().masked(self.masked))
                                 .child(
-                                    Button::new("btn-mask", cx)
+                                    Button::new("btn-mask")
                                         .style(ButtonStyle::Ghost)
                                         .icon(if self.masked {
                                             IconName::EyeOff

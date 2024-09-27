@@ -95,7 +95,7 @@ impl Element for Clipboard {
                 .items_center()
                 .when_some(content_element, |this, element| this.child(element))
                 .child(
-                    Button::new(clipboard_id, cx)
+                    Button::new(clipboard_id)
                         .icon(if copide_value {
                             IconName::Check
                         } else {

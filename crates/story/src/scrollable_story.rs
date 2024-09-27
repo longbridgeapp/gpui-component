@@ -93,28 +93,28 @@ impl Render for ScrollableStory {
                 h_flex()
                     .gap_2()
                     .child(
-                        Button::new("test-0", cx)
+                        Button::new("test-0")
                             .label("Size 0")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_test_cases(0, cx);
                             })),
                     )
                     .child(
-                        Button::new("test-1", cx)
+                        Button::new("test-1")
                             .label("Size 1")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_test_cases(1, cx);
                             })),
                     )
                     .child(
-                        Button::new("test-2", cx)
+                        Button::new("test-2")
                             .label("Size 2")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_test_cases(2, cx);
                             })),
                     )
                     .child(
-                        Button::new("test-3", cx)
+                        Button::new("test-3")
                             .label("Size 3")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_test_cases(3, cx);
@@ -122,7 +122,7 @@ impl Render for ScrollableStory {
                     )
                     .child(Divider::vertical().px_2())
                     .child(
-                        Button::new("test-axis-both", cx)
+                        Button::new("test-axis-both")
                             .label("Both Scrollbar")
                             .on_click(
                                 cx.listener(|view, _, cx| {
@@ -131,14 +131,14 @@ impl Render for ScrollableStory {
                             ),
                     )
                     .child(
-                        Button::new("test-axis-vertical", cx)
+                        Button::new("test-axis-vertical")
                             .label("Vertical")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_axis(ScrollbarAxis::Vertical, cx)
                             })),
                     )
                     .child(
-                        Button::new("test-axis-horizontal", cx)
+                        Button::new("test-axis-horizontal")
                             .label("Horizontal")
                             .on_click(cx.listener(|view, _, cx| {
                                 view.change_axis(ScrollbarAxis::Horizontal, cx)
