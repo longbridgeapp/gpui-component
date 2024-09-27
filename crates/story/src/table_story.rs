@@ -2,10 +2,11 @@ use std::time::{self, Duration};
 
 use fake::{Fake, Faker};
 use gpui::{
-    div, AnyElement, IntoElement, ParentElement, Pixels, Render, SharedString, Styled, Timer, View,
-    ViewContext, VisualContext as _, WindowContext,
+    div, AnyElement, ClickEvent, IntoElement, ParentElement, Pixels, Render, SharedString, Styled,
+    Timer, View, ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
+    button::{Button, ButtonStyled},
     checkbox::Checkbox,
     h_flex,
     indicator::Indicator,
@@ -13,7 +14,7 @@ use ui::{
     label::Label,
     prelude::FluentBuilder as _,
     table::{ColSort, Table, TableDelegate, TableEvent},
-    v_flex, Selectable,
+    v_flex, Selectable, Sizable, Size,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -447,6 +448,7 @@ pub struct TableStory {
     num_stocks_input: View<TextInput>,
     stripe: bool,
     refresh_data: bool,
+    size: Size,
 }
 
 impl super::Story for TableStory {
@@ -529,6 +531,7 @@ impl TableStory {
             num_stocks_input,
             stripe: false,
             refresh_data: false,
+            size: Size::default(),
         }
     }
 
@@ -604,6 +607,20 @@ impl TableStory {
         });
     }
 
+    fn toggle_size(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        self.size = match self.size {
+            Size::XSmall => Size::Small,
+            Size::Small => Size::Medium,
+            Size::Medium => Size::Large,
+            Size::Large => Size::XSmall,
+            _ => Size::default(),
+        };
+
+        self.table.update(cx, |table, cx| {
+            table.set_size(self.size, cx);
+        });
+    }
+
     fn toggle_refresh_data(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         self.refresh_data = *checked;
         cx.notify();
@@ -671,6 +688,14 @@ impl Render for TableStory {
                             .label("Stripe")
                             .selected(self.stripe)
                             .on_click(cx.listener(Self::toggle_stripe)),
+                    )
+                    .child(
+                        Button::new("size")
+                            .small()
+                            .compact()
+                            .outline()
+                            .label(format!("size: {:?}", self.size))
+                            .on_click(cx.listener(Self::toggle_size)),
                     )
                     .child(
                         Checkbox::new("refresh-data")

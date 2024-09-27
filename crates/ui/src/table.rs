@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName, StyledExt,
+    v_flex, Icon, IconName, Sizable, Size, StyledExt,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
@@ -119,6 +119,8 @@ pub struct Table<D: TableDelegate> {
     stripe: bool,
     /// Set to use border style of the table.
     border: bool,
+    /// The cell size of the table.
+    size: Size,
 }
 
 #[allow(unused)]
@@ -248,6 +250,7 @@ where
             head_content_bounds: Bounds::default(),
             stripe: false,
             border: true,
+            size: Size::default(),
         };
 
         this.prepare_col_groups(cx);
@@ -277,6 +280,12 @@ where
     pub fn border(mut self, border: bool) -> Self {
         self.border = border;
         self
+    }
+
+    /// Set the size to the table.
+    pub fn set_size(&mut self, size: Size, cx: &mut ViewContext<Self>) {
+        self.size = size;
+        cx.notify();
     }
 
     fn prepare_col_groups(&mut self, cx: &mut ViewContext<Self>) {
@@ -392,10 +401,15 @@ where
 
         div()
             .when_some(col_width, |this, width| this.w(width))
+            .flex_shrink_0()
             .overflow_hidden()
             .whitespace_nowrap()
-            .py_1()
-            .px_2()
+            .map(|this| match self.size {
+                Size::XSmall => this.text_sm().py_0().px_1(),
+                Size::Small => this.text_sm().py_0p5().px_1p5(),
+                Size::Large => this.py_1p5().px_3(),
+                _ => this.py_1().px_2(),
+            })
     }
 
     /// Show Column selection style, when the column is selected and the selection state is Column.
@@ -744,6 +758,15 @@ where
     }
 }
 
+impl<D> Sizable for Table<D>
+where
+    D: TableDelegate,
+{
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
 impl<D> FocusableView for Table<D>
 where
     D: TableDelegate,
@@ -909,7 +932,8 @@ where
                                                         })
                                                         .children((0..cols_count).map(|col_ix| {
                                                             table
-                                                                // Make the row scroll sync with the horizontal_scroll_handle to support horizontal scrolling.
+                                                                // Make the row scroll sync with the
+                                                                // horizontal_scroll_handle to support horizontal scrolling.
                                                                 .col_wrap(col_ix, cx)
                                                                 .left(
                                                                     horizontal_scroll_handle
@@ -919,7 +943,6 @@ where
                                                                 .child(
                                                                     table
                                                                         .render_cell(col_ix, cx)
-                                                                        .flex_shrink_0()
                                                                         .child(
                                                                             table
                                                                                 .delegate
@@ -975,10 +998,7 @@ where
                                                                         .x,
                                                                 )
                                                                 .child(
-                                                                    table
-                                                                        .render_cell(col_ix, cx)
-                                                                        .flex_shrink_0()
-                                                                        .child(div().size_full()),
+                                                                    table.render_cell(col_ix, cx),
                                                                 )
                                                         }))
                                                         .child(last_empty_col(cx))
