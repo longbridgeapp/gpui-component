@@ -332,6 +332,7 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-6")
                                     .label("Primary Button")
+                                    .icon(IconName::Check)
                                     .primary()
                                     .small()
                                     .loading(true)
@@ -402,6 +403,7 @@ impl Render for ButtonStory {
                                 Button::new("button-xs-1")
                                     .label("Primary Button")
                                     .primary()
+                                    .icon(IconName::Check)
                                     .xsmall()
                                     .disabled(disabled)
                                     .selected(selected)
