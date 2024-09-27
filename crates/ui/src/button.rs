@@ -446,7 +446,7 @@ impl RenderOnce for Button {
                         this.child(
                             div()
                                 .flex_none()
-                                .mt(text_offset_top)
+                                // .mt(text_offset_top)
                                 .line_height(relative(1.))
                                 .child(label),
                         )
