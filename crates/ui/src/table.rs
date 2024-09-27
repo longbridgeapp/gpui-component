@@ -7,7 +7,7 @@ use crate::{
     v_flex, Icon, IconName, StyledExt,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, size, uniform_list, AppContext, Bounds, Div,
+    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
     DragMoveEvent, Entity, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
     IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, ScrollHandle,
     SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
@@ -98,6 +98,8 @@ pub struct Table<D: TableDelegate> {
     delegate: D,
     /// The bounds of the table container.
     bounds: Bounds<Pixels>,
+    /// The bounds of the table content.
+    head_content_bounds: Bounds<Pixels>,
 
     col_groups: Vec<ColGroup>,
 
@@ -243,6 +245,7 @@ where
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
+            head_content_bounds: Bounds::default(),
             stripe: false,
             border: true,
         };
@@ -440,8 +443,7 @@ where
                 cx.view().entity_id(),
                 state,
                 self.horizontal_scroll_handle.clone(),
-                // self.horizontal_scroll_handle.child_bounds().size,
-                size(px(6000.), px(50.)),
+                self.head_content_bounds.size,
             ))
     }
 
@@ -816,7 +818,9 @@ where
                     .child(
                         uniform_list(view.clone(), "table-uniform-list-head", 1, {
                             let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                            let view = view.clone();
                             move |table, _, cx| {
+                                let view = view.clone();
                                 // Columns
                                 tr(cx)
                                     .id("table-head")
@@ -825,14 +829,31 @@ where
                                     .overflow_scroll()
                                     .track_scroll(&horizontal_scroll_handle)
                                     .bg(cx.theme().table_head)
-                                    .children(
-                                        table
-                                            .col_groups
-                                            .iter()
-                                            .enumerate()
-                                            .map(|(col_ix, _)| table.render_th(col_ix, cx)),
+                                    .child(
+                                        div()
+                                            .h_flex()
+                                            .relative()
+                                            .children(
+                                                table
+                                                    .col_groups
+                                                    .iter()
+                                                    .enumerate()
+                                                    .map(|(col_ix, _)| table.render_th(col_ix, cx)),
+                                            )
+                                            .child(last_empty_col(cx))
+                                            .child(
+                                                canvas(
+                                                    move |bounds, cx| {
+                                                        view.update(cx, |r, _| {
+                                                            r.head_content_bounds = bounds
+                                                        })
+                                                    },
+                                                    |_, _, _| {},
+                                                )
+                                                .absolute()
+                                                .size_full(),
+                                            ),
                                     )
-                                    .child(last_empty_col(cx))
                                     .map(|this| vec![this])
                             }
                         })
