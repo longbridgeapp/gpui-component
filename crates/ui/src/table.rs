@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName,
+    v_flex, Icon, IconName, StyledExt,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
@@ -96,13 +96,17 @@ pub enum TableEvent {
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
-    /// The bounds of the table.
+    /// The bounds of the table container.
     bounds: Bounds<Pixels>,
-    horizontal_scroll_handle: ScrollHandle,
-    vertical_scroll_handle: UniformListScrollHandle,
+    /// The bounds of the table content.
+    head_content_bounds: Bounds<Pixels>,
+
     col_groups: Vec<ColGroup>,
 
+    vertical_scroll_handle: UniformListScrollHandle,
     scrollbar_state: Rc<Cell<ScrollbarState>>,
+    horizontal_scroll_handle: ScrollHandle,
+    horizontal_scrollbar_state: Rc<Cell<ScrollbarState>>,
 
     selection_state: SelectionState,
     selected_row: Option<usize>,
@@ -235,11 +239,13 @@ where
             horizontal_scroll_handle: ScrollHandle::new(),
             vertical_scroll_handle: UniformListScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
+            horizontal_scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             selection_state: SelectionState::Row,
             selected_row: None,
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
+            head_content_bounds: Bounds::default(),
             stripe: false,
             border: true,
         };
@@ -421,6 +427,24 @@ where
                     self.delegate.rows_count(),
                 )),
         )
+    }
+
+    fn render_horizontal_scrollbar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let state = self.horizontal_scrollbar_state.clone();
+
+        div()
+            .absolute()
+            .top_0()
+            .left_0()
+            .right_0()
+            .bottom_0()
+            .size_full()
+            .child(Scrollbar::horizontal(
+                cx.view().entity_id(),
+                state,
+                self.horizontal_scroll_handle.clone(),
+                self.head_content_bounds.size,
+            ))
     }
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -794,7 +818,9 @@ where
                     .child(
                         uniform_list(view.clone(), "table-uniform-list-head", 1, {
                             let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                            let view = view.clone();
                             move |table, _, cx| {
+                                let view = view.clone();
                                 // Columns
                                 tr(cx)
                                     .id("table-head")
@@ -803,14 +829,31 @@ where
                                     .overflow_scroll()
                                     .track_scroll(&horizontal_scroll_handle)
                                     .bg(cx.theme().table_head)
-                                    .children(
-                                        table
-                                            .col_groups
-                                            .iter()
-                                            .enumerate()
-                                            .map(|(col_ix, _)| table.render_th(col_ix, cx)),
+                                    .child(
+                                        div()
+                                            .h_flex()
+                                            .relative()
+                                            .children(
+                                                table
+                                                    .col_groups
+                                                    .iter()
+                                                    .enumerate()
+                                                    .map(|(col_ix, _)| table.render_th(col_ix, cx)),
+                                            )
+                                            .child(last_empty_col(cx))
+                                            .child(
+                                                canvas(
+                                                    move |bounds, cx| {
+                                                        view.update(cx, |r, _| {
+                                                            r.head_content_bounds = bounds
+                                                        })
+                                                    },
+                                                    |_, _, _| {},
+                                                )
+                                                .absolute()
+                                                .size_full(),
+                                            ),
                                     )
-                                    .child(last_empty_col(cx))
                                     .map(|this| vec![this])
                             }
                         })
@@ -972,6 +1015,7 @@ where
                 move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
                 |_, _, _| {},
             ))
+            .child(self.render_horizontal_scrollbar(cx))
             .when(rows_count > 0, |this| {
                 this.children(self.render_scrollbar(cx))
             })
