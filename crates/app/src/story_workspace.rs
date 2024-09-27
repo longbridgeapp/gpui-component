@@ -284,6 +284,7 @@ impl Render for StoryWorkspace {
         let notifications_count = cx.notifications().len();
 
         div()
+            .font_family(".SystemUIFont")
             .relative()
             .size_full()
             .flex()
