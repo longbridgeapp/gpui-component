@@ -425,11 +425,10 @@ impl RenderOnce for Button {
                     .id("label")
                     .items_center()
                     .justify_center()
-                    .gap_2()
                     .map(|this| match self.size {
-                        Size::XSmall => this.text_xs(),
-                        Size::Small => this.text_sm(),
-                        _ => this.text_base(),
+                        Size::XSmall => this.gap_1().text_xs(),
+                        Size::Small => this.gap_1().text_sm(),
+                        _ => this.gap_2().text_base(),
                     })
                     .when(!self.loading, |this| {
                         this.when_some(self.icon, |this, icon| {
