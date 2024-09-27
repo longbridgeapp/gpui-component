@@ -133,7 +133,7 @@ impl Render for ButtonStory {
                     .child(
                         section("Normal Button", cx)
                             .child(
-                                Button::new("button-1", cx)
+                                Button::new("button-1")
                                     .primary()
                                     .label("Primary Button")
                                     .disabled(disabled)
@@ -143,7 +143,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-2", cx)
+                                Button::new("button-2")
                                     .label("Secondary Button")
                                     .disabled(disabled)
                                     .selected(selected)
@@ -152,7 +152,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-4", cx)
+                                Button::new("button-4")
                                     .danger()
                                     .label("Danger Button")
                                     .disabled(disabled)
@@ -162,7 +162,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-5", cx)
+                                Button::new("button-5")
                                     .outline()
                                     .label("Outline Button")
                                     .disabled(disabled)
@@ -172,7 +172,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-5-ghost", cx)
+                                Button::new("button-5-ghost")
                                     .ghost()
                                     .label("Ghost Button")
                                     .disabled(disabled)
@@ -182,7 +182,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-5-link", cx)
+                                Button::new("button-5-link")
                                     .link()
                                     .label("Link Button")
                                     .disabled(disabled)
@@ -192,7 +192,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-5-text", cx)
+                                Button::new("button-5-text")
                                     .text()
                                     .label("Text Button")
                                     .disabled(disabled)
@@ -202,7 +202,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-6-custom", cx)
+                                Button::new("button-6-custom")
                                     .custom(
                                         ButtonCustomStyle::new(cx)
                                             .color(if cx.theme().mode.is_dark() {
@@ -242,7 +242,7 @@ impl Render for ButtonStory {
                     .child(
                         section("Button with Icon", cx)
                             .child(
-                                Button::new("button-icon-1", cx)
+                                Button::new("button-icon-1")
                                     .primary()
                                     .label("Confirm")
                                     .icon(IconName::Check)
@@ -253,7 +253,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-2", cx)
+                                Button::new("button-icon-2")
                                     .label("Abort")
                                     .icon(IconName::Close)
                                     .disabled(disabled)
@@ -263,7 +263,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-3", cx)
+                                Button::new("button-icon-3")
                                     .label("Maximize")
                                     .icon(Icon::new(IconName::Maximize))
                                     .disabled(disabled)
@@ -273,7 +273,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-4", cx)
+                                Button::new("button-icon-4")
                                     .primary()
                                     .child(
                                         h_flex()
@@ -290,7 +290,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-5-ghost", cx)
+                                Button::new("button-icon-5-ghost")
                                     .ghost()
                                     .icon(IconName::Check)
                                     .label("Confirm")
@@ -301,7 +301,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-6-link", cx)
+                                Button::new("button-icon-6-link")
                                     .link()
                                     .icon(IconName::Check)
                                     .label("Link")
@@ -312,7 +312,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-icon-6-text", cx)
+                                Button::new("button-icon-6-text")
                                     .text()
                                     .icon(IconName::Check)
                                     .label("Text Button")
@@ -330,7 +330,7 @@ impl Render for ButtonStory {
                     .child(
                         section("Small Size", cx)
                             .child(
-                                Button::new("button-6", cx)
+                                Button::new("button-6")
                                     .label("Primary Button")
                                     .primary()
                                     .small()
@@ -342,7 +342,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-7", cx)
+                                Button::new("button-7")
                                     .label("Secondary Button")
                                     .small()
                                     .disabled(disabled)
@@ -352,7 +352,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-8", cx)
+                                Button::new("button-8")
                                     .label("Danger Button")
                                     .danger()
                                     .small()
@@ -363,7 +363,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-8-outline", cx)
+                                Button::new("button-8-outline")
                                     .label("Outline Button")
                                     .outline()
                                     .small()
@@ -374,7 +374,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-8-ghost", cx)
+                                Button::new("button-8-ghost")
                                     .label("Ghost Button")
                                     .ghost()
                                     .small()
@@ -385,7 +385,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-8-link", cx)
+                                Button::new("button-8-link")
                                     .label("Link Button")
                                     .link()
                                     .small()
@@ -399,7 +399,7 @@ impl Render for ButtonStory {
                     .child(
                         section("XSmall Size", cx)
                             .child(
-                                Button::new("button-xs-1", cx)
+                                Button::new("button-xs-1")
                                     .label("Primary Button")
                                     .primary()
                                     .xsmall()
@@ -410,7 +410,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-2", cx)
+                                Button::new("button-xs-2")
                                     .label("Secondary Button")
                                     .xsmall()
                                     .loading(true)
@@ -421,7 +421,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-3", cx)
+                                Button::new("button-xs-3")
                                     .label("Danger Button")
                                     .danger()
                                     .xsmall()
@@ -432,7 +432,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-3-ghost", cx)
+                                Button::new("button-xs-3-ghost")
                                     .label("Ghost Button")
                                     .ghost()
                                     .xsmall()
@@ -443,7 +443,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-3-outline", cx)
+                                Button::new("button-xs-3-outline")
                                     .label("Outline Button")
                                     .outline()
                                     .xsmall()
@@ -454,7 +454,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-xs-3-link", cx)
+                                Button::new("button-xs-3-link")
                                     .label("Link Button")
                                     .link()
                                     .xsmall()
@@ -473,7 +473,7 @@ impl Render for ButtonStory {
                             .small()
                             .disabled(disabled)
                             .child(
-                                Button::new("button-one", cx)
+                                Button::new("button-one")
                                     .label("One")
                                     .disabled(disabled)
                                     .selected(selected)
@@ -481,7 +481,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-two", cx)
+                                Button::new("button-two")
                                     .label("Two")
                                     .disabled(disabled)
                                     .selected(selected)
@@ -489,7 +489,7 @@ impl Render for ButtonStory {
                                     .on_click(Self::on_click),
                             )
                             .child(
-                                Button::new("button-three", cx)
+                                Button::new("button-three")
                                     .label("Three")
                                     .disabled(disabled)
                                     .selected(selected)
@@ -515,22 +515,22 @@ impl Render for ButtonStory {
                                     .compact()
                                     .multiple(toggle_multiple)
                                     .child(
-                                        Button::new("disabled-toggle-button", cx)
+                                        Button::new("disabled-toggle-button")
                                             .label("Disabled")
                                             .selected(disabled),
                                     )
                                     .child(
-                                        Button::new("loading-toggle-button", cx)
+                                        Button::new("loading-toggle-button")
                                             .label("Loading")
                                             .selected(loading),
                                     )
                                     .child(
-                                        Button::new("selected-toggle-button", cx)
+                                        Button::new("selected-toggle-button")
                                             .label("Selected")
                                             .selected(selected),
                                     )
                                     .child(
-                                        Button::new("compact-toggle-button", cx)
+                                        Button::new("compact-toggle-button")
                                             .label("Compact")
                                             .selected(compact),
                                     )
@@ -547,7 +547,7 @@ impl Render for ButtonStory {
             .child(
                 section("Icon Button", cx)
                     .child(
-                        Button::new("icon-button-primary", cx)
+                        Button::new("icon-button-primary")
                             .icon(IconName::Search)
                             .loading_icon(IconName::LoaderCircle)
                             .primary()
@@ -557,7 +557,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-secondary", cx)
+                        Button::new("icon-button-secondary")
                             .icon(IconName::Info)
                             .loading(true)
                             .disabled(disabled)
@@ -566,7 +566,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-danger", cx)
+                        Button::new("icon-button-danger")
                             .icon(IconName::Close)
                             .danger()
                             .disabled(disabled)
@@ -575,7 +575,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-small-primary", cx)
+                        Button::new("icon-button-small-primary")
                             .icon(IconName::Search)
                             .small()
                             .primary()
@@ -585,7 +585,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-outline", cx)
+                        Button::new("icon-button-outline")
                             .icon(IconName::Search)
                             .outline()
                             .disabled(disabled)
@@ -594,7 +594,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-ghost", cx)
+                        Button::new("icon-button-ghost")
                             .icon(IconName::ArrowLeft)
                             .loading_icon(IconName::LoaderCircle)
                             .ghost()
@@ -607,7 +607,7 @@ impl Render for ButtonStory {
             .child(
                 section("Icon Button", cx)
                     .child(
-                        Button::new("icon-button-4", cx)
+                        Button::new("icon-button-4")
                             .icon(IconName::Info)
                             .small()
                             .disabled(disabled)
@@ -616,7 +616,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-5", cx)
+                        Button::new("icon-button-5")
                             .icon(IconName::Close)
                             .small()
                             .danger()
@@ -626,7 +626,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-6", cx)
+                        Button::new("icon-button-6")
                             .icon(IconName::Search)
                             .small()
                             .primary()
@@ -636,7 +636,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-7", cx)
+                        Button::new("icon-button-7")
                             .icon(IconName::Info)
                             .xsmall()
                             .disabled(disabled)
@@ -645,7 +645,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-8", cx)
+                        Button::new("icon-button-8")
                             .icon(IconName::Close)
                             .xsmall()
                             .danger()
@@ -655,7 +655,7 @@ impl Render for ButtonStory {
                             .when(compact, |this| this.compact()),
                     )
                     .child(
-                        Button::new("icon-button-9", cx)
+                        Button::new("icon-button-9")
                             .icon(IconName::Heart)
                             .size(px(24.))
                             .ghost()

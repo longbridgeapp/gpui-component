@@ -208,20 +208,17 @@ impl RenderOnce for Modal {
                         })
                         .when(self.show_close, |this| {
                             this.child(
-                                Button::new(
-                                    SharedString::from(format!("modal-close-{layer_ix}")),
-                                    cx,
-                                )
-                                .absolute()
-                                .top_2()
-                                .right_2()
-                                .small()
-                                .ghost()
-                                .icon(IconName::Close)
-                                .on_click(move |_, cx| {
-                                    on_close(&ClickEvent::default(), cx);
-                                    cx.close_modal();
-                                }),
+                                Button::new(SharedString::from(format!("modal-close-{layer_ix}")))
+                                    .absolute()
+                                    .top_2()
+                                    .right_2()
+                                    .small()
+                                    .ghost()
+                                    .icon(IconName::Close)
+                                    .on_click(move |_, cx| {
+                                        on_close(&ClickEvent::default(), cx);
+                                        cx.close_modal();
+                                    }),
                             )
                         })
                         .child(self.content)

@@ -7,8 +7,8 @@ use crate::{
 };
 use gpui::{
     div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Corners, Div, Edges,
-    ElementId, FocusHandle, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement,
-    Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
+    ElementId, Hsla, InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels,
+    RenderOnce, SharedString, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 pub enum ButtonRounded {
@@ -147,7 +147,6 @@ impl ButtonStyle {
 pub struct Button {
     pub base: Div,
     id: ElementId,
-    focus_handle: FocusHandle,
     icon: Option<Icon>,
     label: Option<SharedString>,
     children: Vec<AnyElement>,
@@ -173,10 +172,9 @@ impl From<Button> for AnyElement {
 }
 
 impl Button {
-    pub fn new(id: impl Into<ElementId>, cx: &mut WindowContext) -> Self {
+    pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             base: div(),
-            focus_handle: cx.focus_handle(),
             id: id.into(),
             icon: None,
             label: None,
@@ -311,7 +309,6 @@ impl RenderOnce for Button {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let style: ButtonStyle = self.style;
         let normal_style = style.normal(cx);
-        let focused = self.focus_handle.is_focused(cx);
         let icon_size = match self.size {
             Size::Size(v) => Size::Size(v * 0.75),
             _ => self.size,
@@ -326,7 +323,6 @@ impl RenderOnce for Button {
 
         self.base
             .id(self.id)
-            .track_focus(&self.focus_handle)
             .flex()
             .items_center()
             .justify_center()
@@ -402,7 +398,6 @@ impl RenderOnce for Button {
                             .text_color(active_style.fg)
                     })
             })
-            .when(focused, |this| this.border_color(cx.theme().ring))
             .when_some(
                 self.on_click.filter(|_| !self.disabled && !self.loading),
                 |this, on_click| {

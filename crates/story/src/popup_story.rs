@@ -64,7 +64,7 @@ impl Render for Form {
             .child("This is a form container.")
             .child(self.input1.clone())
             .child(
-                Button::new("submit", cx)
+                Button::new("submit")
                     .label("Submit")
                     .primary()
                     .on_click(cx.listener(|_, _, cx| cx.emit(DismissEvent))),
@@ -200,17 +200,17 @@ impl Render for PopupStory {
                     .child(
                         v_flex().gap_4().child(
                             Popover::new("info-top-left")
-                                .trigger(Button::new("info-top-left", cx).label("Top Left"))
+                                .trigger(Button::new("info-top-left").label("Top Left"))
                                 .content(|cx| {
                                     cx.new_view(|cx| {
-                                        PopoverContent::new(cx, |cx| {
+                                        PopoverContent::new(cx, |_| {
                                             v_flex()
                                                 .gap_4()
                                                 .child("Hello, this is a Popover.")
                                                 .w(px(400.))
                                                 .child(Divider::horizontal())
                                                 .child(
-                                                    Button::new("info1", cx)
+                                                    Button::new("info1")
                                                         .label("Yes")
                                                         .w(px(80.))
                                                         .small(),
@@ -225,17 +225,17 @@ impl Render for PopupStory {
                     .child(
                         Popover::new("info-top-right")
                             .anchor(AnchorCorner::TopRight)
-                            .trigger(Button::new("info-top-right", cx).label("Top Right"))
+                            .trigger(Button::new("info-top-right").label("Top Right"))
                             .content(|cx| {
                                 cx.new_view(|cx| {
-                                    PopoverContent::new(cx, |cx| {
+                                    PopoverContent::new(cx, |_| {
                                         v_flex()
                                             .gap_4()
                                             .w_96()
                                             .child("Hello, this is a Popover on the Top Right.")
                                             .child(Divider::horizontal())
                                             .child(
-                                                Button::new("info1", cx)
+                                                Button::new("info1")
                                                     .label("Yes")
                                                     .w(px(80.))
                                                     .small(),
@@ -250,7 +250,7 @@ impl Render for PopupStory {
                 h_flex()
                     .gap_3()
                     .child(
-                        Button::new("popup-menu-1", cx)
+                        Button::new("popup-menu-1")
                             .icon(IconName::Ellipsis)
                             .popup_menu(move |this, cx| {
                                 this.menu("Copy", Box::new(Copy))
@@ -288,20 +288,14 @@ impl Render for PopupStory {
                         .child(
                             Popover::new("info-bottom-left")
                                 .anchor(AnchorCorner::BottomLeft)
-                                .trigger(
-                                    Button::new("pop", cx).label("Popup with Form").w(px(300.)),
-                                )
+                                .trigger(Button::new("pop").label("Popup with Form").w(px(300.)))
                                 .content(move |_| form.clone()),
                         )
                         .child(
                             Popover::new("info-bottom-right")
                                 .anchor(AnchorCorner::BottomRight)
                                 .mouse_button(MouseButton::Right)
-                                .trigger(
-                                    Button::new("pop", cx)
-                                        .label("Mouse Right Click")
-                                        .w(px(300.)),
-                                )
+                                .trigger(Button::new("pop").label("Mouse Right Click").w(px(300.)))
                                 .content(|cx| {
                                     cx.new_view(|cx| {
                                         PopoverContent::new(cx, |cx| {
@@ -315,7 +309,7 @@ impl Render for PopupStory {
                                                     h_flex()
                                                         .gap_4()
                                                         .child(
-                                                            Button::new("info1", cx)
+                                                            Button::new("info1")
                                                                 .label("Ok")
                                                                 .w(px(80.))
                                                                 .small()
@@ -329,7 +323,7 @@ impl Render for PopupStory {
                                                                 )),
                                                         )
                                                         .child(
-                                                            Button::new("close", cx)
+                                                            Button::new("close")
                                                                 .label("Cancel")
                                                                 .small()
                                                                 .on_click(cx.listener(

@@ -47,7 +47,7 @@ impl gpui::FocusableView for TooltipStory {
     }
 }
 impl Render for TooltipStory {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
         v_flex()
             .p_4()
             .gap_5()
@@ -55,7 +55,7 @@ impl Render for TooltipStory {
                 div()
                     .cursor(CursorStyle::PointingHand)
                     .child(
-                        Button::new("button", cx)
+                        Button::new("button")
                             .label("Hover me")
                             .style(ButtonStyle::Primary),
                     )

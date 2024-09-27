@@ -79,8 +79,8 @@ impl ListDelegate for ListItemDeletegate {
                         .justify_between()
                         .child(item.to_string()),
                 )
-                .suffix(|cx| {
-                    Button::new("like", cx)
+                .suffix(|_| {
+                    Button::new("like")
                         .icon(IconName::Heart)
                         .style(ButtonStyle::Ghost)
                         .size(px(18.))
@@ -311,15 +311,12 @@ impl ModalStory {
                     h_flex()
                         .gap_6()
                         .items_center()
-                        .child(
-                            Button::new("confirm", cx)
-                                .primary()
-                                .label("Confirm")
-                                .on_click(|_, cx| {
-                                    cx.close_drawer();
-                                }),
-                        )
-                        .child(Button::new("cancel", cx).label("Cancel").on_click(|_, cx| {
+                        .child(Button::new("confirm").primary().label("Confirm").on_click(
+                            |_, cx| {
+                                cx.close_drawer();
+                            },
+                        ))
+                        .child(Button::new("cancel").label("Cancel").on_click(|_, cx| {
                             cx.close_drawer();
                         })),
                 )
@@ -340,7 +337,7 @@ impl ModalStory {
         let dropdown = self.dropdown.clone();
         let view = cx.view().clone();
 
-        cx.open_modal(move |modal, cx| {
+        cx.open_modal(move |modal, _| {
             modal
                 .title("Form Modal")
                 .overlay(overlay)
@@ -359,44 +356,37 @@ impl ModalStory {
                     h_flex()
                         .gap_6()
                         .items_center()
-                        .child(
-                            Button::new("confirm", cx)
-                                .primary()
-                                .label("Confirm")
-                                .on_click({
-                                    let view = view.clone();
-                                    let input1 = input1.clone();
-                                    let date_picker = date_picker.clone();
-                                    move |_, cx| {
-                                        cx.close_modal();
+                        .child(Button::new("confirm").primary().label("Confirm").on_click({
+                            let view = view.clone();
+                            let input1 = input1.clone();
+                            let date_picker = date_picker.clone();
+                            move |_, cx| {
+                                cx.close_modal();
 
-                                        view.update(cx, |view, cx| {
-                                            view.selected_value = Some(
-                                                format!(
-                                                    "Hello, {}, date: {}",
-                                                    input1.read(cx).text(),
-                                                    date_picker.read(cx).date()
-                                                )
-                                                .into(),
-                                            )
-                                        });
-                                    }
-                                }),
-                        )
+                                view.update(cx, |view, cx| {
+                                    view.selected_value = Some(
+                                        format!(
+                                            "Hello, {}, date: {}",
+                                            input1.read(cx).text(),
+                                            date_picker.read(cx).date()
+                                        )
+                                        .into(),
+                                    )
+                                });
+                            }
+                        }))
+                        .child(Button::new("new-modal").label("Open Other Modal").on_click(
+                            move |_, cx| {
+                                cx.open_modal(move |modal, _| {
+                                    modal
+                                        .title("Other Modal")
+                                        .child("This is another modal.")
+                                        .min_h(px(300.))
+                                });
+                            },
+                        ))
                         .child(
-                            Button::new("new-modal", cx)
-                                .label("Open Other Modal")
-                                .on_click(move |_, cx| {
-                                    cx.open_modal(move |modal, _| {
-                                        modal
-                                            .title("Other Modal")
-                                            .child("This is another modal.")
-                                            .min_h(px(300.))
-                                    });
-                                }),
-                        )
-                        .child(
-                            Button::new("cancel", cx)
+                            Button::new("cancel")
                                 .label("Cancel")
                                 .on_click(move |_, cx| {
                                     cx.close_modal();
@@ -467,7 +457,7 @@ impl Render for ModalStory {
                             .child("Test Focus Back")
                             .child(self.input2.clone())
                             .child(
-                                Button::new("test-action", cx)
+                                Button::new("test-action")
                                     .label("Test Dispatch Action")
                                     .on_click(|_, cx| {
                                         cx.dispatch_action(Box::new(TestAction));
@@ -479,28 +469,28 @@ impl Render for ModalStory {
                             .items_start()
                             .gap_3()
                             .child(
-                                Button::new("show-drawer-left", cx)
+                                Button::new("show-drawer-left")
                                     .label("Left Drawer...")
                                     .on_click(cx.listener(|this, _, cx| {
                                         this.open_drawer_at(Placement::Left, cx)
                                     })),
                             )
                             .child(
-                                Button::new("show-drawer-top", cx)
+                                Button::new("show-drawer-top")
                                     .label("Top Drawer...")
                                     .on_click(cx.listener(|this, _, cx| {
                                         this.open_drawer_at(Placement::Top, cx)
                                     })),
                             )
                             .child(
-                                Button::new("show-drawer", cx)
+                                Button::new("show-drawer")
                                     .label("Right Drawer...")
                                     .on_click(cx.listener(|this, _, cx| {
                                         this.open_drawer_at(Placement::Right, cx)
                                     })),
                             )
                             .child(
-                                Button::new("show-drawer", cx)
+                                Button::new("show-drawer")
                                     .label("Bottom Drawer...")
                                     .on_click(cx.listener(|this, _, cx| {
                                         this.open_drawer_at(Placement::Bottom, cx)
@@ -517,7 +507,7 @@ impl Render for ModalStory {
                         )
                     })
                     .child(
-                        Button::new("show-modal", cx)
+                        Button::new("show-modal")
                             .label("Open Modal...")
                             .on_click(cx.listener(|this, _, cx| this.show_modal(cx))),
                     )
@@ -525,7 +515,7 @@ impl Render for ModalStory {
                         h_flex()
                             .gap_3()
                             .child(
-                                Button::new("show-notify-info", cx)
+                                Button::new("show-notify-info")
                                     .label("Info Notify...")
                                     .on_click(cx.listener(|_, _, cx| {
                                         cx.push_notification(
@@ -534,7 +524,7 @@ impl Render for ModalStory {
                                     })),
                             )
                             .child(
-                                Button::new("show-notify-error", cx)
+                                Button::new("show-notify-error")
                                     .label("Error Notify...")
                                     .on_click(cx.listener(|_, _, cx| {
                                         cx.push_notification((
@@ -544,7 +534,7 @@ impl Render for ModalStory {
                                     })),
                             )
                             .child(
-                                Button::new("show-notify-success", cx)
+                                Button::new("show-notify-success")
                                     .label("Success Notify...")
                                     .on_click(cx.listener(|_, _, cx| {
                                         cx.push_notification((
@@ -554,7 +544,7 @@ impl Render for ModalStory {
                                     })),
                             )
                             .child(
-                                Button::new("show-notify-warning", cx)
+                                Button::new("show-notify-warning")
                                     .label("Warning Notify...")
                                     .on_click(cx.listener(|_, _, cx| {
                                         struct WarningNotification;
@@ -564,7 +554,7 @@ impl Render for ModalStory {
                                     })),
                             )
                             .child(
-                                Button::new("show-notify-warning", cx)
+                                Button::new("show-notify-warning")
                                     .label("Notification with Title")
                                     .on_click(cx.listener(|_, _, cx| {
                                         struct TestNotification;

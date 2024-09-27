@@ -92,28 +92,28 @@ impl Render for ProgressStory {
                 h_flex()
                     .gap_x_2()
                     .child(
-                        Button::new("button-1", cx)
+                        Button::new("button-1")
                             .label("0%")
                             .on_click(cx.listener(|this, _, _| {
                                 this.set_value(0.);
                             })),
                     )
                     .child(
-                        Button::new("button-2", cx)
+                        Button::new("button-2")
                             .label("25%")
                             .on_click(cx.listener(|this, _, _| {
                                 this.set_value(25.);
                             })),
                     )
                     .child(
-                        Button::new("button-3", cx)
+                        Button::new("button-3")
                             .label("75%")
                             .on_click(cx.listener(|this, _, _| {
                                 this.set_value(75.);
                             })),
                     )
                     .child(
-                        Button::new("button-4", cx)
+                        Button::new("button-4")
                             .label("100%")
                             .on_click(cx.listener(|this, _, _| {
                                 this.set_value(100.);
@@ -125,14 +125,14 @@ impl Render for ProgressStory {
                 h_flex()
                     .gap_x_2()
                     .child(
-                        Button::new("button-5", cx)
+                        Button::new("button-5")
                             .icon(IconName::Minus)
                             .on_click(cx.listener(|this, _, _| {
                                 this.set_value((this.value - 1.).max(0.));
                             })),
                     )
                     .child(
-                        Button::new("button-6", cx)
+                        Button::new("button-6")
                             .icon(IconName::Plus)
                             .on_click(cx.listener(|this, _, _| {
                                 this.set_value((this.value + 1.).min(100.));

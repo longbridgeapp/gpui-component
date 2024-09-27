@@ -301,14 +301,14 @@ impl Render for InputStory {
                     .w_full()
                     .gap_3()
                     .child(
-                        Button::new("btn-submit", cx)
+                        Button::new("btn-submit")
                             .w_full()
                             .style(ui::button::ButtonStyle::Primary)
                             .label("Submit")
                             .on_click(cx.listener(|_, _, cx| cx.dispatch_action(Box::new(Tab)))),
                     )
                     .child(
-                        Button::new("btn-cancel", cx)
+                        Button::new("btn-cancel")
                             .w_full()
                             .label("Cancel")
                             .into_element(),

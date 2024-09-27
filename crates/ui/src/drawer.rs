@@ -178,7 +178,7 @@ impl RenderOnce for Drawer {
                                     .w_full()
                                     .child(self.title.unwrap_or(div().into_any_element()))
                                     .child(
-                                        Button::new("close", cx)
+                                        Button::new("close")
                                             .small()
                                             .ghost()
                                             .icon(IconName::Close)
