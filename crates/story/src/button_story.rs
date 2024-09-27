@@ -549,6 +549,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-primary", cx)
                             .icon(IconName::Search)
+                            .loading_icon(IconName::LoaderCircle)
                             .primary()
                             .disabled(disabled)
                             .selected(selected)
@@ -595,6 +596,7 @@ impl Render for ButtonStory {
                     .child(
                         Button::new("icon-button-ghost", cx)
                             .icon(IconName::ArrowLeft)
+                            .loading_icon(IconName::LoaderCircle)
                             .ghost()
                             .disabled(disabled)
                             .selected(selected)

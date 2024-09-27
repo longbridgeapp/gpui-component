@@ -163,6 +163,7 @@ pub struct Button {
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     pub(crate) stop_propagation: bool,
     loading: bool,
+    loading_icon: Option<Icon>,
 }
 
 impl From<Button> for AnyElement {
@@ -192,6 +193,7 @@ impl Button {
             loading: false,
             compact: false,
             children: Vec::new(),
+            loading_icon: None,
         }
     }
 
@@ -256,6 +258,11 @@ impl Button {
 
     pub fn stop_propagation(mut self, val: bool) -> Self {
         self.stop_propagation = val;
+        self
+    }
+
+    pub fn loading_icon(mut self, icon: impl Into<Icon>) -> Self {
+        self.loading_icon = Some(icon.into());
         self
     }
 }
@@ -435,7 +442,11 @@ impl RenderOnce for Button {
                         })
                     })
                     .when(self.loading, |this| {
-                        this.child(Indicator::new().with_size(self.size))
+                        this.child(
+                            Indicator::new()
+                                .with_size(self.size)
+                                .when_some(self.loading_icon, |this, icon| this.icon(icon)),
+                        )
                     })
                     .when_some(self.label, |this, label| {
                         this.child(
