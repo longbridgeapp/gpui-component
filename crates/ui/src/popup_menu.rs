@@ -6,7 +6,7 @@ use gpui::{
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
-use gpui::{anchored, canvas, rems, AnchorCorner, Bounds, FocusableView, WeakView};
+use gpui::{anchored, canvas, rems, AnchorCorner, Bounds, FocusableView, Keystroke, WeakView};
 
 use crate::StyledExt;
 use crate::{
@@ -372,7 +372,7 @@ impl PopupMenu {
                     keybinding
                         .keystrokes()
                         .into_iter()
-                        .map(|keystroke| format!("{}", keystroke)),
+                        .map(|key| key_shortcut(key.clone())),
                 );
 
                 return Some(el);
@@ -570,5 +570,66 @@ impl Render for PopupMenu {
                         }
                     }),
             )
+    }
+}
+
+/// Return the Platform specific keybinding string by KeyStroke
+pub fn key_shortcut(key: Keystroke) -> String {
+    if cfg!(target_os = "macos") {
+        return format!("{}", key);
+    }
+
+    let mut parts = vec![];
+    if key.modifiers.control {
+        parts.push("Ctrl");
+    }
+    if key.modifiers.alt {
+        parts.push("Alt");
+    }
+    if key.modifiers.platform {
+        parts.push("Win");
+    }
+    if key.modifiers.shift {
+        parts.push("Shift");
+    }
+
+    // Capitalize the first letter
+    let key = if let Some(first_c) = key.key.chars().next() {
+        format!("{}{}", first_c.to_uppercase(), &key.key[1..])
+    } else {
+        key.key.to_string()
+    };
+
+    parts.push(&key);
+    parts.join("+")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_key_shortcut() {
+        use super::key_shortcut;
+        use gpui::Keystroke;
+
+        if cfg!(target_os = "windows") {
+            assert_eq!(key_shortcut(Keystroke::parse("a").unwrap()), "A");
+            assert_eq!(key_shortcut(Keystroke::parse("ctrl-a").unwrap()), "Ctrl+A");
+            assert_eq!(
+                key_shortcut(Keystroke::parse("ctrl-alt-a").unwrap()),
+                "Ctrl+Alt+A"
+            );
+            assert_eq!(
+                key_shortcut(Keystroke::parse("ctrl-alt-shift-a").unwrap()),
+                "Ctrl+Alt+Shift+A"
+            );
+            assert_eq!(
+                key_shortcut(Keystroke::parse("ctrl-alt-shift-win-a").unwrap()),
+                "Ctrl+Alt+Win+Shift+A"
+            );
+            assert_eq!(
+                key_shortcut(Keystroke::parse("ctrl-shift-backspace").unwrap()),
+                "Ctrl+Shift+Backspace"
+            );
+        }
     }
 }

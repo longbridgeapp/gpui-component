@@ -28,10 +28,22 @@ impl_actions!(popover_story, [Info]);
 
 pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-c", Copy, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-c", Copy, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-v", Paste, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-v", Paste, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-x", Cut, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-x", Cut, None),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-shift-f", SearchAll, None),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-shift-f", SearchAll, None),
     ])
 }
 
