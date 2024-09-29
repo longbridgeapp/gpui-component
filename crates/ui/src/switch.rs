@@ -162,16 +162,16 @@ impl Element for Switch {
                                 .size(bar_width)
                                 .map(|this| {
                                     let prev_checked = state.prev_checked.clone();
-                                    if prev_checked.borrow().map_or(false, |prev| prev != checked) {
+                                    if !self.disabled
+                                        && prev_checked
+                                            .borrow()
+                                            .map_or(false, |prev| prev != checked)
+                                    {
                                         let dur = Duration::from_secs_f64(0.15);
                                         cx.spawn(|cx| async move {
                                             cx.background_executor().timer(dur).await;
 
-                                            if let Ok(mut prev_checked) =
-                                                prev_checked.try_borrow_mut()
-                                            {
-                                                *prev_checked = Some(checked);
-                                            }
+                                            *prev_checked.borrow_mut() = Some(checked);
                                         })
                                         .detach();
                                         this.with_animation(
@@ -214,9 +214,7 @@ impl Element for Switch {
                         let prev_checked = state.prev_checked.clone();
                         this.on_mouse_down(gpui::MouseButton::Left, move |_, cx| {
                             cx.stop_propagation();
-                            if let Ok(mut prev_checked) = prev_checked.try_borrow_mut() {
-                                *prev_checked = Some(checked);
-                            }
+                            *prev_checked.borrow_mut() = Some(checked);
                             on_click(&!checked, cx);
                         })
                     },
