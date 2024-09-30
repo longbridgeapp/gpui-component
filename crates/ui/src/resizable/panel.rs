@@ -7,10 +7,11 @@ use gpui::{
     ViewContext, VisualContext as _, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, AxisExt};
+use crate::{h_flex, v_flex, AxisExt};
+
+use super::resize_handle;
 
 const PANEL_MIN_SIZE: Pixels = px(100.);
-const HANDLE_PADDING: Pixels = px(4.);
 
 pub enum ResizablePanelEvent {
     Resized,
@@ -24,7 +25,6 @@ pub struct ResizablePanelGroup {
     panels: Vec<View<ResizablePanel>>,
     sizes: Vec<Pixels>,
     axis: Axis,
-    handle_size: Pixels,
     size: Option<Pixels>,
     bounds: Bounds<Pixels>,
     resizing_panel_ix: Option<usize>,
@@ -36,7 +36,6 @@ impl ResizablePanelGroup {
             axis: Axis::Horizontal,
             sizes: Vec::new(),
             panels: Vec::new(),
-            handle_size: px(1.),
             size: None,
             bounds: Bounds::default(),
             resizing_panel_ix: None,
@@ -59,14 +58,6 @@ impl ResizablePanelGroup {
         cx.notify();
     }
 
-    /// Set the size of the resize handle, default is 3px.
-    ///
-    /// The handle size will inherit the parent group handle size, if you insert a group into another group.
-    pub fn handle_size(mut self, size: Pixels) -> Self {
-        self.handle_size = size;
-        self
-    }
-
     /// Add a resizable panel to the group.
     pub fn child(mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) -> Self {
         self.add_child(panel, cx);
@@ -76,7 +67,6 @@ impl ResizablePanelGroup {
     /// Add a ResizablePanelGroup as a child to the group.
     pub fn group(self, group: ResizablePanelGroup, cx: &mut ViewContext<Self>) -> Self {
         let mut group: ResizablePanelGroup = group;
-        group.handle_size = self.handle_size;
         let size = group.size;
         let panel = ResizablePanel::new()
             .content_view(cx.new_view(|_| group).into())
@@ -150,52 +140,18 @@ impl ResizablePanelGroup {
     }
 
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let axis = self.axis;
-        let neg_offset = -HANDLE_PADDING;
         let view = cx.view().clone();
-
-        div()
-            .id(("resizable-handle", ix))
-            .occlude()
-            .absolute()
-            .flex_shrink_0()
-            .when(self.axis.is_horizontal(), |this| {
-                this.cursor_col_resize()
-                    .top_0()
-                    .left(neg_offset)
-                    .h_full()
-                    .w(px(1.))
-                    .px(HANDLE_PADDING)
-            })
-            .when(self.axis.is_vertical(), |this| {
-                this.cursor_row_resize()
-                    .top(neg_offset)
-                    .left_0()
-                    .w_full()
-                    .h(px(1.))
-                    .py(HANDLE_PADDING)
-            })
-            .child(
-                div()
-                    .bg(cx.theme().border)
-                    .when(self.axis.is_horizontal(), |this| {
-                        this.h_full().w(self.handle_size)
-                    })
-                    .when(self.axis.is_vertical(), |this| {
-                        this.w_full().h(self.handle_size)
-                    }),
-            )
-            .on_drag(
-                DragPanel((cx.entity_id(), ix, axis)),
-                move |drag_panel, cx| {
-                    cx.stop_propagation();
-                    // Set current resizing panel ix
-                    view.update(cx, |view, _| {
-                        view.resizing_panel_ix = Some(ix);
-                    });
-                    cx.new_view(|_| drag_panel.clone())
-                },
-            )
+        resize_handle(("resizable-handle", ix), self.axis).on_drag(
+            DragPanel((cx.entity_id(), ix, self.axis)),
+            move |drag_panel, cx| {
+                cx.stop_propagation();
+                // Set current resizing panel ix
+                view.update(cx, |view, _| {
+                    view.resizing_panel_ix = Some(ix);
+                });
+                cx.new_view(|_| drag_panel.clone())
+            },
+        )
     }
 
     fn done_resizing(&mut self, cx: &mut ViewContext<Self>) {

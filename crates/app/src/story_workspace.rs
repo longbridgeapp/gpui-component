@@ -11,7 +11,7 @@ use story::{
 use ui::{
     button::{Button, ButtonStyled as _},
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockEvent, DockItem, DockItemState},
+    dock::{DockArea, DockEvent, DockItem, DockItemState, PanelView},
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
@@ -61,7 +61,13 @@ impl StoryWorkspace {
             }
         };
 
-        dock_area.update(cx, |view, cx| view.set_root(dock_item, cx));
+        let left_panels: Vec<Arc<dyn PanelView>> =
+            vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
+
+        dock_area.update(cx, |view, cx| {
+            view.set_root(dock_item, cx);
+            view.set_left_dock(left_panels, Some(px(350.)), cx);
+        });
 
         cx.subscribe(&dock_area, |this, dock_area, ev: &DockEvent, cx| match ev {
             DockEvent::LayoutChanged => this.save_layout(dock_area, cx),
@@ -173,7 +179,6 @@ impl StoryWorkspace {
                                 Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
                                 Arc::new(StoryContainer::panel::<ModalStory>(cx)),
                                 Arc::new(StoryContainer::panel::<PopupStory>(cx)),
-                                Arc::new(StoryContainer::panel::<ListStory>(cx)),
                                 Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
                                 Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
                                 Arc::new(StoryContainer::panel::<TableStory>(cx)),
