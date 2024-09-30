@@ -43,6 +43,9 @@ pub enum IconName {
     Minus,
     Moon,
     Palette,
+    PanelBottom,
+    PanelLeft,
+    PanelRight,
     Plus,
     Search,
     SortAscending,
@@ -105,6 +108,9 @@ impl IconName {
             IconName::ThumbsDown => "icons/thumbs-down.svg",
             IconName::ThumbsUp => "icons/thumbs-up.svg",
             IconName::TriangleAlert => "icons/triangle-alert.svg",
+            IconName::PanelLeft => "icons/panel-left.svg",
+            IconName::PanelBottom => "icons/panel-bottom.svg",
+            IconName::PanelRight => "icons/panel-right.svg",
         }
         .into()
     }

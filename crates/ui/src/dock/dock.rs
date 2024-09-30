@@ -105,12 +105,6 @@ impl Dock {
         Self::new(dock_area, panels, DockPlacement::Right, cx)
     }
 
-    /// Set the Dock to be open.
-    pub fn open(mut self) -> Self {
-        self.open = true;
-        self
-    }
-
     /// Set the Dock to be resizeable, default: true
     pub fn resizeable(mut self, resizeable: bool) -> Self {
         self.resizeable = resizeable;
@@ -120,6 +114,15 @@ impl Dock {
     /// Returns the panels in the Dock.
     pub fn panels(&self) -> &[Arc<dyn PanelView>] {
         &self.panels
+    }
+
+    pub fn is_open(&self) -> bool {
+        self.open
+    }
+
+    pub fn toggle_open(&mut self, cx: &mut ViewContext<Self>) {
+        self.open = !self.open;
+        cx.notify();
     }
 
     /// Returns the active panel index.
@@ -177,7 +180,6 @@ impl Dock {
             .occlude()
             .absolute()
             .flex_shrink_0()
-            .bg(gpui::transparent_white())
             .when(self.placement.is_left(), |this| {
                 // FIXME: Improve this to let the scroll bar have px(HANDLE_PADDING)
                 this.cursor_col_resize()

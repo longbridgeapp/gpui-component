@@ -253,6 +253,26 @@ impl DockArea {
         });
     }
 
+    pub fn is_dock_open(&self, placement: DockPlacement, cx: &AppContext) -> bool {
+        match placement {
+            DockPlacement::Left => self.left_dock.read(cx).is_open(),
+            DockPlacement::Bottom => self.bottom_dock.read(cx).is_open(),
+            DockPlacement::Right => self.right_dock.read(cx).is_open(),
+        }
+    }
+
+    pub fn toggle_dock(&self, placement: DockPlacement, cx: &mut ViewContext<Self>) {
+        let dock = match placement {
+            DockPlacement::Left => &self.left_dock,
+            DockPlacement::Bottom => &self.bottom_dock,
+            DockPlacement::Right => &self.right_dock,
+        };
+
+        dock.update(cx, |view, cx| {
+            view.toggle_open(cx);
+        })
+    }
+
     /// Dump the dock panels layout to DockItemState.
     ///
     /// See also `DockItemState::to_item` for the load DockItem from DockItemState.
