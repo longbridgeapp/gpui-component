@@ -397,11 +397,14 @@ impl Render for DockArea {
                                     .flex_col()
                                     .overflow_hidden()
                                     // Top center
-                                    .child(self.render_items(cx))
-                                    // Bottom Dock
                                     .child(
-                                        div().flex().flex_none().child(self.bottom_dock.clone()),
-                                    ),
+                                        div()
+                                            .flex_1()
+                                            .overflow_hidden()
+                                            .child(self.render_items(cx)),
+                                    )
+                                    // Bottom Dock
+                                    .child(self.bottom_dock.clone()),
                             )
                             // Right Dock
                             .child(
