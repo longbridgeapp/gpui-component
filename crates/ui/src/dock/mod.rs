@@ -188,9 +188,9 @@ impl DockArea {
 
         let weak_self = cx.view().downgrade();
 
-        let left_dock = cx.new_view(|cx| Dock::left(weak_self.clone(), vec![], cx));
-        let bottom_dock = cx.new_view(|cx| Dock::bottom(weak_self.clone(), vec![], cx));
-        let right_dock = cx.new_view(|cx| Dock::right(weak_self.clone(), vec![], cx));
+        let left_dock = cx.new_view(|cx| Dock::left(weak_self.clone(), cx));
+        let bottom_dock = cx.new_view(|cx| Dock::bottom(weak_self.clone(), cx));
+        let right_dock = cx.new_view(|cx| Dock::right(weak_self.clone(), cx));
 
         Self {
             id: id.into(),

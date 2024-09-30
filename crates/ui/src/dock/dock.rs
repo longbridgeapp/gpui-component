@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyView, Axis, Element, InteractiveElement as _,
-    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
+    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
     WeakView,
 };
@@ -15,7 +15,7 @@ use crate::{
     AxisExt as _, StyledExt,
 };
 
-use super::{DockArea, PanelView};
+use super::{DockArea, PanelView, TabPanel};
 
 #[derive(Clone, Render)]
 struct ResizePanel;
@@ -53,8 +53,7 @@ impl DockPlacement {
 pub struct Dock {
     placement: DockPlacement,
     dock_area: WeakView<DockArea>,
-    panels: Vec<Arc<dyn PanelView>>,
-    active_ix: usize,
+    panel: View<TabPanel>,
     /// The size is means the width or height of the Dock, if the placement is left or right, the size is width, otherwise the size is height.
     size: Pixels,
     open: bool,
@@ -65,15 +64,15 @@ pub struct Dock {
 impl Dock {
     fn new(
         dock_area: WeakView<DockArea>,
-        panels: Vec<Arc<dyn PanelView>>,
         placement: DockPlacement,
-        _: &mut ViewContext<Self>,
+        cx: &mut ViewContext<Self>,
     ) -> Self {
+        let panel = cx.new_view(|cx| TabPanel::new(None, dock_area.clone(), cx));
+
         Self {
             placement,
             dock_area,
-            panels,
-            active_ix: 0,
+            panel,
             open: true,
             resizeable: true,
             size: px(200.0),
@@ -81,39 +80,30 @@ impl Dock {
         }
     }
 
-    pub fn left(
-        dock_area: WeakView<DockArea>,
-        panels: Vec<Arc<dyn PanelView>>,
-        cx: &mut ViewContext<Self>,
-    ) -> Self {
-        Self::new(dock_area, panels, DockPlacement::Left, cx)
+    pub fn left(dock_area: WeakView<DockArea>, cx: &mut ViewContext<Self>) -> Self {
+        Self::new(dock_area, DockPlacement::Left, cx)
     }
 
-    pub fn bottom(
-        dock_area: WeakView<DockArea>,
-        panels: Vec<Arc<dyn PanelView>>,
-        cx: &mut ViewContext<Self>,
-    ) -> Self {
-        Self::new(dock_area, panels, DockPlacement::Bottom, cx)
+    pub fn bottom(dock_area: WeakView<DockArea>, cx: &mut ViewContext<Self>) -> Self {
+        Self::new(dock_area, DockPlacement::Bottom, cx)
     }
 
-    pub fn right(
-        dock_area: WeakView<DockArea>,
-        panels: Vec<Arc<dyn PanelView>>,
-        cx: &mut ViewContext<Self>,
-    ) -> Self {
-        Self::new(dock_area, panels, DockPlacement::Right, cx)
+    pub fn right(dock_area: WeakView<DockArea>, cx: &mut ViewContext<Self>) -> Self {
+        Self::new(dock_area, DockPlacement::Right, cx)
+    }
+
+    pub fn set_panels(&mut self, panels: Vec<Arc<dyn PanelView>>, cx: &mut ViewContext<Self>) {
+        self.panel.update(cx, |tab_panel, _| {
+            tab_panel.panels = panels;
+            tab_panel.active_ix = 0;
+        });
+        cx.notify();
     }
 
     /// Set the Dock to be resizeable, default: true
     pub fn resizeable(mut self, resizeable: bool) -> Self {
         self.resizeable = resizeable;
         self
-    }
-
-    /// Returns the panels in the Dock.
-    pub fn panels(&self) -> &[Arc<dyn PanelView>] {
-        &self.panels
     }
 
     pub fn is_open(&self) -> bool {
@@ -123,11 +113,6 @@ impl Dock {
     pub fn toggle_open(&mut self, cx: &mut ViewContext<Self>) {
         self.open = !self.open;
         cx.notify();
-    }
-
-    /// Returns the active panel index.
-    pub fn active_ix(&self) -> usize {
-        self.active_ix
     }
 
     /// Returns the size of the Dock, the size is means the width or height of
@@ -143,31 +128,10 @@ impl Dock {
         cx.notify();
     }
 
-    /// Set panels in the Dock, this also will set the active panel index to 0.
-    pub fn set_panels(&mut self, panels: Vec<Arc<dyn PanelView>>, cx: &mut ViewContext<Self>) {
-        self.panels = panels;
-        self.active_ix = 0;
-        cx.notify();
-    }
-
-    /// Set the active panel index.
-    pub fn set_active_ix(&mut self, active_ix: usize, cx: &mut ViewContext<Self>) {
-        self.active_ix = active_ix;
-        cx.notify();
-    }
-
     /// Set the open state of the Dock.
     pub fn set_open(&mut self, open: bool, cx: &mut ViewContext<Self>) {
         self.open = open;
         cx.notify();
-    }
-
-    fn active_panel(&self) -> Option<AnyView> {
-        if let Some(panel) = self.panels.get(self.active_ix) {
-            return Some(panel.view());
-        }
-
-        return None;
     }
 
     fn render_resize_handle(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -253,11 +217,6 @@ impl Render for Dock {
             return div();
         }
 
-        let active_panel = self.active_panel();
-        if active_panel.is_none() {
-            return div();
-        }
-
         div()
             .relative()
             .overflow_hidden()
@@ -265,7 +224,7 @@ impl Render for Dock {
                 DockPlacement::Left | DockPlacement::Right => this.h_flex().h_full().w(self.size),
                 DockPlacement::Bottom => this.w_full().h(self.size),
             })
-            .child(active_panel.unwrap())
+            .child(self.panel.clone())
             .child(self.render_resize_handle(cx))
             .child(DockElement {
                 view: cx.view().clone(),

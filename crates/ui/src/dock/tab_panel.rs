@@ -57,11 +57,11 @@ impl Render for DragPanel {
 pub struct TabPanel {
     focus_handle: FocusHandle,
     dock_area: WeakView<DockArea>,
+    /// The stock_panel can be None, if is None, that means the panels can't be split or move
     stack_panel: Option<View<StackPanel>>,
     pub(crate) panels: Vec<Arc<dyn PanelView>>,
     pub(crate) active_ix: usize,
     tab_bar_scroll_handle: ScrollHandle,
-
     is_zoomed: bool,
 
     /// When drag move, will get the placement of the panel to be split
@@ -245,6 +245,11 @@ impl TabPanel {
         }
     }
 
+    /// Return true if the panel can be split or move
+    fn can_split(&self) -> bool {
+        self.stack_panel.is_some()
+    }
+
     fn render_menu_button(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let closeable = self.closeable(cx);
         let zoomable = self.zoomable(cx);
@@ -317,16 +322,18 @@ impl TabPanel {
                         .overflow_hidden()
                         .text_ellipsis()
                         .child(panel.title(cx))
-                        .on_drag(
-                            DragPanel {
-                                panel: panel.clone(),
-                                tab_panel: view,
-                            },
-                            |drag, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
-                            },
-                        ),
+                        .when(self.can_split(), |this| {
+                            this.on_drag(
+                                DragPanel {
+                                    panel: panel.clone(),
+                                    tab_panel: view,
+                                },
+                                |drag, cx| {
+                                    cx.stop_propagation();
+                                    cx.new_view(|_| drag.clone())
+                                },
+                            )
+                        }),
                 )
                 .child(self.render_menu_button(cx))
                 .into_any_element();
@@ -344,20 +351,24 @@ impl TabPanel {
                     .on_click(cx.listener(move |view, _, cx| {
                         view.set_active_ix(ix, cx);
                     }))
-                    .on_drag(DragPanel::new(panel.clone(), view.clone()), |drag, cx| {
-                        cx.stop_propagation();
-                        cx.new_view(|_| drag.clone())
+                    .when(self.can_split(), |this| {
+                        this.on_drag(DragPanel::new(panel.clone(), view.clone()), |drag, cx| {
+                            cx.stop_propagation();
+                            cx.new_view(|_| drag.clone())
+                        })
+                        .drag_over::<DragPanel>(|this, _, cx| {
+                            this.rounded_l_none()
+                                .border_l_2()
+                                .border_r_0()
+                                .border_color(cx.theme().drag_border)
+                        })
+                        .on_drop(cx.listener(
+                            move |this, drag: &DragPanel, cx| {
+                                this.will_split_placement = None;
+                                this.on_drop(drag, Some(ix), cx)
+                            },
+                        ))
                     })
-                    .drag_over::<DragPanel>(|this, _, cx| {
-                        this.rounded_l_none()
-                            .border_l_2()
-                            .border_r_0()
-                            .border_color(cx.theme().drag_border)
-                    })
-                    .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
-                        this.will_split_placement = None;
-                        this.on_drop(drag, Some(ix), cx)
-                    }))
             }))
             .child(
                 // empty space to allow move to last tab right
@@ -366,18 +377,20 @@ impl TabPanel {
                     .h_full()
                     .flex_grow()
                     .min_w_16()
-                    .drag_over::<DragPanel>(|this, _, cx| this.bg(cx.theme().drop_target))
-                    .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
-                        this.will_split_placement = None;
+                    .when(self.can_split(), |this| {
+                        this.drag_over::<DragPanel>(|this, _, cx| this.bg(cx.theme().drop_target))
+                            .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
+                                this.will_split_placement = None;
 
-                        let ix = if drag.tab_panel == view {
-                            Some(tabs_count - 1)
-                        } else {
-                            None
-                        };
+                                let ix = if drag.tab_panel == view {
+                                    Some(tabs_count - 1)
+                                } else {
+                                    None
+                                };
 
-                        this.on_drop(drag, ix, cx)
-                    })),
+                                this.on_drop(drag, ix, cx)
+                            }))
+                    }),
             )
             .suffix(
                 h_flex()
@@ -405,33 +418,39 @@ impl TabPanel {
                     .overflow_x_hidden()
                     .flex_1()
                     .child(panel.view())
-                    .on_drag_move(cx.listener(Self::on_panel_drag_move))
-                    .child(
-                        div()
-                            .invisible()
-                            .absolute()
-                            .bg(cx.theme().drop_target)
-                            .map(|this| match self.will_split_placement {
-                                Some(placement) => {
-                                    let size = DefiniteLength::Fraction(0.35);
-                                    match placement {
-                                        Placement::Left => this.left_0().top_0().bottom_0().w(size),
-                                        Placement::Right => {
-                                            this.right_0().top_0().bottom_0().w(size)
+                    .when(self.can_split(), |this| {
+                        this.on_drag_move(cx.listener(Self::on_panel_drag_move))
+                            .child(
+                                div()
+                                    .invisible()
+                                    .absolute()
+                                    .bg(cx.theme().drop_target)
+                                    .map(|this| match self.will_split_placement {
+                                        Some(placement) => {
+                                            let size = DefiniteLength::Fraction(0.35);
+                                            match placement {
+                                                Placement::Left => {
+                                                    this.left_0().top_0().bottom_0().w(size)
+                                                }
+                                                Placement::Right => {
+                                                    this.right_0().top_0().bottom_0().w(size)
+                                                }
+                                                Placement::Top => {
+                                                    this.top_0().left_0().right_0().h(size)
+                                                }
+                                                Placement::Bottom => {
+                                                    this.bottom_0().left_0().right_0().h(size)
+                                                }
+                                            }
                                         }
-                                        Placement::Top => this.top_0().left_0().right_0().h(size),
-                                        Placement::Bottom => {
-                                            this.bottom_0().left_0().right_0().h(size)
-                                        }
-                                    }
-                                }
-                                None => this.top_0().left_0().size_full(),
-                            })
-                            .group_drag_over::<DragPanel>("", |this| this.visible())
-                            .on_drop(cx.listener(|this, drag: &DragPanel, cx| {
-                                this.on_drop(drag, None, cx)
-                            })),
-                    )
+                                        None => this.top_0().left_0().size_full(),
+                                    })
+                                    .group_drag_over::<DragPanel>("", |this| this.visible())
+                                    .on_drop(cx.listener(|this, drag: &DragPanel, cx| {
+                                        this.on_drop(drag, None, cx)
+                                    })),
+                            )
+                    })
                     .into_any_element()
             })
             .unwrap_or(Empty {}.into_any_element())
