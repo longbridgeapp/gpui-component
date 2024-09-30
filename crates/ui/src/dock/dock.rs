@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyView, Axis, Element, Entity, EntityId,
-    InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels,
-    Point, Position, Render, StatefulInteractiveElement, Style, Styled as _, View, ViewContext,
-    VisualContext as _, WeakView,
+    div, prelude::FluentBuilder as _, px, AnyView, Axis, Element, InteractiveElement as _,
+    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
+    WeakView,
 };
 
 use crate::{
-    resizable::{resize_handle, HANDLE_PADDING, HANDLE_SIZE},
+    resizable::{HANDLE_PADDING, HANDLE_SIZE},
     theme::ActiveTheme as _,
     AxisExt as _, StyledExt,
 };
@@ -18,7 +18,7 @@ use crate::{
 use super::{DockArea, PanelView};
 
 #[derive(Clone, Render)]
-struct ResizePanel(pub (EntityId, Axis));
+struct ResizePanel;
 
 pub enum DockPlacement {
     Left,
@@ -67,7 +67,7 @@ impl Dock {
         dock_area: WeakView<DockArea>,
         panels: Vec<Arc<dyn PanelView>>,
         placement: DockPlacement,
-        cx: &mut ViewContext<Self>,
+        _: &mut ViewContext<Self>,
     ) -> Self {
         Self {
             placement,
@@ -177,17 +177,27 @@ impl Dock {
             .occlude()
             .absolute()
             .flex_shrink_0()
-            .when(axis.is_horizontal(), |this| {
+            .bg(gpui::transparent_white())
+            .when(self.placement.is_left(), |this| {
+                // FIXME: Improve this to let the scroll bar have px(HANDLE_PADDING)
                 this.cursor_col_resize()
                     .top_0()
-                    .right(px(0.))
+                    .right(px(1.))
+                    .h_full()
+                    .w(HANDLE_SIZE)
+                    .pl(HANDLE_PADDING)
+            })
+            .when(self.placement.is_right(), |this| {
+                this.cursor_col_resize()
+                    .top_0()
+                    .left(neg_offset)
                     .h_full()
                     .w(HANDLE_SIZE)
                     .px(HANDLE_PADDING)
             })
-            .when(axis.is_vertical(), |this| {
+            .when(self.placement.is_bottom(), |this| {
                 this.cursor_row_resize()
-                    .bottom(neg_offset)
+                    .top(neg_offset)
                     .left_0()
                     .w_full()
                     .h(HANDLE_SIZE)
@@ -199,16 +209,13 @@ impl Dock {
                     .when(axis.is_horizontal(), |this| this.h_full().w(HANDLE_SIZE))
                     .when(axis.is_vertical(), |this| this.w_full().h(HANDLE_SIZE)),
             )
-            .on_drag(
-                ResizePanel((view.entity_id(), self.placement.axis())),
-                move |info, cx| {
-                    cx.stop_propagation();
-                    view.update(cx, |view, cx| {
-                        view.is_resizing = true;
-                    });
-                    cx.new_view(|_| info.clone())
-                },
-            )
+            .on_drag(ResizePanel {}, move |info, cx| {
+                cx.stop_propagation();
+                view.update(cx, |view, _| {
+                    view.is_resizing = true;
+                });
+                cx.new_view(|_| info.clone())
+            })
     }
 
     fn resize(&mut self, mouse_position: Point<Pixels>, cx: &mut ViewContext<Self>) {
@@ -225,15 +232,15 @@ impl Dock {
 
         let size = match self.placement {
             DockPlacement::Left => mouse_position.x - area_bounds.left(),
-            DockPlacement::Right => mouse_position.x - area_bounds.right(),
-            DockPlacement::Bottom => mouse_position.y - area_bounds.bottom(),
+            DockPlacement::Right => area_bounds.right() - mouse_position.x,
+            DockPlacement::Bottom => area_bounds.bottom() - mouse_position.y,
         };
 
         self.size = size;
         cx.notify();
     }
 
-    fn done_resizing(&mut self, cx: &mut ViewContext<Self>) {
+    fn done_resizing(&mut self, _: &mut ViewContext<Self>) {
         self.is_resizing = false;
     }
 }
@@ -251,6 +258,7 @@ impl Render for Dock {
 
         div()
             .relative()
+            .overflow_hidden()
             .map(|this| match self.placement {
                 DockPlacement::Left | DockPlacement::Right => this.h_flex().h_full().w(self.size),
                 DockPlacement::Bottom => this.w_full().h(self.size),
@@ -285,7 +293,7 @@ impl Element for DockElement {
 
     fn request_layout(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         cx: &mut gpui::WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         (cx.request_layout(Style::default(), None), ())
@@ -293,25 +301,24 @@ impl Element for DockElement {
 
     fn prepaint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
-        cx: &mut gpui::WindowContext,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<Pixels>,
+        _: &mut Self::RequestLayoutState,
+        _: &mut gpui::WindowContext,
     ) -> Self::PrepaintState {
         ()
     }
 
     fn paint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
-        prepaint: &mut Self::PrepaintState,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<Pixels>,
+        _: &mut Self::RequestLayoutState,
+        _: &mut Self::PrepaintState,
         cx: &mut gpui::WindowContext,
     ) {
         cx.on_mouse_event({
             let view = self.view.clone();
-            let axis = view.read(cx).placement.axis();
             move |e: &MouseMoveEvent, phase, cx| {
                 if phase.bubble() {
                     view.update(cx, |view, cx| view.resize(e.position, cx))

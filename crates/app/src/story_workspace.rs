@@ -64,9 +64,19 @@ impl StoryWorkspace {
         let left_panels: Vec<Arc<dyn PanelView>> =
             vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
 
+        let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
+            Arc::new(StoryContainer::panel::<TextStory>(cx)),
+            Arc::new(StoryContainer::panel::<IconStory>(cx)),
+        ];
+
+        let right_panels: Vec<Arc<dyn PanelView>> =
+            vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
+
         dock_area.update(cx, |view, cx| {
             view.set_root(dock_item, cx);
             view.set_left_dock(left_panels, Some(px(350.)), cx);
+            view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
+            view.set_right_dock(right_panels, Some(px(320.)), cx);
         });
 
         cx.subscribe(&dock_area, |this, dock_area, ev: &DockEvent, cx| match ev {

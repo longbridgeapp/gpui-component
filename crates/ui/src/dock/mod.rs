@@ -16,8 +16,6 @@ pub use panel::*;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
-use crate::StyledExt;
-
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
 }
@@ -206,7 +204,6 @@ impl DockArea {
     }
 
     /// The the DockItem as the root of the dock area.
-    #[must_use]
     pub fn set_root(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
         self.subscribe_item(&item, cx);
         self.items = item;
@@ -221,6 +218,34 @@ impl DockArea {
         cx: &mut ViewContext<Self>,
     ) {
         self.left_dock.update(cx, |this, cx| {
+            if let Some(size) = size {
+                this.set_size(size, cx);
+            }
+            this.set_panels(panels, cx);
+        });
+    }
+
+    pub fn set_bottom_dock(
+        &mut self,
+        panels: Vec<Arc<dyn PanelView>>,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.bottom_dock.update(cx, |this, cx| {
+            if let Some(size) = size {
+                this.set_size(size, cx);
+            }
+            this.set_panels(panels, cx);
+        });
+    }
+
+    pub fn set_right_dock(
+        &mut self,
+        panels: Vec<Arc<dyn PanelView>>,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.right_dock.update(cx, |this, cx| {
             if let Some(size) = size {
                 this.set_size(size, cx);
             }
@@ -316,17 +341,26 @@ impl Render for DockArea {
 
         div()
             .id("dock-area")
+            .relative()
             .size_full()
             .overflow_hidden()
+            .child(
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full(),
+            )
             .map(|this| {
                 if let Some(zoom_view) = self.zoom_view.clone() {
                     this.child(zoom_view)
                 } else {
                     this.child(
                         div()
-                            .size_full()
                             .flex()
                             .flex_row()
+                            .h_full()
                             // Left dock
                             .child(
                                 div()
@@ -338,10 +372,10 @@ impl Render for DockArea {
                             // Center
                             .child(
                                 div()
-                                    // .debug_green()
                                     .flex()
                                     .flex_1()
                                     .flex_col()
+                                    .overflow_hidden()
                                     // Top center
                                     .child(self.render_items(cx))
                                     // Bottom Dock
@@ -360,13 +394,5 @@ impl Render for DockArea {
                     )
                 }
             })
-            .child(
-                canvas(
-                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
-                    |_, _, _| {},
-                )
-                .absolute()
-                .size_full(),
-            )
     }
 }

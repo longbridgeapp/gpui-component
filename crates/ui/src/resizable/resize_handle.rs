@@ -4,7 +4,7 @@ use gpui::{
     WindowContext,
 };
 
-use crate::{theme::ActiveTheme as _, AxisExt as _, StyledExt};
+use crate::{theme::ActiveTheme as _, AxisExt as _};
 
 pub(crate) const HANDLE_PADDING: Pixels = px(4.);
 pub(crate) const HANDLE_SIZE: Pixels = px(1.);
@@ -38,7 +38,6 @@ impl StatefulInteractiveElement for ResizeHandle {}
 
 impl RenderOnce for ResizeHandle {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let axis = self.axis;
         let neg_offset = -HANDLE_PADDING;
 
         self.base

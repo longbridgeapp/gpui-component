@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
-    Entity, EntityId, EventEmitter, InteractiveElement as _, IntoElement, MouseMoveEvent,
-    MouseUpEvent, ParentElement, Pixels, Render, StatefulInteractiveElement, Style, Styled, View,
-    ViewContext, VisualContext as _, WindowContext,
+    Entity, EntityId, EventEmitter, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement,
+    Pixels, Render, StatefulInteractiveElement as _, Style, Styled, View, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 use crate::{h_flex, v_flex, AxisExt};
@@ -66,7 +66,7 @@ impl ResizablePanelGroup {
 
     /// Add a ResizablePanelGroup as a child to the group.
     pub fn group(self, group: ResizablePanelGroup, cx: &mut ViewContext<Self>) -> Self {
-        let mut group: ResizablePanelGroup = group;
+        let group: ResizablePanelGroup = group;
         let size = group.size;
         let panel = ResizablePanel::new()
             .content_view(cx.new_view(|_| group).into())
