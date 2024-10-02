@@ -288,6 +288,11 @@ where
         cx.notify();
     }
 
+    /// When we update columns or rows, we need to refresh the table.
+    pub fn refresh(&mut self, cx: &mut ViewContext<Self>) {
+        self.prepare_col_groups(cx);
+    }
+
     fn prepare_col_groups(&mut self, cx: &mut ViewContext<Self>) {
         self.col_groups = (0..self.delegate.cols_count())
             .map(|col_ix| ColGroup {

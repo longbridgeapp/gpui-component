@@ -283,13 +283,8 @@ impl TableDelegate for StockTableDelegate {
     }
 
     fn col_width(&self, col_ix: usize) -> Option<Pixels> {
-        if let Some(col) = self.columns.get(col_ix) {
-            Some(
-                match col.id.as_ref() {
-                    _ => 120.0,
-                }
-                .into(),
-            )
+        if let Some(_) = self.columns.get(col_ix) {
+            Some(120.0.into())
         } else {
             None
         }
