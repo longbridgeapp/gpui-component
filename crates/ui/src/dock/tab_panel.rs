@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, rems, AnchorCorner, AnyElement, AppContext, Bounds,
-    DefiniteLength, DismissEvent, DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
-    SharedString, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
-    WeakView, WindowContext,
+    DefiniteLength, DismissEvent, DragMoveEvent, Empty, Entity, EventEmitter, FocusHandle,
+    FocusableView, InteractiveElement as _, IntoElement, ParentElement, Pixels, Render,
+    ScrollHandle, SharedString, StatefulInteractiveElement, Styled, View, ViewContext,
+    VisualContext as _, WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -16,7 +16,7 @@ use crate::{
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
+    v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
 };
 
 use super::{
@@ -318,7 +318,7 @@ impl TabPanel {
             )
     }
 
-    fn rende_dock_toggle_button(
+    fn render_dock_toggle_button(
         &self,
         placement: DockPlacement,
         cx: &mut ViewContext<Self>,
@@ -329,20 +329,51 @@ impl TabPanel {
             return None;
         }
 
+        let mut self_is_left_dock = false;
+        let mut self_is_right_dock = false;
+        let mut self_is_bottom_dock = false;
+        if let Some(left_view) = &dock_area.read(cx).left_dock {
+            if left_view.read(cx).panel.entity_id() == cx.view().entity_id() {
+                self_is_left_dock = true;
+            }
+        }
+        if let Some(right_view) = &dock_area.read(cx).right_dock {
+            if right_view.read(cx).panel.entity_id() == cx.view().entity_id() {
+                self_is_right_dock = true;
+            }
+        }
+        if let Some(bottom_view) = &dock_area.read(cx).bottom_dock {
+            if bottom_view.read(cx).panel.entity_id() == cx.view().entity_id() {
+                self_is_bottom_dock = true;
+            }
+        }
+
         // Check the dock origin vs self.bounds.origin, if they are in the same line, then render the ToggleButton
-        // let panel_view = Arc::new(cx.view().clone());
-        // match placement {
-        //     DockPlacement::Left => {
-        //         if !dock_area
-        //             .read(cx)
-        //             .is_center_top_left_panel(panel_view.clone(), cx)
-        //         {
-        //             return None;
-        //         }
-        //     }
-        //     DockPlacement::Right => {}
-        //     DockPlacement::Bottom => {}
-        // }
+        let panel_view = Arc::new(cx.view().clone());
+        match placement {
+            DockPlacement::Left => {
+                if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
+                    return None;
+                }
+
+                // if !dock_area
+                //     .read(cx)
+                //     .is_center_top_left_panel(panel_view.clone(), cx)
+                // {
+                //     return None;
+                // }
+            }
+            DockPlacement::Right => {
+                if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
+                    return None;
+                }
+            }
+            DockPlacement::Bottom => {
+                if !self_is_bottom_dock {
+                    return None;
+                }
+            }
+        }
 
         let is_left_dock_open = dock_area
             .read(cx)
@@ -397,8 +428,9 @@ impl TabPanel {
     fn render_tabs(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
 
-        let left_dock_button = self.rende_dock_toggle_button(DockPlacement::Left, cx);
-        let right_dock_button = self.rende_dock_toggle_button(DockPlacement::Right, cx);
+        let left_dock_button = self.render_dock_toggle_button(DockPlacement::Left, cx);
+        let bottom_dock_button = self.render_dock_toggle_button(DockPlacement::Bottom, cx);
+        let right_dock_button = self.render_dock_toggle_button(DockPlacement::Right, cx);
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
@@ -408,19 +440,37 @@ impl TabPanel {
                 .justify_between()
                 .items_center()
                 .line_height(rems(1.0))
-                .pr_2()
+                .h(px(30.))
+                .py_2()
+                .px_3()
+                .when(left_dock_button.is_some(), |this| this.pl_2())
+                .when(right_dock_button.is_some(), |this| this.pr_2())
                 .when_some(title_style, |this, theme| {
                     this.bg(theme.background).text_color(theme.foreground)
                 })
+                .when(
+                    left_dock_button.is_some() || bottom_dock_button.is_some(),
+                    |this| {
+                        this.child(
+                            h_flex()
+                                .flex_shrink_0()
+                                .mr_1()
+                                .gap_1()
+                                .children(left_dock_button)
+                                .children(bottom_dock_button),
+                        )
+                    },
+                )
                 .child(
                     div()
                         .id("tab")
-                        .py_2()
-                        .px_3()
+                        .flex_1()
+                        .debug_red()
                         .min_w_16()
                         .overflow_hidden()
                         .text_ellipsis()
                         .whitespace_nowrap()
+                        .debug_green()
                         .child(panel.title(cx))
                         .when(self.can_split(), |this| {
                             this.on_drag(
@@ -435,7 +485,14 @@ impl TabPanel {
                             )
                         }),
                 )
-                .child(self.render_menu_button(cx))
+                .child(
+                    h_flex()
+                        .flex_shrink_0()
+                        .ml_1()
+                        .gap_1()
+                        .child(self.render_menu_button(cx))
+                        .children(right_dock_button),
+                )
                 .into_any_element();
         }
 
@@ -443,21 +500,25 @@ impl TabPanel {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
-            .when_some(left_dock_button, |this, btn| {
-                this.prefix(
-                    h_flex()
-                        .items_center()
-                        .top_0()
-                        .right_0()
-                        .border_r_1()
-                        .border_b_1()
-                        .h_full()
-                        .border_color(cx.theme().border)
-                        .bg(cx.theme().tab_bar)
-                        .px_2()
-                        .child(btn),
-                )
-            })
+            .when(
+                left_dock_button.is_some() || bottom_dock_button.is_some(),
+                |this| {
+                    this.prefix(
+                        h_flex()
+                            .items_center()
+                            .top_0()
+                            .right_0()
+                            .border_r_1()
+                            .border_b_1()
+                            .h_full()
+                            .border_color(cx.theme().border)
+                            .bg(cx.theme().tab_bar)
+                            .px_2()
+                            .children(left_dock_button)
+                            .children(bottom_dock_button),
+                    )
+                },
+            )
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 let active = ix == self.active_ix;
                 Tab::new(("tab", ix), panel.title(cx))

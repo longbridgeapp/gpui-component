@@ -203,6 +203,8 @@ impl DockArea {
     }
 
     /// The the DockItem as the root of the dock area.
+    ///
+    /// This is used to render at the Center of the DockArea.
     pub fn set_root(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
         self.subscribe_item(&item, cx);
         self.items = item;

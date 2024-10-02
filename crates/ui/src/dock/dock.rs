@@ -54,7 +54,7 @@ impl DockPlacement {
 pub struct Dock {
     placement: DockPlacement,
     dock_area: WeakView<DockArea>,
-    panel: View<TabPanel>,
+    pub(crate) panel: View<TabPanel>,
     /// The size is means the width or height of the Dock, if the placement is left or right, the size is width, otherwise the size is height.
     size: Pixels,
     open: bool,
@@ -219,7 +219,7 @@ impl Dock {
 
 impl Render for Dock {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
-        if !self.open {
+        if !self.open && !self.placement.is_bottom() {
             return div();
         }
 
@@ -229,6 +229,10 @@ impl Render for Dock {
             .map(|this| match self.placement {
                 DockPlacement::Left | DockPlacement::Right => this.h_flex().h_full().w(self.size),
                 DockPlacement::Bottom => this.w_full().h(self.size),
+            })
+            // Bottom Dock should keep the title bar, then user can click the Toggle button
+            .when(!self.open && self.placement.is_bottom(), |this| {
+                this.h(px(30.))
             })
             .child(self.panel.clone())
             .child(self.render_resize_handle(cx))
