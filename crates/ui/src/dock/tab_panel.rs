@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
-    DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
-    View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    canvas, div, prelude::FluentBuilder, px, rems, AnchorCorner, AnyElement, AppContext, Bounds,
+    DefiniteLength, DismissEvent, DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    SharedString, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -19,7 +20,8 @@ use crate::{
 };
 
 use super::{
-    ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel, ToggleZoom,
+    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelView, StackPanel,
+    ToggleZoom,
 };
 
 #[derive(Clone)]
@@ -316,8 +318,87 @@ impl TabPanel {
             )
     }
 
+    fn rende_dock_toggle_button(
+        &self,
+        placement: DockPlacement,
+        cx: &mut ViewContext<Self>,
+    ) -> Option<impl IntoElement> {
+        let dock_area = self.dock_area.upgrade().expect("BUG: DockArea is missing");
+
+        if self.is_zoomed {
+            return None;
+        }
+
+        // Check the dock origin vs self.bounds.origin, if they are in the same line, then render the ToggleButton
+        // let panel_view = Arc::new(cx.view().clone());
+        // match placement {
+        //     DockPlacement::Left => {
+        //         if !dock_area
+        //             .read(cx)
+        //             .is_center_top_left_panel(panel_view.clone(), cx)
+        //         {
+        //             return None;
+        //         }
+        //     }
+        //     DockPlacement::Right => {}
+        //     DockPlacement::Bottom => {}
+        // }
+
+        let is_left_dock_open = dock_area
+            .read(cx)
+            .is_dock_open(super::DockPlacement::Left, cx);
+        let is_right_dock_open = dock_area
+            .read(cx)
+            .is_dock_open(super::DockPlacement::Right, cx);
+        let is_bottom_dock_open = dock_area
+            .read(cx)
+            .is_dock_open(super::DockPlacement::Bottom, cx);
+
+        let icon = match placement {
+            DockPlacement::Left => {
+                if is_left_dock_open {
+                    IconName::PanelLeft
+                } else {
+                    IconName::PanelLeftOpen
+                }
+            }
+            DockPlacement::Right => {
+                if is_right_dock_open {
+                    IconName::PanelRight
+                } else {
+                    IconName::PanelRightOpen
+                }
+            }
+            DockPlacement::Bottom => {
+                if is_bottom_dock_open {
+                    IconName::PanelBottom
+                } else {
+                    IconName::PanelBottomOpen
+                }
+            }
+        };
+
+        Some(
+            Button::new(SharedString::from(format!("toggle-dock:{:?}", placement)))
+                .icon(icon)
+                .xsmall()
+                .ghost()
+                .on_click(cx.listener({
+                    let dock_area = dock_area.clone();
+                    move |_, _, cx| {
+                        dock_area.update(cx, |dock_area, cx| {
+                            dock_area.toggle_dock(placement, cx);
+                        });
+                    }
+                })),
+        )
+    }
+
     fn render_tabs(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
+
+        let left_dock_button = self.rende_dock_toggle_button(DockPlacement::Left, cx);
+        let right_dock_button = self.rende_dock_toggle_button(DockPlacement::Right, cx);
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
@@ -327,7 +408,7 @@ impl TabPanel {
                 .justify_between()
                 .items_center()
                 .line_height(rems(1.0))
-                .pr_3()
+                .pr_2()
                 .when_some(title_style, |this, theme| {
                     this.bg(theme.background).text_color(theme.foreground)
                 })
@@ -339,6 +420,7 @@ impl TabPanel {
                         .min_w_16()
                         .overflow_hidden()
                         .text_ellipsis()
+                        .whitespace_nowrap()
                         .child(panel.title(cx))
                         .when(self.can_split(), |this| {
                             this.on_drag(
@@ -361,6 +443,21 @@ impl TabPanel {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
+            .when_some(left_dock_button, |this, btn| {
+                this.prefix(
+                    h_flex()
+                        .items_center()
+                        .top_0()
+                        .right_0()
+                        .border_r_1()
+                        .border_b_1()
+                        .h_full()
+                        .border_color(cx.theme().border)
+                        .bg(cx.theme().tab_bar)
+                        .px_2()
+                        .child(btn),
+                )
+            })
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 let active = ix == self.active_ix;
                 Tab::new(("tab", ix), panel.title(cx))
@@ -420,8 +517,10 @@ impl TabPanel {
                     .h_full()
                     .border_color(cx.theme().border)
                     .bg(cx.theme().tab_bar)
-                    .px_3()
-                    .child(self.render_menu_button(cx)),
+                    .px_2()
+                    .gap_1()
+                    .child(self.render_menu_button(cx))
+                    .when_some(right_dock_button, |this, btn| this.child(btn)),
             )
             .into_any_element()
     }
@@ -671,6 +770,7 @@ impl EventEmitter<PanelEvent> for TabPanel {}
 impl Render for TabPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         let focus_handle = self.focus_handle(cx);
+
         v_flex()
             .id("tab-panel")
             .track_focus(&focus_handle)

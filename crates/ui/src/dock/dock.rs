@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
-    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    div, prelude::FluentBuilder as _, px, Axis, Display, Element, InteractiveElement as _,
+    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
     WeakView,
 };
 
 use crate::{
-    resizable::{HANDLE_PADDING, HANDLE_SIZE},
+    resizable::{HANDLE_PADDING, HANDLE_SIZE, PANEL_MIN_SIZE},
     theme::ActiveTheme as _,
     AxisExt as _, StyledExt,
 };
@@ -20,6 +20,7 @@ use super::{DockArea, PanelView, TabPanel};
 #[derive(Clone, Render)]
 struct ResizePanel;
 
+#[derive(Debug, Clone, Copy)]
 pub enum DockPlacement {
     Left,
     Bottom,
@@ -129,7 +130,7 @@ impl Dock {
 
     /// Set the size of the Dock.
     pub fn set_size(&mut self, size: Pixels, cx: &mut ViewContext<Self>) {
-        self.size = size;
+        self.size = size.max(PANEL_MIN_SIZE);
         cx.notify();
     }
 
@@ -207,7 +208,7 @@ impl Dock {
             DockPlacement::Bottom => area_bounds.bottom() - mouse_position.y,
         };
 
-        self.size = size;
+        self.size = size.max(PANEL_MIN_SIZE);
         cx.notify();
     }
 

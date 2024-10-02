@@ -11,7 +11,7 @@ use crate::{h_flex, v_flex, AxisExt};
 
 use super::resize_handle;
 
-const PANEL_MIN_SIZE: Pixels = px(100.);
+pub(crate) const PANEL_MIN_SIZE: Pixels = px(100.);
 
 pub enum ResizablePanelEvent {
     Resized,

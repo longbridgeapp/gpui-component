@@ -17,6 +17,8 @@ use regex::NoExpand;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
+use crate::{button::Button, IconName};
+
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
 }
@@ -35,8 +37,10 @@ pub enum DockEvent {
 pub struct DockArea {
     id: SharedString,
     pub(crate) bounds: Bounds<Pixels>,
+
     /// The center view of the dockarea.
     items: DockItem,
+
     /// The left dock of the dockarea.
     left_dock: Option<View<Dock>>,
     /// The bottom dock of the dockarea.
