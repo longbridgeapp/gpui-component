@@ -1,3 +1,4 @@
+mod dock;
 mod invalid_panel;
 mod panel;
 mod stack_panel;
@@ -5,10 +6,11 @@ mod tab_panel;
 
 use std::sync::Arc;
 
+pub use dock::*;
 use gpui::{
-    actions, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, EventEmitter,
-    InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render, SharedString, Styled,
-    View, ViewContext, VisualContext, WeakView, WindowContext,
+    actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
+    EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render,
+    SharedString, Styled, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
@@ -31,7 +33,18 @@ pub enum DockEvent {
 /// The main area of the dock.
 pub struct DockArea {
     id: SharedString,
+    pub(crate) bounds: Bounds<Pixels>,
+
+    /// The center view of the dockarea.
     items: DockItem,
+
+    /// The left dock of the dockarea.
+    left_dock: Option<View<Dock>>,
+    /// The bottom dock of the dockarea.
+    bottom_dock: Option<View<Dock>>,
+    /// The right dock of the dockarea.
+    right_dock: Option<View<Dock>>,
+    /// The top zoom view of the dockarea, if any.
     zoom_view: Option<AnyView>,
 }
 
@@ -166,7 +179,7 @@ impl DockItem {
 }
 
 impl DockArea {
-    pub fn new(id: impl Into<SharedString>, cx: &mut WindowContext) -> Self {
+    pub fn new(id: impl Into<SharedString>, cx: &mut ViewContext<Self>) -> Self {
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
         let dock_item = DockItem::Split {
             axis: Axis::Horizontal,
@@ -177,18 +190,107 @@ impl DockArea {
 
         Self {
             id: id.into(),
+            bounds: Bounds::default(),
             items: dock_item,
             zoom_view: None,
+            left_dock: None,
+            right_dock: None,
+            bottom_dock: None,
         }
     }
 
     /// The the DockItem as the root of the dock area.
-    #[must_use]
+    ///
+    /// This is used to render at the Center of the DockArea.
     pub fn set_root(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
         self.subscribe_item(&item, cx);
         self.items = item;
 
         cx.notify();
+    }
+
+    pub fn set_left_dock(
+        &mut self,
+        panels: Vec<Arc<dyn PanelView>>,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let weak_self = cx.view().downgrade();
+        self.left_dock = Some(cx.new_view(|cx| {
+            let mut dock = Dock::left(weak_self.clone(), cx);
+            if let Some(size) = size {
+                dock.set_size(size, cx);
+            }
+            dock.set_panels(panels, cx);
+            dock
+        }))
+    }
+
+    pub fn set_bottom_dock(
+        &mut self,
+        panels: Vec<Arc<dyn PanelView>>,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let weak_self = cx.view().downgrade();
+        self.bottom_dock = Some(cx.new_view(|cx| {
+            let mut dock = Dock::bottom(weak_self.clone(), cx);
+            if let Some(size) = size {
+                dock.set_size(size, cx);
+            }
+            dock.set_panels(panels, cx);
+            dock
+        }))
+    }
+
+    pub fn set_right_dock(
+        &mut self,
+        panels: Vec<Arc<dyn PanelView>>,
+        size: Option<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let weak_self = cx.view().downgrade();
+        self.right_dock = Some(cx.new_view(|cx| {
+            let mut dock = Dock::right(weak_self.clone(), cx);
+            if let Some(size) = size {
+                dock.set_size(size, cx);
+            }
+            dock.set_panels(panels, cx);
+            dock
+        }))
+    }
+
+    pub fn is_dock_open(&self, placement: DockPlacement, cx: &AppContext) -> bool {
+        match placement {
+            DockPlacement::Left => self
+                .left_dock
+                .as_ref()
+                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .unwrap_or(false),
+            DockPlacement::Bottom => self
+                .bottom_dock
+                .as_ref()
+                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .unwrap_or(false),
+            DockPlacement::Right => self
+                .right_dock
+                .as_ref()
+                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .unwrap_or(false),
+        }
+    }
+
+    pub fn toggle_dock(&self, placement: DockPlacement, cx: &mut ViewContext<Self>) {
+        let dock = match placement {
+            DockPlacement::Left => &self.left_dock,
+            DockPlacement::Bottom => &self.bottom_dock,
+            DockPlacement::Right => &self.right_dock,
+        };
+        if let Some(dock) = dock {
+            dock.update(cx, |view, cx| {
+                view.toggle_open(cx);
+            })
+        }
     }
 
     /// Dump the dock panels layout to DockItemState.
@@ -275,16 +377,58 @@ impl DockArea {
 impl EventEmitter<DockEvent> for DockArea {}
 impl Render for DockArea {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        // println!("Rendering dock area");
+        let view = cx.view().clone();
+
         div()
             .id("dock-area")
+            .relative()
             .size_full()
             .overflow_hidden()
+            .child(
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full(),
+            )
             .map(|this| {
                 if let Some(zoom_view) = self.zoom_view.clone() {
                     this.child(zoom_view)
                 } else {
-                    this.child(self.render_items(cx))
+                    this.child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .h_full()
+                            // Left dock
+                            .when_some(self.left_dock.clone(), |this, dock| {
+                                this.child(div().flex().flex_none().child(dock))
+                            })
+                            // Center
+                            .child(
+                                div()
+                                    .flex()
+                                    .flex_1()
+                                    .flex_col()
+                                    .overflow_hidden()
+                                    // Top center
+                                    .child(
+                                        div()
+                                            .flex_1()
+                                            .overflow_hidden()
+                                            .child(self.render_items(cx)),
+                                    )
+                                    // Bottom Dock
+                                    .when_some(self.bottom_dock.clone(), |this, dock| {
+                                        this.child(dock)
+                                    }),
+                            )
+                            // Right Dock
+                            .when_some(self.right_dock.clone(), |this, dock| {
+                                this.child(div().flex().flex_none().child(dock))
+                            }),
+                    )
                 }
             })
     }

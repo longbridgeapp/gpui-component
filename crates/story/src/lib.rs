@@ -38,8 +38,7 @@ pub use webview_story::WebViewStory;
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
     EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
-    SharedString, StatefulInteractiveElement, Styled as _, View, ViewContext, VisualContext,
-    WindowContext,
+    SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -313,7 +312,6 @@ impl Render for StoryContainer {
         v_flex()
             .id("story-container")
             .size_full()
-            .overflow_scroll()
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_panel_info))
             .when(self.description.len() > 0, |this| {
@@ -328,14 +326,7 @@ impl Render for StoryContainer {
                 )
             })
             .when_some(self.story.clone(), |this, story| {
-                this.child(
-                    v_flex()
-                        .id("story-children")
-                        .overflow_scroll()
-                        .size_full()
-                        .p_4()
-                        .child(story),
-                )
+                this.child(v_flex().id("story-children").size_full().p_4().child(story))
             })
     }
 }
