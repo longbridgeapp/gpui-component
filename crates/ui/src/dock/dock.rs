@@ -67,7 +67,12 @@ impl Dock {
         placement: DockPlacement,
         cx: &mut ViewContext<Self>,
     ) -> Self {
-        let panel = cx.new_view(|cx| TabPanel::new(None, dock_area.clone(), cx));
+        let panel = cx.new_view(|cx| {
+            let mut tab = TabPanel::new(None, dock_area.clone(), cx);
+            tab.closeable = false;
+            tab.zoomable = false;
+            tab
+        });
 
         Self {
             placement,

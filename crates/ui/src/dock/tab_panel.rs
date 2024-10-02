@@ -63,6 +63,12 @@ pub struct TabPanel {
     pub(crate) active_ix: usize,
     tab_bar_scroll_handle: ScrollHandle,
     is_zoomed: bool,
+    /// If this is true, the Panel closeable will follow the active panel's closeable,
+    /// otherwise this TabPanel will not able to close
+    pub(crate) closeable: bool,
+    /// If this is true, the Panel zoomable will follow the active panel's zoomable,
+    /// otherwise this TabPanel will not able to zoom
+    pub(crate) zoomable: bool,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -80,12 +86,20 @@ impl Panel for TabPanel {
     }
 
     fn closeable(&self, cx: &WindowContext) -> bool {
+        if !self.closeable {
+            return false;
+        }
+
         self.active_panel()
             .map(|panel| panel.closeable(cx))
             .unwrap_or(false)
     }
 
     fn zoomable(&self, cx: &WindowContext) -> bool {
+        if !self.zoomable {
+            return false;
+        }
+
         self.active_panel()
             .map(|panel| panel.zoomable(cx))
             .unwrap_or(false)
@@ -130,6 +144,8 @@ impl TabPanel {
             tab_bar_scroll_handle: ScrollHandle::new(),
             will_split_placement: None,
             is_zoomed: false,
+            closeable: true,
+            zoomable: true,
         }
     }
 
@@ -257,6 +273,8 @@ impl TabPanel {
         let is_zoomed = self.is_zoomed && zoomable;
         let view = cx.view().clone();
         let build_popup_menu = move |this, cx: &WindowContext| view.read(cx).popup_menu(this, cx);
+
+        // TODO: Do not show MenuButton if there is no menu items
 
         h_flex()
             .gap_2()
