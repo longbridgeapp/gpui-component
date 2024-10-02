@@ -13,11 +13,8 @@ use gpui::{
     SharedString, Styled, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 pub use panel::*;
-use regex::NoExpand;
 pub use stack_panel::*;
 pub use tab_panel::*;
-
-use crate::{button::Button, IconName};
 
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());

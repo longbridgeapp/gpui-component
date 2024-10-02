@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{
-    canvas, div, prelude::FluentBuilder, px, rems, AnchorCorner, AnyElement, AppContext, Bounds,
-    DefiniteLength, DismissEvent, DragMoveEvent, Empty, Entity, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement as _, IntoElement, ParentElement, Pixels, Render,
-    ScrollHandle, SharedString, StatefulInteractiveElement, Styled, View, ViewContext,
-    VisualContext as _, WeakView, WindowContext,
+    div, prelude::FluentBuilder, px, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
+    DragMoveEvent, Empty, Entity, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    SharedString, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -349,23 +349,27 @@ impl TabPanel {
         }
 
         // Check the dock origin vs self.bounds.origin, if they are in the same line, then render the ToggleButton
-        let panel_view = Arc::new(cx.view().clone());
         match placement {
             DockPlacement::Left => {
                 if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
                     return None;
                 }
 
-                // if !dock_area
-                //     .read(cx)
-                //     .is_center_top_left_panel(panel_view.clone(), cx)
-                // {
-                //     return None;
-                // }
+                if let Some(parent) = self.stack_panel.as_ref() {
+                    if !parent.read(cx).is_top_left_panel(cx.view().clone(), cx) {
+                        return None;
+                    }
+                }
             }
             DockPlacement::Right => {
                 if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
                     return None;
+                }
+
+                if let Some(parent) = self.stack_panel.as_ref() {
+                    if !parent.read(cx).is_top_right_panel(cx.view().clone(), cx) {
+                        return None;
+                    }
                 }
             }
             DockPlacement::Bottom => {
