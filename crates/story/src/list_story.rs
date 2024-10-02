@@ -180,18 +180,20 @@ impl ListDelegate for CompanyListDelegate {
                     .border_color(cx.theme().muted_foreground.opacity(0.3))
                     .line_height(relative(1.))
                     .p_1()
-                    .child(div().child(name).text_xs())
+                    .child(div().whitespace_nowrap().child(name).text_xs())
             })
             .collect::<Vec<_>>();
-
 
         let element = v_flex()
             .p_4()
             .child(
-                v_flex()
-                    .gap_y_2()
-                    .child("History")
-                    .child(h_flex().gap_x_4().children(input_history)),
+                v_flex().gap_y_2().child("History").child(
+                    h_flex()
+                        .gap_x_4()
+                        .gap_y_2()
+                        .flex_wrap()
+                        .children(input_history),
+                ),
             )
             .into_any_element();
         Some(element)
