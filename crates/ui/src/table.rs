@@ -335,7 +335,10 @@ where
         self.selection_state = SelectionState::Column;
         self.selected_col = Some(col_ix);
         if let Some(col_ix) = self.selected_col {
-            self.horizontal_scroll_handle.scroll_to_item(col_ix);
+            // TODO: Fix scroll to selected col, this was not working after fixed col.
+            if self.col_groups[col_ix].fixed.is_none() {
+                self.horizontal_scroll_handle.scroll_to_item(col_ix);
+            }
         }
         cx.emit(TableEvent::SelectCol(col_ix));
         cx.notify();
