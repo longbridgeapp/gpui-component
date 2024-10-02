@@ -175,61 +175,57 @@ impl StockTableDelegate {
             stocks: random_stocks(size),
             columns: vec![
                 Column::new("id", "ID", None),
-                Column::new("symbol", "Symbol", Some(ColSort::Ascending)),
+                Column::new("symbol", "Symbol", Some(ColSort::Default)),
                 Column::new("name", "Name", None),
-                Column::new("price", "Price", Some(ColSort::Ascending)),
-                Column::new("change", "Chg", Some(ColSort::Ascending)),
-                Column::new("change_percent", "Chg%", Some(ColSort::Ascending)),
-                Column::new("volume", "Volume", Some(ColSort::Ascending)),
-                Column::new("turnover", "Turnover", Some(ColSort::Ascending)),
-                Column::new("market_cap", "Market Cap", Some(ColSort::Ascending)),
-                Column::new("ttm", "TTM", Some(ColSort::Ascending)),
-                Column::new("five_mins_ranking", "5m Ranking", Some(ColSort::Ascending)),
-                Column::new("th60_days_ranking", "60d Ranking", Some(ColSort::Ascending)),
-                Column::new("year_change_percent", "Year Chg%", Some(ColSort::Ascending)),
-                Column::new("bid", "Bid", Some(ColSort::Ascending)),
-                Column::new("bid_volume", "Bid Vol", Some(ColSort::Ascending)),
-                Column::new("ask", "Ask", Some(ColSort::Ascending)),
-                Column::new("ask_volume", "Ask Vol", Some(ColSort::Ascending)),
-                Column::new("open", "Open", Some(ColSort::Ascending)),
-                Column::new("prev_close", "Prev Close", Some(ColSort::Ascending)),
-                Column::new("high", "High", Some(ColSort::Ascending)),
-                Column::new("low", "Low", Some(ColSort::Ascending)),
-                Column::new("turnover_rate", "Turnover Rate", Some(ColSort::Ascending)),
-                Column::new("rise_rate", "Rise Rate", Some(ColSort::Ascending)),
-                Column::new("amplitude", "Amplitude", Some(ColSort::Ascending)),
-                Column::new("pe_status", "P/E", Some(ColSort::Ascending)),
-                Column::new("pb_status", "P/B", Some(ColSort::Ascending)),
-                Column::new("volume_ratio", "Volume Ratio", Some(ColSort::Ascending)),
-                Column::new("bid_ask_ratio", "Bid Ask Ratio", Some(ColSort::Ascending)),
+                Column::new("price", "Price", Some(ColSort::Default)),
+                Column::new("change", "Chg", Some(ColSort::Default)),
+                Column::new("change_percent", "Chg%", Some(ColSort::Default)),
+                Column::new("volume", "Volume", Some(ColSort::Default)),
+                Column::new("turnover", "Turnover", Some(ColSort::Default)),
+                Column::new("market_cap", "Market Cap", Some(ColSort::Default)),
+                Column::new("ttm", "TTM", Some(ColSort::Default)),
+                Column::new("five_mins_ranking", "5m Ranking", Some(ColSort::Default)),
+                Column::new("th60_days_ranking", "60d Ranking", Some(ColSort::Default)),
+                Column::new("year_change_percent", "Year Chg%", Some(ColSort::Default)),
+                Column::new("bid", "Bid", Some(ColSort::Default)),
+                Column::new("bid_volume", "Bid Vol", Some(ColSort::Default)),
+                Column::new("ask", "Ask", Some(ColSort::Default)),
+                Column::new("ask_volume", "Ask Vol", Some(ColSort::Default)),
+                Column::new("open", "Open", Some(ColSort::Default)),
+                Column::new("prev_close", "Prev Close", Some(ColSort::Default)),
+                Column::new("high", "High", Some(ColSort::Default)),
+                Column::new("low", "Low", Some(ColSort::Default)),
+                Column::new("turnover_rate", "Turnover Rate", Some(ColSort::Default)),
+                Column::new("rise_rate", "Rise Rate", Some(ColSort::Default)),
+                Column::new("amplitude", "Amplitude", Some(ColSort::Default)),
+                Column::new("pe_status", "P/E", Some(ColSort::Default)),
+                Column::new("pb_status", "P/B", Some(ColSort::Default)),
+                Column::new("volume_ratio", "Volume Ratio", Some(ColSort::Default)),
+                Column::new("bid_ask_ratio", "Bid Ask Ratio", Some(ColSort::Default)),
                 Column::new(
                     "latest_pre_close",
                     "Latest Pre Close",
-                    Some(ColSort::Ascending),
+                    Some(ColSort::Default),
                 ),
                 Column::new(
                     "latest_post_close",
                     "Latest Post Close",
-                    Some(ColSort::Ascending),
+                    Some(ColSort::Default),
                 ),
-                Column::new("pre_market_cap", "Pre Mkt Cap", Some(ColSort::Ascending)),
-                Column::new("pre_market_percent", "Pre Mkt%", Some(ColSort::Ascending)),
-                Column::new("pre_market_change", "Pre Mkt Chg", Some(ColSort::Ascending)),
-                Column::new("post_market_cap", "Post Mkt Cap", Some(ColSort::Ascending)),
-                Column::new("post_market_percent", "Post Mkt%", Some(ColSort::Ascending)),
-                Column::new(
-                    "post_market_change",
-                    "Post Mkt Chg",
-                    Some(ColSort::Ascending),
-                ),
-                Column::new("float_cap", "Float Cap", Some(ColSort::Ascending)),
-                Column::new("shares", "Shares", Some(ColSort::Ascending)),
-                Column::new("shares_float", "Float Shares", Some(ColSort::Ascending)),
-                Column::new("day_5_ranking", "5d Ranking", Some(ColSort::Ascending)),
-                Column::new("day_10_ranking", "10d Ranking", Some(ColSort::Ascending)),
-                Column::new("day_30_ranking", "30d Ranking", Some(ColSort::Ascending)),
-                Column::new("day_120_ranking", "120d Ranking", Some(ColSort::Ascending)),
-                Column::new("day_250_ranking", "250d Ranking", Some(ColSort::Ascending)),
+                Column::new("pre_market_cap", "Pre Mkt Cap", Some(ColSort::Default)),
+                Column::new("pre_market_percent", "Pre Mkt%", Some(ColSort::Default)),
+                Column::new("pre_market_change", "Pre Mkt Chg", Some(ColSort::Default)),
+                Column::new("post_market_cap", "Post Mkt Cap", Some(ColSort::Default)),
+                Column::new("post_market_percent", "Post Mkt%", Some(ColSort::Default)),
+                Column::new("post_market_change", "Post Mkt Chg", Some(ColSort::Default)),
+                Column::new("float_cap", "Float Cap", Some(ColSort::Default)),
+                Column::new("shares", "Shares", Some(ColSort::Default)),
+                Column::new("shares_float", "Float Shares", Some(ColSort::Default)),
+                Column::new("day_5_ranking", "5d Ranking", Some(ColSort::Default)),
+                Column::new("day_10_ranking", "10d Ranking", Some(ColSort::Default)),
+                Column::new("day_30_ranking", "30d Ranking", Some(ColSort::Default)),
+                Column::new("day_120_ranking", "120d Ranking", Some(ColSort::Default)),
+                Column::new("day_250_ranking", "250d Ranking", Some(ColSort::Default)),
             ],
             loop_selection: true,
             col_resize: true,
@@ -397,24 +393,15 @@ impl TableDelegate for StockTableDelegate {
         }
 
         if let Some(col) = self.columns.get_mut(col_ix) {
-            col.sort = Some(sort);
-            let asc = matches!(sort, ColSort::Ascending);
-
             match col.id.as_ref() {
                 "id" => self.stocks.sort_by(|a, b| {
-                    if asc {
+                    if sort == ColSort::Ascending {
                         a.id.cmp(&b.id)
                     } else {
                         b.id.cmp(&a.id)
                     }
                 }),
                 _ => {}
-            }
-
-            for col in self.columns.iter_mut() {
-                if let Some(ColSort::Ascending) = col.sort {
-                    col.sort = Some(ColSort::Default);
-                }
             }
         }
     }

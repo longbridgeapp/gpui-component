@@ -335,7 +335,10 @@ where
         self.selection_state = SelectionState::Column;
         self.selected_col = Some(col_ix);
         if let Some(col_ix) = self.selected_col {
-            self.horizontal_scroll_handle.scroll_to_item(col_ix);
+            // TODO: Fix scroll to selected col, this was not working after fixed col.
+            if self.col_groups[col_ix].fixed.is_none() {
+                self.horizontal_scroll_handle.scroll_to_item(col_ix);
+            }
         }
         cx.emit(TableEvent::SelectCol(col_ix));
         cx.notify();
@@ -615,7 +618,7 @@ where
         let sort = match sort {
             ColSort::Ascending => ColSort::Descending,
             ColSort::Descending => ColSort::Ascending,
-            ColSort::Default => ColSort::Ascending,
+            ColSort::Default => ColSort::Descending,
         };
 
         for (ix, col_group) in self.col_groups.iter_mut().enumerate() {
@@ -648,7 +651,7 @@ where
         col_ix: usize,
         cx: &mut ViewContext<Self>,
     ) -> Option<impl IntoElement> {
-        let sort = self.delegate().col_sort(col_ix);
+        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
         if sort.is_none() {
             return None;
         }
