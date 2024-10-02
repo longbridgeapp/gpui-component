@@ -162,7 +162,7 @@ impl Scrollbar {
             state,
             axis,
             scroll_size,
-            width: px(11.),
+            width: px(8.),
             scroll_handle: Rc::new(Box::new(scroll_handle)),
         }
     }
