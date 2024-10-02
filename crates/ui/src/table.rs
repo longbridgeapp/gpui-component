@@ -7,11 +7,11 @@ use crate::{
     v_flex, Icon, IconName, Sizable, Size, StyledExt,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
-    DragMoveEvent, Entity, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
-    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, ScrollHandle,
-    SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
-    VisualContext as _, WindowContext,
+    actions, canvas, deferred, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds,
+    Div, DragMoveEvent, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
+    ScrollHandle, SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -36,11 +36,17 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColFixed {
+    Left,
+}
+
 #[derive(Debug, Clone, Copy)]
 struct ColGroup {
     width: Option<Pixels>,
     bounds: Bounds<Pixels>,
     sort: Option<ColSort>,
+    fixed: Option<ColFixed>,
 }
 
 #[derive(Clone)]
@@ -153,6 +159,11 @@ pub trait TableDelegate: Sized + 'static {
     ///
     /// This is only called when the table initializes.
     fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+        None
+    }
+
+    /// Return the fixed side of the column at the given index.
+    fn col_fixed(&self, col_ix: usize) -> Option<ColFixed> {
         None
     }
 
@@ -299,6 +310,7 @@ where
                 width: self.delegate.col_width(col_ix),
                 bounds: Bounds::default(),
                 sort: self.delegate.col_sort(col_ix),
+                fixed: self.delegate.col_fixed(col_ix),
             })
             .collect();
         cx.notify();
@@ -824,6 +836,12 @@ where
             h_flex()
         }
 
+        let left_cols_count = self
+            .col_groups
+            .iter()
+            .filter(|col| col.fixed == Some(ColFixed::Left))
+            .count();
+
         let inner_table = v_flex()
             .key_context("Table")
             .id("table")
@@ -844,48 +862,77 @@ where
                     .border_b_1()
                     .border_color(cx.theme().border)
                     .child(
-                        uniform_list(view.clone(), "table-uniform-list-head", 1, {
-                            let horizontal_scroll_handle = horizontal_scroll_handle.clone();
-                            let view = view.clone();
-                            move |table, _, cx| {
-                                let view = view.clone();
-                                // Columns
+                        h_flex()
+                            .child(
+                                // Render left fixed columns
                                 tr(cx)
-                                    .id("table-head")
-                                    .w_full()
+                                    .id("table-head-fixed-left")
                                     .h_10()
-                                    .overflow_scroll()
-                                    .track_scroll(&horizontal_scroll_handle)
                                     .bg(cx.theme().table_head)
-                                    .child(
-                                        div()
-                                            .h_flex()
+                                    .border_r_1()
+                                    .border_color(cx.theme().border)
+                                    .children(
+                                        self.col_groups
+                                            .iter()
+                                            .filter(|col| col.fixed == Some(ColFixed::Left))
+                                            .enumerate()
+                                            .map(|(col_ix, _)| self.render_th(col_ix, cx)),
+                                    ),
+                            )
+                            .child(
+                                // Render other normal columns
+                                uniform_list(view.clone(), "table-uniform-list-head", 1, {
+                                    let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                                    let view = view.clone();
+                                    move |table, _, cx| {
+                                        let view = view.clone();
+
+                                        // Columns
+                                        tr(cx)
+                                            .id("table-head")
+                                            .w_full()
+                                            .h_10()
+                                            .overflow_scroll()
                                             .relative()
-                                            .children(
-                                                table
-                                                    .col_groups
-                                                    .iter()
-                                                    .enumerate()
-                                                    .map(|(col_ix, _)| table.render_th(col_ix, cx)),
-                                            )
-                                            .child(last_empty_col(cx))
+                                            .track_scroll(&horizontal_scroll_handle)
+                                            .bg(cx.theme().table_head)
                                             .child(
-                                                canvas(
-                                                    move |bounds, cx| {
-                                                        view.update(cx, |r, _| {
-                                                            r.head_content_bounds = bounds
-                                                        })
-                                                    },
-                                                    |_, _, _| {},
-                                                )
-                                                .absolute()
-                                                .size_full(),
-                                            ),
-                                    )
-                                    .map(|this| vec![this])
-                            }
-                        })
-                        .size_full(),
+                                                h_flex()
+                                                    .relative()
+                                                    .children(
+                                                        table
+                                                            .col_groups
+                                                            .iter()
+                                                            .filter(|col| col.fixed == None)
+                                                            .enumerate()
+                                                            .map(|(col_ix, _)| {
+                                                                table.render_th(
+                                                                    left_cols_count + col_ix,
+                                                                    cx,
+                                                                )
+                                                            }),
+                                                    )
+                                                    .child(last_empty_col(cx))
+                                                    .child(
+                                                        canvas(
+                                                            move |bounds, cx| {
+                                                                view.update(cx, |r, _| {
+                                                                    r.head_content_bounds = bounds
+                                                                })
+                                                            },
+                                                            |_, _, _| {},
+                                                        )
+                                                        .absolute()
+                                                        .size_full(),
+                                                    ),
+                                            )
+                                            .map(|this| vec![this])
+                                    }
+                                })
+                                .h_full()
+                                .flex_1(),
+                            )
+                            .size_full(),
                     ),
             )
             .map(|this| {
@@ -924,10 +971,13 @@ where
                                                             this.border_t_1()
                                                                 .border_color(cx.theme().border)
                                                         })
-                                                        .when(
-                                                            table.stripe && row_ix % 2 != 0,
-                                                            |this| this.bg(cx.theme().table_even),
-                                                        )
+                                                        .map(|this| {
+                                                            if table.stripe && row_ix % 2 != 0 {
+                                                                this.bg(cx.theme().table_even)
+                                                            } else {
+                                                                this.bg(cx.theme().table)
+                                                            }
+                                                        })
                                                         .hover(|this| {
                                                             if table.selected_row == Some(row_ix) {
                                                                 this
@@ -935,8 +985,47 @@ where
                                                                 this.bg(cx.theme().table_hover)
                                                             }
                                                         })
-                                                        .children((0..cols_count).map(|col_ix| {
-                                                            table
+                                                        .children(if left_cols_count > 0 {
+                                                            // Left fixed columns
+                                                            Some(
+                                                                h_flex()
+                                                                    .border_r_1()
+                                                                    .border_color(cx.theme().border)
+                                                                    .children(
+                                                                        (0..left_cols_count).map(
+                                                                            |col_ix| {
+                                                                                table
+                                                                            .col_wrap(col_ix, cx)
+                                                                            .child(
+                                                                            table
+                                                                                .render_cell(
+                                                                                    col_ix, cx,
+                                                                                )
+                                                                                .child(
+                                                                                    table
+                                                                                        .delegate
+                                                                                        .render_td(
+                                                                                            row_ix,
+                                                                                            col_ix,
+                                                                                            cx,
+                                                                                        ),
+                                                                                ),
+                                                                        )
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                            )
+                                                        } else {
+                                                            None
+                                                        })
+                                                        .child(
+                                                            h_flex()
+                                                                .flex_1()
+                                                                .overflow_hidden()
+                                                                .children(
+                                                                    (left_cols_count..cols_count)
+                                                                        .map(|col_ix| {
+                                                                            table
                                                                 // Make the row scroll sync with the
                                                                 // horizontal_scroll_handle to support horizontal scrolling.
                                                                 .col_wrap(col_ix, cx)
@@ -957,7 +1046,9 @@ where
                                                                                 ),
                                                                         ),
                                                                 )
-                                                        }))
+                                                                        }),
+                                                                ),
+                                                        )
                                                         .child(last_empty_col(cx))
                                                         // Row selected style
                                                         .when_some(

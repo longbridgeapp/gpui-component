@@ -13,7 +13,7 @@ use ui::{
     input::{InputEvent, TextInput},
     label::Label,
     prelude::FluentBuilder as _,
-    table::{ColSort, Table, TableDelegate, TableEvent},
+    table::{ColFixed, ColSort, Table, TableDelegate, TableEvent},
     v_flex, Selectable, Sizable, Size,
 };
 
@@ -285,6 +285,14 @@ impl TableDelegate for StockTableDelegate {
     fn col_width(&self, col_ix: usize) -> Option<Pixels> {
         if let Some(_) = self.columns.get(col_ix) {
             Some(120.0.into())
+        } else {
+            None
+        }
+    }
+
+    fn col_fixed(&self, col_ix: usize) -> Option<ui::table::ColFixed> {
+        if col_ix < 2 {
+            Some(ColFixed::Left)
         } else {
             None
         }
