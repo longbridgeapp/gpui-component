@@ -9,7 +9,7 @@ use gpui::{
 
 const MIN_THUMB_SIZE: f32 = 80.;
 const THUMB_RADIUS: Pixels = Pixels(5.0);
-const THUMB_INSET: Pixels = Pixels(2.);
+const THUMB_INSET: Pixels = Pixels(3.);
 
 pub trait ScrollHandleOffsetable {
     fn offset(&self) -> Point<Pixels>;
@@ -162,7 +162,7 @@ impl Scrollbar {
             state,
             axis,
             scroll_size,
-            width: px(11.),
+            width: px(9.),
             scroll_handle: Rc::new(Box::new(scroll_handle)),
         }
     }

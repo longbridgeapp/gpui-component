@@ -16,7 +16,7 @@ use crate::{
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
     theme::ActiveTheme,
-    v_flex, AxisExt, IconName, Placement, Selectable, Sizable, StyledExt,
+    v_flex, AxisExt, IconName, Placement, Selectable, Sizable,
 };
 
 use super::{
@@ -473,12 +473,10 @@ impl TabPanel {
                     div()
                         .id("tab")
                         .flex_1()
-                        .debug_red()
                         .min_w_16()
                         .overflow_hidden()
                         .text_ellipsis()
                         .whitespace_nowrap()
-                        .debug_green()
                         .child(panel.title(cx))
                         .when(self.can_split(), |this| {
                             this.on_drag(
