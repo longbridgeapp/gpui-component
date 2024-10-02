@@ -101,7 +101,11 @@ pub fn init(cx: &mut AppContext) {
         #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-a", Home, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-left", Home, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-e", End, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-right", End, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-z", Undo, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
