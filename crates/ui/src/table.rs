@@ -856,7 +856,7 @@ where
                             .map(|this| vec![this])
                     }
                 })
-                .h_full()
+                .h_10()
                 .flex_1(),
             )
     }
