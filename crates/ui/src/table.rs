@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName, Sizable, Size, StyledExt,
+    v_flex, Icon, IconName, Sizable, Size,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
@@ -36,11 +36,17 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColFixed {
+    Left,
+}
+
 #[derive(Debug, Clone, Copy)]
 struct ColGroup {
     width: Option<Pixels>,
     bounds: Bounds<Pixels>,
     sort: Option<ColSort>,
+    fixed: Option<ColFixed>,
 }
 
 #[derive(Clone)]
@@ -153,6 +159,11 @@ pub trait TableDelegate: Sized + 'static {
     ///
     /// This is only called when the table initializes.
     fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+        None
+    }
+
+    /// Return the fixed side of the column at the given index.
+    fn col_fixed(&self, col_ix: usize) -> Option<ColFixed> {
         None
     }
 
@@ -299,6 +310,7 @@ where
                 width: self.delegate.col_width(col_ix),
                 bounds: Bounds::default(),
                 sort: self.delegate.col_sort(col_ix),
+                fixed: self.delegate.col_fixed(col_ix),
             })
             .collect();
         cx.notify();
@@ -410,8 +422,8 @@ where
             .overflow_hidden()
             .whitespace_nowrap()
             .map(|this| match self.size {
-                Size::XSmall => this.text_sm().py_0().px_1(),
-                Size::Small => this.text_sm().py_0p5().px_1p5(),
+                Size::XSmall => this.text_sm().py_0p5().px_1(),
+                Size::Small => this.text_sm().py_1().px_1p5(),
                 Size::Large => this.py_1p5().px_3(),
                 _ => this.py_1().px_2(),
             })
@@ -473,8 +485,11 @@ where
             return div().into_any_element();
         }
 
+        let group_id = SharedString::from(format!("resizable-handle:{}", ix));
+
         h_flex()
             .id(("resizable-handle", ix))
+            .group(group_id.clone())
             .occlude()
             .cursor_col_resize()
             .h_full()
@@ -485,9 +500,9 @@ where
             .child(
                 div()
                     .h_full()
-                    .h_5()
                     .justify_center()
-                    .bg(cx.theme().border)
+                    .bg(cx.theme().table_row_border)
+                    .group_hover(group_id, |this| this.bg(cx.theme().border).h_full())
                     .w(px(1.)),
             )
             .on_drag_move(cx.listener(move |view, e: &DragMoveEvent<ResizeCol>, cx| {
@@ -612,6 +627,18 @@ where
         }
 
         self.delegate_mut().perform_sort(col_ix, sort, cx);
+
+        cx.notify();
+    }
+
+    fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Self>) {
+        if col_ix == to_ix {
+            return;
+        }
+
+        self.delegate.move_col(col_ix, to_ix);
+        let col_group = self.col_groups.remove(col_ix);
+        self.col_groups.insert(to_ix, col_group);
 
         cx.notify();
     }
@@ -750,16 +777,182 @@ where
         }
     }
 
-    fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Self>) {
-        if col_ix == to_ix {
-            return;
+    fn render_table_head(
+        &mut self,
+        left_cols_count: usize,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let view = cx.view().clone();
+        let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
+
+        h_flex()
+            .w_full()
+            .flex_shrink_0()
+            .border_b_1()
+            .border_color(cx.theme().border)
+            .child(
+                // Render left fixed columns
+                h_flex()
+                    .id("table-head-fixed-left")
+                    .h_full()
+                    .bg(cx.theme().table_head)
+                    .border_r_1()
+                    .border_color(cx.theme().border)
+                    .children(
+                        self.col_groups
+                            .iter()
+                            .filter(|col| col.fixed == Some(ColFixed::Left))
+                            .enumerate()
+                            .map(|(col_ix, _)| self.render_th(col_ix, cx)),
+                    ),
+            )
+            .child(
+                // Render other normal columns
+                uniform_list(view.clone(), "table-uniform-list-head", 1, {
+                    let horizontal_scroll_handle = horizontal_scroll_handle.clone();
+                    let view = view.clone();
+                    move |table, _, cx| {
+                        let view = view.clone();
+
+                        // Columns
+                        h_flex()
+                            .id("table-head")
+                            .h_full()
+                            .w_full()
+                            .overflow_scroll()
+                            .relative()
+                            .track_scroll(&horizontal_scroll_handle)
+                            .bg(cx.theme().table_head)
+                            .child(
+                                h_flex()
+                                    .relative()
+                                    .children(
+                                        table
+                                            .col_groups
+                                            .iter()
+                                            .filter(|col| col.fixed == None)
+                                            .enumerate()
+                                            .map(|(col_ix, _)| {
+                                                table.render_th(left_cols_count + col_ix, cx)
+                                            }),
+                                    )
+                                    .child(Self::last_empty_col(cx))
+                                    .child(
+                                        canvas(
+                                            move |bounds, cx| {
+                                                view.update(cx, |r, _| {
+                                                    r.head_content_bounds = bounds
+                                                })
+                                            },
+                                            |_, _, _| {},
+                                        )
+                                        .absolute()
+                                        .size_full(),
+                                    ),
+                            )
+                            .map(|this| vec![this])
+                    }
+                })
+                .h_full()
+                .flex_1(),
+            )
+    }
+
+    fn render_table_row(
+        &mut self,
+        row_ix: usize,
+        rows_count: usize,
+        left_cols_count: usize,
+        cols_count: usize,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
+        let is_stripe_row = self.stripe && row_ix % 2 != 0;
+        let is_selected = self.selected_row == Some(row_ix);
+
+        if row_ix < rows_count {
+            self.delegate
+                .render_tr(row_ix, cx)
+                .id(("table-row", row_ix))
+                .w_full()
+                .when(row_ix > 0, |this| {
+                    this.border_t_1().border_color(cx.theme().table_row_border)
+                })
+                .when(is_stripe_row, |this| this.bg(cx.theme().table_even))
+                .hover(|this| {
+                    if is_selected {
+                        this
+                    } else {
+                        this.bg(cx.theme().table_hover)
+                    }
+                })
+                .children(if left_cols_count > 0 {
+                    // Left fixed columns
+                    Some(
+                        h_flex()
+                            .border_r_1()
+                            .border_color(cx.theme().table_row_border)
+                            .children((0..left_cols_count).map(|col_ix| {
+                                self.col_wrap(col_ix, cx).child(
+                                    self.render_cell(col_ix, cx)
+                                        .child(self.delegate.render_td(row_ix, col_ix, cx)),
+                                )
+                            })),
+                    )
+                } else {
+                    None
+                })
+                .child(
+                    h_flex()
+                        .flex_1()
+                        .overflow_hidden()
+                        .children((left_cols_count..cols_count).map(|col_ix| {
+                            self
+                                // Make the row scroll sync with the
+                                // horizontal_scroll_handle to support horizontal scrolling.
+                                .col_wrap(col_ix, cx)
+                                .left(horizontal_scroll_handle.offset().x)
+                                .child(
+                                    self.render_cell(col_ix, cx)
+                                        .child(self.delegate.render_td(row_ix, col_ix, cx)),
+                                )
+                        }))
+                        .child(Self::last_empty_col(cx)),
+                )
+                // Row selected style
+                .when_some(self.selected_row, |this, _| {
+                    this.when(
+                        is_selected && self.selection_state == SelectionState::Row,
+                        |this| this.bg(cx.theme().table_active),
+                    )
+                })
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |this, _, cx| {
+                        this.on_row_click(row_ix, cx);
+                    }),
+                )
+        } else {
+            // Render fake rows to fill the rest table space
+            self.delegate
+                .render_tr(row_ix, cx)
+                .id(("table-row-fake", row_ix))
+                .w_full()
+                .h_full()
+                .border_t_1()
+                .border_color(cx.theme().table_row_border)
+                .when(is_stripe_row, |this| this.bg(cx.theme().table_even))
+                .children((0..cols_count).map(|col_ix| {
+                    h_flex()
+                        .left(horizontal_scroll_handle.offset().x)
+                        .child(self.render_cell(col_ix, cx))
+                }))
+                .child(Self::last_empty_col(cx))
         }
+    }
 
-        self.delegate.move_col(col_ix, to_ix);
-        let col_group = self.col_groups.remove(col_ix);
-        self.col_groups.insert(to_ix, col_group);
-
-        cx.notify();
+    fn last_empty_col(_: &mut WindowContext) -> Div {
+        h_flex().w(px(100.)).h_full().flex_shrink_0()
     }
 }
 
@@ -816,13 +1009,11 @@ where
             }
         }
 
-        fn last_empty_col(_: &mut WindowContext) -> Div {
-            h_flex().w(px(100.)).h_full().flex_shrink_0()
-        }
-
-        fn tr(_: &mut WindowContext) -> Div {
-            h_flex()
-        }
+        let left_cols_count = self
+            .col_groups
+            .iter()
+            .filter(|col| col.fixed == Some(ColFixed::Left))
+            .count();
 
         let inner_table = v_flex()
             .key_context("Table")
@@ -835,59 +1026,7 @@ where
             .on_action(cx.listener(Self::action_select_prev_col))
             .size_full()
             .overflow_hidden()
-            .child(
-                v_flex()
-                    .flex_grow()
-                    .h_10()
-                    .w_full()
-                    .flex_shrink_0()
-                    .border_b_1()
-                    .border_color(cx.theme().border)
-                    .child(
-                        uniform_list(view.clone(), "table-uniform-list-head", 1, {
-                            let horizontal_scroll_handle = horizontal_scroll_handle.clone();
-                            let view = view.clone();
-                            move |table, _, cx| {
-                                let view = view.clone();
-                                // Columns
-                                tr(cx)
-                                    .id("table-head")
-                                    .w_full()
-                                    .h_10()
-                                    .overflow_scroll()
-                                    .track_scroll(&horizontal_scroll_handle)
-                                    .bg(cx.theme().table_head)
-                                    .child(
-                                        div()
-                                            .h_flex()
-                                            .relative()
-                                            .children(
-                                                table
-                                                    .col_groups
-                                                    .iter()
-                                                    .enumerate()
-                                                    .map(|(col_ix, _)| table.render_th(col_ix, cx)),
-                                            )
-                                            .child(last_empty_col(cx))
-                                            .child(
-                                                canvas(
-                                                    move |bounds, cx| {
-                                                        view.update(cx, |r, _| {
-                                                            r.head_content_bounds = bounds
-                                                        })
-                                                    },
-                                                    |_, _, _| {},
-                                                )
-                                                .absolute()
-                                                .size_full(),
-                                            ),
-                                    )
-                                    .map(|this| vec![this])
-                            }
-                        })
-                        .size_full(),
-                    ),
-            )
+            .child(self.render_table_head(left_cols_count, cx))
             .map(|this| {
                 if rows_count == 0 {
                     this.child(div().size_full().child(self.delegate.render_empty(cx)))
@@ -899,7 +1038,6 @@ where
                                 "table-uniform-list",
                                 rows_count + extra_rows_needed,
                                 {
-                                    let horizontal_scroll_handle = horizontal_scroll_handle.clone();
                                     move |table, visible_range, cx| {
                                         table.load_more(visible_range.clone(), cx);
 
@@ -914,100 +1052,13 @@ where
                                         visible_range
                                             .map(|row_ix| {
                                                 // Render real rows for available data
-                                                if row_ix < rows_count {
-                                                    table
-                                                        .delegate
-                                                        .render_tr(row_ix, cx)
-                                                        .id(("table-row", row_ix))
-                                                        .w_full()
-                                                        .when(row_ix > 0, |this| {
-                                                            this.border_t_1()
-                                                                .border_color(cx.theme().border)
-                                                        })
-                                                        .when(
-                                                            table.stripe && row_ix % 2 != 0,
-                                                            |this| this.bg(cx.theme().table_even),
-                                                        )
-                                                        .hover(|this| {
-                                                            if table.selected_row == Some(row_ix) {
-                                                                this
-                                                            } else {
-                                                                this.bg(cx.theme().table_hover)
-                                                            }
-                                                        })
-                                                        .children((0..cols_count).map(|col_ix| {
-                                                            table
-                                                                // Make the row scroll sync with the
-                                                                // horizontal_scroll_handle to support horizontal scrolling.
-                                                                .col_wrap(col_ix, cx)
-                                                                .left(
-                                                                    horizontal_scroll_handle
-                                                                        .offset()
-                                                                        .x,
-                                                                )
-                                                                .child(
-                                                                    table
-                                                                        .render_cell(col_ix, cx)
-                                                                        .child(
-                                                                            table
-                                                                                .delegate
-                                                                                .render_td(
-                                                                                    row_ix, col_ix,
-                                                                                    cx,
-                                                                                ),
-                                                                        ),
-                                                                )
-                                                        }))
-                                                        .child(last_empty_col(cx))
-                                                        // Row selected style
-                                                        .when_some(
-                                                            table.selected_row,
-                                                            |this, selected_row| {
-                                                                this.when(
-                                                                    row_ix == selected_row
-                                                                        && table.selection_state
-                                                                            == SelectionState::Row,
-                                                                    |this| {
-                                                                        this.bg(cx
-                                                                            .theme()
-                                                                            .table_active)
-                                                                    },
-                                                                )
-                                                            },
-                                                        )
-                                                        .on_mouse_down(
-                                                            MouseButton::Left,
-                                                            cx.listener(move |this, _, cx| {
-                                                                this.on_row_click(row_ix, cx);
-                                                            }),
-                                                        )
-                                                } else {
-                                                    // Render fake rows to fill the rest table space
-                                                    table
-                                                        .delegate
-                                                        .render_tr(row_ix, cx)
-                                                        .id(("table-row-fake", row_ix))
-                                                        .w_full()
-                                                        .h_full()
-                                                        .border_t_1()
-                                                        .border_color(cx.theme().border)
-                                                        .when(
-                                                            table.stripe && row_ix % 2 != 0,
-                                                            |this| this.bg(cx.theme().table_even),
-                                                        )
-                                                        .children((0..cols_count).map(|col_ix| {
-                                                            h_flex()
-                                                                .left(
-                                                                    horizontal_scroll_handle
-                                                                        .offset()
-                                                                        .x,
-                                                                )
-                                                                .child(
-                                                                    table.render_cell(col_ix, cx),
-                                                                )
-                                                        }))
-                                                        .child(last_empty_col(cx))
-                                                }
+                                                table.render_table_row(
+                                                    row_ix,
+                                                    rows_count,
+                                                    left_cols_count,
+                                                    cols_count,
+                                                    cx,
+                                                )
                                             })
                                             .collect::<Vec<_>>()
                                     }
