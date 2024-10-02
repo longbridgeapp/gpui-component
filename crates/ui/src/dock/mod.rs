@@ -13,6 +13,7 @@ use gpui::{
     SharedString, Styled, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 pub use panel::*;
+use regex::NoExpand;
 pub use stack_panel::*;
 pub use tab_panel::*;
 
@@ -37,11 +38,11 @@ pub struct DockArea {
     /// The center view of the dockarea.
     items: DockItem,
     /// The left dock of the dockarea.
-    left_dock: View<Dock>,
+    left_dock: Option<View<Dock>>,
     /// The bottom dock of the dockarea.
-    bottom_dock: View<Dock>,
+    bottom_dock: Option<View<Dock>>,
     /// The right dock of the dockarea.
-    right_dock: View<Dock>,
+    right_dock: Option<View<Dock>>,
     /// The top zoom view of the dockarea, if any.
     zoom_view: Option<AnyView>,
 }
@@ -186,20 +187,14 @@ impl DockArea {
             view: stack_panel.clone(),
         };
 
-        let weak_self = cx.view().downgrade();
-
-        let left_dock = cx.new_view(|cx| Dock::left(weak_self.clone(), cx));
-        let bottom_dock = cx.new_view(|cx| Dock::bottom(weak_self.clone(), cx));
-        let right_dock = cx.new_view(|cx| Dock::right(weak_self.clone(), cx));
-
         Self {
             id: id.into(),
             bounds: Bounds::default(),
             items: dock_item,
             zoom_view: None,
-            left_dock,
-            right_dock,
-            bottom_dock,
+            left_dock: None,
+            right_dock: None,
+            bottom_dock: None,
         }
     }
 
@@ -217,12 +212,15 @@ impl DockArea {
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.left_dock.update(cx, |this, cx| {
+        let weak_self = cx.view().downgrade();
+        self.left_dock = Some(cx.new_view(|cx| {
+            let mut dock = Dock::left(weak_self.clone(), cx);
             if let Some(size) = size {
-                this.set_size(size, cx);
+                dock.set_size(size, cx);
             }
-            this.set_panels(panels, cx);
-        });
+            dock.set_panels(panels, cx);
+            dock
+        }))
     }
 
     pub fn set_bottom_dock(
@@ -231,12 +229,15 @@ impl DockArea {
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.bottom_dock.update(cx, |this, cx| {
+        let weak_self = cx.view().downgrade();
+        self.bottom_dock = Some(cx.new_view(|cx| {
+            let mut dock = Dock::bottom(weak_self.clone(), cx);
             if let Some(size) = size {
-                this.set_size(size, cx);
+                dock.set_size(size, cx);
             }
-            this.set_panels(panels, cx);
-        });
+            dock.set_panels(panels, cx);
+            dock
+        }))
     }
 
     pub fn set_right_dock(
@@ -245,19 +246,34 @@ impl DockArea {
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.right_dock.update(cx, |this, cx| {
+        let weak_self = cx.view().downgrade();
+        self.right_dock = Some(cx.new_view(|cx| {
+            let mut dock = Dock::right(weak_self.clone(), cx);
             if let Some(size) = size {
-                this.set_size(size, cx);
+                dock.set_size(size, cx);
             }
-            this.set_panels(panels, cx);
-        });
+            dock.set_panels(panels, cx);
+            dock
+        }))
     }
 
     pub fn is_dock_open(&self, placement: DockPlacement, cx: &AppContext) -> bool {
         match placement {
-            DockPlacement::Left => self.left_dock.read(cx).is_open(),
-            DockPlacement::Bottom => self.bottom_dock.read(cx).is_open(),
-            DockPlacement::Right => self.right_dock.read(cx).is_open(),
+            DockPlacement::Left => self
+                .left_dock
+                .as_ref()
+                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .unwrap_or(false),
+            DockPlacement::Bottom => self
+                .bottom_dock
+                .as_ref()
+                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .unwrap_or(false),
+            DockPlacement::Right => self
+                .right_dock
+                .as_ref()
+                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .unwrap_or(false),
         }
     }
 
@@ -267,10 +283,11 @@ impl DockArea {
             DockPlacement::Bottom => &self.bottom_dock,
             DockPlacement::Right => &self.right_dock,
         };
-
-        dock.update(cx, |view, cx| {
-            view.toggle_open(cx);
-        })
+        if let Some(dock) = dock {
+            dock.update(cx, |view, cx| {
+                view.toggle_open(cx);
+            })
+        }
     }
 
     /// Dump the dock panels layout to DockItemState.
@@ -382,13 +399,9 @@ impl Render for DockArea {
                             .flex_row()
                             .h_full()
                             // Left dock
-                            .child(
-                                div()
-                                    // .debug_pink()
-                                    .flex()
-                                    .flex_none()
-                                    .child(self.left_dock.clone()),
-                            )
+                            .when_some(self.left_dock.clone(), |this, dock| {
+                                this.child(div().flex().flex_none().child(dock))
+                            })
                             // Center
                             .child(
                                 div()
@@ -404,16 +417,14 @@ impl Render for DockArea {
                                             .child(self.render_items(cx)),
                                     )
                                     // Bottom Dock
-                                    .child(self.bottom_dock.clone()),
+                                    .when_some(self.bottom_dock.clone(), |this, dock| {
+                                        this.child(dock)
+                                    }),
                             )
                             // Right Dock
-                            .child(
-                                div()
-                                    // .debug_yellow()
-                                    .flex()
-                                    .flex_none()
-                                    .child(self.right_dock.clone()),
-                            ),
+                            .when_some(self.right_dock.clone(), |this, dock| {
+                                this.child(div().flex().flex_none().child(dock))
+                            }),
                     )
                 }
             })
