@@ -291,7 +291,7 @@ impl TableDelegate for StockTableDelegate {
     }
 
     fn col_fixed(&self, col_ix: usize) -> Option<ui::table::ColFixed> {
-        if col_ix < 2 {
+        if col_ix < 4 {
             Some(ColFixed::Left)
         } else {
             None

@@ -485,8 +485,11 @@ where
             return div().into_any_element();
         }
 
+        let group_id = SharedString::from(format!("resizable-handle:{}", ix));
+
         h_flex()
             .id(("resizable-handle", ix))
+            .group(group_id.clone())
             .occlude()
             .cursor_col_resize()
             .h_full()
@@ -497,9 +500,9 @@ where
             .child(
                 div()
                     .h_full()
-                    .h_5()
                     .justify_center()
-                    .bg(cx.theme().border)
+                    .bg(cx.theme().table_row_border)
+                    .group_hover(group_id, |this| this.bg(cx.theme().border).h_full())
                     .w(px(1.)),
             )
             .on_drag_move(cx.listener(move |view, e: &DragMoveEvent<ResizeCol>, cx| {
