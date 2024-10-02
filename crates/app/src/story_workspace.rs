@@ -45,8 +45,16 @@ pub struct StoryWorkspace {
 
 impl StoryWorkspace {
     pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
-        cx.observe_window_appearance(|_workspace, cx| {
-            Theme::sync_system_appearance(cx);
+        cx.observe_window_appearance(|_, cx| {
+            cx.spawn(move |_, mut cx| {
+                _ = cx.update(|cx| {
+                    println!("sync_system_appearance");
+                    Theme::sync_system_appearance(cx);
+                });
+
+                Task::ready(())
+            })
+            .detach();
         })
         .detach();
 
