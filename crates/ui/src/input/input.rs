@@ -77,6 +77,10 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("shift-home", SelectToHome, Some(CONTEXT)),
         KeyBinding::new("shift-end", SelectToEnd, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
+        KeyBinding::new("shift-cmd-left", SelectToHome, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("shift-cmd-right", SelectToEnd, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-cmd-space", ShowCharacterPalette, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-a", SelectAll, Some(CONTEXT)),
@@ -97,7 +101,11 @@ pub fn init(cx: &mut AppContext) {
         #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-a", Home, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-left", Home, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("ctrl-e", End, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-right", End, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
         KeyBinding::new("cmd-z", Undo, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
