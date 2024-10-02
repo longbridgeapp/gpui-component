@@ -615,7 +615,7 @@ where
         let sort = match sort {
             ColSort::Ascending => ColSort::Descending,
             ColSort::Descending => ColSort::Ascending,
-            ColSort::Default => ColSort::Ascending,
+            ColSort::Default => ColSort::Descending,
         };
 
         for (ix, col_group) in self.col_groups.iter_mut().enumerate() {
@@ -648,7 +648,7 @@ where
         col_ix: usize,
         cx: &mut ViewContext<Self>,
     ) -> Option<impl IntoElement> {
-        let sort = self.delegate().col_sort(col_ix);
+        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
         if sort.is_none() {
             return None;
         }
