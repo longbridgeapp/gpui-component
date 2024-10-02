@@ -329,20 +329,26 @@ impl TabPanel {
             return None;
         }
 
+        let mut has_left_dock = false;
+        let mut has_right_dock = false;
+        let mut has_bottom_dock = false;
         let mut self_is_left_dock = false;
         let mut self_is_right_dock = false;
         let mut self_is_bottom_dock = false;
         if let Some(left_view) = &dock_area.read(cx).left_dock {
+            has_left_dock = true;
             if left_view.read(cx).panel.entity_id() == cx.view().entity_id() {
                 self_is_left_dock = true;
             }
         }
         if let Some(right_view) = &dock_area.read(cx).right_dock {
+            has_right_dock = true;
             if right_view.read(cx).panel.entity_id() == cx.view().entity_id() {
                 self_is_right_dock = true;
             }
         }
         if let Some(bottom_view) = &dock_area.read(cx).bottom_dock {
+            has_bottom_dock = true;
             if bottom_view.read(cx).panel.entity_id() == cx.view().entity_id() {
                 self_is_bottom_dock = true;
             }
@@ -351,6 +357,10 @@ impl TabPanel {
         // Check the dock origin vs self.bounds.origin, if they are in the same line, then render the ToggleButton
         match placement {
             DockPlacement::Left => {
+                if !has_left_dock {
+                    return None;
+                }
+
                 if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
                     return None;
                 }
@@ -362,6 +372,10 @@ impl TabPanel {
                 }
             }
             DockPlacement::Right => {
+                if !has_right_dock {
+                    return None;
+                }
+
                 if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
                     return None;
                 }
@@ -373,6 +387,9 @@ impl TabPanel {
                 }
             }
             DockPlacement::Bottom => {
+                if !has_bottom_dock {
+                    return None;
+                }
                 if !self_is_bottom_dock {
                     return None;
                 }
