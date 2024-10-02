@@ -389,26 +389,26 @@ impl TabPanel {
             .read(cx)
             .is_dock_open(super::DockPlacement::Bottom, cx);
 
-        let icon = match placement {
+        let (icon, is_open) = match placement {
             DockPlacement::Left => {
                 if is_left_dock_open {
-                    IconName::PanelLeft
+                    (IconName::PanelLeft, true)
                 } else {
-                    IconName::PanelLeftOpen
+                    (IconName::PanelLeftOpen, false)
                 }
             }
             DockPlacement::Right => {
                 if is_right_dock_open {
-                    IconName::PanelRight
+                    (IconName::PanelRight, true)
                 } else {
-                    IconName::PanelRightOpen
+                    (IconName::PanelRightOpen, false)
                 }
             }
             DockPlacement::Bottom => {
                 if is_bottom_dock_open {
-                    IconName::PanelBottom
+                    (IconName::PanelBottom, true)
                 } else {
-                    IconName::PanelBottomOpen
+                    (IconName::PanelBottomOpen, false)
                 }
             }
         };
@@ -418,6 +418,10 @@ impl TabPanel {
                 .icon(icon)
                 .xsmall()
                 .ghost()
+                .tooltip(match is_open {
+                    true => t!("Dock.Collapse"),
+                    false => t!("Dock.Expand"),
+                })
                 .on_click(cx.listener({
                     let dock_area = dock_area.clone();
                     move |_, _, cx| {

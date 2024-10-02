@@ -103,3 +103,11 @@ Dock:
     en: Zoom Out
     zh-CN: 缩小
     zh-HK: 縮小
+  Collapse:
+    en: Collapse
+    zh-CN: 隐藏
+    zh-HK: 隱藏
+  Expand:
+    en: Expand
+    zh-CN: 展开
+    zh-HK: 展開

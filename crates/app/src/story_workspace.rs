@@ -15,7 +15,7 @@ use ui::{
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
-    ContextModal, IconName, Root, Selectable, Sizable,
+    ContextModal, IconName, Root, Sizable,
 };
 use workspace::TitleBar;
 
@@ -274,61 +274,6 @@ impl StoryWorkspace {
             Ok(window)
         })
     }
-
-    fn render_panel_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let left_open = self
-            .dock_area
-            .read(cx)
-            .is_dock_open(ui::dock::DockPlacement::Left, cx);
-        let bottom_open = self
-            .dock_area
-            .read(cx)
-            .is_dock_open(ui::dock::DockPlacement::Bottom, cx);
-        let right_open = self
-            .dock_area
-            .read(cx)
-            .is_dock_open(ui::dock::DockPlacement::Right, cx);
-
-        h_flex()
-            .mr_2()
-            .gap_1()
-            .child(
-                Button::new("panel-left")
-                    .icon(IconName::PanelLeft)
-                    .small()
-                    .ghost()
-                    .selected(left_open)
-                    .on_click(cx.listener(move |this, _: &ClickEvent, cx| {
-                        this.dock_area.update(cx, |dock_area, cx| {
-                            dock_area.toggle_dock(ui::dock::DockPlacement::Left, cx);
-                        })
-                    })),
-            )
-            .child(
-                Button::new("panel-bottom")
-                    .icon(IconName::PanelBottom)
-                    .small()
-                    .ghost()
-                    .selected(bottom_open)
-                    .on_click(cx.listener(move |this, _: &ClickEvent, cx| {
-                        this.dock_area.update(cx, |dock_area, cx| {
-                            dock_area.toggle_dock(ui::dock::DockPlacement::Bottom, cx);
-                        })
-                    })),
-            )
-            .child(
-                Button::new("panel-right")
-                    .icon(IconName::PanelRight)
-                    .small()
-                    .ghost()
-                    .selected(right_open)
-                    .on_click(cx.listener(move |this, _: &ClickEvent, cx| {
-                        this.dock_area.update(cx, |dock_area, cx| {
-                            dock_area.toggle_dock(ui::dock::DockPlacement::Right, cx);
-                        })
-                    })),
-            )
-    }
 }
 
 pub fn open_new(
@@ -379,7 +324,6 @@ impl Render for StoryWorkspace {
                             .justify_end()
                             .px_2()
                             .gap_2()
-                            .child(self.render_panel_buttons(cx))
                             .child(self.theme_color_picker.clone())
                             .child(
                                 Button::new("theme-mode")
