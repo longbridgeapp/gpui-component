@@ -20,6 +20,7 @@ impl Render for Tooltip {
         div().child(
             // Wrap in a child, to ensure the left margin is applied to the tooltip
             div()
+                .font_family(".SystemUIFont")
                 .m_3()
                 .bg(cx.theme().popover)
                 .text_color(cx.theme().popover_foreground)
