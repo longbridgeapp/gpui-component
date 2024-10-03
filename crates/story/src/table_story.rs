@@ -2,9 +2,11 @@ use std::time::{self, Duration};
 
 use fake::{Fake, Faker};
 use gpui::{
-    div, AnyElement, ClickEvent, IntoElement, ParentElement, Pixels, Render, SharedString, Styled,
-    Timer, View, ViewContext, VisualContext as _, WindowContext,
+    div, impl_actions, AnyElement, ClickEvent, InteractiveElement, IntoElement, ParentElement,
+    Pixels, Render, SharedString, Styled, Timer, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
+use serde::Deserialize;
 use ui::{
     button::{Button, ButtonStyled},
     checkbox::Checkbox,
@@ -12,10 +14,16 @@ use ui::{
     indicator::Indicator,
     input::{InputEvent, TextInput},
     label::Label,
+    popup_menu::PopupMenuExt,
     prelude::FluentBuilder as _,
     table::{ColFixed, ColSort, Table, TableDelegate, TableEvent},
     v_flex, Selectable, Sizable, Size,
 };
+
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+struct ChangeSize(Size);
+
+impl_actions!(table_story, [ChangeSize]);
 
 #[derive(Clone, Debug, Default)]
 struct Stock {
@@ -166,6 +174,7 @@ struct StockTableDelegate {
     col_sort: bool,
     col_selection: bool,
     loading: bool,
+    fixed_cols: bool,
     is_eof: bool,
 }
 
@@ -232,6 +241,7 @@ impl StockTableDelegate {
             col_order: true,
             col_sort: true,
             col_selection: true,
+            fixed_cols: false,
             loading: false,
             is_eof: false,
         }
@@ -250,9 +260,10 @@ impl StockTableDelegate {
         let right_num = ((val - val.floor()) * 1000.).floor() as i32;
 
         let this = if right_num % 3 == 0 {
-            this.text_color(ui::red_600()).bg(ui::red_50())
+            this.text_color(ui::red_600()).bg(ui::red_50().opacity(0.6))
         } else if right_num % 3 == 1 {
-            this.text_color(ui::green_600()).bg(ui::green_50())
+            this.text_color(ui::green_600())
+                .bg(ui::green_50().opacity(0.6))
         } else {
             this
         };
@@ -287,6 +298,10 @@ impl TableDelegate for StockTableDelegate {
     }
 
     fn col_fixed(&self, col_ix: usize) -> Option<ui::table::ColFixed> {
+        if !self.fixed_cols {
+            return None;
+        }
+
         if col_ix < 4 {
             Some(ColFixed::Left)
         } else {
@@ -548,40 +563,35 @@ impl TableStory {
     }
 
     fn toggle_loop_selection(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
-        let table = self.table.clone();
-        table.update(cx, |table, cx| {
+        self.table.update(cx, |table, cx| {
             table.delegate_mut().loop_selection = *checked;
             cx.notify();
         });
     }
 
     fn toggle_col_resize(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
-        let table = self.table.clone();
-        table.update(cx, |table, cx| {
+        self.table.update(cx, |table, cx| {
             table.delegate_mut().col_resize = *checked;
             cx.notify();
         });
     }
 
     fn toggle_col_order(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
-        let table = self.table.clone();
-        table.update(cx, |table, cx| {
+        self.table.update(cx, |table, cx| {
             table.delegate_mut().col_order = *checked;
             cx.notify();
         });
     }
 
     fn toggle_col_sort(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
-        let table = self.table.clone();
-        table.update(cx, |table, cx| {
+        self.table.update(cx, |table, cx| {
             table.delegate_mut().col_sort = *checked;
             cx.notify();
         });
     }
 
     fn toggle_col_selection(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
-        let table = self.table.clone();
-        table.update(cx, |table, cx| {
+        self.table.update(cx, |table, cx| {
             table.delegate_mut().col_selection = *checked;
             cx.notify();
         });
@@ -590,24 +600,24 @@ impl TableStory {
     fn toggle_stripe(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         self.stripe = *checked;
         let stripe = self.stripe;
-        let table = self.table.clone();
-        table.update(cx, |table, cx| {
+        self.table.update(cx, |table, cx| {
             table.set_stripe(stripe, cx);
             cx.notify();
         });
     }
 
-    fn toggle_size(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
-        self.size = match self.size {
-            Size::XSmall => Size::Small,
-            Size::Small => Size::Medium,
-            Size::Medium => Size::Large,
-            Size::Large => Size::XSmall,
-            _ => Size::default(),
-        };
-
+    fn toggle_fixed_cols(&mut self, checked: &bool, cx: &mut ViewContext<Self>) {
         self.table.update(cx, |table, cx| {
-            table.set_size(self.size, cx);
+            table.delegate_mut().fixed_cols = *checked;
+            table.refresh(cx);
+            cx.notify();
+        });
+    }
+
+    fn on_change_size(&mut self, a: &ChangeSize, cx: &mut ViewContext<Self>) {
+        self.size = a.0;
+        self.table.update(cx, |table, cx| {
+            table.set_size(a.0, cx);
         });
     }
 
@@ -635,14 +645,46 @@ impl TableStory {
 impl Render for TableStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         let delegate = self.table.read(cx).delegate();
+        let size = self.size;
 
         v_flex()
+            .on_action(cx.listener(Self::on_change_size))
             .size_full()
+            .text_sm()
             .gap_2()
             .child(
                 h_flex()
                     .items_center()
-                    .gap_2()
+                    .gap_3()
+                    .flex_wrap()
+                    .child(
+                        Button::new("size")
+                            .compact()
+                            .outline()
+                            .label(format!("size: {:?}", self.size))
+                            .popup_menu(move |menu, cx| {
+                                menu.menu_with_check(
+                                    "Large",
+                                    size == Size::Large,
+                                    Box::new(ChangeSize(Size::Large)),
+                                )
+                                .menu_with_check(
+                                    "Medium",
+                                    size == Size::Medium,
+                                    Box::new(ChangeSize(Size::Medium)),
+                                )
+                                .menu_with_check(
+                                    "Small",
+                                    size == Size::Small,
+                                    Box::new(ChangeSize(Size::Small)),
+                                )
+                                .menu_with_check(
+                                    "XSmall",
+                                    size == Size::XSmall,
+                                    Box::new(ChangeSize(Size::XSmall)),
+                                )
+                            }),
+                    )
                     .child(
                         Checkbox::new("loop-selection")
                             .label("Loop Selection")
@@ -680,12 +722,10 @@ impl Render for TableStory {
                             .on_click(cx.listener(Self::toggle_stripe)),
                     )
                     .child(
-                        Button::new("size")
-                            .small()
-                            .compact()
-                            .outline()
-                            .label(format!("size: {:?}", self.size))
-                            .on_click(cx.listener(Self::toggle_size)),
+                        Checkbox::new("fixed-cols")
+                            .label("Fixed Columns")
+                            .selected(delegate.fixed_cols)
+                            .on_click(cx.listener(Self::toggle_fixed_cols)),
                     )
                     .child(
                         Checkbox::new("refresh-data")

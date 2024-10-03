@@ -5,6 +5,7 @@ use crate::{
     theme::ActiveTheme,
 };
 use gpui::{div, px, Axis, Div, Element, EntityId, FocusHandle, Pixels, Styled, WindowContext};
+use serde::{Deserialize, Serialize};
 
 /// Returns a `Div` as horizontal flex layout.
 pub fn h_flex() -> Div {
@@ -133,7 +134,7 @@ pub trait StyledExt: Styled + Sized {
 impl<E: Styled> StyledExt for E {}
 
 /// A size for elements.
-#[derive(Clone, Default, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, Copy, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub enum Size {
     Size(Pixels),
     XSmall,

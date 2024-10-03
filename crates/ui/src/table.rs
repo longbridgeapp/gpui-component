@@ -336,9 +336,9 @@ where
         self.selected_col = Some(col_ix);
         if let Some(col_ix) = self.selected_col {
             // TODO: Fix scroll to selected col, this was not working after fixed col.
-            if self.col_groups[col_ix].fixed.is_none() {
-                self.horizontal_scroll_handle.scroll_to_item(col_ix);
-            }
+            // if self.col_groups[col_ix].fixed.is_none() {
+            //     self.horizontal_scroll_handle.scroll_to_item(col_ix);
+            // }
         }
         cx.emit(TableEvent::SelectCol(col_ix));
         cx.notify();
@@ -426,8 +426,8 @@ where
             .whitespace_nowrap()
             .map(|this| match self.size {
                 Size::XSmall => this.text_sm().py_0p5().px_1(),
-                Size::Small => this.text_sm().py_1().px_1p5(),
-                Size::Large => this.py_1p5().px_3(),
+                Size::Small => this.text_sm().py(px(3.)).px_1p5(),
+                Size::Large => this.py_2().px_3(),
                 _ => this.py_1().px_2(),
             })
     }
@@ -658,10 +658,10 @@ where
 
         let sort = sort.unwrap();
 
-        let icon = match sort {
-            ColSort::Ascending => IconName::SortAscending,
-            ColSort::Descending => IconName::SortDescending,
-            ColSort::Default => IconName::ChevronsUpDown,
+        let (icon, is_on) = match sort {
+            ColSort::Ascending => (IconName::SortAscending, true),
+            ColSort::Descending => (IconName::SortDescending, true),
+            ColSort::Default => (IconName::ChevronsUpDown, false),
         };
 
         Some(
@@ -671,8 +671,12 @@ where
                 .ml_2()
                 .p(px(2.))
                 .rounded_sm()
-                .hover(|this| this.bg(cx.theme().secondary))
-                .active(|this| this.bg(cx.theme().secondary_active))
+                .map(|this| match is_on {
+                    true => this,
+                    false => this.opacity(0.5),
+                })
+                .hover(|this| this.bg(cx.theme().secondary).opacity(7.))
+                .active(|this| this.bg(cx.theme().secondary_active).opacity(1.))
                 .on_mouse_down(MouseButton::Left, |_, cx| cx.stop_propagation())
                 .on_click(cx.listener(move |table, _, cx| table.perform_sort(col_ix, cx)))
                 .child(
@@ -787,31 +791,45 @@ where
     ) -> impl IntoElement {
         let view = cx.view().clone();
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
+        let fixed_cols_count = self
+            .col_groups
+            .iter()
+            .filter(|col| col.fixed.is_some())
+            .count();
 
         h_flex()
             .w_full()
+            .map(|this| match self.size {
+                Size::Large => this.h_10(),
+                Size::Small => this.h(px(30.)),
+                Size::XSmall => this.h(px(26.)),
+                _ => this.h_8(),
+            })
             .flex_shrink_0()
             .border_b_1()
             .border_color(cx.theme().border)
-            .child(
+            .text_color(cx.theme().table_head_foreground)
+            .when(fixed_cols_count > 0, |this| {
                 // Render left fixed columns
-                h_flex()
-                    .id("table-head-fixed-left")
-                    .h_full()
-                    .bg(cx.theme().table_head)
-                    .border_r_1()
-                    .border_color(cx.theme().border)
-                    .children(
-                        self.col_groups
-                            .iter()
-                            .filter(|col| col.fixed == Some(ColFixed::Left))
-                            .enumerate()
-                            .map(|(col_ix, _)| self.render_th(col_ix, cx)),
-                    ),
-            )
+                this.child(
+                    h_flex()
+                        .id("table-head-fixed-left")
+                        .h_full()
+                        .bg(cx.theme().table_head)
+                        .border_r_1()
+                        .border_color(cx.theme().border)
+                        .children(
+                            self.col_groups
+                                .iter()
+                                .filter(|col| col.fixed == Some(ColFixed::Left))
+                                .enumerate()
+                                .map(|(col_ix, _)| self.render_th(col_ix, cx)),
+                        ),
+                )
+            })
             .child(
                 // Render other normal columns
-                uniform_list(view.clone(), "table-uniform-list-head", 1, {
+                uniform_list(view.clone(), "table-head-uniform-list", 1, {
                     let horizontal_scroll_handle = horizontal_scroll_handle.clone();
                     let view = view.clone();
                     move |table, _, cx| {
@@ -855,6 +873,12 @@ where
                             )
                             .map(|this| vec![this])
                     }
+                })
+                .map(|this| match self.size {
+                    Size::Large => this.h_10(),
+                    Size::Small => this.h(px(30.)),
+                    Size::XSmall => this.h(px(26.)),
+                    _ => this.h_8(),
                 })
                 .h_full()
                 .flex_1(),
