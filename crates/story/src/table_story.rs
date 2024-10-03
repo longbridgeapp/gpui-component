@@ -2,9 +2,8 @@ use std::time::{self, Duration};
 
 use fake::{Fake, Faker};
 use gpui::{
-    div, impl_actions, AnyElement, ClickEvent, InteractiveElement, IntoElement, ParentElement,
-    Pixels, Render, SharedString, Styled, Timer, View, ViewContext, VisualContext as _,
-    WindowContext,
+    div, impl_actions, AnyElement, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
+    SharedString, Styled, Timer, View, ViewContext, VisualContext as _, WindowContext,
 };
 use serde::Deserialize;
 use ui::{
@@ -17,7 +16,7 @@ use ui::{
     popup_menu::PopupMenuExt,
     prelude::FluentBuilder as _,
     table::{ColFixed, ColSort, Table, TableDelegate, TableEvent},
-    v_flex, Selectable, Sizable, Size,
+    v_flex, Selectable, Size,
 };
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
@@ -662,7 +661,7 @@ impl Render for TableStory {
                             .compact()
                             .outline()
                             .label(format!("size: {:?}", self.size))
-                            .popup_menu(move |menu, cx| {
+                            .popup_menu(move |menu, _| {
                                 menu.menu_with_check(
                                     "Large",
                                     size == Size::Large,

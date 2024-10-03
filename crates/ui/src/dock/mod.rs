@@ -265,17 +265,17 @@ impl DockArea {
             DockPlacement::Left => self
                 .left_dock
                 .as_ref()
-                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .map(|dock| dock.read(cx).is_open())
                 .unwrap_or(false),
             DockPlacement::Bottom => self
                 .bottom_dock
                 .as_ref()
-                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .map(|dock| dock.read(cx).is_open())
                 .unwrap_or(false),
             DockPlacement::Right => self
                 .right_dock
                 .as_ref()
-                .and_then(|dock| Some(dock.read(cx).is_open()))
+                .map(|dock| dock.read(cx).is_open())
                 .unwrap_or(false),
         }
     }
