@@ -2,10 +2,10 @@ mod dock;
 mod invalid_panel;
 mod panel;
 mod stack_panel;
+mod state;
 mod tab_panel;
 
-use std::sync::Arc;
-
+use anyhow::{bail, Result};
 pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
@@ -14,6 +14,8 @@ use gpui::{
 };
 pub use panel::*;
 pub use stack_panel::*;
+pub use state::*;
+use std::sync::Arc;
 pub use tab_panel::*;
 
 pub fn init(cx: &mut AppContext) {
@@ -293,12 +295,64 @@ impl DockArea {
         }
     }
 
+    /// Load the state of the DockArea from the DockAreaState.
+    ///
+    /// See also [DockeArea::dump].
+    pub fn load(&mut self, state: DockAreaState, cx: &mut ViewContext<Self>) -> Result<()> {
+        let weak_self = cx.view().downgrade();
+
+        if let Some(left_dock) = state.left_dock {
+            match left_dock.to_dock(weak_self.clone(), cx) {
+                Ok(dock) => self.left_dock = Some(dock),
+                Err(err) => bail!("failed to load left dock: {}", err),
+            }
+        }
+
+        if let Some(right_dock) = state.right_dock {
+            match right_dock.to_dock(weak_self.clone(), cx) {
+                Ok(dock) => self.right_dock = Some(dock),
+                Err(err) => bail!("failed to load right dock: {}", err),
+            }
+        }
+
+        if let Some(bottom_dock) = state.bottom_dock {
+            match bottom_dock.to_dock(weak_self.clone(), cx) {
+                Ok(dock) => self.bottom_dock = Some(dock),
+                Err(err) => bail!("failed to load bottom dock: {}", err),
+            }
+        }
+
+        self.items = state.center.to_item(weak_self, cx);
+
+        Ok(())
+    }
+
     /// Dump the dock panels layout to DockItemState.
     ///
-    /// See also `DockItemState::to_item` for the load DockItem from DockItemState.
-    pub fn dump(&self, cx: &AppContext) -> DockItemState {
+    /// See also [DockArea::load].
+    pub fn dump(&self, cx: &AppContext) -> DockAreaState {
         let root = self.items.view();
-        root.dump(cx)
+        let center = root.dump(cx);
+
+        let left_dock = self
+            .left_dock
+            .as_ref()
+            .map(|dock| DockState::new(dock.clone(), cx));
+        let right_dock = self
+            .right_dock
+            .as_ref()
+            .map(|dock| DockState::new(dock.clone(), cx));
+        let bottom_dock = self
+            .bottom_dock
+            .as_ref()
+            .map(|dock| DockState::new(dock.clone(), cx));
+
+        DockAreaState {
+            center,
+            left_dock,
+            right_dock,
+            bottom_dock,
+        }
     }
 
     /// Subscribe event on the panels

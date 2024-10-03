@@ -2,14 +2,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::popup_menu::PopupMenu;
 use gpui::{
-    AnyElement, AnyView, AppContext, Axis, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
-    IntoElement, Pixels, SharedString, View, VisualContext, WeakView, WindowContext,
+    AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
+    IntoElement, SharedString, View, WeakView, WindowContext,
 };
-use itertools::Itertools;
-use rust_i18n::t;
-use serde::{Deserialize, Serialize};
 
-use super::{invalid_panel::InvalidPanel, DockArea, DockItem};
+use rust_i18n::t;
+
+use super::{DockArea, DockItemInfo, DockItemState};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -143,150 +142,8 @@ impl PartialEq for dyn PanelView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct DockItemState {
-    pub panel_name: String,
-    pub children: Vec<DockItemState>,
-    pub info: DockItemInfo,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum DockItemInfo {
-    #[serde(rename = "stack")]
-    Stack {
-        sizes: Vec<Pixels>,
-        /// The axis of the stack, 0 is horizontal, 1 is vertical
-        axis: usize,
-    },
-    #[serde(rename = "tabs")]
-    Tabs { active_index: usize },
-    #[serde(rename = "panel")]
-    Panel(serde_json::Value),
-}
-
-impl DockItemInfo {
-    pub fn stack(sizes: Vec<Pixels>, axis: Axis) -> Self {
-        Self::Stack {
-            sizes,
-            axis: if axis == Axis::Horizontal { 0 } else { 1 },
-        }
-    }
-
-    pub fn tabs(active_index: usize) -> Self {
-        Self::Tabs { active_index }
-    }
-
-    pub fn panel(value: serde_json::Value) -> Self {
-        Self::Panel(value)
-    }
-
-    pub fn axis(&self) -> Option<Axis> {
-        match self {
-            Self::Stack { axis, .. } => Some(if *axis == 0 {
-                Axis::Horizontal
-            } else {
-                Axis::Vertical
-            }),
-            _ => None,
-        }
-    }
-
-    pub fn sizes(&self) -> Option<&Vec<Pixels>> {
-        match self {
-            Self::Stack { sizes, .. } => Some(sizes),
-            _ => None,
-        }
-    }
-
-    pub fn active_index(&self) -> Option<usize> {
-        match self {
-            Self::Tabs { active_index } => Some(*active_index),
-            _ => None,
-        }
-    }
-}
-
-impl Default for DockItemState {
-    fn default() -> Self {
-        Self {
-            panel_name: "".to_string(),
-            children: Vec::new(),
-            info: DockItemInfo::Panel(serde_json::Value::Null),
-        }
-    }
-}
-
-impl DockItemState {
-    pub fn new(panel_name: &str) -> Self {
-        Self {
-            panel_name: panel_name.to_string(),
-            ..Default::default()
-        }
-    }
-
-    pub fn add_child(&mut self, panel: DockItemState) {
-        self.children.push(panel);
-    }
-
-    pub fn to_item(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
-        let info = self.info.clone();
-
-        let items: Vec<DockItem> = self
-            .children
-            .iter()
-            .map(|child| child.to_item(dock_area.clone(), cx))
-            .collect();
-
-        match info {
-            DockItemInfo::Stack { sizes, axis } => {
-                let axis = if axis == 0 {
-                    Axis::Horizontal
-                } else {
-                    Axis::Vertical
-                };
-                let sizes = sizes.iter().map(|s| Some(*s)).collect_vec();
-                DockItem::split_with_sizes(axis, items, sizes, &dock_area, cx)
-            }
-            DockItemInfo::Tabs { active_index } => {
-                if items.len() == 1 {
-                    return items[0].clone();
-                }
-
-                let items = items
-                    .iter()
-                    .flat_map(|item| match item {
-                        DockItem::Tabs { items, .. } => items.clone(),
-                        _ => {
-                            unreachable!("Invalid DockItem type in DockItemInfo::Tabs")
-                        }
-                    })
-                    .collect_vec();
-
-                DockItem::tabs(items, Some(active_index), &dock_area, cx)
-            }
-            DockItemInfo::Panel(_) => {
-                let view = if let Some(f) = cx
-                    .global::<PanelRegistry>()
-                    .items
-                    .get(&self.panel_name)
-                    .cloned()
-                {
-                    f(dock_area.clone(), info.clone(), cx)
-                } else {
-                    // Show an invalid panel if the panel is not registered.
-                    Box::new(
-                        cx.new_view(|cx| InvalidPanel::new(&self.panel_name, info.clone(), cx)),
-                    )
-                };
-
-                DockItem::tabs(vec![view.into()], None, &dock_area, cx)
-            }
-        }
-    }
-}
-
 pub struct PanelRegistry {
-    items: HashMap<
+    pub(super) items: HashMap<
         String,
         Arc<dyn Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>,
     >,
@@ -312,20 +169,4 @@ where
     cx.global_mut::<PanelRegistry>()
         .items
         .insert(panel_name.to_string(), Arc::new(deserialize));
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_deserialize_item_state() {
-        let json = include_str!("../../tests/fixtures/layout.json");
-        let state: DockItemState = serde_json::from_str(json).unwrap();
-        assert_eq!(state.panel_name, "StackPanel");
-        assert_eq!(state.children.len(), 3);
-        assert_eq!(state.children[0].panel_name, "StackPanel");
-        assert_eq!(state.children[1].children.len(), 2);
-        assert_eq!(state.children[1].children[0].panel_name, "TabPanel");
-        assert_eq!(state.children[1].panel_name, "StackPanel");
-    }
 }
