@@ -52,25 +52,6 @@ impl StoryWorkspace {
 
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", cx));
         let weak_dock_area = dock_area.downgrade();
-        let dock_item = Self::init_default_layout(&weak_dock_area, cx);
-
-        let left_panels: Vec<Arc<dyn PanelView>> =
-            vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
-
-        let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
-            Arc::new(StoryContainer::panel::<TextStory>(cx)),
-            Arc::new(StoryContainer::panel::<IconStory>(cx)),
-        ];
-
-        let right_panels: Vec<Arc<dyn PanelView>> =
-            vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
-
-        _ = dock_area.update(cx, |view, cx| {
-            view.set_root(dock_item, cx);
-            view.set_left_dock(left_panels, Some(px(350.)), cx);
-            view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
-            view.set_right_dock(right_panels, Some(px(320.)), cx);
-        });
 
         match Self::load_layout(dock_area.clone(), cx) {
             Ok(_) => {
@@ -78,6 +59,25 @@ impl StoryWorkspace {
             }
             Err(err) => {
                 eprintln!("load layout error: {:?}", err);
+                let dock_item = Self::init_default_layout(&weak_dock_area, cx);
+
+                let left_panels: Vec<Arc<dyn PanelView>> =
+                    vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
+
+                let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
+                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                ];
+
+                let right_panels: Vec<Arc<dyn PanelView>> =
+                    vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
+
+                _ = dock_area.update(cx, |view, cx| {
+                    view.set_root(dock_item, cx);
+                    view.set_left_dock(left_panels, Some(px(350.)), cx);
+                    view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
+                    view.set_right_dock(right_panels, Some(px(320.)), cx);
+                });
             }
         };
 
