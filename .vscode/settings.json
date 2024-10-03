@@ -1,4 +1,0 @@
-{
-  "rust-analyzer.check.command": "clippy",
-  "cSpell.words": ["xsmall"]
-}

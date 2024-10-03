@@ -8,6 +8,7 @@ use gpui::{
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
     WeakView,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     resizable::{HANDLE_PADDING, HANDLE_SIZE, PANEL_MIN_SIZE},
@@ -20,10 +21,13 @@ use super::{DockArea, PanelView, TabPanel};
 #[derive(Clone, Render)]
 struct ResizePanel;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum DockPlacement {
+    #[serde(rename = "left")]
     Left,
+    #[serde(rename = "bottom")]
     Bottom,
+    #[serde(rename = "right")]
     Right,
 }
 
@@ -52,18 +56,17 @@ impl DockPlacement {
 ///
 /// This is unlike Panel, it can't be move or add any other panel.
 pub struct Dock {
-    placement: DockPlacement,
+    pub(super) placement: DockPlacement,
     dock_area: WeakView<DockArea>,
     pub(crate) panel: View<TabPanel>,
     /// The size is means the width or height of the Dock, if the placement is left or right, the size is width, otherwise the size is height.
-    size: Pixels,
-    open: bool,
-    resizeable: bool,
+    pub(super) size: Pixels,
+    pub(super) open: bool,
     is_resizing: bool,
 }
 
 impl Dock {
-    fn new(
+    pub(crate) fn new(
         dock_area: WeakView<DockArea>,
         placement: DockPlacement,
         cx: &mut ViewContext<Self>,
@@ -80,7 +83,6 @@ impl Dock {
             dock_area,
             panel,
             open: true,
-            resizeable: true,
             size: px(200.0),
             is_resizing: false,
         }
@@ -98,18 +100,29 @@ impl Dock {
         Self::new(dock_area, DockPlacement::Right, cx)
     }
 
+    pub(super) fn from_state(
+        dock_area: WeakView<DockArea>,
+        placement: DockPlacement,
+        size: Pixels,
+        panel: View<TabPanel>,
+        open: bool,
+    ) -> Self {
+        Self {
+            placement,
+            dock_area,
+            panel,
+            open,
+            size,
+            is_resizing: false,
+        }
+    }
+
     pub fn set_panels(&mut self, panels: Vec<Arc<dyn PanelView>>, cx: &mut ViewContext<Self>) {
         self.panel.update(cx, |tab_panel, _| {
             tab_panel.panels = panels;
             tab_panel.active_ix = 0;
         });
         cx.notify();
-    }
-
-    /// Set the Dock to be resizeable, default: true
-    pub fn resizeable(mut self, resizeable: bool) -> Self {
-        self.resizeable = resizeable;
-        self
     }
 
     pub fn is_open(&self) -> bool {

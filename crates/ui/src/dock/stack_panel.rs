@@ -182,13 +182,13 @@ impl StackPanel {
                 } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
                     stack_panel.update(cx, |stack_panel, _| stack_panel.parent = Some(view));
                 }
-            }
-        });
 
-        // Subscribe to the panel's layout change event.
-        _ = dock_area.update(cx, |_, cx| {
-            if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                DockArea::subscribe_panel(&tab_panel, cx);
+                // Subscribe to the panel's layout change event.
+                _ = dock_area.update(cx, |_, cx| {
+                    if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
+                        DockArea::subscribe_panel(&tab_panel, cx);
+                    }
+                });
             }
         });
 

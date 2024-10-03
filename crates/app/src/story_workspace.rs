@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use gpui::*;
 use prelude::FluentBuilder as _;
 use serde::Deserialize;
@@ -11,7 +11,7 @@ use story::{
 use ui::{
     button::{Button, ButtonStyled as _},
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockEvent, DockItem, DockItemState, PanelView},
+    dock::{DockArea, DockAreaState, DockEvent, DockItem, PanelView},
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
@@ -39,13 +39,13 @@ pub struct StoryWorkspace {
     dock_area: View<DockArea>,
     locale_selector: View<LocaleSelector>,
     theme_color_picker: View<ColorPicker>,
-    last_layout_state: Option<DockItemState>,
+    last_layout_state: Option<DockAreaState>,
     _save_layout_task: Option<Task<()>>,
 }
 
 impl StoryWorkspace {
     pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
-        cx.observe_window_appearance(|_workspace, cx| {
+        cx.observe_window_appearance(|_, cx| {
             Theme::sync_system_appearance(cx);
         })
         .detach();
@@ -53,45 +53,48 @@ impl StoryWorkspace {
         let dock_area = cx.new_view(|cx| DockArea::new("main-dock", cx));
         let weak_dock_area = dock_area.downgrade();
 
-        let dock_item = match Self::load_layout(&weak_dock_area, cx) {
-            Ok(item) => item,
+        match Self::load_layout(dock_area.clone(), cx) {
+            Ok(_) => {
+                println!("load layout success");
+            }
             Err(err) => {
                 eprintln!("load layout error: {:?}", err);
-                Self::init_default_layout(&weak_dock_area, cx)
+                let dock_item = Self::init_default_layout(&weak_dock_area, cx);
+
+                let left_panels: Vec<Arc<dyn PanelView>> =
+                    vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
+
+                let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
+                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                ];
+
+                let right_panels: Vec<Arc<dyn PanelView>> =
+                    vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
+
+                _ = dock_area.update(cx, |view, cx| {
+                    view.set_root(dock_item, cx);
+                    view.set_left_dock(left_panels, Some(px(350.)), cx);
+                    view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
+                    view.set_right_dock(right_panels, Some(px(320.)), cx);
+                });
             }
         };
-
-        let left_panels: Vec<Arc<dyn PanelView>> =
-            vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
-
-        let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
-            Arc::new(StoryContainer::panel::<TextStory>(cx)),
-            Arc::new(StoryContainer::panel::<IconStory>(cx)),
-        ];
-
-        let right_panels: Vec<Arc<dyn PanelView>> =
-            vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
-
-        dock_area.update(cx, |view, cx| {
-            view.set_root(dock_item, cx);
-            view.set_left_dock(left_panels, Some(px(350.)), cx);
-            view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
-            view.set_right_dock(right_panels, Some(px(320.)), cx);
-        });
 
         cx.subscribe(&dock_area, |this, dock_area, ev: &DockEvent, cx| match ev {
             DockEvent::LayoutChanged => this.save_layout(dock_area, cx),
         })
         .detach();
 
-        let dock_area1 = dock_area.clone();
-        cx.on_app_quit(move |cx| {
-            let state = dock_area1.read(cx).dump(cx);
-
-            cx.background_executor().spawn(async move {
-                // Save layout before quitting
-                Self::save_state(&state).unwrap();
-            })
+        cx.on_app_quit({
+            let dock_area = dock_area.clone();
+            move |cx| {
+                let state = dock_area.read(cx).dump(cx);
+                cx.background_executor().spawn(async move {
+                    // Save layout before quitting
+                    Self::save_state(&state).unwrap();
+                })
+            }
         })
         .detach();
 
@@ -132,7 +135,7 @@ impl StoryWorkspace {
 
     fn save_layout(&mut self, dock_area: View<DockArea>, cx: &mut ViewContext<Self>) {
         self._save_layout_task = Some(cx.spawn(|this, mut cx| async move {
-            Timer::after(Duration::from_secs(1)).await;
+            Timer::after(Duration::from_secs(10)).await;
 
             let _ = cx.update(|cx| {
                 let dock_area = dock_area.read(cx);
@@ -151,82 +154,52 @@ impl StoryWorkspace {
         }));
     }
 
-    fn save_state(state: &DockItemState) -> Result<()> {
+    fn save_state(state: &DockAreaState) -> Result<()> {
         println!("Save layout...");
         let json = serde_json::to_string_pretty(state)?;
         std::fs::write("layout.json", json)?;
         Ok(())
     }
 
-    fn load_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> Result<DockItem> {
+    fn load_layout(dock_area: View<DockArea>, cx: &mut WindowContext) -> Result<()> {
         let fname = "layout.json";
         let json = std::fs::read_to_string(fname)?;
-        let state = serde_json::from_str::<DockItemState>(&json)?;
+        let state = serde_json::from_str::<DockAreaState>(&json)?;
 
-        return Ok(state.to_item(dock_area.clone(), cx));
+        dock_area.update(cx, |dock_area, cx| {
+            dock_area.load(state, cx).context("load layout")?;
+
+            Ok::<(), anyhow::Error>(())
+        })
     }
 
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
         DockItem::split_with_sizes(
-            Axis::Horizontal,
-            vec![
-                DockItem::split(
-                    Axis::Vertical,
-                    vec![
-                        DockItem::tab(StoryContainer::panel::<IconStory>(cx), &dock_area, cx),
-                        DockItem::tab(StoryContainer::panel::<CalendarStory>(cx), &dock_area, cx),
-                    ],
-                    &dock_area,
-                    cx,
-                ),
-                DockItem::split_with_sizes(
-                    Axis::Vertical,
-                    vec![
-                        DockItem::tabs(
-                            vec![
-                                Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
-                                Arc::new(StoryContainer::panel::<InputStory>(cx)),
-                                Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
-                                Arc::new(StoryContainer::panel::<ModalStory>(cx)),
-                                Arc::new(StoryContainer::panel::<PopupStory>(cx)),
-                                Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
-                                Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                                Arc::new(StoryContainer::panel::<TableStory>(cx)),
-                                Arc::new(StoryContainer::panel::<ImageStory>(cx)),
-                                Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
-                                Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
-                            ],
-                            None,
-                            &dock_area,
-                            cx,
-                        ),
-                        DockItem::tabs(
-                            vec![
-                                Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                                Arc::new(StoryContainer::panel::<TextStory>(cx)),
-                            ],
-                            None,
-                            &dock_area,
-                            cx,
-                        ),
-                    ],
-                    vec![None, None, Some(px(300.))],
-                    &dock_area,
-                    cx,
-                ),
-                DockItem::split_with_sizes(
-                    Axis::Vertical,
-                    vec![
-                        DockItem::tab(StoryContainer::panel::<TooltipStory>(cx), &dock_area, cx),
-                        DockItem::tab(StoryContainer::panel::<CalendarStory>(cx), &dock_area, cx),
-                        DockItem::tab(StoryContainer::panel::<ImageStory>(cx), &dock_area, cx),
-                    ],
-                    vec![None, None, Some(px(300.))],
-                    &dock_area,
-                    cx,
-                ),
-            ],
-            vec![Some(px(300.)), None, Some(px(350.))],
+            Axis::Vertical,
+            vec![DockItem::tabs(
+                vec![
+                    Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
+                    Arc::new(StoryContainer::panel::<InputStory>(cx)),
+                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
+                    Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ModalStory>(cx)),
+                    Arc::new(StoryContainer::panel::<PopupStory>(cx)),
+                    Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+                    Arc::new(StoryContainer::panel::<TableStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ImageStory>(cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+                    Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
+                ],
+                None,
+                &dock_area,
+                cx,
+            )],
+            vec![None],
             &dock_area,
             cx,
         )
