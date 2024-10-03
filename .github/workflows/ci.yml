@@ -29,6 +29,6 @@ jobs:
             target/
           key: ubuntu-test-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Lint
-        run: cargo clippy
+        run: cargo clippy -- --deny warnings
       - name: Build test
         run: cargo build
