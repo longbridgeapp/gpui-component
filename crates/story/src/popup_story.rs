@@ -291,8 +291,7 @@ impl Render for PopupStory {
                     )
                     .child(
                         Button::new("popup-menu-11112")
-                            .icon(IconName::Ellipsis)
-                            .label("Long Menu")
+                            .label("Scrollable Menu")
                             .popup_menu(move |this, _| {
                                 let mut this = this.scrollable();
                                 for i in 0..100 {
