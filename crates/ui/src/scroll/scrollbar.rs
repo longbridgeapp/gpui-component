@@ -2,9 +2,9 @@ use std::{cell::Cell, rc::Rc};
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    fill, point, px, relative, size, Bounds, ContentMask, Edges, Element, EntityId, Hitbox,
-    IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position,
-    ScrollHandle, Style, UniformListScrollHandle,
+    fill, point, px, relative, Bounds, ContentMask, Edges, Element, EntityId, Hitbox, IntoElement,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position, ScrollHandle,
+    Style, UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
@@ -220,11 +220,13 @@ impl Scrollbar {
         view_id: EntityId,
         state: Rc<Cell<ScrollbarState>>,
         scroll_handle: UniformListScrollHandle,
-        items_count: usize,
     ) -> Self {
-        let last_item_height = scroll_handle.0.borrow().last_item_height.unwrap_or(px(10.));
-        let max_height = items_count as f32 * last_item_height;
-        let scroll_size = size(px(0.), max_height);
+        let scroll_size = scroll_handle
+            .0
+            .borrow()
+            .last_item_size
+            .map(|size| size.contents)
+            .unwrap_or_default();
 
         Self::new(
             view_id,
