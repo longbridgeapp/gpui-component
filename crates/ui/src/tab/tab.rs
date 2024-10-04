@@ -8,6 +8,7 @@ use gpui::{
 
 #[derive(IntoElement)]
 pub struct Tab {
+    id: ElementId,
     base: Stateful<Div>,
     label: AnyElement,
     prefix: Option<AnyElement>,
@@ -18,8 +19,10 @@ pub struct Tab {
 
 impl Tab {
     pub fn new(id: impl Into<ElementId>, label: impl IntoElement) -> Self {
+        let id: ElementId = id.into();
         Self {
-            base: div().id(id.into()).gap_1().py_1p5().px_3().h(px(30.)),
+            id: id.clone(),
+            base: div().id(id).gap_1().py_1p5().px_3().h(px(30.)),
             label: label.into_any_element(),
             disabled: false,
             selected: false,
@@ -42,6 +45,10 @@ impl Tab {
 }
 
 impl Selectable for Tab {
+    fn element_id(&self) -> &ElementId {
+        &self.id
+    }
+
     fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self

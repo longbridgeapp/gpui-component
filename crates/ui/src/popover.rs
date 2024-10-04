@@ -3,7 +3,7 @@ use gpui::{
     AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
     FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement, KeyBinding,
     LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render,
-    Style, Styled, View, ViewContext, VisualContext, WindowContext,
+    SharedString, Style, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -131,7 +131,7 @@ where
     }
 
     fn render_trigger(&mut self, is_open: bool, cx: &mut WindowContext) -> impl IntoElement {
-        let base = div().id("popover-trigger");
+        let base = div().id(SharedString::from(format!("{}-trigger", self.id)));
 
         if self.trigger.is_none() {
             return base;

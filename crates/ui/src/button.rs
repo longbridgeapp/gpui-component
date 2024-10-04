@@ -273,6 +273,10 @@ impl Disableable for Button {
 }
 
 impl Selectable for Button {
+    fn element_id(&self) -> &ElementId {
+        &self.id
+    }
+
     fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self
@@ -302,6 +306,12 @@ impl Styled for Button {
 impl ParentElement for Button {
     fn extend(&mut self, elements: impl IntoIterator<Item = gpui::AnyElement>) {
         self.children.extend(elements)
+    }
+}
+
+impl InteractiveElement for Button {
+    fn interactivity(&mut self) -> &mut gpui::Interactivity {
+        self.base.interactivity()
     }
 }
 
