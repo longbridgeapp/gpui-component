@@ -458,7 +458,8 @@ impl Render for ModalStory {
                             .child(self.input2.clone())
                             .child(
                                 Button::new("test-action")
-                                    .label("Test Dispatch Action")
+                                    .label("Test Action")
+                                    .flex_shrink_0()
                                     .on_click(|_, cx| {
                                         cx.dispatch_action(Box::new(TestAction));
                                     }).tooltip("This button for test dispatch action, to make sure when Modal close,\nthis still can handle the action."),
@@ -468,6 +469,7 @@ impl Render for ModalStory {
                         h_flex()
                             .items_start()
                             .gap_3()
+                            .flex_wrap()
                             .child(
                                 Button::new("show-drawer-left")
                                     .label("Left Drawer...")
@@ -514,6 +516,7 @@ impl Render for ModalStory {
                     .child(
                         h_flex()
                             .gap_3()
+                            .flex_wrap()
                             .child(
                                 Button::new("show-notify-info")
                                     .label("Info Notify...")
