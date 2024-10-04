@@ -299,6 +299,16 @@ where
         cx.notify();
     }
 
+    /// Return the height of the table head.
+    fn table_head_height(&self) -> Pixels {
+        match self.size {
+            Size::Large => px(48.),
+            Size::Small => px(30.),
+            Size::XSmall => px(26.),
+            _ => px(32.),
+        }
+    }
+
     /// When we update columns or rows, we need to refresh the table.
     pub fn refresh(&mut self, cx: &mut ViewContext<Self>) {
         self.prepare_col_groups(cx);
@@ -416,6 +426,119 @@ where
         self.set_selected_col(selected_col, cx);
     }
 
+    /// Scroll table when mouse position is near the edge of the table bounds.
+    fn scroll_table_by_col_resizing(
+        &mut self,
+        pos: Point<Pixels>,
+        col_group: ColGroup,
+        _: &mut ViewContext<Self>,
+    ) {
+        let mut offset = self.horizontal_scroll_handle.offset();
+        let col_bounds = col_group.bounds;
+
+        if pos.x < self.bounds.left() && col_bounds.right() < self.bounds.left() + px(20.) {
+            offset.x += px(1.);
+        } else if pos.x > self.bounds.right() && col_bounds.right() > self.bounds.right() - px(20.)
+        {
+            offset.x -= px(1.);
+        }
+
+        self.horizontal_scroll_handle.set_offset(offset);
+    }
+
+    /// The `ix`` is the index of the col to resize,
+    /// and the `size` is the new size for the col.
+    fn resize_cols(&mut self, ix: usize, size: Pixels, cx: &mut ViewContext<Self>) {
+        const MIN_WIDTH: Pixels = px(10.0);
+        const MAX_WIDTH: Pixels = px(1200.0);
+
+        if !self.delegate.can_resize_col(ix) {
+            return;
+        }
+        let size = size.floor();
+
+        let old_width = self.col_groups[ix].width.unwrap_or_default();
+        let new_width = size;
+        if new_width < MIN_WIDTH {
+            return;
+        }
+        let changed_width = new_width - old_width;
+        // If change size is less than 1px, do nothing.
+        if changed_width > px(-1.0) && changed_width < px(1.0) {
+            return;
+        }
+        self.col_groups[ix].width = Some(new_width.min(MAX_WIDTH));
+
+        // Resize next col, table not need to resize the right cols.
+        // let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
+        // let next_width = (next_width - changed_width).max(MIN_WIDTH);
+        // self.col_groups[ix + 1].width = Some(next_width);
+
+        cx.notify();
+    }
+
+    fn perform_sort(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
+        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
+        if sort.is_none() {
+            return;
+        }
+
+        let sort = sort.unwrap();
+        let sort = match sort {
+            ColSort::Ascending => ColSort::Descending,
+            ColSort::Descending => ColSort::Ascending,
+            ColSort::Default => ColSort::Descending,
+        };
+
+        for (ix, col_group) in self.col_groups.iter_mut().enumerate() {
+            if ix == col_ix {
+                col_group.sort = Some(sort);
+            } else {
+                col_group.sort = Some(ColSort::Default);
+            }
+        }
+
+        self.delegate_mut().perform_sort(col_ix, sort, cx);
+
+        cx.notify();
+    }
+
+    fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Self>) {
+        if col_ix == to_ix {
+            return;
+        }
+
+        self.delegate.move_col(col_ix, to_ix);
+        let col_group = self.col_groups.remove(col_ix);
+        self.col_groups.insert(to_ix, col_group);
+
+        cx.notify();
+    }
+
+    /// Dispatch delegate's `load_more` method when the visible range is near the end.
+    fn load_more(&mut self, visible_range: Range<usize>, cx: &mut ViewContext<Self>) {
+        if !self.delegate.can_load_more() {
+            return;
+        }
+
+        let row_count = self.delegate.rows_count();
+        let load_more_count = self.delegate.load_more_threshold();
+
+        // Securely handle subtract logic to prevent attempt to subtract with overflow
+        if row_count >= load_more_count {
+            if visible_range.end >= row_count - load_more_count {
+                cx.spawn(|view, mut cx| async move {
+                    cx.update(|cx| {
+                        view.update(cx, |view, cx| {
+                            view.delegate.load_more(cx);
+                        })
+                    })
+                })
+                .detach()
+            }
+        }
+    }
+
     fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
         let col_width = self.col_groups[col_ix].width;
 
@@ -433,7 +556,7 @@ where
     }
 
     /// Show Column selection style, when the column is selected and the selection state is Column.
-    fn col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
+    fn render_col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
         if self.delegate().can_select_col(col_ix)
             && self.selected_col == Some(col_ix)
             && self.selection_state == SelectionState::Column
@@ -450,7 +573,7 @@ where
         Some(
             div()
                 .absolute()
-                .top_0()
+                .top(self.table_head_height())
                 .left_0()
                 .right_0()
                 .bottom_0()
@@ -554,95 +677,6 @@ where
                 }),
             )
             .into_any_element()
-    }
-
-    /// Scroll table when mouse position is near the edge of the table bounds.
-    fn scroll_table_by_col_resizing(
-        &mut self,
-        pos: Point<Pixels>,
-        col_group: ColGroup,
-        _: &mut ViewContext<Self>,
-    ) {
-        let mut offset = self.horizontal_scroll_handle.offset();
-        let col_bounds = col_group.bounds;
-
-        if pos.x < self.bounds.left() && col_bounds.right() < self.bounds.left() + px(20.) {
-            offset.x += px(1.);
-        } else if pos.x > self.bounds.right() && col_bounds.right() > self.bounds.right() - px(20.)
-        {
-            offset.x -= px(1.);
-        }
-
-        self.horizontal_scroll_handle.set_offset(offset);
-    }
-
-    /// The `ix`` is the index of the col to resize,
-    /// and the `size` is the new size for the col.
-    fn resize_cols(&mut self, ix: usize, size: Pixels, cx: &mut ViewContext<Self>) {
-        const MIN_WIDTH: Pixels = px(10.0);
-        const MAX_WIDTH: Pixels = px(1200.0);
-
-        if !self.delegate.can_resize_col(ix) {
-            return;
-        }
-        let size = size.floor();
-
-        let old_width = self.col_groups[ix].width.unwrap_or_default();
-        let new_width = size;
-        if new_width < MIN_WIDTH {
-            return;
-        }
-        let changed_width = new_width - old_width;
-        // If change size is less than 1px, do nothing.
-        if changed_width > px(-1.0) && changed_width < px(1.0) {
-            return;
-        }
-        self.col_groups[ix].width = Some(new_width.min(MAX_WIDTH));
-
-        // Resize next col, table not need to resize the right cols.
-        // let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
-        // let next_width = (next_width - changed_width).max(MIN_WIDTH);
-        // self.col_groups[ix + 1].width = Some(next_width);
-
-        cx.notify();
-    }
-
-    fn perform_sort(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
-        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
-        if sort.is_none() {
-            return;
-        }
-
-        let sort = sort.unwrap();
-        let sort = match sort {
-            ColSort::Ascending => ColSort::Descending,
-            ColSort::Descending => ColSort::Ascending,
-            ColSort::Default => ColSort::Descending,
-        };
-
-        for (ix, col_group) in self.col_groups.iter_mut().enumerate() {
-            if ix == col_ix {
-                col_group.sort = Some(sort);
-            } else {
-                col_group.sort = Some(ColSort::Default);
-            }
-        }
-
-        self.delegate_mut().perform_sort(col_ix, sort, cx);
-
-        cx.notify();
-    }
-
-    fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Self>) {
-        if col_ix == to_ix {
-            return;
-        }
-
-        self.delegate.move_col(col_ix, to_ix);
-        let col_group = self.col_groups.remove(col_ix);
-        self.col_groups.insert(to_ix, col_group);
-
-        cx.notify();
     }
 
     fn render_sort_icon(
@@ -759,30 +793,6 @@ where
             })
     }
 
-    /// Dispatch delegate's `load_more` method when the visible range is near the end.
-    fn load_more(&mut self, visible_range: Range<usize>, cx: &mut ViewContext<Self>) {
-        if !self.delegate.can_load_more() {
-            return;
-        }
-
-        let row_count = self.delegate.rows_count();
-        let load_more_count = self.delegate.load_more_threshold();
-
-        // Securely handle subtract logic to prevent attempt to subtract with overflow
-        if row_count >= load_more_count {
-            if visible_range.end >= row_count - load_more_count {
-                cx.spawn(|view, mut cx| async move {
-                    cx.update(|cx| {
-                        view.update(cx, |view, cx| {
-                            view.delegate.load_more(cx);
-                        })
-                    })
-                })
-                .detach()
-            }
-        }
-    }
-
     fn render_table_head(
         &mut self,
         left_cols_count: usize,
@@ -798,12 +808,7 @@ where
 
         h_flex()
             .w_full()
-            .map(|this| match self.size {
-                Size::Large => this.h_10(),
-                Size::Small => this.h(px(30.)),
-                Size::XSmall => this.h(px(26.)),
-                _ => this.h_8(),
-            })
+            .h(self.table_head_height())
             .flex_shrink_0()
             .border_b_1()
             .border_color(cx.theme().border)
@@ -856,7 +861,7 @@ where
                                                 table.render_th(left_cols_count + col_ix, cx)
                                             }),
                                     )
-                                    .child(Self::last_empty_col(cx))
+                                    .child(Self::render_last_empty_col(cx))
                                     .child(
                                         canvas(
                                             move |bounds, cx| {
@@ -919,7 +924,7 @@ where
                             .border_r_1()
                             .border_color(cx.theme().table_row_border)
                             .children((0..left_cols_count).map(|col_ix| {
-                                self.col_wrap(col_ix, cx).child(
+                                self.render_col_wrap(col_ix, cx).child(
                                     self.render_cell(col_ix, cx)
                                         .child(self.delegate.render_td(row_ix, col_ix, cx)),
                                 )
@@ -936,14 +941,14 @@ where
                             self
                                 // Make the row scroll sync with the
                                 // horizontal_scroll_handle to support horizontal scrolling.
-                                .col_wrap(col_ix, cx)
+                                .render_col_wrap(col_ix, cx)
                                 .left(horizontal_scroll_handle.offset().x)
                                 .child(
                                     self.render_cell(col_ix, cx)
                                         .child(self.delegate.render_td(row_ix, col_ix, cx)),
                                 )
                         }))
-                        .child(Self::last_empty_col(cx)),
+                        .child(Self::render_last_empty_col(cx)),
                 )
                 // Row selected style
                 .when_some(self.selected_row, |this, _| {
@@ -973,11 +978,11 @@ where
                         .left(horizontal_scroll_handle.offset().x)
                         .child(self.render_cell(col_ix, cx))
                 }))
-                .child(Self::last_empty_col(cx))
+                .child(Self::render_last_empty_col(cx))
         }
     }
 
-    fn last_empty_col(_: &mut WindowContext) -> Div {
+    fn render_last_empty_col(_: &mut WindowContext) -> Div {
         h_flex().w(px(100.)).h_full().flex_shrink_0()
     }
 }
