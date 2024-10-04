@@ -200,7 +200,6 @@ where
             cx.view().entity_id(),
             self.scrollbar_state.clone(),
             self.vertical_scroll_handle.clone(),
-            self.delegate.items_count(),
         ))
     }
 

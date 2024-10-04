@@ -458,7 +458,6 @@ where
                     cx.view().entity_id(),
                     state,
                     self.vertical_scroll_handle.clone(),
-                    self.delegate.rows_count(),
                 )),
         )
     }
@@ -1014,7 +1013,12 @@ where
         let cols_count: usize = self.delegate.cols_count();
         let rows_count = self.delegate.rows_count();
 
-        let row_height = self.vertical_scroll_handle.0.borrow().last_item_height;
+        let row_height = self
+            .vertical_scroll_handle
+            .0
+            .borrow()
+            .last_item_size
+            .map(|size| size.item.height);
         let total_height = self
             .vertical_scroll_handle
             .0
