@@ -279,25 +279,37 @@ impl StackPanel {
     }
 
     /// Check if the given panel is at the first top left in the stack.
-    pub(super) fn is_top_left_panel(&self, panel: View<TabPanel>, cx: &AppContext) -> bool {
+    pub(super) fn is_top_left_panel(
+        &self,
+        panel: View<TabPanel>,
+        check_parent: bool,
+        cx: &AppContext,
+    ) -> bool {
         let first_panel = self.panels.first();
 
         if let Some(parent) = &self.parent {
-            return parent.read(cx).is_top_left_panel(panel, cx);
+            if check_parent {
+                return parent.read(cx).is_top_left_panel(panel, true, cx);
+            }
         }
 
         if let Some(view) = first_panel {
             if let Ok(view) = view.view().downcast::<TabPanel>() {
                 return view.entity_id() == panel.entity_id();
             } else if let Ok(view) = view.view().downcast::<Self>() {
-                return view.read(cx).is_top_left_panel(panel, cx);
+                return view.read(cx).is_top_left_panel(panel, false, cx);
             }
         }
         false
     }
 
     /// Check if the given panel is at the first top right in the stack.
-    pub(super) fn is_top_right_panel(&self, panel: View<TabPanel>, cx: &AppContext) -> bool {
+    pub(super) fn is_top_right_panel(
+        &self,
+        panel: View<TabPanel>,
+        check_parent: bool,
+        cx: &AppContext,
+    ) -> bool {
         let first_panel = if self.axis.is_vertical() {
             self.panels.first()
         } else {
@@ -305,14 +317,16 @@ impl StackPanel {
         };
 
         if let Some(parent) = &self.parent {
-            return parent.read(cx).is_top_right_panel(panel, cx);
+            if check_parent {
+                return parent.read(cx).is_top_right_panel(panel, true, cx);
+            }
         }
 
         if let Some(view) = first_panel {
             if let Ok(view) = view.view().downcast::<TabPanel>() {
                 return view.entity_id() == panel.entity_id();
             } else if let Ok(view) = view.view().downcast::<Self>() {
-                return view.read(cx).is_top_right_panel(panel, cx);
+                return view.read(cx).is_top_right_panel(panel, false, cx);
             }
         }
 
