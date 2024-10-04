@@ -8,7 +8,7 @@ use gpui::{
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
-const THUMB_RADIUS: Pixels = Pixels(5.0);
+const THUMB_RADIUS: Pixels = Pixels(4.0);
 const THUMB_INSET: Pixels = Pixels(2.);
 
 pub trait ScrollHandleOffsetable {

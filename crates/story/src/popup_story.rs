@@ -1,8 +1,8 @@
 use gpui::{
     actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton,
-    MouseDownEvent, ParentElement as _, Render, Styled as _, View, ViewContext, VisualContext,
-    WindowContext,
+    MouseDownEvent, ParentElement as _, Render, SharedString, Styled as _, View, ViewContext,
+    VisualContext, WindowContext,
 };
 use serde::Deserialize;
 use ui::{
@@ -287,6 +287,20 @@ impl Render for PopupStory {
                                         .link("GPUI", "https://gpui.rs")
                                         .link("Zed", "https://zed.dev")
                                     })
+                            }),
+                    )
+                    .child(
+                        Button::new("popup-menu-11112")
+                            .label("Scrollable Menu")
+                            .popup_menu(move |this, _| {
+                                let mut this = this.scrollable();
+                                for i in 0..100 {
+                                    this = this.menu(
+                                        SharedString::from(format!("Item {}", i)),
+                                        Box::new(Info(i)),
+                                    )
+                                }
+                                this
                             }),
                     )
                     .child(self.message.clone()),

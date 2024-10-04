@@ -9,6 +9,7 @@ use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable,
 
 #[derive(IntoElement)]
 pub struct ListItem {
+    id: ElementId,
     base: Stateful<Div>,
     disabled: bool,
     selected: bool,
@@ -23,8 +24,10 @@ pub struct ListItem {
 
 impl ListItem {
     pub fn new(id: impl Into<ElementId>) -> Self {
+        let id: ElementId = id.into();
         Self {
-            base: h_flex().id(id.into()).gap_x_1().py_1().px_2().text_base(),
+            id: id.clone(),
+            base: h_flex().id(id).gap_x_1().py_1().px_2().text_base(),
             disabled: false,
             selected: false,
             confirmed: false,
@@ -98,6 +101,10 @@ impl Disableable for ListItem {
 }
 
 impl Selectable for ListItem {
+    fn element_id(&self) -> &ElementId {
+        &self.id
+    }
+
     fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self

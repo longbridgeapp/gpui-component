@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -6,8 +7,12 @@ use gpui::{
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
-use gpui::{anchored, canvas, rems, AnchorCorner, Bounds, FocusableView, Keystroke, WeakView};
+use gpui::{
+    anchored, canvas, rems, AnchorCorner, Bounds, Edges, FocusableView, Keystroke, ScrollHandle,
+    StatefulInteractiveElement, WeakView,
+};
 
+use crate::scroll::{Scrollbar, ScrollbarState};
 use crate::StyledExt;
 use crate::{
     button::Button, h_flex, list::ListItem, popover::Popover, theme::ActiveTheme, v_flex, Icon,
@@ -31,7 +36,8 @@ pub trait PopupMenuExt: Selectable + IntoElement + 'static {
         self,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
-        Popover::new("popup-menu")
+        let element_id = self.element_id();
+        Popover::new(SharedString::from(format!("popup-menu:{:?}", element_id)))
             .no_style()
             .trigger(self)
             .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
@@ -80,6 +86,10 @@ pub struct PopupMenu {
     hovered_menu_ix: Option<usize>,
     bounds: Bounds<Pixels>,
 
+    scrollable: bool,
+    scroll_handle: ScrollHandle,
+    scroll_state: Rc<Cell<ScrollbarState>>,
+
     action_focus_handle: Option<FocusHandle>,
     _subscriptions: [gpui::Subscription; 1],
 }
@@ -106,6 +116,9 @@ impl PopupMenu {
                 has_icon: false,
                 hovered_menu_ix: None,
                 bounds: Bounds::default(),
+                scrollable: false,
+                scroll_handle: ScrollHandle::default(),
+                scroll_state: Rc::new(Cell::new(ScrollbarState::default())),
                 _subscriptions: [_on_blur_subscription],
             };
             cx.refresh();
@@ -128,6 +141,14 @@ impl PopupMenu {
     /// Set max width of the popup menu, default is 500px
     pub fn max_w(mut self, width: impl Into<Pixels>) -> Self {
         self.max_width = width.into();
+        self
+    }
+
+    /// Set the menu to be scrollable to show vertical scrollbar.
+    ///
+    /// NOTE: If this is true, the sub-menus will cannot be support.
+    pub fn scrollable(mut self) -> Self {
+        self.scrollable = true;
         self
     }
 
@@ -414,20 +435,24 @@ impl PopupMenu {
 impl FluentBuilder for PopupMenu {}
 impl EventEmitter<DismissEvent> for PopupMenu {}
 impl FocusableView for PopupMenu {
-    fn focus_handle(&self, _: &gpui::AppContext) -> FocusHandle {
+    fn focus_handle(&self, _: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
 impl Render for PopupMenu {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
         let has_icon = self.menu_items.iter().any(|item| item.has_icon());
         let items_count = self.menu_items.len();
         let max_width = self.max_width;
         let bounds = self.bounds;
 
+        let window_haft_height = cx.window_bounds().get_bounds().size.height * 0.5;
+        let max_height = window_haft_height.min(px(450.));
+
         v_flex()
+            .id("popup-menu")
             .key_context("PopupMenu")
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::select_next))
@@ -435,141 +460,203 @@ impl Render for PopupMenu {
             .on_action(cx.listener(Self::confirm))
             .on_action(cx.listener(Self::dismiss))
             .on_mouse_down_out(cx.listener(|this, _, cx| this.dismiss(&Dismiss, cx)))
-            .max_h(self.max_width)
-            .min_w(self.min_width)
-            .p_1()
-            .gap_y_0p5()
-            .min_w(rems(8.))
             .popover_style(cx)
             .text_color(cx.theme().popover_foreground)
             .relative()
-            .child({
-                canvas(
-                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
-                    |_, _, _| {},
-                )
-                .absolute()
-                .size_full()
-            })
-            .children(
-                self.menu_items
-                    .iter_mut()
-                    .enumerate()
-                    // Skip last separator
-                    .filter(|(ix, item)| !(*ix == items_count - 1 && item.is_separator()))
-                    .map(|(ix, item)| {
-                        let group_id = format!("item:{}", ix);
+            .child(
+                div()
+                    .id("popup-menu-items")
+                    .when(self.scrollable, |this| {
+                        this.max_h(max_height)
+                            .overflow_y_scroll()
+                            .track_scroll(&self.scroll_handle)
+                    })
+                    .child(
+                        v_flex()
+                            .p_1()
+                            .gap_y_0p5()
+                            .min_w(self.min_width)
+                            .max_w(self.max_width)
+                            .min_w(rems(8.))
+                            .child({
+                                canvas(
+                                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                                    |_, _, _| {},
+                                )
+                                .absolute()
+                                .size_full()
+                            })
+                            .children(
+                                self.menu_items
+                                    .iter_mut()
+                                    .enumerate()
+                                    // Skip last separator
+                                    .filter(|(ix, item)| {
+                                        !(*ix == items_count - 1 && item.is_separator())
+                                    })
+                                    .map(|(ix, item)| {
+                                        let group_id = format!("item:{}", ix);
 
-                        let this = ListItem::new(("menu-item", ix))
-                            .group(group_id.clone())
-                            .relative()
-                            .text_sm()
-                            .py_0()
-                            .px_2()
-                            .h(px(28.))
-                            .rounded_md()
-                            .items_center()
-                            .on_mouse_enter(cx.listener(move |this, _, cx| {
-                                this.hovered_menu_ix = Some(ix);
-                                cx.notify();
-                            }));
-
-                        match item {
-                            PopupMenuItem::Separator => this.h_auto().p_0().disabled(true).child(
-                                div()
-                                    .rounded_none()
-                                    .h(px(1.))
-                                    .mx_neg_1()
-                                    .my_0p5()
-                                    .bg(cx.theme().muted),
-                            ),
-                            PopupMenuItem::Item {
-                                icon,
-                                label,
-                                action,
-                                ..
-                            } => {
-                                let action = action.as_ref().map(|action| action.boxed_clone());
-                                let key = Self::render_keybinding(action, cx);
-
-                                this.on_click(cx.listener(move |this, _, cx| this.on_click(ix, cx)))
-                                    .child(
-                                        h_flex()
+                                        let this = ListItem::new(("menu-item", ix))
+                                            .group(group_id.clone())
+                                            .relative()
+                                            .text_sm()
+                                            .py_0()
+                                            .px_2()
+                                            .rounded_md()
                                             .items_center()
-                                            .gap_x_1p5()
-                                            .children(Self::render_icon(has_icon, icon.clone(), cx))
-                                            .child(
-                                                h_flex()
-                                                    .flex_1()
-                                                    .gap_2()
-                                                    .items_center()
-                                                    .justify_between()
-                                                    .child(label.clone())
-                                                    .children(key),
-                                            ),
-                                    )
-                            }
-                            PopupMenuItem::Submenu { icon, label, menu } => this
-                                .when(self.hovered_menu_ix == Some(ix), |this| this.selected(true))
-                                .child(
-                                    h_flex()
-                                        .items_start()
-                                        .child(
-                                            h_flex()
-                                                .size_full()
-                                                .items_center()
-                                                .gap_x_1p5()
-                                                .children(Self::render_icon(
-                                                    has_icon,
-                                                    icon.clone(),
-                                                    cx,
-                                                ))
+                                            .on_mouse_enter(cx.listener(move |this, _, cx| {
+                                                this.hovered_menu_ix = Some(ix);
+                                                cx.notify();
+                                            }));
+
+                                        match item {
+                                            PopupMenuItem::Separator => {
+                                                this.h_auto().p_0().disabled(true).child(
+                                                    div()
+                                                        .rounded_none()
+                                                        .h(px(1.))
+                                                        .mx_neg_1()
+                                                        .my_0p5()
+                                                        .bg(cx.theme().muted),
+                                                )
+                                            }
+                                            PopupMenuItem::Item {
+                                                icon,
+                                                label,
+                                                action,
+                                                ..
+                                            } => {
+                                                let action = action
+                                                    .as_ref()
+                                                    .map(|action| action.boxed_clone());
+                                                let key = Self::render_keybinding(action, cx);
+
+                                                this.on_click(cx.listener(move |this, _, cx| {
+                                                    this.on_click(ix, cx)
+                                                }))
                                                 .child(
                                                     h_flex()
-                                                        .flex_1()
-                                                        .gap_2()
+                                                        .h(px(26.))
                                                         .items_center()
-                                                        .justify_between()
-                                                        .child(label.clone())
-                                                        .child(IconName::ChevronRight),
-                                                ),
-                                        )
-                                        .when_some(self.hovered_menu_ix, |this, hovered_ix| {
-                                            let (anchor, left) = if cx.bounds().size.width
-                                                - bounds.origin.x
-                                                < max_width
-                                            {
-                                                (AnchorCorner::TopRight, -px(15.))
-                                            } else {
-                                                (AnchorCorner::TopLeft, bounds.size.width - px(10.))
-                                            };
-
-                                            let top = if bounds.origin.y + bounds.size.height
-                                                > cx.bounds().size.height
-                                            {
-                                                px(32.)
-                                            } else {
-                                                -px(10.)
-                                            };
-
-                                            if hovered_ix == ix {
-                                                this.child(
-                                                    anchored().anchor(anchor).child(
-                                                        div()
-                                                            .occlude()
-                                                            .top(top)
-                                                            .left(left)
-                                                            .child(menu.clone()),
-                                                    ),
+                                                        .gap_x_1p5()
+                                                        .children(Self::render_icon(
+                                                            has_icon,
+                                                            icon.clone(),
+                                                            cx,
+                                                        ))
+                                                        .child(
+                                                            h_flex()
+                                                                .flex_1()
+                                                                .gap_2()
+                                                                .items_center()
+                                                                .justify_between()
+                                                                .child(label.clone())
+                                                                .children(key),
+                                                        ),
                                                 )
-                                            } else {
-                                                this
                                             }
-                                        }),
-                                ),
-                        }
-                    }),
+                                            PopupMenuItem::Submenu { icon, label, menu } => this
+                                                .when(self.hovered_menu_ix == Some(ix), |this| {
+                                                    this.selected(true)
+                                                })
+                                                .child(
+                                                    h_flex()
+                                                        .items_start()
+                                                        .child(
+                                                            h_flex()
+                                                                .size_full()
+                                                                .items_center()
+                                                                .gap_x_1p5()
+                                                                .children(Self::render_icon(
+                                                                    has_icon,
+                                                                    icon.clone(),
+                                                                    cx,
+                                                                ))
+                                                                .child(
+                                                                    h_flex()
+                                                                        .flex_1()
+                                                                        .gap_2()
+                                                                        .items_center()
+                                                                        .justify_between()
+                                                                        .child(label.clone())
+                                                                        .child(
+                                                                            IconName::ChevronRight,
+                                                                        ),
+                                                                ),
+                                                        )
+                                                        .when_some(
+                                                            self.hovered_menu_ix,
+                                                            |this, hovered_ix| {
+                                                                let (anchor, left) =
+                                                                    if cx.bounds().size.width
+                                                                        - bounds.origin.x
+                                                                        < max_width
+                                                                    {
+                                                                        (
+                                                                            AnchorCorner::TopRight,
+                                                                            -px(15.),
+                                                                        )
+                                                                    } else {
+                                                                        (
+                                                                            AnchorCorner::TopLeft,
+                                                                            bounds.size.width
+                                                                                - px(10.),
+                                                                        )
+                                                                    };
+
+                                                                let top = if bounds.origin.y
+                                                                    + bounds.size.height
+                                                                    > cx.bounds().size.height
+                                                                {
+                                                                    px(32.)
+                                                                } else {
+                                                                    -px(10.)
+                                                                };
+
+                                                                if hovered_ix == ix {
+                                                                    this.child(
+                                                                anchored()
+                                                                    .anchor(anchor)
+                                                                    .child(
+                                                                        div()
+                                                                            .occlude()
+                                                                            .top(top)
+                                                                            .left(left)
+                                                                            .child(menu.clone()),
+                                                                    )
+                                                                    .snap_to_window_with_margin(
+                                                                        Edges::all(px(8.)),
+                                                                    ),
+                                                            )
+                                                                } else {
+                                                                    this
+                                                                }
+                                                            },
+                                                        ),
+                                                ),
+                                        }
+                                    }),
+                            ),
+                    ),
             )
+            .when(self.scrollable, |this| {
+                // TODO: When the menu is limited by `overflow_y_scroll`, the sub-menu will cannot be displayed.
+                this.child(
+                    div()
+                        .absolute()
+                        .top_1()
+                        .left_1()
+                        .right_1()
+                        .bottom_1()
+                        .child(Scrollbar::vertical(
+                            cx.entity_id(),
+                            self.scroll_state.clone(),
+                            self.scroll_handle.clone(),
+                            self.bounds.size,
+                        )),
+                )
+            })
     }
 }
 

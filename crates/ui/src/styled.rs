@@ -4,7 +4,9 @@ use crate::{
     scroll::{Scrollable, ScrollbarAxis},
     theme::ActiveTheme,
 };
-use gpui::{div, px, Axis, Div, Element, EntityId, FocusHandle, Pixels, Styled, WindowContext};
+use gpui::{
+    div, px, Axis, Div, Element, ElementId, EntityId, FocusHandle, Pixels, Styled, WindowContext,
+};
 use serde::{Deserialize, Serialize};
 
 /// Returns a `Div` as horizontal flex layout.
@@ -152,6 +154,7 @@ impl From<Pixels> for Size {
 
 /// A trait for defining element that can be selected.
 pub trait Selectable: Sized {
+    fn element_id(&self) -> &ElementId;
     /// Set the selected state of the element.
     fn selected(self, selected: bool) -> Self;
 }

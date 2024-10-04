@@ -54,6 +54,10 @@ impl Disableable for Checkbox {
 }
 
 impl Selectable for Checkbox {
+    fn element_id(&self) -> &ElementId {
+        &self.id
+    }
+
     fn selected(self, selected: bool) -> Self {
         self.checked(selected)
     }
