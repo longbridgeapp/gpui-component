@@ -29,10 +29,6 @@ impl super::Story for IconStory {
         "Icon"
     }
 
-    fn description() -> &'static str {
-        "Icon use examples"
-    }
-
     fn new_view(cx: &mut WindowContext) -> View<impl gpui::FocusableView> {
         Self::view(cx)
     }

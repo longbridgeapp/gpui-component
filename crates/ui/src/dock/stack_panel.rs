@@ -282,6 +282,10 @@ impl StackPanel {
     pub(super) fn is_top_left_panel(&self, panel: View<TabPanel>, cx: &AppContext) -> bool {
         let first_panel = self.panels.first();
 
+        if let Some(parent) = &self.parent {
+            return parent.read(cx).is_top_left_panel(panel, cx);
+        }
+
         if let Some(view) = first_panel {
             if let Ok(view) = view.view().downcast::<TabPanel>() {
                 return view.entity_id() == panel.entity_id();
@@ -299,6 +303,10 @@ impl StackPanel {
         } else {
             self.panels.last()
         };
+
+        if let Some(parent) = &self.parent {
+            return parent.read(cx).is_top_right_panel(panel, cx);
+        }
 
         if let Some(view) = first_panel {
             if let Ok(view) = view.view().downcast::<TabPanel>() {

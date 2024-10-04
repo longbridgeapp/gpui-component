@@ -65,7 +65,7 @@ impl StoryWorkspace {
                     vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
 
                 let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
-                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
+                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
                     Arc::new(StoryContainer::panel::<IconStory>(cx)),
                 ];
 
