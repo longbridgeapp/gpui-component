@@ -366,7 +366,10 @@ impl TabPanel {
                 }
 
                 if let Some(parent) = self.stack_panel.as_ref() {
-                    if !parent.read(cx).is_top_left_panel(cx.view().clone(), cx) {
+                    if !parent
+                        .read(cx)
+                        .is_top_left_panel(cx.view().clone(), true, cx)
+                    {
                         return None;
                     }
                 }
@@ -381,7 +384,10 @@ impl TabPanel {
                 }
 
                 if let Some(parent) = self.stack_panel.as_ref() {
-                    if !parent.read(cx).is_top_right_panel(cx.view().clone(), cx) {
+                    if !parent
+                        .read(cx)
+                        .is_top_right_panel(cx.view().clone(), true, cx)
+                    {
                         return None;
                     }
                 }
