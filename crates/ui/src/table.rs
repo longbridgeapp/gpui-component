@@ -104,7 +104,9 @@ pub struct Table<D: TableDelegate> {
     delegate: D,
     /// The bounds of the table container.
     bounds: Bounds<Pixels>,
-    /// The bounds of the table content.
+    /// The bounds of the fixed head cols.
+    fixed_head_cols_bounds: Bounds<Pixels>,
+    /// The bounds of the table head content.
     head_content_bounds: Bounds<Pixels>,
 
     col_groups: Vec<ColGroup>,
@@ -258,6 +260,7 @@ where
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
+            fixed_head_cols_bounds: Bounds::default(),
             head_content_bounds: Bounds::default(),
             stripe: false,
             border: true,
@@ -539,6 +542,22 @@ where
         }
     }
 
+    /// Returns the size of the content area.
+    fn head_content_bounds(&self) -> gpui::Bounds<Pixels> {
+        let has_fixed_cols = self.fixed_head_cols_bounds.size.width > px(0.0);
+        Bounds {
+            origin: if has_fixed_cols {
+                self.fixed_head_cols_bounds.origin
+            } else {
+                self.head_content_bounds.origin
+            },
+            size: gpui::size(
+                self.fixed_head_cols_bounds.size.width + self.head_content_bounds.size.width,
+                self.head_content_bounds.size.height,
+            ),
+        }
+    }
+
     fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
         let col_width = self.col_groups[col_ix].width;
 
@@ -599,7 +618,7 @@ where
                 cx.view().entity_id(),
                 state,
                 self.horizontal_scroll_handle.clone(),
-                self.head_content_bounds.size,
+                self.head_content_bounds().size,
             ))
     }
 
@@ -814,6 +833,7 @@ where
             .border_color(cx.theme().border)
             .text_color(cx.theme().table_head_foreground)
             .when(fixed_cols_count > 0, |this| {
+                let view = view.clone();
                 // Render left fixed columns
                 this.child(
                     h_flex()
@@ -828,6 +848,16 @@ where
                                 .filter(|col| col.fixed == Some(ColFixed::Left))
                                 .enumerate()
                                 .map(|(col_ix, _)| self.render_th(col_ix, cx)),
+                        )
+                        .child(
+                            canvas(
+                                move |bounds, cx| {
+                                    view.update(cx, |r, _| r.fixed_head_cols_bounds = bounds)
+                                },
+                                |_, _, _| {},
+                            )
+                            .absolute()
+                            .size_full(),
                         ),
                 )
             })
