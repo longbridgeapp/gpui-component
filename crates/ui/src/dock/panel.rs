@@ -60,26 +60,20 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 
     /// Dump the panel, used to serialize the panel.
     fn dump(&self, _cx: &AppContext) -> DockItemState {
-        DockItemState::new(self.panel_name())
+        DockItemState::new(self)
     }
 }
 
 pub trait PanelView: 'static + Send + Sync {
     fn panel_name(&self, _cx: &WindowContext) -> &'static str;
     fn title(&self, _cx: &WindowContext) -> AnyElement;
-
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
-
     fn closeable(&self, cx: &WindowContext) -> bool;
     fn zoomable(&self, cx: &WindowContext) -> bool;
     fn collapsible(&self, cx: &WindowContext) -> bool;
-
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
-
     fn view(&self) -> AnyView;
-
     fn focus_handle(&self, cx: &AppContext) -> FocusHandle;
-
     fn dump(&self, cx: &AppContext) -> DockItemState;
 }
 
@@ -87,6 +81,7 @@ impl<T: Panel> PanelView for View<T> {
     fn panel_name(&self, cx: &WindowContext) -> &'static str {
         self.read(cx).panel_name()
     }
+
     fn title(&self, cx: &WindowContext) -> AnyElement {
         self.read(cx).title(cx)
     }
@@ -145,7 +140,14 @@ impl PartialEq for dyn PanelView {
 pub struct PanelRegistry {
     pub(super) items: HashMap<
         String,
-        Arc<dyn Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>,
+        Arc<
+            dyn Fn(
+                WeakView<DockArea>,
+                &DockItemState,
+                &DockItemInfo,
+                &mut WindowContext,
+            ) -> Box<dyn PanelView>,
+        >,
     >,
 }
 impl PanelRegistry {
@@ -160,7 +162,13 @@ impl Global for PanelRegistry {}
 /// Register the Panel init by panel_name to global registry.
 pub fn register_panel<F>(cx: &mut AppContext, panel_name: &str, deserialize: F)
 where
-    F: Fn(WeakView<DockArea>, DockItemInfo, &mut WindowContext) -> Box<dyn PanelView> + 'static,
+    F: Fn(
+            WeakView<DockArea>,
+            &DockItemState,
+            &DockItemInfo,
+            &mut WindowContext,
+        ) -> Box<dyn PanelView>
+        + 'static,
 {
     if let None = cx.try_global::<PanelRegistry>() {
         cx.set_global(PanelRegistry::new());

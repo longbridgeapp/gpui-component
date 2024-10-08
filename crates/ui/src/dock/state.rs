@@ -4,13 +4,18 @@ use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    invalid_panel::InvalidPanel, Dock, DockArea, DockItem, DockPlacement, PanelRegistry, PanelView,
-    TabPanel,
+    invalid_panel::InvalidPanel, Dock, DockArea, DockItem, DockPlacement, Panel, PanelRegistry,
+    PanelView, TabPanel,
 };
 
 /// Used to serialize and deserialize the DockArea
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DockAreaState {
+    /// The version is used to mark this persisted state is compatible with the current version
+    /// For example, some times we many totally changed the structure of the Panel,
+    /// then we can compare the version to decide whether we can use the state or ignore.
+    #[serde(default)]
+    pub version: Option<usize>,
     pub center: DockItemState,
     pub left_dock: Option<DockState>,
     pub right_dock: Option<DockState>,
@@ -138,9 +143,9 @@ impl Default for DockItemState {
 }
 
 impl DockItemState {
-    pub fn new(panel_name: &str) -> Self {
+    pub fn new<P: Panel>(panel: &P) -> Self {
         Self {
-            panel_name: panel_name.to_string(),
+            panel_name: panel.panel_name().to_string(),
             ..Default::default()
         }
     }
@@ -192,7 +197,7 @@ impl DockItemState {
                     .get(&self.panel_name)
                     .cloned()
                 {
-                    f(dock_area.clone(), info.clone(), cx)
+                    f(dock_area.clone(), self, &info, cx)
                 } else {
                     // Show an invalid panel if the panel is not registered.
                     Box::new(
@@ -215,6 +220,7 @@ mod tests {
     fn test_deserialize_item_state() {
         let json = include_str!("../../tests/fixtures/layout.json");
         let state: DockAreaState = serde_json::from_str(json).unwrap();
+        assert_eq!(state.version, None);
         assert_eq!(state.center.panel_name, "StackPanel");
         assert_eq!(state.center.children.len(), 2);
         assert_eq!(state.center.children[0].panel_name, "TabPanel");

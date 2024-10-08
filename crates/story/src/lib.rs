@@ -52,14 +52,16 @@ use ui::{
     v_flex, ContextModal,
 };
 
+const PANEL_NAME: &str = "StoryContainer";
+
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
 
-    register_panel(cx, "StoryContainer", |_, info, cx| {
+    register_panel(cx, PANEL_NAME, |_, _, info, cx| {
         let story_state = match info {
-            DockItemInfo::Panel(value) => StoryState::from_value(value),
+            DockItemInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
                 unreachable!("Invalid DockItemInfo: {:?}", info)
             }
@@ -292,7 +294,7 @@ impl Panel for StoryContainer {
     }
 
     fn dump(&self, _cx: &AppContext) -> DockItemState {
-        let mut state = DockItemState::new(self.panel_name());
+        let mut state = DockItemState::new(self);
         let story_state = StoryState {
             story_klass: self.story_klass.clone().unwrap(),
         };

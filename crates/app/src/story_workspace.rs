@@ -21,6 +21,11 @@ use workspace::TitleBar;
 
 use crate::app_state::AppState;
 
+const MAIN_DOCK_AREA: DockAreaTab = DockAreaTab {
+    id: "main-dock",
+    version: 3,
+};
+
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 struct SelectLocale(SharedString);
 
@@ -43,6 +48,11 @@ pub struct StoryWorkspace {
     _save_layout_task: Option<Task<()>>,
 }
 
+struct DockAreaTab {
+    id: &'static str,
+    version: usize,
+}
+
 impl StoryWorkspace {
     pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
         cx.observe_window_appearance(|_, cx| {
@@ -50,7 +60,8 @@ impl StoryWorkspace {
         })
         .detach();
 
-        let dock_area = cx.new_view(|cx| DockArea::new("main-dock", cx));
+        let dock_area =
+            cx.new_view(|cx| DockArea::new(MAIN_DOCK_AREA.id, Some(MAIN_DOCK_AREA.version), cx));
         let weak_dock_area = dock_area.downgrade();
 
         match Self::load_layout(dock_area.clone(), cx) {
@@ -59,25 +70,7 @@ impl StoryWorkspace {
             }
             Err(err) => {
                 eprintln!("load layout error: {:?}", err);
-                let dock_item = Self::init_default_layout(&weak_dock_area, cx);
-
-                let left_panels: Vec<Arc<dyn PanelView>> =
-                    vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
-
-                let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
-                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
-                ];
-
-                let right_panels: Vec<Arc<dyn PanelView>> =
-                    vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
-
-                _ = dock_area.update(cx, |view, cx| {
-                    view.set_root(dock_item, cx);
-                    view.set_left_dock(left_panels, Some(px(350.)), cx);
-                    view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
-                    view.set_right_dock(right_panels, Some(px(320.)), cx);
-                });
+                Self::reset_default_layout(weak_dock_area, cx);
             }
         };
 
@@ -166,11 +159,52 @@ impl StoryWorkspace {
         let json = std::fs::read_to_string(fname)?;
         let state = serde_json::from_str::<DockAreaState>(&json)?;
 
+        // Check if the saved layout version is different from the current version
+        // Notify the user and ask if they want to reset the layout to default.
+        if state.version != Some(MAIN_DOCK_AREA.version) {
+            let answer = cx.prompt(PromptLevel::Info, "The default main layout has been updated.\nDo you want to reset the layout to default?", None,
+                &["Yes", "No"]);
+
+            let weak_dock_area = dock_area.downgrade();
+            cx.spawn(|mut cx| async move {
+                if answer.await == Ok(0) {
+                    _ = cx.update(|cx| {
+                        Self::reset_default_layout(weak_dock_area, cx);
+                    });
+                }
+            })
+            .detach();
+        }
+
         dock_area.update(cx, |dock_area, cx| {
             dock_area.load(state, cx).context("load layout")?;
 
             Ok::<(), anyhow::Error>(())
         })
+    }
+
+    fn reset_default_layout(dock_area: WeakView<DockArea>, cx: &mut WindowContext) {
+        let dock_item = Self::init_default_layout(&dock_area, cx);
+        let left_panels: Vec<Arc<dyn PanelView>> =
+            vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
+
+        let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
+            Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
+            Arc::new(StoryContainer::panel::<IconStory>(cx)),
+        ];
+
+        let right_panels: Vec<Arc<dyn PanelView>> =
+            vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
+
+        _ = dock_area.update(cx, |view, cx| {
+            view.set_version(MAIN_DOCK_AREA.version, cx);
+            view.set_root(dock_item, cx);
+            view.set_left_dock(left_panels, Some(px(350.)), cx);
+            view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
+            view.set_right_dock(right_panels, Some(px(320.)), cx);
+
+            Self::save_state(&view.dump(cx)).unwrap();
+        });
     }
 
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
@@ -180,8 +214,8 @@ impl StoryWorkspace {
                 vec![
                     Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
                     Arc::new(StoryContainer::panel::<InputStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
                     Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
+                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
                     Arc::new(StoryContainer::panel::<ModalStory>(cx)),
                     Arc::new(StoryContainer::panel::<PopupStory>(cx)),
                     Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
@@ -191,10 +225,10 @@ impl StoryWorkspace {
                     Arc::new(StoryContainer::panel::<IconStory>(cx)),
                     Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
                     Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+                    Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
                     Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
                     Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
                     Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
                 ],
                 None,
                 &dock_area,
