@@ -238,6 +238,7 @@ impl TabPanel {
     pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         self.detach_panel(panel, cx);
         self.remove_self_if_empty(cx);
+        cx.emit(PanelEvent::ZoomOut);
         cx.emit(PanelEvent::LayoutChanged);
     }
 
