@@ -20,6 +20,12 @@ pub struct WebView {
     visible: bool,
 }
 
+impl Drop for WebView {
+    fn drop(&mut self) {
+        self.hide();
+    }
+}
+
 impl WebView {
     pub fn new(cx: &mut WindowContext, webview: wry::WebView) -> Self {
         let _ = webview.set_bounds(Rect::default());
@@ -36,7 +42,8 @@ impl WebView {
     }
 
     pub fn hide(&mut self) {
-        let _ = self.webview.set_visible(false);
+        _ = self.webview.blur();
+        _ = self.webview.set_visible(false);
     }
 
     pub fn visible(&self) -> bool {
