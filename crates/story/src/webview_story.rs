@@ -41,7 +41,7 @@ impl WebViewStory {
 
         let address_input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx);
-            input.set_text("https://github.com/explore", cx);
+            input.set_text("https://google.com", cx);
             input
         });
 

@@ -6,7 +6,11 @@ resolver = "2"
 
 [workspace.dependencies]
 gpui = { git = "https://github.com/huacnlee/zed.git", branch = "export-platform-window" }
-windows = { version = "0.58.0", features = ["Wdk", "Wdk_System", "Wdk_System_SystemServices"] }
+windows = { version = "0.58.0", features = [
+    "Wdk",
+    "Wdk_System",
+    "Wdk_System_SystemServices",
+] }
 ui = { path = "crates/ui" }
 story = { path = "crates/story" }
 workspace = { path = "crates/workspace" }
