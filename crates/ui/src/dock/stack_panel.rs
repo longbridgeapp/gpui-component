@@ -38,7 +38,7 @@ impl Panel for StackPanel {
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
         let sizes = self.panel_group.read(cx).sizes();
-        let mut state = DockItemState::new(self.panel_name());
+        let mut state = DockItemState::new(self);
         for panel in &self.panels {
             state.add_child(panel.dump(cx));
             state.info = DockItemInfo::stack(sizes.clone(), self.axis);

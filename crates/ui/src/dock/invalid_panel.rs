@@ -28,7 +28,7 @@ impl Panel for InvalidPanel {
     }
 
     fn dump(&self, _cx: &AppContext) -> super::DockItemState {
-        let mut state = DockItemState::new(&self.name);
+        let mut state = DockItemState::new(self);
         state.info = self.info.clone();
         state
     }

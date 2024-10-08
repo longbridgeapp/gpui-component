@@ -122,7 +122,7 @@ impl Panel for TabPanel {
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
-        let mut state = DockItemState::new(self.panel_name());
+        let mut state = DockItemState::new(self);
         for panel in self.panels.iter() {
             state.add_child(panel.dump(cx));
             state.info = DockItemInfo::tabs(self.active_ix);

@@ -35,6 +35,8 @@ pub enum DockEvent {
 /// The main area of the dock.
 pub struct DockArea {
     id: SharedString,
+    /// The version is used to special the default layout, this is like the `panel_version` in `trait Panel`.
+    version: Option<usize>,
     pub(crate) bounds: Bounds<Pixels>,
 
     /// The center view of the dockarea.
@@ -181,7 +183,11 @@ impl DockItem {
 }
 
 impl DockArea {
-    pub fn new(id: impl Into<SharedString>, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(
+        id: impl Into<SharedString>,
+        version: Option<usize>,
+        cx: &mut ViewContext<Self>,
+    ) -> Self {
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
         let dock_item = DockItem::Split {
             axis: Axis::Horizontal,
@@ -192,6 +198,7 @@ impl DockArea {
 
         Self {
             id: id.into(),
+            version,
             bounds: Bounds::default(),
             items: dock_item,
             zoom_view: None,
@@ -199,6 +206,12 @@ impl DockArea {
             right_dock: None,
             bottom_dock: None,
         }
+    }
+
+    /// Set version of the dock area.
+    pub fn set_version(&mut self, version: usize, cx: &mut ViewContext<Self>) {
+        self.version = Some(version);
+        cx.notify();
     }
 
     /// The the DockItem as the root of the dock area.
@@ -299,6 +312,7 @@ impl DockArea {
     ///
     /// See also [DockeArea::dump].
     pub fn load(&mut self, state: DockAreaState, cx: &mut ViewContext<Self>) -> Result<()> {
+        self.version = state.version;
         let weak_self = cx.view().downgrade();
 
         if let Some(left_dock) = state.left_dock {
@@ -348,6 +362,7 @@ impl DockArea {
             .map(|dock| DockState::new(dock.clone(), cx));
 
         DockAreaState {
+            version: self.version,
             center,
             left_dock,
             right_dock,
