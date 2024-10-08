@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Duration};
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
     ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
-    SwitchStory, TableStory, TextStory, TooltipStory,
+    SwitchStory, TableStory, TextStory, TooltipStory, WebViewStory,
 };
 use ui::{
     button::{Button, ButtonStyled as _},
@@ -194,6 +194,7 @@ impl StoryWorkspace {
                     Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
                     Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
                     Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
+                    Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
                 ],
                 None,
                 &dock_area,

@@ -166,15 +166,10 @@ impl Element for WebViewElement {
             cx.on_mouse_event(move |event: &MouseDownEvent, _, cx| {
                 if !bounds.contains(&event.position) {
                     // Click white space to blur the input focus
-                    webview
-                        .evaluate_script(
-                            r#"
-                        document.querySelectorAll("input,textarea").forEach(input => input.blur());
-                        "#,
-                        )
-                        .expect("failed to evaluate_script to blur input");
+                    let _ = webview.blur();
                 } else {
                     cx.blur();
+                    let _ = webview.focus();
                 }
             });
         });

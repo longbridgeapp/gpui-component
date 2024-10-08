@@ -49,10 +49,6 @@ impl super::Story for InputStory {
         "Input"
     }
 
-    fn description() -> &'static str {
-        "A control that allows the user to input text."
-    }
-
     fn closeable() -> bool {
         false
     }
