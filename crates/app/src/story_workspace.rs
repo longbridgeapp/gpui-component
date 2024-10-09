@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Duration};
 use story::{
     ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory, ListStory,
     ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory, StoryContainer,
-    SwitchStory, TableStory, TextStory, TooltipStory, WebViewStory,
+    SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
     button::{Button, ButtonStyled as _},
@@ -23,7 +23,7 @@ use crate::app_state::AppState;
 
 const MAIN_DOCK_AREA: DockAreaTab = DockAreaTab {
     id: "main-dock",
-    version: 3,
+    version: 4,
 };
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
@@ -225,7 +225,6 @@ impl StoryWorkspace {
                     Arc::new(StoryContainer::panel::<IconStory>(cx)),
                     Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
                     Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                    Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
                     Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
                     Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
                     Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
