@@ -1,8 +1,8 @@
 use gpui::{
     actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton,
-    MouseDownEvent, ParentElement as _, Render, SharedString, Styled as _, View, ViewContext,
-    VisualContext, WindowContext,
+    ParentElement as _, Render, SharedString, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
 use serde::Deserialize;
 use ui::{
@@ -169,9 +169,6 @@ impl Render for PopupStory {
             .mb_5()
             .size_full()
             .min_h(px(400.))
-            .on_any_mouse_down(cx.listener(|this, _: &MouseDownEvent, cx| {
-                cx.focus(&this.focus_handle);
-            }))
             .context_menu({
                 move |this, cx| {
                     this.separator()
@@ -326,14 +323,14 @@ impl Render for PopupStory {
                                     cx.new_view(|cx| {
                                         PopoverContent::new(cx, |cx| {
                                             v_flex()
-                                                .gap_4()
+                                                .gap_2()
                                                 .child(
                                                     "Hello, this is a Popover on the Bottom Right.",
                                                 )
                                                 .child(Divider::horizontal())
                                                 .child(
                                                     h_flex()
-                                                        .gap_4()
+                                                        .gap_2()
                                                         .child(
                                                             Button::new("info1")
                                                                 .label("Ok")
