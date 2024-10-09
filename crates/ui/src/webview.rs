@@ -170,13 +170,10 @@ impl Element for WebViewElement {
         let bounds = hitbox.clone().map(|h| h.bounds).unwrap_or(bounds);
         cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             let webview = self.view.clone();
-            cx.on_mouse_event(move |event: &MouseDownEvent, _, cx| {
+            cx.on_mouse_event(move |event: &MouseDownEvent, _, _| {
                 if !bounds.contains(&event.position) {
                     // Click white space to blur the input focus
                     let _ = webview.blur();
-                } else {
-                    cx.blur();
-                    let _ = webview.focus();
                 }
             });
         });
