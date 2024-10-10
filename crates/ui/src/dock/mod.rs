@@ -10,7 +10,7 @@ pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
     EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render,
-    SharedString, Styled, View, ViewContext, VisualContext, WeakView, WindowContext,
+    SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
@@ -50,6 +50,8 @@ pub struct DockArea {
     right_dock: Option<View<Dock>>,
     /// The top zoom view of the dockarea, if any.
     zoom_view: Option<AnyView>,
+
+    _subscriptions: Vec<Subscription>,
 }
 
 /// DockItem is a tree structure that represents the layout of the dock.
@@ -108,6 +110,17 @@ impl DockItem {
 
             stack_panel
         });
+
+        cx.defer({
+            let stack_panel = stack_panel.clone();
+            let dock_area = dock_area.clone();
+            move |cx| {
+                _ = dock_area.update(cx, |this, cx| {
+                    this.subscribe_panel(&stack_panel, cx);
+                });
+            }
+        });
+
         Self::Split {
             axis,
             items,
@@ -189,6 +202,7 @@ impl DockArea {
         cx: &mut ViewContext<Self>,
     ) -> Self {
         let stack_panel = cx.new_view(|cx| StackPanel::new(Axis::Horizontal, cx));
+
         let dock_item = DockItem::Split {
             axis: Axis::Horizontal,
             items: vec![],
@@ -196,7 +210,7 @@ impl DockArea {
             view: stack_panel.clone(),
         };
 
-        Self {
+        let mut this = Self {
             id: id.into(),
             version,
             bounds: Bounds::default(),
@@ -205,7 +219,12 @@ impl DockArea {
             left_dock: None,
             right_dock: None,
             bottom_dock: None,
-        }
+            _subscriptions: vec![],
+        };
+
+        this.subscribe_panel(&stack_panel, cx);
+
+        this
     }
 
     /// Set version of the dock area.
@@ -372,18 +391,18 @@ impl DockArea {
 
     /// Subscribe event on the panels
     #[allow(clippy::only_used_in_recursion)]
-    fn subscribe_item(&self, item: &DockItem, cx: &mut ViewContext<Self>) {
+    fn subscribe_item(&mut self, item: &DockItem, cx: &mut ViewContext<Self>) {
         match item {
             DockItem::Split { items, view, .. } => {
                 for item in items {
                     self.subscribe_item(item, cx);
                 }
 
-                cx.subscribe(view, move |_, _, event, cx| match event {
-                    PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
-                    _ => {}
-                })
-                .detach();
+                self._subscriptions
+                    .push(cx.subscribe(view, move |_, _, event, cx| match event {
+                        PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+                        _ => {}
+                    }));
             }
             DockItem::Tabs { .. } => {
                 // We subscribe the tab panel event is in StackPanel insert_panel
@@ -392,8 +411,12 @@ impl DockArea {
     }
 
     /// Subscribe zoom event on the panel
-    pub(crate) fn subscribe_panel<P: Panel>(view: &View<P>, cx: &mut ViewContext<DockArea>) {
-        cx.subscribe(view, move |_, panel, event, cx| match event {
+    pub(crate) fn subscribe_panel<P: Panel>(
+        &mut self,
+        view: &View<P>,
+        cx: &mut ViewContext<DockArea>,
+    ) {
+        let subscription = cx.subscribe(view, move |_, panel, event, cx| match event {
             PanelEvent::ZoomIn => {
                 let dock_area = cx.view().clone();
                 let panel = panel.clone();
@@ -417,8 +440,9 @@ impl DockArea {
                 .detach()
             }
             PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
-        })
-        .detach();
+        });
+
+        self._subscriptions.push(subscription);
     }
 
     /// Returns the ID of the dock area.

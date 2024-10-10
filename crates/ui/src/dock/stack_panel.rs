@@ -14,8 +14,8 @@ use crate::{
 use super::{DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
     prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
-    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, View, ViewContext,
-    VisualContext, WeakView,
+    FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, Subscription, View,
+    ViewContext, VisualContext, WeakView,
 };
 use smallvec::SmallVec;
 
@@ -25,6 +25,7 @@ pub struct StackPanel {
     focus_handle: FocusHandle,
     pub(crate) panels: SmallVec<[Arc<dyn PanelView>; 2]>,
     panel_group: View<ResizablePanelGroup>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl Panel for StackPanel {
@@ -59,10 +60,10 @@ impl StackPanel {
         });
 
         // Bubble up the resize event.
-        cx.subscribe(&panel_group, |_, _, _: &ResizablePanelEvent, cx| {
-            cx.emit(PanelEvent::LayoutChanged)
-        })
-        .detach();
+        let _subscriptions = vec![cx
+            .subscribe(&panel_group, |_, _, _: &ResizablePanelEvent, cx| {
+                cx.emit(PanelEvent::LayoutChanged)
+            })];
 
         Self {
             axis,
@@ -70,6 +71,7 @@ impl StackPanel {
             focus_handle: cx.focus_handle(),
             panels: SmallVec::new(),
             panel_group,
+            _subscriptions,
         }
     }
 
@@ -184,9 +186,11 @@ impl StackPanel {
                 }
 
                 // Subscribe to the panel's layout change event.
-                _ = dock_area.update(cx, |_, cx| {
+                _ = dock_area.update(cx, |this, cx| {
                     if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                        DockArea::subscribe_panel(&tab_panel, cx);
+                        this.subscribe_panel(&tab_panel, cx);
+                    } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
+                        this.subscribe_panel(&stack_panel, cx);
                     }
                 });
             }

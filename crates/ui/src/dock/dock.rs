@@ -129,8 +129,8 @@ impl Dock {
         // Subscribe the panel to the dock area.
         cx.defer({
             move |cx| {
-                _ = dock_area.update(cx, |_, cx| {
-                    DockArea::subscribe_panel(&panel, cx);
+                _ = dock_area.update(cx, |this, cx| {
+                    this.subscribe_panel(&panel, cx);
                 });
             }
         });
