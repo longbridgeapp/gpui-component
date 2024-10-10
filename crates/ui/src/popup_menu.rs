@@ -218,6 +218,19 @@ impl PopupMenu {
         self
     }
 
+    /// Add Menu Item with custom element render.
+    pub fn menu_with_element<F, E>(mut self, builder: F, action: Box<dyn Action>) -> Self
+    where
+        F: Fn(&mut WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.menu_items.push(PopupMenuItem::ElementItem {
+            render: Box::new(move |cx| builder(cx).into_any_element()),
+            handler: self.wrap_handler(action),
+        });
+        self
+    }
+
     fn wrap_handler(&self, action: Box<dyn Action>) -> Rc<dyn Fn(&mut WindowContext)> {
         let action_focus_handle = self.action_focus_handle.clone();
 
@@ -242,18 +255,6 @@ impl PopupMenu {
 
             cx.dispatch_action(action.boxed_clone());
         })
-    }
-
-    pub fn menu_with_element<F, E>(mut self, builder: F, action: Box<dyn Action>) -> Self
-    where
-        F: Fn(&mut WindowContext) -> E + 'static,
-        E: IntoElement,
-    {
-        self.menu_items.push(PopupMenuItem::ElementItem {
-            render: Box::new(move |cx| builder(cx).into_any_element()),
-            handler: self.wrap_handler(action),
-        });
-        self
     }
 
     fn add_menu_item(
