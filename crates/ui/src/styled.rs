@@ -5,7 +5,8 @@ use crate::{
     theme::ActiveTheme,
 };
 use gpui::{
-    div, px, Axis, Div, Element, ElementId, EntityId, FocusHandle, Pixels, Styled, WindowContext,
+    div, px, Axis, Div, Edges, Element, ElementId, EntityId, FocusHandle, Pixels, Styled,
+    WindowContext,
 };
 use serde::{Deserialize, Serialize};
 
@@ -146,6 +147,47 @@ pub enum Size {
     Large,
 }
 
+impl Size {
+    /// Returns the height for table row.
+    pub fn table_row_height(&self) -> Pixels {
+        match self {
+            Size::XSmall => px(26.),
+            Size::Small => px(30.),
+            Size::Large => px(40.),
+            _ => px(32.),
+        }
+    }
+    /// Returns the padding for a table cell.
+    pub fn table_cell_padding(&self) -> Edges<Pixels> {
+        match self {
+            Size::XSmall => Edges {
+                top: px(2.),
+                bottom: px(2.),
+                left: px(4.),
+                right: px(4.),
+            },
+            Size::Small => Edges {
+                top: px(3.),
+                bottom: px(3.),
+                left: px(6.),
+                right: px(6.),
+            },
+            Size::Large => Edges {
+                top: px(8.),
+                bottom: px(8.),
+                left: px(12.),
+                right: px(12.),
+            },
+            _ => Edges {
+                top: px(4.),
+                bottom: px(4.),
+                left: px(8.),
+                right: px(8.),
+            },
+        }
+    }
+}
+
 impl From<Pixels> for Size {
     fn from(size: Pixels) -> Self {
         Size::Size(size)
@@ -203,6 +245,8 @@ pub trait StyleSized<T: Styled> {
     fn list_py(self, size: Size) -> Self;
     /// Apply size with the given `Size`.
     fn size_with(self, size: Size) -> Self;
+    /// Apply the table cell size (Font size, padding) with the given `Size`.
+    fn table_cell_size(self, size: Size) -> Self;
 }
 
 impl<T: Styled> StyleSized<T> for T {
@@ -289,6 +333,19 @@ impl<T: Styled> StyleSized<T> for T {
             Size::XSmall => self.size_4(),
             Size::Size(size) => self.size(size),
         }
+    }
+
+    fn table_cell_size(self, size: Size) -> Self {
+        let padding = size.table_cell_padding();
+        match size {
+            Size::XSmall => self.text_sm(),
+            Size::Small => self.text_sm(),
+            _ => self,
+        }
+        .pl(padding.left)
+        .pr(padding.right)
+        .pt(padding.top)
+        .pb(padding.bottom)
     }
 }
 
