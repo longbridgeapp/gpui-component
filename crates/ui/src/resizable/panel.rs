@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, prelude::FluentBuilder, px, Along, AnyElement, AnyView, Axis, Bounds, Element,
-    Entity, EntityId, EventEmitter, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement,
-    Pixels, Render, StatefulInteractiveElement as _, Style, Styled, View, ViewContext,
-    VisualContext as _, WindowContext,
+    canvas, div, prelude::FluentBuilder, px, relative, Along, AnyElement, AnyView, Axis, Bounds,
+    Element, Entity, EntityId, EventEmitter, IntoElement, MouseMoveEvent, MouseUpEvent,
+    ParentElement, Pixels, Render, StatefulInteractiveElement as _, Style, Styled, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 use crate::{h_flex, v_flex, AxisExt};
@@ -88,6 +88,11 @@ impl ResizablePanelGroup {
         self.sizes.clone()
     }
 
+    /// Calculates the sum of all panel sizes within the group.
+    pub fn total_size(&self) -> Pixels {
+        self.sizes.iter().fold(px(0.0), |acc, &size| acc + size)
+    }
+
     pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;
@@ -118,8 +123,10 @@ impl ResizablePanelGroup {
 
         let old_panel = self.panels[ix].clone();
         let old_panel_initial_size = old_panel.read(cx).initial_size;
+        let old_panel_size_ratio = old_panel.read(cx).size_ratio;
 
         panel.initial_size = old_panel_initial_size;
+        panel.size_ratio = old_panel_size_ratio;
         panel.axis = self.axis;
         panel.group = Some(cx.view().clone());
         self.sizes[ix] = panel.initial_size.unwrap_or_default();
@@ -217,11 +224,15 @@ impl ResizablePanelGroup {
             new_sizes[main_ix] = (new_sizes[main_ix] - overflow).max(PANEL_MIN_SIZE);
         }
 
+        let total_size = new_sizes.iter().fold(px(0.0), |acc, &size| acc + size);
         self.sizes = new_sizes;
         for (i, panel) in self.panels.iter().enumerate() {
             let size = self.sizes[i];
             if size > px(0.) {
-                panel.update(cx, |this, _| this.size = Some(size));
+                panel.update(cx, |this, _| {
+                    this.size = Some(size);
+                    this.size_ratio = Some(size / total_size);
+                });
             }
         }
     }
@@ -269,6 +280,8 @@ pub struct ResizablePanel {
     initial_size: Option<Pixels>,
     /// size is the size that the panel has when it is resized or ajusted by flex layout.
     size: Option<Pixels>,
+    /// the size ratio that the panel has relative to its group
+    size_ratio: Option<f32>,
     axis: Axis,
     content_builder: Option<Rc<dyn Fn(&mut WindowContext) -> AnyElement>>,
     content_view: Option<AnyView>,
@@ -283,6 +296,7 @@ impl ResizablePanel {
             group: None,
             initial_size: None,
             size: None,
+            size_ratio: None,
             axis: Axis::Horizontal,
             content_builder: None,
             content_view: None,
@@ -352,7 +366,9 @@ impl Render for ResizablePanel {
                 this.when(self.size.is_none(), |this| this.flex_shrink_0())
                     .flex_basis(size)
             })
-            .when_some(self.size, |this, size| this.flex_basis(size))
+            .when_some(self.size_ratio, |this, size_ratio| {
+                this.flex_basis(relative(size_ratio))
+            })
             .child({
                 canvas(
                     move |bounds, cx| view.update(cx, |r, cx| r.update_size(bounds, cx)),
