@@ -645,10 +645,10 @@ impl Render for PopupMenu {
                 this.child(
                     div()
                         .absolute()
-                        .top_1()
-                        .left_1()
-                        .right_1()
-                        .bottom_1()
+                        .top_0()
+                        .left_0()
+                        .right_0()
+                        .bottom_0()
                         .child(Scrollbar::vertical(
                             cx.entity_id(),
                             self.scroll_state.clone(),
