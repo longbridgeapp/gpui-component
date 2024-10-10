@@ -4,14 +4,14 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName, Sizable, Size,
+    v_flex, Icon, IconName, Sizable, Size, StyleSized as _, StyledExt as _,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
-    DragMoveEvent, Entity, EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement,
-    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, ScrollHandle,
-    SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
-    VisualContext as _, WindowContext,
+    DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
+    ScrollHandle, SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -47,6 +47,7 @@ struct ColGroup {
     bounds: Bounds<Pixels>,
     sort: Option<ColSort>,
     fixed: Option<ColFixed>,
+    padding: Option<Edges<Pixels>>,
 }
 
 #[derive(Clone)]
@@ -166,6 +167,13 @@ pub trait TableDelegate: Sized + 'static {
 
     /// Return the fixed side of the column at the given index.
     fn col_fixed(&self, col_ix: usize) -> Option<ColFixed> {
+        None
+    }
+
+    /// Return the padding of the column at the given index to override the default padding.
+    ///
+    /// Return None, use the default padding.
+    fn col_padding(&self, col_ix: usize) -> Option<Edges<Pixels>> {
         None
     }
 
@@ -302,16 +310,6 @@ where
         cx.notify();
     }
 
-    /// Return the height of the table head.
-    fn table_head_height(&self) -> Pixels {
-        match self.size {
-            Size::Large => px(48.),
-            Size::Small => px(30.),
-            Size::XSmall => px(26.),
-            _ => px(32.),
-        }
-    }
-
     /// When we update columns or rows, we need to refresh the table.
     pub fn refresh(&mut self, cx: &mut ViewContext<Self>) {
         self.prepare_col_groups(cx);
@@ -321,6 +319,7 @@ where
         self.col_groups = (0..self.delegate.cols_count())
             .map(|col_ix| ColGroup {
                 width: self.delegate.col_width(col_ix),
+                padding: self.delegate.col_padding(col_ix),
                 bounds: Bounds::default(),
                 sort: self.delegate.col_sort(col_ix),
                 fixed: self.delegate.col_fixed(col_ix),
@@ -560,17 +559,21 @@ where
 
     fn render_cell(&self, col_ix: usize, _cx: &mut ViewContext<Self>) -> Div {
         let col_width = self.col_groups[col_ix].width;
+        let col_padding = self.col_groups[col_ix].padding;
 
         div()
             .when_some(col_width, |this, width| this.w(width))
             .flex_shrink_0()
             .overflow_hidden()
             .whitespace_nowrap()
-            .map(|this| match self.size {
-                Size::XSmall => this.text_sm().py_0p5().px_1(),
-                Size::Small => this.text_sm().py(px(3.)).px_1p5(),
-                Size::Large => this.py_2().px_3(),
-                _ => this.py_1().px_2(),
+            .table_cell_size(self.size)
+            .map(|this| match col_padding {
+                Some(padding) => this
+                    .pl(padding.left)
+                    .pr(padding.right)
+                    .pt(padding.top)
+                    .pb(padding.bottom),
+                None => this,
             })
     }
 
@@ -592,7 +595,7 @@ where
         Some(
             div()
                 .absolute()
-                .top(self.table_head_height())
+                .top(self.size.table_head_height())
                 .left_0()
                 .right_0()
                 .bottom_0()
@@ -765,6 +768,13 @@ where
                             .justify_between()
                             .items_center()
                             .child(self.delegate.render_th(col_ix, cx))
+                            .when_some(self.delegate().col_padding(col_ix), |this, padding| {
+                                // Leave right space for the sort icon, if this column have custom padding
+                                let offset_pr =
+                                    self.size.table_cell_padding().right - padding.right;
+
+                                this.pr(offset_pr.max(px(0.)))
+                            })
                             .children(self.render_sort_icon(col_ix, cx)),
                     )
                     .when(self.delegate.can_move_col(col_ix), |this| {
@@ -827,7 +837,7 @@ where
 
         h_flex()
             .w_full()
-            .h(self.table_head_height())
+            .h(self.size.table_head_height())
             .flex_shrink_0()
             .border_b_1()
             .border_color(cx.theme().border)
@@ -908,12 +918,7 @@ where
                             .map(|this| vec![this])
                     }
                 })
-                .map(|this| match self.size {
-                    Size::Large => this.h_10(),
-                    Size::Small => this.h(px(30.)),
-                    Size::XSmall => this.h(px(26.)),
-                    _ => this.h_8(),
-                })
+                .h(self.size.table_head_height())
                 .h_full()
                 .flex_1(),
             )

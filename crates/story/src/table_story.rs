@@ -2,8 +2,9 @@ use std::time::{self, Duration};
 
 use fake::{Fake, Faker};
 use gpui::{
-    div, impl_actions, AnyElement, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
-    SharedString, Styled, Timer, View, ViewContext, VisualContext as _, WindowContext,
+    div, impl_actions, px, AnyElement, Edges, InteractiveElement, IntoElement, ParentElement,
+    Pixels, Render, SharedString, Styled, Timer, View, ViewContext, VisualContext as _,
+    WindowContext,
 };
 use serde::Deserialize;
 use ui::{
@@ -16,7 +17,7 @@ use ui::{
     popup_menu::PopupMenuExt,
     prelude::FluentBuilder as _,
     table::{ColFixed, ColSort, Table, TableDelegate, TableEvent},
-    v_flex, Selectable, Size,
+    v_flex, Selectable, Size, StyleSized as _,
 };
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
@@ -167,6 +168,7 @@ impl Column {
 struct StockTableDelegate {
     stocks: Vec<Stock>,
     columns: Vec<Column>,
+    size: Size,
     loop_selection: bool,
     col_resize: bool,
     col_order: bool,
@@ -180,6 +182,7 @@ struct StockTableDelegate {
 impl StockTableDelegate {
     fn new(size: usize) -> Self {
         Self {
+            size: Size::default(),
             stocks: random_stocks(size),
             columns: vec![
                 Column::new("id", "ID", None),
@@ -253,7 +256,10 @@ impl StockTableDelegate {
     }
 
     fn render_value_cell(&self, val: f64) -> AnyElement {
-        let this = div().child(format!("{:.3}", val));
+        let this = div()
+            .h_full()
+            .table_cell_size(self.size)
+            .child(format!("{:.3}", val));
         // Val is a 0.0 .. n.0
         // 30% to red, 30% to green, others to default
         let right_num = ((val - val.floor()) * 1000.).floor() as i32;
@@ -296,6 +302,14 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
+    fn col_padding(&self, col_ix: usize) -> Option<Edges<Pixels>> {
+        if col_ix >= 3 && col_ix <= 10 {
+            Some(Edges::all(px(0.)))
+        } else {
+            None
+        }
+    }
+
     fn col_fixed(&self, col_ix: usize) -> Option<ui::table::ColFixed> {
         if !self.fixed_cols {
             return None;
@@ -314,6 +328,16 @@ impl TableDelegate for StockTableDelegate {
 
     fn can_select_col(&self, _: usize) -> bool {
         return self.col_selection;
+    }
+
+    fn render_th(&self, col_ix: usize, _cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
+        let th = div().child(self.col_name(col_ix));
+
+        if col_ix >= 3 && col_ix <= 10 {
+            th.table_cell_size(self.size)
+        } else {
+            th
+        }
     }
 
     fn render_td(
@@ -617,6 +641,7 @@ impl TableStory {
         self.size = a.0;
         self.table.update(cx, |table, cx| {
             table.set_size(a.0, cx);
+            table.delegate_mut().size = a.0;
         });
     }
 
