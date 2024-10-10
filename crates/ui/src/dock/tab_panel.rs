@@ -68,9 +68,6 @@ pub struct TabPanel {
     /// If this is true, the Panel closeable will follow the active panel's closeable,
     /// otherwise this TabPanel will not able to close
     pub(crate) closeable: bool,
-    /// If this is true, the Panel zoomable will follow the active panel's zoomable,
-    /// otherwise this TabPanel will not able to zoom
-    pub(crate) zoomable: bool,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -98,10 +95,6 @@ impl Panel for TabPanel {
     }
 
     fn zoomable(&self, cx: &WindowContext) -> bool {
-        if !self.zoomable {
-            return false;
-        }
-
         self.active_panel()
             .map(|panel| panel.zoomable(cx))
             .unwrap_or(false)
@@ -147,7 +140,6 @@ impl TabPanel {
             will_split_placement: None,
             is_zoomed: false,
             closeable: true,
-            zoomable: true,
         }
     }
 

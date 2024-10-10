@@ -6,7 +6,7 @@ use gpui::{
     div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
     MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
-    WeakView,
+    WeakView, WindowContext,
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,9 +74,10 @@ impl Dock {
         let panel = cx.new_view(|cx| {
             let mut tab = TabPanel::new(None, dock_area.clone(), cx);
             tab.closeable = false;
-            tab.zoomable = false;
             tab
         });
+
+        Self::subscribe_panel_events(dock_area.clone(), panel.clone(), cx);
 
         Self {
             placement,
@@ -106,7 +107,10 @@ impl Dock {
         size: Pixels,
         panel: View<TabPanel>,
         open: bool,
+        cx: &mut WindowContext,
     ) -> Self {
+        Self::subscribe_panel_events(dock_area.clone(), panel.clone(), cx);
+
         Self {
             placement,
             dock_area,
@@ -115,6 +119,21 @@ impl Dock {
             size,
             is_resizing: false,
         }
+    }
+
+    fn subscribe_panel_events(
+        dock_area: WeakView<DockArea>,
+        panel: View<TabPanel>,
+        cx: &mut WindowContext,
+    ) {
+        // Subscribe the panel to the dock area.
+        cx.defer({
+            move |cx| {
+                _ = dock_area.update(cx, |this, cx| {
+                    this.subscribe_panel(&panel, cx);
+                });
+            }
+        });
     }
 
     pub fn set_panels(&mut self, panels: Vec<Arc<dyn PanelView>>, cx: &mut ViewContext<Self>) {

@@ -51,13 +51,14 @@ impl DockState {
     ) -> Result<View<Dock>> {
         let view = self.panel.to_item(dock_area.clone(), cx).view();
         if let Ok(tab_panel) = view.view().downcast::<TabPanel>() {
-            let dock = cx.new_view(|_| {
+            let dock = cx.new_view(|cx| {
                 Dock::from_state(
                     dock_area.clone(),
                     self.placement,
                     self.size,
                     tab_panel,
                     self.open,
+                    cx,
                 )
             });
 
