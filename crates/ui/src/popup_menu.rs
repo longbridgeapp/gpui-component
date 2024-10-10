@@ -463,6 +463,7 @@ impl Render for PopupMenu {
             .popover_style(cx)
             .text_color(cx.theme().popover_foreground)
             .relative()
+            .p_1()
             .child(
                 div()
                     .id("popup-menu-items")
@@ -473,7 +474,6 @@ impl Render for PopupMenu {
                     })
                     .child(
                         v_flex()
-                            .p_1()
                             .gap_y_0p5()
                             .min_w(self.min_width)
                             .max_w(self.max_width)
@@ -645,10 +645,10 @@ impl Render for PopupMenu {
                 this.child(
                     div()
                         .absolute()
-                        .top_1()
-                        .left_1()
-                        .right_1()
-                        .bottom_1()
+                        .top_0()
+                        .left_0()
+                        .right_0p5()
+                        .bottom_0()
                         .child(Scrollbar::vertical(
                             cx.entity_id(),
                             self.scroll_state.clone(),

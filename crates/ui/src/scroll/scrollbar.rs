@@ -8,8 +8,8 @@ use gpui::{
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
-const THUMB_RADIUS: Pixels = Pixels(4.0);
-const THUMB_INSET: Pixels = Pixels(2.);
+const THUMB_RADIUS: Pixels = Pixels(3.0);
+const THUMB_INSET: Pixels = Pixels(4.);
 
 pub trait ScrollHandleOffsetable {
     fn offset(&self) -> Point<Pixels>;
@@ -162,7 +162,7 @@ impl Scrollbar {
             state,
             axis,
             scroll_size,
-            width: px(8.),
+            width: px(12.),
             scroll_handle: Rc::new(Box::new(scroll_handle)),
         }
     }
@@ -367,17 +367,30 @@ impl Element for Scrollbar {
 
                     let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
-                    let (thumb_bg, bar_bg, bar_border, inset) =
+                    let (thumb_bg, bar_bg, bar_border, inset, radius) =
                         if state.get().dragged_axis == Some(axis) {
-                            (thumb_bg, cx.theme().scrollbar, cx.theme().border, px(1.))
+                            (
+                                thumb_bg,
+                                cx.theme().scrollbar,
+                                cx.theme().border,
+                                THUMB_INSET - px(1.),
+                                THUMB_RADIUS,
+                            )
                         } else if state.get().hovered_axis == Some(axis) {
-                            (thumb_bg, cx.theme().scrollbar, cx.theme().border, px(1.))
+                            (
+                                thumb_bg,
+                                cx.theme().scrollbar,
+                                cx.theme().border,
+                                THUMB_INSET - px(1.),
+                                THUMB_RADIUS,
+                            )
                         } else {
                             (
                                 thumb_bg.opacity(0.3),
                                 cx.theme().transparent,
                                 gpui::transparent_black(),
                                 THUMB_INSET,
+                                THUMB_RADIUS - px(1.),
                             )
                         };
 
@@ -431,9 +444,7 @@ impl Element for Scrollbar {
                             border_color: bar_border,
                         });
 
-                        cx.paint_quad(
-                            fill(thumb_bounds, thumb_bg).corner_radii(THUMB_RADIUS - inset),
-                        );
+                        cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(radius));
                     }
 
                     cx.on_mouse_event({
