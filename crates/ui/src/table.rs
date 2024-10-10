@@ -4,7 +4,7 @@ use crate::{
     h_flex,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName, Sizable, Size, StyleSized as _, StyledExt as _,
+    v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
@@ -563,6 +563,7 @@ where
 
         div()
             .when_some(col_width, |this, width| this.w(width))
+            .h_full()
             .flex_shrink_0()
             .overflow_hidden()
             .whitespace_nowrap()
@@ -579,13 +580,15 @@ where
 
     /// Show Column selection style, when the column is selected and the selection state is Column.
     fn render_col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
+        let el = h_flex().h_full();
+
         if self.delegate().can_select_col(col_ix)
             && self.selected_col == Some(col_ix)
             && self.selection_state == SelectionState::Column
         {
-            h_flex().bg(cx.theme().table_active)
+            el.bg(cx.theme().table_active)
         } else {
-            h_flex()
+            el
         }
     }
 
@@ -595,7 +598,7 @@ where
         Some(
             div()
                 .absolute()
-                .top(self.size.table_head_height())
+                .top(self.size.table_row_height())
                 .left_0()
                 .right_0()
                 .bottom_0()
@@ -837,7 +840,7 @@ where
 
         h_flex()
             .w_full()
-            .h(self.size.table_head_height())
+            .h(self.size.table_row_height())
             .flex_shrink_0()
             .border_b_1()
             .border_color(cx.theme().border)
@@ -918,7 +921,7 @@ where
                             .map(|this| vec![this])
                     }
                 })
-                .h(self.size.table_head_height())
+                .h(self.size.table_row_height())
                 .h_full()
                 .flex_1(),
             )
@@ -941,6 +944,7 @@ where
                 .render_tr(row_ix, cx)
                 .id(("table-row", row_ix))
                 .w_full()
+                .h(self.size.table_row_height())
                 .when(row_ix > 0, |this| {
                     this.border_t_1().border_color(cx.theme().table_row_border)
                 })
@@ -956,6 +960,7 @@ where
                     // Left fixed columns
                     Some(
                         h_flex()
+                            .h_full()
                             .border_r_1()
                             .border_color(cx.theme().table_row_border)
                             .children((0..left_cols_count).map(|col_ix| {
@@ -971,6 +976,7 @@ where
                 .child(
                     h_flex()
                         .flex_1()
+                        .h_full()
                         .overflow_hidden()
                         .children((left_cols_count..cols_count).map(|col_ix| {
                             self

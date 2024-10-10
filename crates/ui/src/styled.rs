@@ -148,8 +148,8 @@ pub enum Size {
 }
 
 impl Size {
-    /// Returns the height for table head.
-    pub fn table_head_height(&self) -> Pixels {
+    /// Returns the height for table row.
+    pub fn table_row_height(&self) -> Pixels {
         match self {
             Size::XSmall => px(26.),
             Size::Small => px(30.),
