@@ -14,6 +14,7 @@ use ui::{
     popover::{Popover, PopoverContent},
     popup_menu::PopupMenuExt,
     switch::Switch,
+    theme::ActiveTheme as _,
     v_flex, ContextModal, IconName, Sizable,
 };
 
@@ -272,6 +273,18 @@ impl Render for PopupStory {
                                         "Window Mode",
                                         window_mode,
                                         Box::new(ToggleWindowMode),
+                                    )
+                                    .separator()
+                                    .menu_with_element(
+                                        |cx| {
+                                            v_flex().gap_1().child("Custom Element").child(
+                                                div()
+                                                    .text_sm()
+                                                    .text_color(cx.theme().muted_foreground)
+                                                    .child("THis is sub-title"),
+                                            )
+                                        },
+                                        Box::new(Info(0)),
                                     )
                                     .separator()
                                     .submenu("Links", cx, |menu, _| {

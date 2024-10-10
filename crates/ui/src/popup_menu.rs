@@ -8,8 +8,8 @@ use gpui::{
     SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
 };
 use gpui::{
-    anchored, canvas, rems, AnchorCorner, Bounds, Edges, FocusableView, Keystroke, ScrollHandle,
-    StatefulInteractiveElement, WeakView,
+    anchored, canvas, rems, AnchorCorner, AnyElement, Bounds, Edges, FocusableView, Keystroke,
+    ScrollHandle, StatefulInteractiveElement, WeakView,
 };
 
 use crate::scroll::{Scrollbar, ScrollbarState};
@@ -51,6 +51,10 @@ enum PopupMenuItem {
         icon: Option<Icon>,
         label: SharedString,
         action: Option<Box<dyn Action>>,
+        handler: Rc<dyn Fn(&mut WindowContext)>,
+    },
+    ElementItem {
+        render: Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>,
         handler: Rc<dyn Fn(&mut WindowContext)>,
     },
     Submenu {
@@ -214,6 +218,45 @@ impl PopupMenu {
         self
     }
 
+    /// Add Menu Item with custom element render.
+    pub fn menu_with_element<F, E>(mut self, builder: F, action: Box<dyn Action>) -> Self
+    where
+        F: Fn(&mut WindowContext) -> E + 'static,
+        E: IntoElement,
+    {
+        self.menu_items.push(PopupMenuItem::ElementItem {
+            render: Box::new(move |cx| builder(cx).into_any_element()),
+            handler: self.wrap_handler(action),
+        });
+        self
+    }
+
+    fn wrap_handler(&self, action: Box<dyn Action>) -> Rc<dyn Fn(&mut WindowContext)> {
+        let action_focus_handle = self.action_focus_handle.clone();
+
+        Rc::new(move |cx| {
+            cx.activate_window();
+
+            // Focus back to the user expected focus handle
+            // Then the actions listened on that focus handle can be received
+            //
+            // For example:
+            //
+            // TabPanel
+            //   |- PopupMenu
+            //   |- PanelContent (actions are listened here)
+            //
+            // The `PopupMenu` and `PanelContent` are at the same level in the TabPanel
+            // If the actions are listened on the `PanelContent`,
+            // it can't receive the actions from the `PopupMenu`, unless we focus on `PanelContent`.
+            if let Some(handle) = action_focus_handle.as_ref() {
+                cx.focus(&handle);
+            }
+
+            cx.dispatch_action(action.boxed_clone());
+        })
+    }
+
     fn add_menu_item(
         &mut self,
         label: impl Into<SharedString>,
@@ -224,33 +267,11 @@ impl PopupMenu {
             self.has_icon = true;
         }
 
-        let action_focus_handle = self.action_focus_handle.clone();
-
         self.menu_items.push(PopupMenuItem::Item {
             icon,
             label: label.into(),
             action: Some(action.boxed_clone()),
-            handler: Rc::new(move |cx| {
-                cx.activate_window();
-
-                // Focus back to the user expected focus handle
-                // Then the actions listened on that focus handle can be received
-                //
-                // For example:
-                //
-                // TabPanel
-                //   |- PopupMenu
-                //   |- PanelContent (actions are listened here)
-                //
-                // The `PopupMenu` and `PanelContent` are at the same level in the TabPanel
-                // If the actions are listened on the `PanelContent`,
-                // it can't receive the actions from the `PopupMenu`, unless we focus on `PanelContent`.
-                if let Some(handle) = action_focus_handle.as_ref() {
-                    cx.focus(&handle);
-                }
-
-                cx.dispatch_action(action.boxed_clone());
-            }),
+            handler: self.wrap_handler(action),
         });
         self
     }
@@ -333,6 +354,10 @@ impl PopupMenu {
                 let item = self.menu_items.get(index);
                 match item {
                     Some(PopupMenuItem::Item { handler, .. }) => {
+                        handler(cx);
+                        self.dismiss(&Dismiss, cx)
+                    }
+                    Some(PopupMenuItem::ElementItem { handler, .. }) => {
                         handler(cx);
                         self.dismiss(&Dismiss, cx)
                     }
@@ -422,7 +447,7 @@ impl PopupMenu {
             .text_sm()
             .map(|this| {
                 if let Some(icon) = icon {
-                    this.child(icon.clone().small().clone())
+                    this.child(icon.clone().small())
                 } else {
                     this.children(icon_placeholder.clone())
                 }
@@ -450,6 +475,8 @@ impl Render for PopupMenu {
 
         let window_haft_height = cx.window_bounds().get_bounds().size.height * 0.5;
         let max_height = window_haft_height.min(px(450.));
+
+        const ITEM_HEIGHT: Pixels = px(26.);
 
         v_flex()
             .id("popup-menu")
@@ -521,6 +548,20 @@ impl Render for PopupMenu {
                                                         .bg(cx.theme().muted),
                                                 )
                                             }
+                                            PopupMenuItem::ElementItem { render, .. } => this
+                                                .on_click(cx.listener(move |this, _, cx| {
+                                                    this.on_click(ix, cx)
+                                                }))
+                                                .child(
+                                                    h_flex()
+                                                        .min_h(ITEM_HEIGHT)
+                                                        .items_center()
+                                                        .gap_x_1p5()
+                                                        .children(Self::render_icon(
+                                                            has_icon, None, cx,
+                                                        ))
+                                                        .child((render)(cx)),
+                                                ),
                                             PopupMenuItem::Item {
                                                 icon,
                                                 label,
@@ -537,7 +578,7 @@ impl Render for PopupMenu {
                                                 }))
                                                 .child(
                                                     h_flex()
-                                                        .h(px(26.))
+                                                        .h(ITEM_HEIGHT)
                                                         .items_center()
                                                         .gap_x_1p5()
                                                         .children(Self::render_icon(
