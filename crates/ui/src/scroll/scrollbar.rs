@@ -1,4 +1,4 @@
-use std::{cell::Cell, rc::Rc, time::Instant};
+use std::{cell::Cell, rc::Rc, time::Duration, time::Instant};
 
 use crate::theme::ActiveTheme;
 use gpui::{
@@ -376,37 +376,28 @@ impl Element for Scrollbar {
                         },
                     };
 
-                    let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
-                    let (thumb_bg, bar_bg, bar_border, inset, radius) = if state.get().dragged_axis
-                        == Some(axis)
+                    let mut thumb_bg = cx.theme().transparent;
+                    let mut bar_bg = cx.theme().transparent;
+
+                    if state.get().dragged_axis == Some(axis)
                         || state.get().hovered_axis == Some(axis)
                     {
-                        (
-                            thumb_bg,
-                            cx.theme().scrollbar,
-                            cx.theme().border,
-                            THUMB_INSET - px(1.),
-                            THUMB_RADIUS,
-                        )
+                        thumb_bg = cx.theme().scrollbar_thumb;
+                        bar_bg = cx.theme().scrollbar;
                     } else {
-                        let mut opacity = 0.0;
                         if let Some(last_time) = state.get().last_scroll_time {
                             let elapsed = Instant::now().duration_since(last_time).as_secs_f32();
                             if elapsed < 1.0 {
-                                opacity = 1.0 - elapsed.powi(10);
+                                thumb_bg =
+                                    cx.theme().scrollbar_thumb.opacity(1.0 - elapsed.powi(10));
                                 cx.request_animation_frame();
                             }
                         }
-
-                        (
-                            thumb_bg.opacity(opacity),
-                            cx.theme().transparent,
-                            cx.theme().border,
-                            THUMB_INSET - px(1.),
-                            THUMB_RADIUS,
-                        )
-                    };
+                    }
+                    let bar_border = cx.theme().border;
+                    let inset = THUMB_INSET - px(1.);
+                    let radius = THUMB_RADIUS;
 
                     let border_width = px(0.);
                     let thumb_bounds = if is_vertical {
@@ -467,14 +458,13 @@ impl Element for Scrollbar {
                         let state = self.state.clone();
                         let view_id = self.view_id;
                         let scroll_handle = self.scroll_handle.clone();
-                        let current_offset = scroll_handle.offset();
 
                         move |event: &ScrollWheelEvent, phase, cx| {
                             if phase.bubble() && hitbox_bounds.contains(&event.position) {
-                                if current_offset != state.get().last_scroll_offset {
+                                if scroll_handle.offset() != state.get().last_scroll_offset {
                                     state.set(state.get().with_visiable(
                                         true,
-                                        current_offset,
+                                        scroll_handle.offset(),
                                         Some(Instant::now()),
                                     ));
                                     cx.notify(view_id);
