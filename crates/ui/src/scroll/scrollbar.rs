@@ -471,10 +471,8 @@ impl Element for Scrollbar {
 
                         move |event: &ScrollWheelEvent, phase, cx| {
                             if phase.bubble() && hitbox_bounds.contains(&event.position) {
-                                let scrollbar_state = state.get();
-                                // Check if the scroll offset has changed
-                                if current_offset != scrollbar_state.last_scroll_offset {
-                                    state.set(scrollbar_state.with_visiable(
+                                if current_offset != state.get().last_scroll_offset {
+                                    state.set(state.get().with_visiable(
                                         true,
                                         current_offset,
                                         Some(Instant::now()),
