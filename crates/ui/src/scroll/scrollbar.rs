@@ -48,7 +48,6 @@ pub struct ScrollbarState {
     hovered_axis: Option<ScrollbarAxis>,
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
-    visible: bool,
     last_scroll_offset: Point<Pixels>,
     last_scroll_time: Option<Instant>,
 }
@@ -59,7 +58,6 @@ impl Default for ScrollbarState {
             hovered_axis: None,
             dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
-            visible: false,
             last_scroll_offset: point(px(0.), px(0.)),
             last_scroll_time: None,
         }
@@ -95,14 +93,12 @@ impl ScrollbarState {
         state
     }
 
-    fn with_visiable(
+    fn with_last_scroll(
         &self,
-        visiable: bool,
         last_scroll_offset: Point<Pixels>,
         last_scroll_time: Option<Instant>,
     ) -> Self {
         let mut state = *self;
-        state.visible = visiable;
         state.last_scroll_offset = last_scroll_offset;
         state.last_scroll_time = last_scroll_time;
         state
@@ -424,36 +420,32 @@ impl Element for Scrollbar {
                         )
                     };
 
-                    if state.get().visible
-                        || state.get().hovered_axis.is_some()
-                        || state.get().dragged_axis.is_some()
-                    {
-                        cx.paint_quad(fill(bounds, bar_bg));
+                    cx.paint_quad(fill(bounds, bar_bg));
 
-                        cx.paint_quad(PaintQuad {
-                            bounds,
-                            corner_radii: (0.).into(),
-                            background: gpui::transparent_black(),
-                            border_widths: if is_vertical {
-                                Edges {
-                                    top: px(0.),
-                                    right: px(0.),
-                                    bottom: px(0.),
-                                    left: border_width,
-                                }
-                            } else {
-                                Edges {
-                                    top: border_width,
-                                    right: px(0.),
-                                    bottom: px(0.),
-                                    left: px(0.),
-                                }
-                            },
-                            border_color: bar_border,
-                        });
+                    cx.paint_quad(PaintQuad {
+                        bounds,
+                        corner_radii: (0.).into(),
+                        background: gpui::transparent_black(),
+                        border_widths: if is_vertical {
+                            Edges {
+                                top: px(0.),
+                                right: px(0.),
+                                bottom: px(0.),
+                                left: border_width,
+                            }
+                        } else {
+                            Edges {
+                                top: border_width,
+                                right: px(0.),
+                                bottom: px(0.),
+                                left: px(0.),
+                            }
+                        },
+                        border_color: bar_border,
+                    });
 
-                        cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(radius));
-                    }
+                    cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(radius));
+
                     cx.on_mouse_event({
                         let state = self.state.clone();
                         let view_id = self.view_id;
@@ -462,8 +454,7 @@ impl Element for Scrollbar {
                         move |event: &ScrollWheelEvent, phase, cx| {
                             if phase.bubble() && hitbox_bounds.contains(&event.position) {
                                 if scroll_handle.offset() != state.get().last_scroll_offset {
-                                    state.set(state.get().with_visiable(
-                                        true,
+                                    state.set(state.get().with_last_scroll(
                                         scroll_handle.offset(),
                                         Some(Instant::now()),
                                     ));
