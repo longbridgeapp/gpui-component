@@ -1,10 +1,10 @@
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, rc::Rc, time::Instant};
 
 use crate::theme::ActiveTheme;
 use gpui::{
     fill, point, px, relative, Bounds, ContentMask, Edges, Element, EntityId, Hitbox, IntoElement,
     MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position, ScrollHandle,
-    Style, UniformListScrollHandle,
+    ScrollWheelEvent, Style, UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
@@ -49,6 +49,8 @@ pub struct ScrollbarState {
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
     visible: bool,
+    last_scroll_offset: Point<Pixels>,
+    last_scroll_time: Option<Instant>,
 }
 
 impl Default for ScrollbarState {
@@ -58,6 +60,8 @@ impl Default for ScrollbarState {
             dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
             visible: false,
+            last_scroll_offset: point(px(0.), px(0.)),
+            last_scroll_time: None,
         }
     }
 }
@@ -91,9 +95,16 @@ impl ScrollbarState {
         state
     }
 
-    fn with_visiable(&self, visiable: bool) -> Self {
+    fn with_visiable(
+        &self,
+        visiable: bool,
+        last_scroll_offset: Point<Pixels>,
+        last_scroll_time: Option<Instant>,
+    ) -> Self {
         let mut state = *self;
         state.visible = visiable;
+        state.last_scroll_offset = last_scroll_offset;
+        state.last_scroll_time = last_scroll_time;
         state
     }
 }
@@ -367,32 +378,35 @@ impl Element for Scrollbar {
 
                     let thumb_bg = cx.theme().scrollbar_thumb;
                     let state = self.state.clone();
-                    let (thumb_bg, bar_bg, bar_border, inset, radius) =
-                        if state.get().dragged_axis == Some(axis) {
-                            (
-                                thumb_bg,
-                                cx.theme().scrollbar,
-                                cx.theme().border,
-                                THUMB_INSET - px(1.),
-                                THUMB_RADIUS,
-                            )
-                        } else if state.get().hovered_axis == Some(axis) {
-                            (
-                                thumb_bg,
-                                cx.theme().scrollbar,
-                                cx.theme().border,
-                                THUMB_INSET - px(1.),
-                                THUMB_RADIUS,
-                            )
-                        } else {
-                            (
-                                thumb_bg.opacity(0.3),
-                                cx.theme().transparent,
-                                gpui::transparent_black(),
-                                THUMB_INSET,
-                                THUMB_RADIUS - px(1.),
-                            )
-                        };
+                    let (thumb_bg, bar_bg, bar_border, inset, radius) = if state.get().dragged_axis
+                        == Some(axis)
+                        || state.get().hovered_axis == Some(axis)
+                    {
+                        (
+                            thumb_bg,
+                            cx.theme().scrollbar,
+                            cx.theme().border,
+                            THUMB_INSET - px(1.),
+                            THUMB_RADIUS,
+                        )
+                    } else {
+                        let mut opacity = 0.0;
+                        if let Some(last_time) = state.get().last_scroll_time {
+                            let elapsed = Instant::now().duration_since(last_time).as_secs_f32();
+                            if elapsed < 1.0 {
+                                opacity = 1.0 - elapsed.powi(10);
+                                cx.request_animation_frame();
+                            }
+                        }
+
+                        (
+                            thumb_bg.opacity(opacity),
+                            cx.theme().transparent,
+                            cx.theme().border,
+                            THUMB_INSET - px(1.),
+                            THUMB_RADIUS,
+                        )
+                    };
 
                     let border_width = px(0.);
                     let thumb_bounds = if is_vertical {
@@ -419,7 +433,10 @@ impl Element for Scrollbar {
                         )
                     };
 
-                    if state.get().visible {
+                    if state.get().visible
+                        || state.get().hovered_axis.is_some()
+                        || state.get().dragged_axis.is_some()
+                    {
                         cx.paint_quad(fill(bounds, bar_bg));
 
                         cx.paint_quad(PaintQuad {
@@ -446,6 +463,27 @@ impl Element for Scrollbar {
 
                         cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(radius));
                     }
+                    cx.on_mouse_event({
+                        let state = self.state.clone();
+                        let view_id = self.view_id;
+                        let scroll_handle = self.scroll_handle.clone();
+                        let current_offset = scroll_handle.offset();
+
+                        move |event: &ScrollWheelEvent, phase, cx| {
+                            if phase.bubble() && hitbox_bounds.contains(&event.position) {
+                                let scrollbar_state = state.get();
+                                // Check if the scroll offset has changed
+                                if current_offset != scrollbar_state.last_scroll_offset {
+                                    state.set(scrollbar_state.with_visiable(
+                                        true,
+                                        current_offset,
+                                        Some(Instant::now()),
+                                    ));
+                                    cx.notify(view_id);
+                                }
+                            }
+                        }
+                    });
 
                     cx.on_mouse_event({
                         let state = self.state.clone();
@@ -511,21 +549,6 @@ impl Element for Scrollbar {
 
                                         cx.notify(view_id);
                                     }
-                                }
-                            }
-
-                            // If mouse out of the bounds, hide scrollbar
-                            if hitbox_bounds.contains(&event.position)
-                                || state.get().dragged_axis.is_some()
-                            {
-                                if !state.get().visible {
-                                    state.set(state.get().with_visiable(true));
-                                    cx.notify(view_id);
-                                }
-                            } else {
-                                if state.get().visible {
-                                    state.set(state.get().with_visiable(false));
-                                    cx.notify(view_id);
                                 }
                             }
 
