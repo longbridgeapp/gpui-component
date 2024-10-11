@@ -1,4 +1,4 @@
-use std::{cell::Cell, rc::Rc, time::Duration, time::Instant};
+use std::{cell::Cell, rc::Rc, time::Instant};
 
 use crate::theme::ActiveTheme;
 use gpui::{
