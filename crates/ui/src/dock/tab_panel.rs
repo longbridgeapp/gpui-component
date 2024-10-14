@@ -63,11 +63,13 @@ pub struct TabPanel {
     stack_panel: Option<View<StackPanel>>,
     pub(crate) panels: Vec<Arc<dyn PanelView>>,
     pub(crate) active_ix: usize,
-    tab_bar_scroll_handle: ScrollHandle,
-    is_zoomed: bool,
     /// If this is true, the Panel closeable will follow the active panel's closeable,
     /// otherwise this TabPanel will not able to close
     pub(crate) closeable: bool,
+
+    tab_bar_scroll_handle: ScrollHandle,
+    is_zoomed: bool,
+    is_collapsed: bool,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -139,6 +141,7 @@ impl TabPanel {
             tab_bar_scroll_handle: ScrollHandle::new(),
             will_split_placement: None,
             is_zoomed: false,
+            is_collapsed: false,
             closeable: true,
         }
     }
@@ -259,6 +262,11 @@ impl TabPanel {
     /// Return true if the panel can be split or move
     fn can_split(&self) -> bool {
         self.stack_panel.is_some()
+    }
+
+    pub(super) fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
+        self.is_collapsed = collapsed;
+        cx.notify();
     }
 
     fn render_menu_button(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -542,7 +550,13 @@ impl TabPanel {
                 },
             )
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
-                let active = ix == self.active_ix;
+                let mut active = ix == self.active_ix;
+
+                // Always not show active tab style, if the panel is collapsed
+                if self.is_collapsed {
+                    active = false;
+                }
+
                 Tab::new(("tab", ix), panel.title(cx))
                     .py_2()
                     .selected(active)
