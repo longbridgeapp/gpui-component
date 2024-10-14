@@ -659,7 +659,10 @@ where
 
                                 this.child(
                                     Icon::new(icon)
-                                        .text_color(cx.theme().muted_foreground)
+                                        .text_color(match self.disabled {
+                                            true => cx.theme().muted_foreground,
+                                            false => cx.theme().accent_foreground,
+                                        })
                                         .when(self.disabled, |this| this.cursor_not_allowed()),
                                 )
                             }),
