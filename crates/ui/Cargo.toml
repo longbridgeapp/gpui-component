@@ -33,6 +33,3 @@ chrono = "0.4.38"
 
 [lints]
 workspace = true
-
-[patch.'https://github.com/huacnlee/wry']
-wry = { path = "/Users/jason/work/wry" }
