@@ -31,8 +31,8 @@ impl WebViewStory {
         let focus_handle = cx.focus_handle();
 
         let webview = cx.new_view(|cx| {
-            let webview = ui::wry::WebViewBuilder::new_as_child(&cx.raw_window_handle())
-                .build()
+            let webview = ui::wry::WebViewBuilder::new()
+                .build_as_child(&cx.raw_window_handle())
                 .unwrap();
             WebView::new(cx, webview)
         });

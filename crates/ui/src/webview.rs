@@ -42,7 +42,7 @@ impl WebView {
     }
 
     pub fn hide(&mut self) {
-        _ = self.webview.blur();
+        _ = self.webview.focus_parent();
         _ = self.webview.set_visible(false);
     }
 
@@ -173,7 +173,7 @@ impl Element for WebViewElement {
             cx.on_mouse_event(move |event: &MouseDownEvent, _, _| {
                 if !bounds.contains(&event.position) {
                     // Click white space to blur the input focus
-                    let _ = webview.blur();
+                    let _ = webview.focus_parent();
                 }
             });
         });
