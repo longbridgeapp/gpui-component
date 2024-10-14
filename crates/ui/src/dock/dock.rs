@@ -111,6 +111,12 @@ impl Dock {
     ) -> Self {
         Self::subscribe_panel_events(dock_area.clone(), panel.clone(), cx);
 
+        if !open {
+            panel.update(cx, |panel, cx| {
+                panel.set_collapsed(true, cx);
+            });
+        }
+
         Self {
             placement,
             dock_area,
@@ -149,8 +155,7 @@ impl Dock {
     }
 
     pub fn toggle_open(&mut self, cx: &mut ViewContext<Self>) {
-        self.open = !self.open;
-        cx.notify();
+        self.set_open(!self.open, cx);
     }
 
     /// Returns the size of the Dock, the size is means the width or height of
@@ -169,6 +174,11 @@ impl Dock {
     /// Set the open state of the Dock.
     pub fn set_open(&mut self, open: bool, cx: &mut ViewContext<Self>) {
         self.open = open;
+        cx.defer(move |this, cx| {
+            this.panel.update(cx, |panel, cx| {
+                panel.set_collapsed(!open, cx);
+            });
+        });
         cx.notify();
     }
 
