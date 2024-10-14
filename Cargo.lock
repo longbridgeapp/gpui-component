@@ -6163,7 +6163,7 @@ dependencies = [
 [[package]]
 name = "wry"
 version = "0.45.0"
-source = "git+https://github.com/huacnlee/wry.git?branch=add-blur-method#7f2f270e7b459e5218ec64319ba2568cc30fc95d"
+source = "git+https://github.com/huacnlee/wry.git?branch=add-blur-method#7093dd3c826466fda3469828e6cdca971ebb6fdc"
 dependencies = [
  "base64",
  "block",
