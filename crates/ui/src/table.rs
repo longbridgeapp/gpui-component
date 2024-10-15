@@ -10,8 +10,8 @@ use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
     DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
-    ScrollHandle, SharedString, StatefulInteractiveElement as _, Styled, UniformListScrollHandle,
-    ViewContext, VisualContext as _, WindowContext,
+    ScrollHandle, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
+    UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -186,8 +186,8 @@ pub trait TableDelegate: Sized + 'static {
     }
 
     /// Render the row at the given row and column.
-    fn render_tr(&self, row_ix: usize, cx: &mut ViewContext<Table<Self>>) -> Div {
-        h_flex()
+    fn render_tr(&self, row_ix: usize, cx: &mut ViewContext<Table<Self>>) -> Stateful<Div> {
+        h_flex().id(("table-row", row_ix))
     }
 
     /// Render cell at the given row and column.
@@ -942,7 +942,6 @@ where
         if row_ix < rows_count {
             self.delegate
                 .render_tr(row_ix, cx)
-                .id(("table-row", row_ix))
                 .w_full()
                 .h(self.size.table_row_height())
                 .when(row_ix > 0, |this| {
@@ -1008,7 +1007,6 @@ where
             // Render fake rows to fill the rest table space
             self.delegate
                 .render_tr(row_ix, cx)
-                .id(("table-row-fake", row_ix))
                 .w_full()
                 .h_full()
                 .border_t_1()
