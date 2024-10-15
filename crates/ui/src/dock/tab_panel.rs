@@ -261,7 +261,7 @@ impl TabPanel {
 
     /// Return true if the panel can be split or move
     fn can_split(&self) -> bool {
-        self.stack_panel.is_some()
+        self.stack_panel.is_some() && !self.is_zoomed
     }
 
     pub(super) fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
