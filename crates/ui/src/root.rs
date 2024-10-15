@@ -57,7 +57,14 @@ impl<'a> ContextModal for WindowContext<'a> {
             if root.active_drawer.is_none() {
                 root.previous_focus_handle = cx.focused();
             }
-            root.active_drawer = Some(Rc::new(build));
+
+            let focus_handle = cx.focus_handle();
+            focus_handle.focus(cx);
+
+            root.active_drawer = Some(ActiveDrawer {
+                focus_handle,
+                builder: Rc::new(build),
+            });
             cx.notify();
         })
     }
@@ -199,10 +206,16 @@ pub struct Root {
     /// Used to store the focus handle of the previus revious view.
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
-    active_drawer: Option<Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>>,
+    active_drawer: Option<ActiveDrawer>,
     active_modals: Vec<ActiveModal>,
     pub notification: View<NotificationList>,
     child: AnyView,
+}
+
+#[derive(Clone)]
+struct ActiveDrawer {
+    focus_handle: FocusHandle,
+    builder: Rc<dyn Fn(Drawer, &mut WindowContext) -> Drawer + 'static>,
 }
 
 #[derive(Clone)]
@@ -270,9 +283,12 @@ impl Root {
             .and_then(|w| w.root_view(cx).ok())
             .expect("The window root view should be of type `ui::Root`.");
 
-        if let Some(builder) = root.read(cx).active_drawer.clone() {
-            let drawer = Drawer::new(cx);
-            return Some(builder(drawer, cx));
+        if let Some(active_drawer) = root.read(cx).active_drawer.clone() {
+            let mut drawer = Drawer::new(cx);
+            drawer = (active_drawer.builder)(drawer, cx);
+            drawer.focus_handle = active_drawer.focus_handle.clone();
+
+            return Some(div().child(drawer));
         }
 
         None

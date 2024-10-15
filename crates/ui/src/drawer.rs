@@ -1,10 +1,10 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
-    anchored, div, point, prelude::FluentBuilder as _, px, Animation, AnimationExt as _,
-    AnyElement, ClickEvent, DefiniteLength, DismissEvent, Div, EventEmitter, FocusHandle,
-    InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, Styled,
-    WindowContext,
+    actions, anchored, div, point, prelude::FluentBuilder as _, px, Animation, AnimationExt as _,
+    AnyElement, AppContext, ClickEvent, DefiniteLength, DismissEvent, Div, EventEmitter,
+    FocusHandle, InteractiveElement as _, IntoElement, KeyBinding, MouseButton, ParentElement,
+    Pixels, RenderOnce, Styled, WindowContext,
 };
 
 use crate::{
@@ -17,9 +17,16 @@ use crate::{
     v_flex, IconName, Placement, Sizable, StyledExt as _,
 };
 
+actions!(drawer, [Escape]);
+
+const CONTEXT: &str = "Drawer";
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([KeyBinding::new("escape", Escape, Some(CONTEXT))])
+}
+
 #[derive(IntoElement)]
 pub struct Drawer {
-    focus_handle: FocusHandle,
+    pub(crate) focus_handle: FocusHandle,
     placement: Placement,
     size: DefiniteLength,
     resizable: bool,
@@ -120,7 +127,6 @@ impl Styled for Drawer {
 
 impl RenderOnce for Drawer {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let focus_handle = self.focus_handle.clone();
         let placement = self.placement;
         let titlebar_height = self.margin_top;
         let size = cx.viewport_size();
@@ -146,8 +152,16 @@ impl RenderOnce for Drawer {
                     })
                     .child(
                         v_flex()
-                            .id("")
-                            .track_focus(&focus_handle)
+                            .id("drawer")
+                            .key_context(CONTEXT)
+                            .track_focus(&self.focus_handle)
+                            .on_action({
+                                let on_close = self.on_close.clone();
+                                move |_: &Escape, cx| {
+                                    on_close(&ClickEvent::default(), cx);
+                                    cx.close_drawer();
+                                }
+                            })
                             .absolute()
                             .occlude()
                             .bg(cx.theme().background)
