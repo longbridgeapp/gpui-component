@@ -216,7 +216,6 @@ impl Render for DropdownStory {
             .child(
                 h_flex()
                     .w_full()
-                    .max_w(px(640.))
                     .items_center()
                     .gap_4()
                     .child(self.country_dropdown.clone())
