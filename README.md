@@ -91,11 +91,7 @@ cargo run
 
 ## License
 
-There have a part of UI components from [Zed](https://github.com/zed-industries/zed/tree/main/crates/ui), that are under GPL v3.0 license.
-
-- workspace
-
-Other UI components are under Apache License.
+Apache-2.0
 
 - UI design based on [shadcn/ui](https://ui.shadcn.com).
 - Icon from [Lucide](https://lucide.dev).

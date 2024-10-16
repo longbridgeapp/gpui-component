@@ -6353,21 +6353,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "workspace"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui",
- "log",
- "parking_lot",
- "schemars",
- "serde",
- "smallvec",
- "ui",
- "windows",
-]
-
-[[package]]
 name = "wry"
 version = "0.46.0"
 source = "git+https://github.com/huacnlee/wry.git?branch=add-blur-method#8c0d413f0ac9699351a9ed3c6023b1c903758501"
