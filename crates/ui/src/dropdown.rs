@@ -393,6 +393,10 @@ where
         self
     }
 
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+    }
+
     pub fn empty<E, F>(mut self, f: F) -> Self
     where
         E: IntoElement,
@@ -519,11 +523,7 @@ where
                 .unwrap_or_default();
 
             h_flex()
-                .children(self.title_prefix.clone().map(|prefix| {
-                    div()
-                        .text_color(cx.theme().accent_foreground)
-                        .child(prefix.clone())
-                }))
+                .when_some(self.title_prefix.clone(), |this, prefix| this.child(prefix))
                 .child(title.clone())
         } else {
             div().text_color(cx.theme().accent_foreground).child(

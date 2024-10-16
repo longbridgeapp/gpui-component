@@ -4,10 +4,12 @@ use gpui::{
 };
 
 use ui::{
+    button::{Button, ButtonStyled},
+    button_group::ButtonGroup,
     dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
-    v_flex, FocusableCycle, IconName, Sizable,
+    v_flex, FocusableCycle, IconName, Selectable, Sizable,
 };
 
 actions!(dropdown_story, [Tab, TabPrev]);
@@ -47,6 +49,7 @@ impl DropdownItem for Country {
 }
 
 pub struct DropdownStory {
+    disabled: bool,
     country_dropdown: View<Dropdown<Vec<Country>>>,
     fruit_dropdown: View<Dropdown<SearchableVec<SharedString>>>,
     simple_dropdown1: View<Dropdown<Vec<SharedString>>>,
@@ -115,6 +118,7 @@ impl DropdownStory {
                 .detach();
 
             Self {
+                disabled: false,
                 country_dropdown,
                 fruit_dropdown,
                 simple_dropdown1: cx.new_view(|cx| {
@@ -188,6 +192,20 @@ impl DropdownStory {
         self.cycle_focus(false, cx);
         cx.notify();
     }
+
+    fn toggle_disabled(&mut self, disabled: bool, cx: &mut ViewContext<Self>) {
+        self.disabled = disabled;
+        self.country_dropdown
+            .update(cx, |this, _| this.set_disabled(disabled));
+        self.fruit_dropdown
+            .update(cx, |this, _| this.set_disabled(disabled));
+        self.simple_dropdown1
+            .update(cx, |this, _| this.set_disabled(disabled));
+        self.simple_dropdown2
+            .update(cx, |this, _| this.set_disabled(disabled));
+        self.simple_dropdown3
+            .update(cx, |this, _| this.set_disabled(disabled));
+    }
 }
 
 impl FocusableCycle for DropdownStory {
@@ -213,6 +231,24 @@ impl Render for DropdownStory {
             .on_action(cx.listener(Self::on_key_shift_tab))
             .size_full()
             .gap_4()
+            .child(
+                ButtonGroup::new("button-group")
+                    .primary()
+                    .small()
+                    .on_click(cx.listener(|this, index: &Vec<usize>, cx| {
+                        this.toggle_disabled(index.contains(&1), cx);
+                    }))
+                    .child(
+                        Button::new("Enable")
+                            .label("Enable")
+                            .selected(!self.disabled),
+                    )
+                    .child(
+                        Button::new("Disable")
+                            .label("Disable")
+                            .selected(self.disabled),
+                    ),
+            )
             .child(
                 h_flex()
                     .w_full()
