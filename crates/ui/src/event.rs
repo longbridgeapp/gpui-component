@@ -19,10 +19,3 @@ pub trait InteractiveElementExt: InteractiveElement {
 }
 
 impl<E: InteractiveElement> InteractiveElementExt for Focusable<E> {}
-
-// impl<E> InteractiveElementExt for Stateful<E>
-// where
-//     E: Element,
-//     Self: InteractiveElement,
-// {
-// }

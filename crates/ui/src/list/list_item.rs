@@ -1,11 +1,10 @@
+use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable, Sizable as _};
 use gpui::{
     div, prelude::FluentBuilder as _, AnyElement, ClickEvent, Div, ElementId, InteractiveElement,
-    IntoElement, MouseButton, MouseMoveEvent, ParentElement, RenderOnce, SharedString, Stateful,
+    IntoElement, MouseButton, MouseMoveEvent, ParentElement, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Styled, WindowContext,
 };
 use smallvec::SmallVec;
-
-use crate::{h_flex, theme::ActiveTheme, Disableable, Icon, IconName, Selectable, Sizable as _};
 
 #[derive(IntoElement)]
 pub struct ListItem {
@@ -15,7 +14,6 @@ pub struct ListItem {
     selected: bool,
     confirmed: bool,
     check_icon: Option<Icon>,
-    group_id: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     on_mouse_enter: Option<Box<dyn Fn(&MouseMoveEvent, &mut WindowContext) + 'static>>,
     suffix: Option<Box<dyn Fn(&mut WindowContext) -> AnyElement + 'static>>,
@@ -35,15 +33,8 @@ impl ListItem {
             on_mouse_enter: None,
             check_icon: None,
             suffix: None,
-            group_id: None,
             children: SmallVec::new(),
         }
-    }
-
-    /// Set group_id
-    pub fn group(mut self, group_id: impl Into<SharedString>) -> Self {
-        self.group_id = Some(group_id.into());
-        self
     }
 
     /// Set to show check icon, default is None.
@@ -128,7 +119,6 @@ impl RenderOnce for ListItem {
         let is_active = self.selected || self.confirmed;
 
         self.base
-            .when_some(self.group_id, |this, group_id| this.group(group_id))
             .text_color(cx.theme().foreground)
             .relative()
             .items_center()

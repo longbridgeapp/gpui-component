@@ -1,11 +1,9 @@
-use std::time::Duration;
-
+use crate::theme::ActiveTheme;
 use gpui::{
     bounce, div, ease_in_out, Animation, AnimationExt, Div, IntoElement, ParentElement as _,
     RenderOnce, Styled,
 };
-
-use crate::theme::ActiveTheme;
+use std::time::Duration;
 
 #[derive(IntoElement)]
 pub struct Skeleton {

@@ -9,6 +9,7 @@ use crate::{
     Disableable, Sizable, Size,
 };
 
+/// A ButtonGroup element, to wrap multiple buttons in a group.
 #[derive(IntoElement)]
 pub struct ButtonGroup {
     pub base: Div,

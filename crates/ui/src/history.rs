@@ -8,6 +8,11 @@ pub trait HistoryItem: Clone {
     fn set_version(&mut self, version: usize);
 }
 
+/// The History is used to keep track of changes to a model and to allow undo and redo operations.
+///
+/// This is now used in Input for undo/redo operations. You can also use this in
+/// your own models to keep track of changes, for example to track the tab
+/// history for prev/next features.
 #[derive(Debug)]
 pub struct History<I: HistoryItem> {
     undos: Vec<I>,

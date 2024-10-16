@@ -1,13 +1,10 @@
-use std::{cell::RefCell, rc::Rc, time::Duration};
-
 use crate::{h_flex, theme::ActiveTheme, Disableable, Sizable, Size};
 use gpui::{
     div, prelude::FluentBuilder as _, px, Animation, AnimationExt as _, AnyElement, Element,
     ElementId, GlobalElementId, InteractiveElement, IntoElement, LayoutId, ParentElement as _,
     SharedString, Styled as _, WindowContext,
 };
-
-type OnClick = Rc<dyn Fn(&bool, &mut WindowContext)>;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 pub enum LabelSide {
     Left,
@@ -26,7 +23,7 @@ pub struct Switch {
     disabled: bool,
     label: Option<SharedString>,
     label_side: LabelSide,
-    on_click: Option<OnClick>,
+    on_click: Option<Rc<dyn Fn(&bool, &mut WindowContext)>>,
     size: Size,
 }
 

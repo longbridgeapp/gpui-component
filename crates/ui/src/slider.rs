@@ -13,7 +13,7 @@ pub enum SliderEvent {
     Change(f32),
 }
 
-/// A slider component.
+/// A Slider element.
 pub struct Slider {
     axis: Axis,
     min: f32,

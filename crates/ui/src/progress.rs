@@ -1,10 +1,10 @@
+use crate::theme::ActiveTheme;
 use gpui::{
     div, prelude::FluentBuilder, px, relative, IntoElement, ParentElement, RenderOnce, Styled,
     WindowContext,
 };
 
-use crate::theme::ActiveTheme;
-
+/// A Progress bar element.
 #[derive(IntoElement)]
 pub struct Progress {
     value: f32,

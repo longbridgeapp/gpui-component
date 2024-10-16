@@ -5,6 +5,7 @@ use gpui::{
 
 use crate::theme::ActiveTheme;
 
+/// A divider that can be either vertical or horizontal.
 #[derive(IntoElement)]
 pub struct Divider {
     base: Div,

@@ -5,6 +5,7 @@ use gpui::{
 
 use crate::theme::ActiveTheme as _;
 
+/// A Link element like a `<a>` tag in HTML.
 #[derive(IntoElement)]
 pub struct Link {
     base: Stateful<Div>,

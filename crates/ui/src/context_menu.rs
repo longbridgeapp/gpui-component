@@ -23,6 +23,7 @@ pub trait ContextMenuExt: ParentElement + Sized {
 impl<E> ContextMenuExt for Stateful<E> where E: ParentElement {}
 impl<E> ContextMenuExt for Focusable<E> where E: ParentElement {}
 
+/// A context menu that can be shown on right-click.
 pub struct ContextMenu {
     id: ElementId,
     menu: Option<Box<dyn Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static>>,

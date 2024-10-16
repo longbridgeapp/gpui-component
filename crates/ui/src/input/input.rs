@@ -1152,7 +1152,9 @@ impl Render for TextInput {
                         input: cx.view().clone(),
                     }),
             )
-            .when(self.loading, |this| this.child(Indicator::new()))
+            .when(self.loading, |this| {
+                this.child(Indicator::new().color(cx.theme().muted_foreground))
+            })
             .when(
                 self.cleanable && !self.loading && !self.text.is_empty(),
                 |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
