@@ -14,7 +14,7 @@ use ui::{
     dock::{DockArea, DockAreaState, DockEvent, DockItem, PanelView},
     h_flex,
     popup_menu::PopupMenuExt,
-    theme::{ActiveTheme, Colorize as _, Theme},
+    theme::{ActiveTheme, Theme},
     ContextModal, IconName, Root, Sizable, TitleBar,
 };
 
@@ -40,6 +40,7 @@ pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
 }
 
 pub struct StoryWorkspace {
+    theme_color: Option<Hsla>,
     dock_area: View<DockArea>,
     locale_selector: View<LocaleSelector>,
     theme_color_picker: View<ColorPicker>,
@@ -96,33 +97,47 @@ impl StoryWorkspace {
             let mut picker = ColorPicker::new("theme-color-picker", cx)
                 .xsmall()
                 .anchor(AnchorCorner::TopRight)
-                .label("Primary Color");
+                .label("Theme Color");
             picker.set_value(cx.theme().primary, cx);
             picker
         });
         cx.subscribe(
             &theme_color_picker,
-            |_, _, ev: &ColorPickerEvent, cx| match ev {
+            |this, _, ev: &ColorPickerEvent, cx| match ev {
                 ColorPickerEvent::Change(color) => {
-                    if let Some(color) = color {
-                        let theme = cx.global_mut::<Theme>();
-                        theme.primary = *color;
-                        theme.primary_hover = color.lighten(0.1);
-                        theme.primary_active = color.darken(0.1);
-                        cx.refresh();
-                    }
+                    this.set_theme_color(*color, cx);
                 }
             },
         )
         .detach();
 
         Self {
+            theme_color: None,
             dock_area,
             locale_selector,
             theme_color_picker,
             last_layout_state: None,
             _save_layout_task: None,
         }
+    }
+
+    fn set_theme_color(&mut self, color: Option<Hsla>, cx: &mut ViewContext<Self>) {
+        self.theme_color = color;
+        if let Some(color) = self.theme_color {
+            let theme = cx.global_mut::<Theme>();
+            theme.apply_color(color);
+            cx.refresh();
+        }
+    }
+
+    fn change_color_mode(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
+        let mode = match cx.theme().mode.is_dark() {
+            true => ui::theme::ThemeMode::Light,
+            false => ui::theme::ThemeMode::Dark,
+        };
+
+        Theme::change(mode, cx);
+        self.set_theme_color(self.theme_color, cx);
     }
 
     fn save_layout(&mut self, dock_area: View<DockArea>, cx: &mut ViewContext<Self>) {
@@ -336,14 +351,7 @@ impl Render for StoryWorkspace {
                                     })
                                     .small()
                                     .ghost()
-                                    .on_click(move |_, cx| {
-                                        let mode = match cx.theme().mode.is_dark() {
-                                            true => ui::theme::ThemeMode::Light,
-                                            false => ui::theme::ThemeMode::Dark,
-                                        };
-
-                                        Theme::change(mode, cx);
-                                    }),
+                                    .on_click(cx.listener(Self::change_color_mode)),
                             )
                             .child(self.locale_selector.clone())
                             .child(
