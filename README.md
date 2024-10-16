@@ -8,6 +8,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 ## Features
 
 - [x] Theming
+- [x] TitleBar
 - [ ] TextInput
   - [x] Ctrl+a, e to move cursor to start/end
   - [x] Copy, Cut, Paste by keyboard
@@ -19,6 +20,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] OtpInput
 - [x] Button
   - [x] Button with Icon
+  - [x] ButtonGroup
   - [x] IconButton
   - [x] Glost / Outline Button
   - [x] Loading
@@ -26,33 +28,23 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Label
 - [x] Icon
 - [x] Checkbox
-  - [x] With label
 - [x] Radio
-  - [ ] RadioGroup
 - [x] Switch
-  - [x] With Label (Left, Right side)
-  - [x] Toggle Animation
 - [x] Dropdown
 - [x] Tabs
-  - [x] Tab
-  - [x] TabBar
 - [x] Notification
 - [x] Tooltip
 - [x] Popover
-  - [x] Floating Popover
-  - [x] Child window Popover
 - [x] Dockpanel
 - [x] Resizable
-- [x] Progress
-  - [x] ProgressBar
-  - [x] Indicator
+- [x] Progress & Indicator
 - [x] Slider
 - [x] Skeleton
 - [ ] DatePicker
   - [x] DatePicker
+  - [x] DateRangePicker
   - [x] Calendar
   - [ ] TimePicker
-  - [x] DateRangePicker
 - [x] ColorPicker
 - [x] List
   - [x] A complex List example.
@@ -70,7 +62,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Drawer
 - [x] Modal
 - [x] Notification
-  - [ ] Collapsible Notifications
+- [x] WebView
 
 ## Showcase
 
