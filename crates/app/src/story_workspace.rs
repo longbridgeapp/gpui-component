@@ -15,9 +15,8 @@ use ui::{
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Colorize as _, Theme},
-    ContextModal, IconName, Root, Sizable,
+    ContextModal, IconName, Root, Sizable, TitleBar,
 };
-use workspace::TitleBar;
 
 use crate::app_state::AppState;
 
@@ -315,14 +314,7 @@ impl Render for StoryWorkspace {
             .bg(cx.theme().background)
             .text_color(cx.theme().foreground)
             .child(
-                TitleBar::new("main-title", Box::new(CloseWindow))
-                    .when(cfg!(not(windows)), |this| {
-                        this.on_click(|event, cx| {
-                            if event.up.click_count == 2 {
-                                cx.zoom_window();
-                            }
-                        })
-                    })
+                TitleBar::new()
                     // left side
                     .child(div().flex().items_center().child("GPUI App"))
                     .child(

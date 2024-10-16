@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/app", "crates/ui", "crates/story", "crates/workspace"]
+members = ["crates/app", "crates/ui", "crates/story"]
 
 default-members = ["crates/app"]
 resolver = "2"
@@ -13,7 +13,6 @@ windows = { version = "0.58.0", features = [
 ] }
 ui = { path = "crates/ui" }
 story = { path = "crates/story" }
-workspace = { path = "crates/workspace" }
 anyhow = "1"
 log = "0.4"
 serde = "1.0.203"

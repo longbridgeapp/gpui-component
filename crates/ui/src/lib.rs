@@ -6,6 +6,7 @@ mod root;
 mod styled;
 mod svg_img;
 mod time;
+mod title_bar;
 
 pub mod animation;
 pub mod button;
@@ -51,6 +52,7 @@ pub use focusable::FocusableCycle;
 pub use root::{ContextModal, Root};
 pub use styled::*;
 pub use time::*;
+pub use title_bar::TitleBar;
 
 pub use colors::*;
 pub use icon::*;
