@@ -59,6 +59,10 @@ pub enum IconName {
     ThumbsDown,
     ThumbsUp,
     TriangleAlert,
+    WindowMaximize,
+    WindowMinimize,
+    WindowRestore,
+    WindowClose,
 }
 
 impl IconName {
@@ -117,6 +121,10 @@ impl IconName {
             IconName::ThumbsDown => "icons/thumbs-down.svg",
             IconName::ThumbsUp => "icons/thumbs-up.svg",
             IconName::TriangleAlert => "icons/triangle-alert.svg",
+            IconName::WindowMaximize => "icons/window-maximize.svg",
+            IconName::WindowMinimize => "icons/window-minimize.svg",
+            IconName::WindowRestore => "icons/window-restore.svg",
+            IconName::WindowClose => "icons/window-close.svg",
         }
         .into()
     }
