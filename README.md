@@ -8,6 +8,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 ## Features
 
 - [x] Theming
+- [x] TitleBar
 - [ ] TextInput
   - [x] Ctrl+a, e to move cursor to start/end
   - [x] Copy, Cut, Paste by keyboard
@@ -19,6 +20,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] OtpInput
 - [x] Button
   - [x] Button with Icon
+  - [x] ButtonGroup
   - [x] IconButton
   - [x] Glost / Outline Button
   - [x] Loading
@@ -70,7 +72,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Drawer
 - [x] Modal
 - [x] Notification
-  - [ ] Collapsible Notifications
+- [x] WebView
 
 ## Showcase
 
