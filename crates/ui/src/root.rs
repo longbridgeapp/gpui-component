@@ -1,3 +1,9 @@
+use crate::{
+    drawer::Drawer,
+    modal::Modal,
+    notification::{Notification, NotificationList},
+    theme::ActiveTheme,
+};
 use gpui::{
     div, AnyView, FocusHandle, InteractiveElement, IntoElement, ParentElement as _, Render, Styled,
     View, ViewContext, VisualContext as _, WindowContext,
@@ -5,13 +11,6 @@ use gpui::{
 use std::{
     ops::{Deref, DerefMut},
     rc::Rc,
-};
-
-use crate::{
-    drawer::Drawer,
-    modal::Modal,
-    notification::{Notification, NotificationList},
-    theme::ActiveTheme,
 };
 
 /// Extension trait for [`WindowContext`] and [`ViewContext`] to add drawer functionality.

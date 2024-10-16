@@ -40,6 +40,7 @@ impl From<(TypeId, ElementId)> for NotificationId {
     }
 }
 
+/// A notification element.
 pub struct Notification {
     /// The id is used make the notification unique.
     /// Then you push a notification with the same id, the previous notification will be replaced.

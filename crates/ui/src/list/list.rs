@@ -1,6 +1,7 @@
 use std::time::Duration;
 use std::{cell::Cell, rc::Rc};
 
+use crate::Icon;
 use crate::{
     input::{InputEvent, TextInput},
     scroll::{Scrollbar, ScrollbarState},
@@ -102,7 +103,7 @@ where
         let query_input = cx.new_view(|cx| {
             TextInput::new(cx)
                 .appearance(false)
-                .prefix(|_| IconName::Search)
+                .prefix(|cx| Icon::new(IconName::Search).text_color(cx.theme().muted_foreground))
                 .placeholder("Search...")
                 .cleanable()
         });

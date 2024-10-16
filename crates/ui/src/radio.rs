@@ -1,11 +1,12 @@
+use crate::{h_flex, theme::ActiveTheme, IconName};
 use gpui::{
-    div, prelude::FluentBuilder, relative, svg, CursorStyle, ElementId, InteractiveElement,
-    IntoElement, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
-    WindowContext,
+    div, prelude::FluentBuilder, relative, svg, ElementId, InteractiveElement, IntoElement,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, WindowContext,
 };
 
-use crate::{h_flex, theme::ActiveTheme, IconName};
-
+/// A Radio element.
+///
+/// This is not included the Radio group implementation, you can manage the group by yourself.
 #[derive(IntoElement)]
 pub struct Radio {
     id: ElementId,
@@ -58,7 +59,6 @@ impl RenderOnce for Radio {
         h_flex()
             .id(self.id)
             .gap_x_2()
-            .cursor(CursorStyle::PointingHand)
             .text_color(cx.theme().foreground)
             .items_center()
             .line_height(relative(1.))

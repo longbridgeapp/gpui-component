@@ -13,6 +13,14 @@ pub enum InputOptEvent {
     Change(SharedString),
 }
 
+/// A One Time Password (OTP) input element.
+///
+/// This can accept a fixed length number and can be masked.
+///
+/// Use case example:
+///
+/// - SMS OTP
+/// - Authenticator OTP
 pub struct OtpInput {
     focus_handle: FocusHandle,
     length: usize,

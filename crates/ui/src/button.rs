@@ -143,6 +143,7 @@ impl ButtonStyle {
     }
 }
 
+/// A Button element.
 #[derive(IntoElement)]
 pub struct Button {
     pub base: Div,

@@ -1,21 +1,17 @@
+use crate::{h_flex, theme::ActiveTheme, v_flex, Disableable, IconName, Selectable};
 use gpui::{
     div, prelude::FluentBuilder as _, relative, svg, ElementId, InteractiveElement, IntoElement,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _,
     WindowContext,
 };
 
-use crate::{
-    h_flex,
-    theme::{ActiveTheme, Colorize as _},
-    v_flex, Disableable, IconName, Selectable,
-};
-
+/// A Checkbox element.
 #[derive(IntoElement)]
 pub struct Checkbox {
     id: ElementId,
+    label: Option<SharedString>,
     checked: bool,
     disabled: bool,
-    label: Option<SharedString>,
     on_click: Option<Box<dyn Fn(&bool, &mut WindowContext) + 'static>>,
 }
 
@@ -23,9 +19,9 @@ impl Checkbox {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
+            label: None,
             checked: false,
             disabled: false,
-            label: None,
             on_click: None,
         }
     }
@@ -65,22 +61,17 @@ impl Selectable for Checkbox {
 
 impl RenderOnce for Checkbox {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.theme();
-
-        let group_id = format!("checkbox_group_{:?}", self.id);
-
         let (color, icon_color) = if self.disabled {
             (
-                theme.primary.opacity(0.5),
-                theme.primary_foreground.opacity(0.5),
+                cx.theme().primary.opacity(0.5),
+                cx.theme().primary_foreground.opacity(0.5),
             )
         } else {
-            (theme.primary, theme.primary_foreground)
+            (cx.theme().primary, cx.theme().primary_foreground)
         };
 
         h_flex()
             .id(self.id)
-            .group(group_id.clone())
             .gap_2()
             .items_center()
             .line_height(relative(1.))
@@ -93,15 +84,8 @@ impl RenderOnce for Checkbox {
                     .size_4()
                     .flex_shrink_0()
                     .map(|this| match self.checked {
-                        false => this.bg(theme.transparent),
+                        false => this.bg(cx.theme().transparent),
                         _ => this.bg(color),
-                    })
-                    .group_hover(group_id, |this| {
-                        if self.disabled {
-                            return this;
-                        }
-
-                        this.border_color(theme.primary.divide(0.9))
                     })
                     .child(
                         svg()
@@ -140,7 +124,6 @@ impl RenderOnce for Checkbox {
                     this.on_click(move |_, cx| {
                         let checked = !self.checked;
                         on_click(&checked, cx);
-                        cx.refresh()
                     })
                 },
             )

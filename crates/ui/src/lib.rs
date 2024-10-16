@@ -58,7 +58,14 @@ pub use colors::*;
 pub use icon::*;
 pub use svg_img::*;
 
+use std::ops::Deref;
+
+rust_i18n::i18n!("locales", fallback = "en");
+
 /// Initialize the UI module.
+///
+/// This must be called before using any of the UI components.
+/// You can initialize the UI module at your application's entry point.
 pub fn init(cx: &mut gpui::AppContext) {
     theme::init(cx);
     context_menu::init(cx);
@@ -75,8 +82,6 @@ pub fn init(cx: &mut gpui::AppContext) {
     webview::init(cx);
 }
 
-rust_i18n::i18n!("locales", fallback = "en");
-use std::ops::Deref;
 pub fn locale() -> impl Deref<Target = str> {
     rust_i18n::locale()
 }

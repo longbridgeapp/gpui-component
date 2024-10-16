@@ -238,6 +238,7 @@ impl Render for DatePicker {
                             .when(!show_clean, |this| {
                                 this.child(
                                     Icon::new(IconName::Calendar)
+                                        .xsmall()
                                         .text_color(cx.theme().muted_foreground),
                                 )
                             }),

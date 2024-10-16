@@ -5,6 +5,8 @@ use gpui::{
 
 use crate::{h_flex, theme::ActiveTheme};
 
+const MASKED: &'static str = "•";
+
 #[derive(Default, PartialEq, Eq)]
 pub enum TextAlign {
     #[default]
@@ -62,8 +64,6 @@ impl Styled for Label {
         self.base.style()
     }
 }
-
-const MASKED: &'static str = "•";
 
 impl RenderOnce for Label {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {

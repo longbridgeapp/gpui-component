@@ -212,6 +212,7 @@ pub enum DropdownEvent<D: DropdownDelegate + 'static> {
     Confirm(Option<<D::Item as DropdownItem>::Value>),
 }
 
+/// A Dropdown element.
 pub struct Dropdown<D: DropdownDelegate + 'static> {
     id: ElementId,
     focus_handle: FocusHandle,
@@ -659,9 +660,10 @@ where
 
                                 this.child(
                                     Icon::new(icon)
+                                        .xsmall()
                                         .text_color(match self.disabled {
-                                            true => cx.theme().muted_foreground,
-                                            false => cx.theme().accent_foreground,
+                                            true => cx.theme().muted_foreground.opacity(0.5),
+                                            false => cx.theme().muted_foreground,
                                         })
                                         .when(self.disabled, |this| this.cursor_not_allowed()),
                                 )

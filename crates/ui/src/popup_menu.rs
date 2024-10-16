@@ -522,10 +522,7 @@ impl Render for PopupMenu {
                                         !(*ix == items_count - 1 && item.is_separator())
                                     })
                                     .map(|(ix, item)| {
-                                        let group_id = format!("item:{}", ix);
-
                                         let this = ListItem::new(("menu-item", ix))
-                                            .group(group_id.clone())
                                             .relative()
                                             .text_sm()
                                             .py_0()
