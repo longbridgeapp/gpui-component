@@ -2879,7 +2879,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e310b3a6b5907f99202fcdb4960ff45b93735d7c7d96b760fcff8db2dc0e103d"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -6354,8 +6354,9 @@ dependencies = [
 
 [[package]]
 name = "wry"
-version = "0.46.0"
-source = "git+https://github.com/huacnlee/wry.git?branch=add-blur-method#8c0d413f0ac9699351a9ed3c6023b1c903758501"
+version = "0.46.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f8c948dc5f7c23bd93ba03b85b7f679852589bb78e150424d993171e4ef7b73"
 dependencies = [
  "base64",
  "block2",
