@@ -4,12 +4,11 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonStyled},
-    button_group::ButtonGroup,
+    checkbox::Checkbox,
     dropdown::{Dropdown, DropdownEvent, DropdownItem, SearchableVec},
     h_flex,
     theme::ActiveTheme,
-    v_flex, FocusableCycle, IconName, Selectable, Sizable,
+    v_flex, FocusableCycle, IconName, Sizable,
 };
 
 actions!(dropdown_story, [Tab, TabPrev]);
@@ -232,22 +231,14 @@ impl Render for DropdownStory {
             .size_full()
             .gap_4()
             .child(
-                ButtonGroup::new("button-group")
-                    .primary()
-                    .small()
-                    .on_click(cx.listener(|this, index: &Vec<usize>, cx| {
-                        this.toggle_disabled(index.contains(&1), cx);
-                    }))
-                    .child(
-                        Button::new("Enable")
-                            .label("Enable")
-                            .selected(!self.disabled),
-                    )
-                    .child(
-                        Button::new("Disable")
-                            .label("Disable")
-                            .selected(self.disabled),
-                    ),
+                h_flex().gap_x_3().child("State").child(
+                    Checkbox::new("disabled")
+                        .label("Disabled")
+                        .checked(self.disabled)
+                        .on_click(
+                            cx.listener(|this, checked, cx| this.toggle_disabled(*checked, cx)),
+                        ),
+                ),
             )
             .child(
                 h_flex()
