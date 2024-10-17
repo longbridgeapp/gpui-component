@@ -351,8 +351,8 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
-        let total_size = self.group.and_then(|group| group.read(cx).total_size());
-
+        let total_size = self.group.as_ref().map(|group| group.read(cx).total_size());
+        
         div()
             .flex()
             .flex_grow()
