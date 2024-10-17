@@ -1,4 +1,4 @@
-use gpui::{ClickEvent, Focusable, InteractiveElement, WindowContext};
+use gpui::{ClickEvent, Focusable, InteractiveElement, Stateful, WindowContext};
 
 pub trait InteractiveElementExt: InteractiveElement {
     /// Set the listener for a double click event.
@@ -19,3 +19,4 @@ pub trait InteractiveElementExt: InteractiveElement {
 }
 
 impl<E: InteractiveElement> InteractiveElementExt for Focusable<E> {}
+impl<E: InteractiveElement> InteractiveElementExt for Stateful<E> {}
