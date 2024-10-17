@@ -8,6 +8,7 @@ mod svg_img;
 mod time;
 mod title_bar;
 
+pub mod accordion;
 pub mod animation;
 pub mod button;
 pub mod button_group;
