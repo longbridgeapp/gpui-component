@@ -1,4 +1,4 @@
-use crate::{h_flex, theme::ActiveTheme, Icon, IconName, Sizable as _};
+use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, Hsla, InteractiveElement as _, IntoElement,
     ParentElement, RenderOnce, StatefulInteractiveElement as _, Styled, WindowContext,
@@ -172,30 +172,33 @@ impl RenderOnce for WindowControls {
 
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let mut title_bar = h_flex()
+        let macos_pl = if cfg!(target_os = "macos") {
+            Some(px(80.))
+        } else {
+            None
+        };
+
+        h_flex()
             .id("title-bar")
             .flex_shrink_0()
             .items_center()
             .justify_between()
+            .pl(px(12.))
+            .when(!cx.is_fullscreen(), |this| {
+                // Leave space for the macOS window controls.
+                this.when_some(macos_pl, |this, pl| this.pl(pl))
+            })
             .border_b_1()
-            .border_color(cx.theme().border);
-
-        title_bar = title_bar.child(
-            h_flex()
-                .h(px(34.))
-                .justify_between()
-                .flex_shrink_0()
-                .flex_1()
-                .children(self.children),
-        );
-
-        if cfg!(target_os = "macos") {
-            // Leave space for the macOS window controls.
-            title_bar = title_bar.pl(px(80.))
-        } else {
-            title_bar = title_bar.pl(px(12.))
-        }
-
-        title_bar.child(WindowControls {})
+            .border_color(cx.theme().border)
+            .on_double_click(|_, cx| cx.zoom_window())
+            .child(
+                h_flex()
+                    .h(px(34.))
+                    .justify_between()
+                    .flex_shrink_0()
+                    .flex_1()
+                    .children(self.children),
+            )
+            .child(WindowControls {})
     }
 }
