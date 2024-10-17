@@ -351,6 +351,7 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
+        let total_size = self.group.and_then(|group| group.read(cx).total_size());
 
         div()
             .flex()
@@ -367,10 +368,10 @@ impl Render for ResizablePanel {
                     .flex_basis(size)
             })
             .map(
-                |this| match (self.size_ratio, self.size, self.group.as_ref()) {
+                |this| match (self.size_ratio, self.size, total_size) {
                     (Some(size_ratio), _, _) => this.flex_basis(relative(size_ratio)),
-                    (None, Some(size), Some(group)) => {
-                        this.flex_basis(relative(size / group.read(cx).total_size()))
+                    (None, Some(size), Some(total_size)) => {
+                        this.flex_basis(relative(size / total_size))
                     }
                     (None, Some(size), None) => this.flex_basis(size),
                     _ => this,
