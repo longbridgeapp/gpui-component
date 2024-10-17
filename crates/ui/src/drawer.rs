@@ -14,6 +14,7 @@ use crate::{
     root::ContextModal as _,
     scroll::ScrollbarAxis,
     theme::ActiveTheme,
+    title_bar::TITLE_BAR_HEIGHT,
     v_flex, IconName, Placement, Sizable, StyledExt as _,
 };
 
@@ -48,7 +49,7 @@ impl Drawer {
             title: None,
             footer: None,
             content: v_flex(),
-            margin_top: px(0.),
+            margin_top: TITLE_BAR_HEIGHT,
             overlay: true,
             on_close: Rc::new(|_, _| {}),
         }

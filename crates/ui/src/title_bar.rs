@@ -1,7 +1,7 @@
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
     div, prelude::FluentBuilder as _, px, AnyElement, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement, RenderOnce, StatefulInteractiveElement as _, Styled, WindowContext,
+    ParentElement, Pixels, RenderOnce, StatefulInteractiveElement as _, Styled, WindowContext,
 };
 
 /// TitleBar used to customize the appearance of the title bar.
@@ -11,6 +11,8 @@ use gpui::{
 pub struct TitleBar {
     children: Vec<AnyElement>,
 }
+
+pub const TITLE_BAR_HEIGHT: Pixels = px(35.);
 
 impl TitleBar {
     pub fn new() -> Self {
@@ -120,7 +122,7 @@ impl RenderOnce for ControlIcon {
             .id(self.id())
             .flex()
             .cursor_pointer()
-            .w(px(35.))
+            .w(TITLE_BAR_HEIGHT)
             .h_full()
             .justify_center()
             .content_center()
@@ -189,7 +191,8 @@ impl RenderOnce for TitleBar {
                 this.when_some(macos_pl, |this, pl| this.pl(pl))
             })
             .border_b_1()
-            .border_color(cx.theme().border)
+            .border_color(cx.theme().title_bar_border)
+            .bg(cx.theme().title_bar_background)
             .on_double_click(|_, cx| cx.zoom_window())
             .child(
                 h_flex()
