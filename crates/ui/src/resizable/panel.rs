@@ -366,13 +366,16 @@ impl Render for ResizablePanel {
                 this.when(self.size.is_none(), |this| this.flex_shrink_0())
                     .flex_basis(size)
             })
-            .map(|this| {
-                if let Some(size_ratio) = self.size_ratio {
-                    this.flex_basis(relative(size_ratio))
-                } else {
-                    this.when_some(self.size, |this, size| this.flex_basis(size))
-                }
-            })
+            .map(
+                |this| match (self.size_ratio, self.size, self.group.as_ref()) {
+                    (Some(size_ratio), _, _) => this.flex_basis(relative(size_ratio)),
+                    (None, Some(size), Some(group)) => {
+                        this.flex_basis(relative(size / group.read(cx).total_size()))
+                    }
+                    (None, Some(size), None) => this.flex_basis(size),
+                    _ => this,
+                },
+            )
             .child({
                 canvas(
                     move |bounds, cx| view.update(cx, |r, cx| r.update_size(bounds, cx)),
