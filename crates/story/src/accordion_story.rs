@@ -3,14 +3,20 @@ use gpui::{
     VisualContext as _, WindowContext,
 };
 use ui::{
-    accordion::Accordion, button::Button, button_group::ButtonGroup, checkbox::Checkbox, h_flex,
-    switch::Switch, v_flex, IconName, Selectable, Sizable, Size,
+    accordion::{Accordion, AccordionGroup},
+    button::Button,
+    button_group::ButtonGroup,
+    checkbox::Checkbox,
+    h_flex,
+    switch::Switch,
+    v_flex, IconName, Selectable, Sizable, Size,
 };
 
 pub struct AccordionStory {
-    expanded_ix: Option<usize>,
+    open_ixs: Vec<usize>,
     size: Size,
     bordered: bool,
+    disabled: bool,
     focus_handle: FocusHandle,
 }
 
@@ -32,18 +38,15 @@ impl AccordionStory {
     fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             bordered: true,
-            expanded_ix: None,
+            open_ixs: Vec::new(),
             size: Size::default(),
+            disabled: false,
             focus_handle: cx.focus_handle(),
         }
     }
 
-    fn toggle_accordion(&mut self, ix: usize, explanded: bool, cx: &mut ViewContext<Self>) {
-        if explanded {
-            self.expanded_ix = Some(ix);
-        } else {
-            self.expanded_ix = None;
-        }
+    fn toggle_accordion(&mut self, open_ixs: Vec<usize>, cx: &mut ViewContext<Self>) {
+        self.open_ixs = open_ixs;
         cx.notify();
     }
 
@@ -102,6 +105,15 @@ impl Render for AccordionStory {
                             })),
                     )
                     .child(
+                        Checkbox::new("disabled")
+                            .label("Disabled")
+                            .checked(self.disabled)
+                            .on_click(cx.listener(|this, checked, cx| {
+                                this.disabled = *checked;
+                                cx.notify();
+                            })),
+                    )
+                    .child(
                         Checkbox::new("bordered")
                             .label("Bordered")
                             .checked(self.bordered)
@@ -112,25 +124,20 @@ impl Render for AccordionStory {
                     ),
             )
             .child(
-                v_flex()
-                    .gap_1()
+                AccordionGroup::new("test")
+                    .bordered(self.bordered)
+                    .with_size(self.size)
+                    .disabled(self.disabled)
                     .child(
                         Accordion::new()
-                            .bordered(self.bordered)
-                            .with_size(self.size)
-                            .expanded(self.expanded_ix == Some(0))
+                            .open(self.open_ixs.contains(&0))
                             .icon(IconName::Info)
                             .title("This is first accordion")
                             .content("Hello")
-                            .on_toggle_click(cx.listener(|this, expanded, cx| {
-                                this.toggle_accordion(0, *expanded, cx);
-                            })),
                     )
                     .child(
                         Accordion::new()
-                            .with_size(self.size)
-                            .bordered(self.bordered)
-                            .expanded(self.expanded_ix == Some(1))
+                            .open(self.open_ixs.contains(&1))
                             .icon(IconName::Inbox)
                             .title("This is second accordion")
                             .content(
@@ -142,24 +149,18 @@ impl Render for AccordionStory {
                                     .child(Switch::new("switch1").label("Switch"))
                                     .child(Checkbox::new("checkbox1").label("Or a Checkbox")),
                             )
-                            .on_toggle_click(cx.listener(|this, expanded, cx| {
-                                this.toggle_accordion(1, *expanded, cx);
-                            })),
                     )
                     .child(
                         Accordion::new()
-                            .with_size(self.size)
-                            .bordered(self.bordered)
-                            .expanded(self.expanded_ix == Some(2))
+                            .open(self.open_ixs.contains(&2))
                             .icon(IconName::Moon)
                             .title("This is third accordion")
                             .content(
                                 "This is the third accordion content. It can be any view, like a text view or a button."
                             )
-                            .on_toggle_click(cx.listener(|this, expanded, cx| {
-                                this.toggle_accordion(2, *expanded, cx);
-                            })),
-                    ),
+                    ) .on_toggle_click(cx.listener(|this, open_ixs: &[usize], cx| {
+                        this.toggle_accordion(open_ixs.to_vec(), cx);
+                    })),
             )
     }
 }

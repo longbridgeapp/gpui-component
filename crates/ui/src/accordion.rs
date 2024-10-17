@@ -1,12 +1,143 @@
-use std::sync::Arc;
+use std::{cell::Cell, rc::Rc, sync::Arc};
 
 use gpui::{
-    div, prelude::FluentBuilder as _, rems, AnyElement, InteractiveElement as _, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled,
+    div, prelude::FluentBuilder as _, rems, AnyElement, Div, ElementId, InteractiveElement as _,
+    IntoElement, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled,
     WindowContext,
 };
 
 use crate::{h_flex, theme::ActiveTheme as _, v_flex, Icon, IconName, Sizable, Size};
+
+/// An AccordionGroup is a container for multiple Accordion elements.
+#[derive(IntoElement)]
+pub struct AccordionGroup {
+    id: ElementId,
+    base: Div,
+    multiple: bool,
+    size: Size,
+    bordered: bool,
+    disabled: bool,
+    children: Vec<Accordion>,
+    on_toggle_click: Option<Arc<dyn Fn(&[usize], &mut WindowContext) + Send + Sync>>,
+}
+
+impl AccordionGroup {
+    pub fn new(id: impl Into<ElementId>) -> Self {
+        Self {
+            id: id.into(),
+            base: v_flex().gap_1(),
+            multiple: false,
+            size: Size::default(),
+            bordered: true,
+            children: Vec::new(),
+            disabled: false,
+            on_toggle_click: None,
+        }
+    }
+
+    pub fn multiple(mut self, multiple: bool) -> Self {
+        self.multiple = multiple;
+        self
+    }
+
+    pub fn bordered(mut self, bordered: bool) -> Self {
+        self.bordered = bordered;
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+
+    pub fn child(mut self, child: Accordion) -> Self {
+        self.children.push(child);
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = Accordion>) -> Self {
+        self.children.extend(children);
+        self
+    }
+
+    /// Sets the on_toggle_click callback for the AccordionGroup.
+    ///
+    /// The first argument `Vec<usize>` is the indices of the open accordions.
+    pub fn on_toggle_click(
+        mut self,
+        on_toggle_click: impl Fn(&[usize], &mut WindowContext) + Send + Sync + 'static,
+    ) -> Self {
+        self.on_toggle_click = Some(Arc::new(on_toggle_click));
+        self
+    }
+}
+
+impl Sizable for AccordionGroup {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
+
+impl RenderOnce for AccordionGroup {
+    fn render(self, _: &mut WindowContext) -> impl IntoElement {
+        let mut open_ixs: Vec<usize> = Vec::new();
+        let multiple = self.multiple;
+        let state = Rc::new(Cell::new(None));
+
+        self.children
+            .iter()
+            .enumerate()
+            .for_each(|(ix, accordion)| {
+                if accordion.open {
+                    open_ixs.push(ix);
+                }
+            });
+
+        self.base
+            .id(self.id)
+            .children(
+                self.children
+                    .into_iter()
+                    .enumerate()
+                    .map(|(ix, accordion)| {
+                        let state = Rc::clone(&state);
+                        accordion
+                            .with_size(self.size)
+                            .bordered(self.bordered)
+                            .when(self.disabled, |this| this.disabled(true))
+                            .on_toggle_click(move |_, _| {
+                                state.set(Some(ix));
+                            })
+                    }),
+            )
+            .when_some(
+                self.on_toggle_click.filter(|_| !self.disabled),
+                move |this, on_toggle_click| {
+                    this.on_click(move |_, cx| {
+                        let mut open_ixs = open_ixs.clone();
+                        if let Some(ix) = state.get() {
+                            if multiple {
+                                if let Some(pos) = open_ixs.iter().position(|&i| i == ix) {
+                                    open_ixs.remove(pos);
+                                } else {
+                                    open_ixs.push(ix);
+                                }
+                            } else {
+                                let was_open = open_ixs.iter().any(|&i| i == ix);
+                                open_ixs.clear();
+                                if !was_open {
+                                    open_ixs.push(ix);
+                                }
+                            }
+                        }
+
+                        on_toggle_click(&open_ixs, cx);
+                    })
+                },
+            )
+    }
+}
 
 /// An Accordion is a vertically stacked list of items, each of which can be expanded to reveal the content associated with it.
 #[derive(IntoElement)]
@@ -14,10 +145,11 @@ pub struct Accordion {
     icon: Option<Icon>,
     title: AnyElement,
     content: AnyElement,
-    expanded: bool,
+    open: bool,
     size: Size,
     bordered: bool,
-    on_toggle_click: Option<Arc<dyn Fn(&bool, &mut WindowContext) + Send + Sync>>,
+    disabled: bool,
+    on_toggle_click: Option<Arc<dyn Fn(&bool, &mut WindowContext)>>,
 }
 
 impl Accordion {
@@ -26,7 +158,8 @@ impl Accordion {
             icon: None,
             title: SharedString::default().into_any_element(),
             content: SharedString::default().into_any_element(),
-            expanded: false,
+            open: false,
+            disabled: false,
             on_toggle_click: None,
             size: Size::default(),
             bordered: true,
@@ -53,14 +186,19 @@ impl Accordion {
         self
     }
 
-    pub fn expanded(mut self, expanded: bool) -> Self {
-        self.expanded = expanded;
+    pub fn open(mut self, open: bool) -> Self {
+        self.open = open;
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
         self
     }
 
     pub fn on_toggle_click(
         mut self,
-        on_toggle_click: impl Fn(&bool, &mut WindowContext) + Send + Sync + 'static,
+        on_toggle_click: impl Fn(&bool, &mut WindowContext) + 'static,
     ) -> Self {
         self.on_toggle_click = Some(Arc::new(on_toggle_click));
         self
@@ -75,7 +213,7 @@ impl Sizable for Accordion {
 }
 
 impl RenderOnce for Accordion {
-    fn render(mut self, cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let text_size = match self.size {
             Size::XSmall => rems(0.875),
             Size::Small => rems(0.875),
@@ -99,8 +237,7 @@ impl RenderOnce for Accordion {
                         Size::Large => this.py_1p5().px_4(),
                         _ => this.py_1().px_3(),
                     })
-                    .cursor_pointer()
-                    .when(self.expanded, |this| {
+                    .when(self.open, |this| {
                         this.when(self.bordered, |this| {
                             this.bg(cx.theme().accordion_active)
                                 .text_color(cx.theme().foreground)
@@ -108,7 +245,6 @@ impl RenderOnce for Accordion {
                                 .border_color(cx.theme().border)
                         })
                     })
-                    .hover(|this| this.bg(cx.theme().accordion_hover))
                     .child(
                         h_flex()
                             .items_center()
@@ -125,24 +261,31 @@ impl RenderOnce for Accordion {
                             })
                             .child(self.title),
                     )
-                    .child(
-                        Icon::new(if self.expanded {
-                            IconName::ChevronUp
-                        } else {
-                            IconName::ChevronDown
-                        })
-                        .xsmall()
-                        .text_color(cx.theme().muted_foreground),
-                    )
-                    .when_some(self.on_toggle_click.take(), |this, on_toggle_click| {
-                        this.on_click({
-                            move |_, cx| {
-                                on_toggle_click(&!self.expanded, cx);
-                            }
-                        })
-                    }),
+                    .when(!self.disabled, |this| {
+                        this.cursor_pointer()
+                            .hover(|this| this.bg(cx.theme().accordion_hover))
+                            .child(
+                                Icon::new(if self.open {
+                                    IconName::ChevronUp
+                                } else {
+                                    IconName::ChevronDown
+                                })
+                                .xsmall()
+                                .text_color(cx.theme().muted_foreground),
+                            )
+                    })
+                    .when_some(
+                        self.on_toggle_click.filter(|_| !self.disabled),
+                        |this, on_toggle_click| {
+                            this.on_click({
+                                move |_, cx| {
+                                    on_toggle_click(&!self.open, cx);
+                                }
+                            })
+                        },
+                    ),
             )
-            .when(self.expanded, |this| {
+            .when(self.open, |this| {
                 this.child(
                     div()
                         .map(|this| match self.size {
