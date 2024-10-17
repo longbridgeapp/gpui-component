@@ -366,8 +366,12 @@ impl Render for ResizablePanel {
                 this.when(self.size.is_none(), |this| this.flex_shrink_0())
                     .flex_basis(size)
             })
-            .when_some(self.size_ratio, |this, size_ratio| {
-                this.flex_basis(relative(size_ratio))
+            .map(|this| {
+                if let Some(size_ratio) = self.size_ratio {
+                    this.flex_basis(relative(size_ratio))
+                } else {
+                    this.when_some(self.size, |this, size| this.flex_basis(size))
+                }
             })
             .child({
                 canvas(
