@@ -334,6 +334,9 @@ pub struct Theme {
     pub link_hover: Hsla,
     pub link_active: Hsla,
     pub skeleton: Hsla,
+    pub accordion: Hsla,
+    pub accordion_hover: Hsla,
+    pub accordion_active: Hsla,
 }
 
 impl Global for Theme {}
@@ -399,6 +402,9 @@ impl Theme {
         self.link_hover = self.link_hover.apply(mask_color);
         self.link_active = self.link_active.apply(mask_color);
         self.skeleton = self.skeleton.apply(mask_color);
+        self.accordion = self.accordion.apply(mask_color);
+        self.accordion_hover = self.accordion_hover.apply(mask_color);
+        self.accordion_active = self.accordion_active.apply(mask_color);
     }
 }
 
@@ -473,6 +479,9 @@ impl From<Colors> for Theme {
             link_hover: colors.link.lighten(0.2),
             link_active: colors.link.darken(0.2),
             skeleton: hsla(colors.primary.h, colors.primary.s, colors.primary.l, 0.1),
+            accordion: colors.background,
+            accordion_hover: colors.tab_bar.opacity(0.7),
+            accordion_active: colors.tab_bar,
         }
     }
 }

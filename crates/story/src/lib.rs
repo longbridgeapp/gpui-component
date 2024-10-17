@@ -1,3 +1,4 @@
+mod accordion_story;
 mod button_story;
 mod calendar_story;
 mod dropdown_story;
@@ -16,6 +17,7 @@ mod text_story;
 mod tooltip_story;
 mod webview_story;
 
+pub use accordion_story::AccordionStory;
 pub use button_story::ButtonStory;
 pub use calendar_story::CalendarStory;
 pub use dropdown_story::DropdownStory;
@@ -253,6 +255,7 @@ impl StoryState {
             "TextStory" => story!(TextStory),
             "TooltipStory" => story!(TooltipStory),
             "WebViewStory" => story!(WebViewStory),
+            "AccordionStory" => story!(AccordionStory),
             _ => {
                 unreachable!("Invalid story klass: {}", self.story_klass)
             }
