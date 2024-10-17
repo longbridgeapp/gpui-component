@@ -10,18 +10,18 @@ use crate::{h_flex, theme::ActiveTheme as _, v_flex, Icon, IconName, Sizable, Si
 
 /// An AccordionGroup is a container for multiple Accordion elements.
 #[derive(IntoElement)]
-pub struct AccordionGroup {
+pub struct Accordion {
     id: ElementId,
     base: Div,
     multiple: bool,
     size: Size,
     bordered: bool,
     disabled: bool,
-    children: Vec<Accordion>,
+    children: Vec<AccordionItem>,
     on_toggle_click: Option<Arc<dyn Fn(&[usize], &mut WindowContext) + Send + Sync>>,
 }
 
-impl AccordionGroup {
+impl Accordion {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -50,13 +50,12 @@ impl AccordionGroup {
         self
     }
 
-    pub fn child(mut self, child: Accordion) -> Self {
-        self.children.push(child);
-        self
-    }
-
-    pub fn children(mut self, children: impl IntoIterator<Item = Accordion>) -> Self {
-        self.children.extend(children);
+    pub fn item<F>(mut self, child: F) -> Self
+    where
+        F: FnOnce(AccordionItem) -> AccordionItem,
+    {
+        let item = child(AccordionItem::new());
+        self.children.push(item);
         self
     }
 
@@ -72,14 +71,14 @@ impl AccordionGroup {
     }
 }
 
-impl Sizable for AccordionGroup {
+impl Sizable for Accordion {
     fn with_size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
         self
     }
 }
 
-impl RenderOnce for AccordionGroup {
+impl RenderOnce for Accordion {
     fn render(self, _: &mut WindowContext) -> impl IntoElement {
         let mut open_ixs: Vec<usize> = Vec::new();
         let multiple = self.multiple;
@@ -141,7 +140,7 @@ impl RenderOnce for AccordionGroup {
 
 /// An Accordion is a vertically stacked list of items, each of which can be expanded to reveal the content associated with it.
 #[derive(IntoElement)]
-pub struct Accordion {
+pub struct AccordionItem {
     icon: Option<Icon>,
     title: AnyElement,
     content: AnyElement,
@@ -152,7 +151,7 @@ pub struct Accordion {
     on_toggle_click: Option<Arc<dyn Fn(&bool, &mut WindowContext)>>,
 }
 
-impl Accordion {
+impl AccordionItem {
     pub fn new() -> Self {
         Self {
             icon: None,
@@ -196,7 +195,7 @@ impl Accordion {
         self
     }
 
-    pub fn on_toggle_click(
+    fn on_toggle_click(
         mut self,
         on_toggle_click: impl Fn(&bool, &mut WindowContext) + 'static,
     ) -> Self {
@@ -205,14 +204,14 @@ impl Accordion {
     }
 }
 
-impl Sizable for Accordion {
+impl Sizable for AccordionItem {
     fn with_size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
         self
     }
 }
 
-impl RenderOnce for Accordion {
+impl RenderOnce for AccordionItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let text_size = match self.size {
             Size::XSmall => rems(0.875),

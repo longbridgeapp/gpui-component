@@ -3,13 +3,8 @@ use gpui::{
     VisualContext as _, WindowContext,
 };
 use ui::{
-    accordion::{Accordion, AccordionGroup},
-    button::Button,
-    button_group::ButtonGroup,
-    checkbox::Checkbox,
-    h_flex,
-    switch::Switch,
-    v_flex, IconName, Selectable, Sizable, Size,
+    accordion::Accordion, button::Button, button_group::ButtonGroup, checkbox::Checkbox, h_flex,
+    switch::Switch, v_flex, IconName, Selectable, Sizable, Size,
 };
 
 pub struct AccordionStory {
@@ -124,20 +119,18 @@ impl Render for AccordionStory {
                     ),
             )
             .child(
-                AccordionGroup::new("test")
+                Accordion::new("test")
                     .bordered(self.bordered)
                     .with_size(self.size)
                     .disabled(self.disabled)
-                    .child(
-                        Accordion::new()
-                            .open(self.open_ixs.contains(&0))
+                    .item(|this|
+                        this.open(self.open_ixs.contains(&0))
                             .icon(IconName::Info)
                             .title("This is first accordion")
                             .content("Hello")
                     )
-                    .child(
-                        Accordion::new()
-                            .open(self.open_ixs.contains(&1))
+                   .item(|this|
+                        this.open(self.open_ixs.contains(&1))
                             .icon(IconName::Inbox)
                             .title("This is second accordion")
                             .content(
@@ -150,9 +143,8 @@ impl Render for AccordionStory {
                                     .child(Checkbox::new("checkbox1").label("Or a Checkbox")),
                             )
                     )
-                    .child(
-                        Accordion::new()
-                            .open(self.open_ixs.contains(&2))
+                     .item(|this|
+                        this.open(self.open_ixs.contains(&2))
                             .icon(IconName::Moon)
                             .title("This is third accordion")
                             .content(
