@@ -144,6 +144,7 @@ impl Colorize for Hsla {
 #[derive(Debug, Clone, Copy)]
 struct Colors {
     pub title_bar_background: Hsla,
+    pub title_bar_border: Hsla,
     pub background: Hsla,
     pub foreground: Hsla,
     pub card: Hsla,
@@ -186,6 +187,7 @@ impl Colors {
     fn light() -> Colors {
         Colors {
             title_bar_background: hsl(0.0, 0.0, 100.),
+            title_bar_border: hsl(240.0, 5.9, 90.0),
             background: hsl(0.0, 0.0, 100.),
             foreground: hsl(240.0, 10., 3.9),
             card: hsl(0.0, 0.0, 100.0),
@@ -196,9 +198,9 @@ impl Colors {
             primary_hover: hsl(223.0, 5.9, 15.0),
             primary_active: hsl(223.0, 1.9, 25.0),
             primary_foreground: hsl(223.0, 0.0, 98.0),
-            secondary: hsl(240.0, 4.8, 95.9),
-            secondary_hover: hsl(240.0, 5.8, 10.).opacity(0.05),
-            secondary_active: hsl(240.0, 5.9, 10.).opacity(0.1),
+            secondary: hsl(240.0, 5.9, 96.9),
+            secondary_hover: hsl(240.0, 5.9, 98.),
+            secondary_active: hsl(240.0, 5.9, 93.),
             secondary_foreground: hsl(240.0, 59.0, 10.),
             destructive: hsl(0.0, 84.2, 60.2),
             destructive_hover: hsl(0.0, 84.2, 65.0),
@@ -227,41 +229,42 @@ impl Colors {
 
     fn dark() -> Colors {
         Colors {
-            title_bar_background: hsl(0., 0., 12.),
-            background: hsl(0.0, 0.0, 6.0),
-            foreground: hsl(0., 0., 98.),
-            card: hsl(299.0, 2., 9.),
-            card_foreground: hsl(0.0, 0.0, 98.0),
-            popover: hsl(240.0, 10.0, 3.9),
-            popover_foreground: hsl(0.0, 0.0, 98.0),
+            title_bar_background: hsl(0., 0., 9.7),
+            title_bar_border: hsl(240.0, 3.7, 15.9),
+            background: hsl(0.0, 0.0, 8.0),
+            foreground: hsl(0., 0., 78.),
+            card: hsl(299.0, 2., 11.),
+            card_foreground: hsl(0.0, 0.0, 78.0),
+            popover: hsl(0.0, 0.0, 10.),
+            popover_foreground: hsl(0.0, 0.0, 78.0),
             primary: hsl(223.0, 0.0, 98.0),
             primary_hover: hsl(223.0, 0.0, 90.0),
             primary_active: hsl(223.0, 0.0, 80.0),
             primary_foreground: hsl(223.0, 5.9, 10.0),
-            secondary: hsl(240.0, 3.7, 15.9),
-            secondary_hover: hsl(240.0, 3.7, 20.9).opacity(0.5),
-            secondary_active: hsl(240.0, 3.7, 20.9).opacity(0.8),
-            secondary_foreground: hsl(0.0, 0.0, 98.0),
+            secondary: hsl(240.0, 3.7, 17.9),
+            secondary_hover: hsl(240.0, 3.7, 22.9).opacity(0.5),
+            secondary_active: hsl(240.0, 3.7, 22.9).opacity(0.8),
+            secondary_foreground: hsl(0.0, 0.0, 78.0),
             destructive: hsl(0.0, 62.8, 30.6),
             destructive_hover: hsl(0.0, 62.8, 35.6),
             destructive_active: hsl(0.0, 62.8, 20.6),
-            destructive_foreground: hsl(0.0, 0.0, 98.0),
+            destructive_foreground: hsl(0.0, 0.0, 78.0),
             muted: hsl(240.0, 3.7, 15.9),
             muted_foreground: hsl(240.0, 5.0, 64.9),
             accent: hsl(240.0, 3.7, 15.9),
-            accent_foreground: hsl(0.0, 0.0, 98.0),
-            border: hsl(240.0, 3.7, 15.9),
+            accent_foreground: hsl(0.0, 0.0, 78.0),
+            border: hsl(240.0, 3.7, 16.9),
             input: hsl(240.0, 3.7, 15.9),
             ring: hsl(240.0, 4.9, 83.9),
             selection: hsl(211.0, 97.0, 22.0),
             scrollbar: hsl(240., 1., 15.).opacity(0.3),
             scrollbar_thumb: hsl(0., 0., 68.),
-            panel: hsl(299.0, 2., 9.),
-            tab_bar: hsl(299.0, 2., 9.),
-            list: hsl(0.0, 0.0, 6.0),
-            list_even: hsl(240.0, 3.7, 8.0),
-            list_active: hsl(240.0, 3.7, 15.0),
-            list_head: hsl(0.0, 0.0, 6.0),
+            panel: hsl(299.0, 2., 11.),
+            tab_bar: hsl(299.0, 0., 5.5),
+            list: hsl(0.0, 0.0, 8.0),
+            list_even: hsl(240.0, 3.7, 10.0),
+            list_active: hsl(240.0, 3.7, 17.0),
+            list_head: hsl(0.0, 0.0, 8.0),
             link: hsl(221.0, 83.0, 53.0),
             drop_target: hsl(235.0, 30., 44.0).opacity(0.1),
         }
@@ -273,6 +276,7 @@ pub struct Theme {
     pub mode: ThemeMode,
     pub transparent: Hsla,
     pub title_bar_background: Hsla,
+    pub title_bar_border: Hsla,
     /// Basic font size
     pub font_size: f32,
     pub font_family: SharedString,
@@ -348,6 +352,7 @@ impl Theme {
 
     pub fn apply_color(&mut self, mask_color: Hsla) {
         self.title_bar_background = self.title_bar_background.apply(mask_color);
+        self.title_bar_border = self.title_bar_border.apply(mask_color);
         self.background = self.background.apply(mask_color);
         self.foreground = self.foreground.apply(mask_color);
         self.card = self.card.apply(mask_color);
@@ -362,10 +367,10 @@ impl Theme {
         self.secondary_hover = self.secondary_hover.apply(mask_color);
         self.secondary_active = self.secondary_active.apply(mask_color);
         self.secondary_foreground = self.secondary_foreground.apply(mask_color);
-        self.destructive = self.destructive.apply(mask_color);
-        self.destructive_hover = self.destructive_hover.apply(mask_color);
-        self.destructive_active = self.destructive_active.apply(mask_color);
-        self.destructive_foreground = self.destructive_foreground.apply(mask_color);
+        // self.destructive = self.destructive.apply(mask_color);
+        // self.destructive_hover = self.destructive_hover.apply(mask_color);
+        // self.destructive_active = self.destructive_active.apply(mask_color);
+        // self.destructive_foreground = self.destructive_foreground.apply(mask_color);
         self.muted = self.muted.apply(mask_color);
         self.muted_foreground = self.muted_foreground.apply(mask_color);
         self.accent = self.accent.apply(mask_color);
@@ -424,6 +429,7 @@ impl From<Colors> for Theme {
             radius: 4.0,
             shadow: true,
             title_bar_background: colors.title_bar_background,
+            title_bar_border: colors.title_bar_border,
             background: colors.background,
             foreground: colors.foreground,
             card: colors.card,

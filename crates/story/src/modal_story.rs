@@ -289,8 +289,7 @@ impl ModalStory {
 
         let overlay = self.modal_overlay;
         cx.open_drawer(move |this, cx| {
-            this.margin_top(px(33.))
-                .placement(placement)
+            this.placement(placement)
                 .overlay(overlay)
                 .size(px(400.))
                 .title("Drawer Title")
