@@ -118,11 +118,11 @@ where
 {
     type Item = ListItem;
 
-    fn items_count(&self) -> usize {
+    fn items_count(&self, _: &AppContext) -> usize {
         self.delegate.len()
     }
 
-    fn confirmed_index(&self) -> Option<usize> {
+    fn confirmed_index(&self, _: &AppContext) -> Option<usize> {
         self.selected_index
     }
 

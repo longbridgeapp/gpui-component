@@ -2,7 +2,7 @@ use core::time;
 
 use fake::Fake;
 use gpui::{
-    actions, div, px, relative, AnyElement, ElementId, FocusHandle, FocusableView,
+    actions, div, px, relative, AnyElement, AppContext, ElementId, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, Task, Timer, View,
     ViewContext, VisualContext, WindowContext,
 };
@@ -140,11 +140,11 @@ struct CompanyListDelegate {
 impl ListDelegate for CompanyListDelegate {
     type Item = CompanyListItem;
 
-    fn items_count(&self) -> usize {
+    fn items_count(&self, _: &AppContext) -> usize {
         self.matched_companies.len()
     }
 
-    fn confirmed_index(&self) -> Option<usize> {
+    fn confirmed_index(&self, _: &AppContext) -> Option<usize> {
         self.confirmed_index
     }
 

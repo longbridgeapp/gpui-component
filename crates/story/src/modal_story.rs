@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use fake::Fake;
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, FocusHandle, FocusableView,
+    actions, div, prelude::FluentBuilder as _, px, AppContext, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, ParentElement, Render, SharedString, Styled, Task, Timer,
     View, ViewContext, VisualContext as _, WeakView, WindowContext,
 };
@@ -33,11 +33,11 @@ pub struct ListItemDeletegate {
 impl ListDelegate for ListItemDeletegate {
     type Item = ListItem;
 
-    fn items_count(&self) -> usize {
+    fn items_count(&self, _: &AppContext) -> usize {
         self.matches.len()
     }
 
-    fn confirmed_index(&self) -> Option<usize> {
+    fn confirmed_index(&self, _: &AppContext) -> Option<usize> {
         self.confirmed_index
     }
 
