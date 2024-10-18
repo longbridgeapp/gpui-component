@@ -683,7 +683,7 @@ impl TableStory {
 impl Render for TableStory {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         let delegate = self.table.read(cx).delegate();
-        let delegate_size = delegate.rows_count(cx);
+        let rows_count = delegate.rows_count(cx);
         let size = self.size;
 
         v_flex()
@@ -788,7 +788,7 @@ impl Render for TableStory {
                         .when(delegate.loading, |this| {
                             this.child(h_flex().gap_1().child(Indicator::new()).child("Loading..."))
                         })
-                        .child(format!("Total Rows: {}", delegate_size))
+                        .child(format!("Total Rows: {}", rows_count))
                         .when(delegate.is_eof, |this| this.child("All data loaded.")),
                 ),
             )
