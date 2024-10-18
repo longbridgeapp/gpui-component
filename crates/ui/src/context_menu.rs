@@ -199,9 +199,6 @@ impl Element for ContextMenu {
                         && event.button == MouseButton::Right
                         && bounds.contains(&event.position)
                     {
-                        cx.prevent_default();
-                        cx.stop_propagation();
-
                         *position.borrow_mut() = event.position;
                         *open.borrow_mut() = true;
 

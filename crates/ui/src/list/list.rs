@@ -14,6 +14,7 @@ use gpui::{
     ListSizingBehavior, MouseButton, ParentElement, Render, SharedString, Styled, Task,
     UniformListScrollHandle, View, ViewContext, VisualContext, WindowContext,
 };
+use gpui::{deferred, px};
 use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -92,6 +93,7 @@ pub struct List<D: ListDelegate> {
 
     pub(crate) size: Size,
     selected_index: Option<usize>,
+    right_clicked_index: Option<usize>,
     _search_task: Task<()>,
 }
 
@@ -117,6 +119,7 @@ where
             query_input: Some(query_input),
             last_query: None,
             selected_index: None,
+            right_clicked_index: None,
             vertical_scroll_handle: UniformListScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             max_height: None,
@@ -303,6 +306,57 @@ where
         self.scroll_to_selected_item(cx);
         cx.notify();
     }
+
+    fn render_list_item(&mut self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+            .id("list-item")
+            .w_full()
+            .relative()
+            .children(self.delegate.render_item(ix, cx))
+            .when_some(self.selected_index, |this, selected_index| {
+                this.when(ix == selected_index, |this| {
+                    this.child(deferred(
+                        div()
+                            .absolute()
+                            .top(px(-1.))
+                            .left(px(-1.))
+                            .right(px(-1.))
+                            .bottom(px(-1.))
+                            .bg(cx.theme().list_active)
+                            .border_1()
+                            .border_color(cx.theme().list_active_border),
+                    ))
+                })
+            })
+            .when(self.right_clicked_index == Some(ix), |this| {
+                this.child(deferred(
+                    div()
+                        .absolute()
+                        .top(px(-1.))
+                        .left(px(-1.))
+                        .right(px(-1.))
+                        .bottom(px(-1.))
+                        .border_1()
+                        .border_color(cx.theme().list_active_border),
+                ))
+            })
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, _, cx| {
+                    cx.stop_propagation();
+                    this.right_clicked_index = None;
+                    this.selected_index = Some(ix);
+                    this.on_action_confirm(&Confirm, cx);
+                }),
+            )
+            .on_mouse_down(
+                MouseButton::Right,
+                cx.listener(move |this, _, cx| {
+                    this.right_clicked_index = Some(ix);
+                    cx.notify();
+                }),
+            )
+    }
 }
 
 impl<D> FocusableView for List<D>
@@ -331,8 +385,6 @@ where
         } else {
             ListSizingBehavior::Auto
         };
-
-        let selected_bg = cx.theme().list_active;
 
         let inital_view = if let Some(input) = &self.query_input {
             if input.read(cx).text().is_empty() {
@@ -385,31 +437,7 @@ where
                                     uniform_list(view, "uniform-list", items_count, {
                                         move |list, visible_range, cx| {
                                             visible_range
-                                                .map(|ix| {
-                                                    div()
-                                                        .id("list-item")
-                                                        .w_full()
-                                                        .children(list.delegate.render_item(ix, cx))
-                                                        .when_some(
-                                                            list.selected_index,
-                                                            |this, selected_index| {
-                                                                this.when(
-                                                                    ix == selected_index,
-                                                                    |this| this.bg(selected_bg),
-                                                                )
-                                                            },
-                                                        )
-                                                        .on_mouse_down(
-                                                            MouseButton::Left,
-                                                            cx.listener(move |this, _, cx| {
-                                                                cx.stop_propagation();
-                                                                this.selected_index = Some(ix);
-                                                                this.on_action_confirm(
-                                                                    &Confirm, cx,
-                                                                );
-                                                            }),
-                                                        )
-                                                })
+                                                .map(|ix| list.render_list_item(ix, cx))
                                                 .collect::<Vec<_>>()
                                         }
                                     })

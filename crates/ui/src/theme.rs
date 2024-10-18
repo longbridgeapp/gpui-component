@@ -177,7 +177,6 @@ struct Colors {
     pub tab_bar: Hsla,
     pub list: Hsla,
     pub list_even: Hsla,
-    pub list_active: Hsla,
     pub list_head: Hsla,
     pub link: Hsla,
     pub drop_target: Hsla,
@@ -220,7 +219,6 @@ impl Colors {
             tab_bar: hsl(240.0, 4.8, 95.9),
             list: hsl(0.0, 0.0, 100.),
             list_even: hsl(240.0, 5.0, 96.0),
-            list_active: hsl(240.0, 7., 88.0).opacity(0.75),
             list_head: hsl(0.0, 0.0, 100.),
             link: hsl(221.0, 83.0, 53.0),
             drop_target: hsl(235.0, 30., 44.0).opacity(0.25),
@@ -263,7 +261,6 @@ impl Colors {
             tab_bar: hsl(299.0, 0., 5.5),
             list: hsl(0.0, 0.0, 8.0),
             list_even: hsl(240.0, 3.7, 10.0),
-            list_active: hsl(240.0, 3.7, 17.0),
             list_head: hsl(0.0, 0.0, 8.0),
             link: hsl(221.0, 83.0, 53.0),
             drop_target: hsl(235.0, 30., 44.0).opacity(0.1),
@@ -326,6 +323,7 @@ pub struct Theme {
     pub list_even: Hsla,
     pub list_head: Hsla,
     pub list_active: Hsla,
+    pub list_active_border: Hsla,
     pub list_hover: Hsla,
     pub table: Hsla,
     pub table_even: Hsla,
@@ -333,6 +331,7 @@ pub struct Theme {
     pub table_head_foreground: Hsla,
     pub table_row_border: Hsla,
     pub table_active: Hsla,
+    pub table_active_border: Hsla,
     pub table_hover: Hsla,
     pub link: Hsla,
     pub link_hover: Hsla,
@@ -378,7 +377,7 @@ impl Theme {
         self.border = self.border.apply(mask_color);
         self.input = self.input.apply(mask_color);
         self.ring = self.ring.apply(mask_color);
-        self.selection = self.selection.apply(mask_color);
+        // self.selection = self.selection.apply(mask_color);
         self.scrollbar = self.scrollbar.apply(mask_color);
         self.scrollbar_thumb = self.scrollbar_thumb.apply(mask_color);
         self.panel = self.panel.apply(mask_color);
@@ -395,13 +394,16 @@ impl Theme {
         self.list = self.list.apply(mask_color);
         self.list_even = self.list_even.apply(mask_color);
         self.list_head = self.list_head.apply(mask_color);
-        self.list_active = self.list_active.apply(mask_color);
+        // self.list_active = self.list_active.apply(mask_color);
+        // self.list_active_border = self.list_active_border.apply(mask_color);
         self.list_hover = self.list_hover.apply(mask_color);
         self.table = self.table.apply(mask_color);
         self.table_even = self.table_even.apply(mask_color);
-        self.table_active = self.table_active.apply(mask_color);
+        // self.table_active = self.table_active.apply(mask_color);
+        // self.table_active_border = self.table_active_border.apply(mask_color);
         self.table_hover = self.table_hover.apply(mask_color);
         self.table_row_border = self.table_row_border.apply(mask_color);
+        self.table_head = self.table_head.apply(mask_color);
         self.table_head_foreground = self.table_head_foreground.apply(mask_color);
         self.link = self.link.apply(mask_color);
         self.link_hover = self.link_hover.apply(mask_color);
@@ -472,13 +474,15 @@ impl From<Colors> for Theme {
             list: colors.list,
             list_even: colors.list_even,
             list_head: colors.list_head,
-            list_active: colors.list_active,
-            list_hover: colors.list_active.opacity(0.6),
+            list_active: colors.selection.opacity(0.2),
+            list_active_border: colors.selection,
+            list_hover: colors.selection.opacity(0.2),
             table_head: colors.list_head,
             table: colors.list,
             table_even: colors.list_even,
-            table_active: colors.list_active,
-            table_hover: colors.list_active.opacity(0.8),
+            table_active: colors.selection.opacity(0.2),
+            table_active_border: colors.selection,
+            table_hover: colors.selection.opacity(0.2),
             table_row_border: colors.border.opacity(0.5),
             table_head_foreground: colors.foreground.opacity(0.7),
             link: colors.link,

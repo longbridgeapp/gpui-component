@@ -7,8 +7,8 @@ use crate::{
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
-    DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
+    actions, canvas, deferred, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds,
+    Div, DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
     ScrollHandle, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
     UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
@@ -119,6 +119,7 @@ pub struct Table<D: TableDelegate> {
 
     selection_state: SelectionState,
     selected_row: Option<usize>,
+    right_clicked_row: Option<usize>,
     selected_col: Option<usize>,
 
     /// The column index that is being resized.
@@ -265,6 +266,7 @@ where
             horizontal_scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             selection_state: SelectionState::Row,
             selected_row: None,
+            right_clicked_row: None,
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
@@ -335,6 +337,7 @@ where
 
     fn set_selected_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Row;
+        self.right_clicked_row = None;
         self.selected_row = Some(row_ix);
         if let Some(row_ix) = self.selected_row {
             self.vertical_scroll_handle.scroll_to_item(row_ix);
@@ -356,8 +359,17 @@ where
         cx.notify();
     }
 
-    fn on_row_click(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
-        self.set_selected_row(row_ix, cx)
+    fn on_row_click(
+        &mut self,
+        mouse_button: MouseButton,
+        row_ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) {
+        if mouse_button == MouseButton::Right {
+            self.right_clicked_row = Some(row_ix);
+        } else {
+            self.set_selected_row(row_ix, cx)
+        }
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
@@ -994,13 +1006,44 @@ where
                 .when_some(self.selected_row, |this, _| {
                     this.when(
                         is_selected && self.selection_state == SelectionState::Row,
-                        |this| this.bg(cx.theme().table_active),
+                        |this| {
+                            this.child(deferred(
+                                div()
+                                    .top(px(-1.))
+                                    .left(px(-1.))
+                                    .right(px(-1.))
+                                    .bottom_0()
+                                    .absolute()
+                                    .bg(cx.theme().table_active)
+                                    .border_1()
+                                    .border_color(cx.theme().table_active_border),
+                            ))
+                        },
                     )
+                })
+                // Row right click row style
+                .when(self.right_clicked_row == Some(row_ix), |this| {
+                    this.child(deferred(
+                        div()
+                            .top(px(-1.))
+                            .left(px(-1.))
+                            .right(px(-1.))
+                            .bottom_0()
+                            .absolute()
+                            .border_1()
+                            .border_color(cx.theme().selection),
+                    ))
                 })
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener(move |this, _, cx| {
-                        this.on_row_click(row_ix, cx);
+                        this.on_row_click(MouseButton::Left, row_ix, cx);
+                    }),
+                )
+                .on_mouse_down(
+                    MouseButton::Right,
+                    cx.listener(move |this, _, cx| {
+                        this.on_row_click(MouseButton::Right, row_ix, cx);
                     }),
                 )
         } else {
