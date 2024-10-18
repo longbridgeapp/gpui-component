@@ -135,20 +135,20 @@ pub struct Table<D: TableDelegate> {
 #[allow(unused)]
 pub trait TableDelegate: Sized + 'static {
     /// Return the number of columns in the table.
-    fn cols_count(&self) -> usize;
+    fn cols_count(&self, cx: &AppContext) -> usize;
     /// Return the number of rows in the table.
-    fn rows_count(&self, cx: &'_ AppContext) -> usize;
+    fn rows_count(&self, cx: &AppContext) -> usize;
 
     /// Returns the name of the column at the given index.
-    fn col_name(&self, col_ix: usize) -> SharedString;
+    fn col_name(&self, col_ix: usize, cx: &AppContext) -> SharedString;
 
     /// Returns whether the column at the given index can be resized. Default: true
-    fn can_resize_col(&self, col_ix: usize) -> bool {
+    fn can_resize_col(&self, col_ix: usize, cx: &AppContext) -> bool {
         true
     }
 
     /// Returns whether the column at the given index can be selected. Default: false
-    fn can_select_col(&self, col_ix: usize) -> bool {
+    fn can_select_col(&self, col_ix: usize, cx: &AppContext) -> bool {
         false
     }
 
@@ -156,24 +156,24 @@ pub trait TableDelegate: Sized + 'static {
     /// Return None, use auto width.
     ///
     /// This is only called when the table initializes.
-    fn col_width(&self, col_ix: usize) -> Option<Pixels>;
+    fn col_width(&self, col_ix: usize, cx: &AppContext) -> Option<Pixels>;
 
     /// Return the sort state of the column at the given index.
     ///
     /// This is only called when the table initializes.
-    fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+    fn col_sort(&self, col_ix: usize, cx: &AppContext) -> Option<ColSort> {
         None
     }
 
     /// Return the fixed side of the column at the given index.
-    fn col_fixed(&self, col_ix: usize) -> Option<ColFixed> {
+    fn col_fixed(&self, col_ix: usize, cx: &AppContext) -> Option<ColFixed> {
         None
     }
 
     /// Return the padding of the column at the given index to override the default padding.
     ///
     /// Return None, use the default padding.
-    fn col_padding(&self, col_ix: usize) -> Option<Edges<Pixels>> {
+    fn col_padding(&self, col_ix: usize, cx: &AppContext) -> Option<Edges<Pixels>> {
         None
     }
 
@@ -182,7 +182,7 @@ pub trait TableDelegate: Sized + 'static {
 
     /// Render the header cell at the given column index, default to the column name.
     fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
-        div().size_full().child(self.col_name(col_ix))
+        div().size_full().child(self.col_name(col_ix, cx))
     }
 
     /// Render the row at the given row and column.
@@ -203,17 +203,17 @@ pub trait TableDelegate: Sized + 'static {
     /// When the prev/next selection is out of the table bounds, the selection will loop to the other side.
     ///
     /// Default: true
-    fn can_loop_select(&self) -> bool {
+    fn can_loop_select(&self, _: &AppContext) -> bool {
         true
     }
 
     /// Return true to enable column order change.
-    fn can_move_col(&self, col_ix: usize) -> bool {
+    fn can_move_col(&self, col_ix: usize, cx: &AppContext) -> bool {
         false
     }
 
     /// Move the column at the given `col_ix` to insert before the column at the given `to_ix`.
-    fn move_col(&mut self, col_ix: usize, to_ix: usize) {}
+    fn move_col(&mut self, col_ix: usize, to_ix: usize, cx: &mut ViewContext<Table<Self>>) {}
 
     /// Return a Element to show when table is empty.
     fn render_empty(&self, cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
@@ -229,7 +229,7 @@ pub trait TableDelegate: Sized + 'static {
     /// Return true to enable load more data when scrolling to the bottom.
     ///
     /// Default: true
-    fn can_load_more(&self) -> bool {
+    fn can_load_more(&self, cx: &AppContext) -> bool {
         true
     }
 
@@ -316,13 +316,13 @@ where
     }
 
     fn prepare_col_groups(&mut self, cx: &mut ViewContext<Self>) {
-        self.col_groups = (0..self.delegate.cols_count())
+        self.col_groups = (0..self.delegate.cols_count(cx))
             .map(|col_ix| ColGroup {
-                width: self.delegate.col_width(col_ix),
-                padding: self.delegate.col_padding(col_ix),
+                width: self.delegate.col_width(col_ix, cx),
+                padding: self.delegate.col_padding(col_ix, cx),
                 bounds: Bounds::default(),
-                sort: self.delegate.col_sort(col_ix),
-                fixed: self.delegate.col_fixed(col_ix),
+                sort: self.delegate.col_sort(col_ix, cx),
+                fixed: self.delegate.col_fixed(col_ix, cx),
             })
             .collect();
         cx.notify();
@@ -361,7 +361,7 @@ where
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
-        if !self.delegate.can_select_col(col_ix) {
+        if !self.delegate.can_select_col(col_ix, cx) {
             return;
         }
 
@@ -381,7 +381,7 @@ where
         if selected_row > 0 {
             selected_row = selected_row - 1;
         } else {
-            if self.delegate.can_loop_select() {
+            if self.delegate.can_loop_select(cx) {
                 selected_row = rows_count - 1;
             }
         }
@@ -394,7 +394,7 @@ where
         if selected_row < self.delegate.rows_count(cx) - 1 {
             selected_row += 1;
         } else {
-            if self.delegate.can_loop_select() {
+            if self.delegate.can_loop_select(cx) {
                 selected_row = 0;
             }
         }
@@ -404,11 +404,11 @@ where
 
     fn action_select_prev_col(&mut self, _: &SelectPrevColumn, cx: &mut ViewContext<Self>) {
         let mut selected_col = self.selected_col.unwrap_or(0);
-        let cols_count = self.delegate.cols_count();
+        let cols_count = self.delegate.cols_count(cx);
         if selected_col > 0 {
             selected_col -= 1;
         } else {
-            if self.delegate.can_loop_select() {
+            if self.delegate.can_loop_select(cx) {
                 selected_col = cols_count - 1;
             }
         }
@@ -417,10 +417,10 @@ where
 
     fn action_select_next_col(&mut self, _: &SelectNextColumn, cx: &mut ViewContext<Self>) {
         let mut selected_col = self.selected_col.unwrap_or(0);
-        if selected_col < self.delegate.cols_count() - 1 {
+        if selected_col < self.delegate.cols_count(cx) - 1 {
             selected_col += 1;
         } else {
-            if self.delegate.can_loop_select() {
+            if self.delegate.can_loop_select(cx) {
                 selected_col = 0;
             }
         }
@@ -454,7 +454,7 @@ where
         const MIN_WIDTH: Pixels = px(10.0);
         const MAX_WIDTH: Pixels = px(1200.0);
 
-        if !self.delegate.can_resize_col(ix) {
+        if !self.delegate.can_resize_col(ix, cx) {
             return;
         }
         let size = size.floor();
@@ -510,7 +510,7 @@ where
             return;
         }
 
-        self.delegate.move_col(col_ix, to_ix);
+        self.delegate.move_col(col_ix, to_ix, cx);
         let col_group = self.col_groups.remove(col_ix);
         self.col_groups.insert(to_ix, col_group);
 
@@ -519,7 +519,7 @@ where
 
     /// Dispatch delegate's `load_more` method when the visible range is near the end.
     fn load_more(&mut self, visible_range: Range<usize>, cx: &mut ViewContext<Self>) {
-        if !self.delegate.can_load_more() {
+        if !self.delegate.can_load_more(cx) {
             return;
         }
 
@@ -582,7 +582,7 @@ where
     fn render_col_wrap(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> Div {
         let el = h_flex().h_full();
 
-        if self.delegate().can_select_col(col_ix)
+        if self.delegate().can_select_col(col_ix, cx)
             && self.selected_col == Some(col_ix)
             && self.selection_state == SelectionState::Column
         {
@@ -631,7 +631,7 @@ where
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         const HANDLE_SIZE: Pixels = px(2.);
 
-        if !self.delegate.can_resize_col(ix) {
+        if !self.delegate.can_resize_col(ix, cx) {
             return div().into_any_element();
         }
 
@@ -753,7 +753,7 @@ where
         let entity_id = cx.entity_id();
         let col_group = self.col_groups.get(col_ix).expect("BUG: invalid col index");
 
-        let name = self.delegate.col_name(col_ix);
+        let name = self.delegate.col_name(col_ix, cx);
         h_flex()
             .child(
                 self.render_cell(col_ix, cx)
@@ -771,7 +771,7 @@ where
                             .justify_between()
                             .items_center()
                             .child(self.delegate.render_th(col_ix, cx))
-                            .when_some(self.delegate().col_padding(col_ix), |this, padding| {
+                            .when_some(self.delegate().col_padding(col_ix, cx), |this, padding| {
                                 // Leave right space for the sort icon, if this column have custom padding
                                 let offset_pr =
                                     self.size.table_cell_padding().right - padding.right;
@@ -780,7 +780,7 @@ where
                             })
                             .children(self.render_sort_icon(col_ix, cx)),
                     )
-                    .when(self.delegate.can_move_col(col_ix), |this| {
+                    .when(self.delegate.can_move_col(col_ix, cx), |this| {
                         this.on_drag(
                             DragCol {
                                 entity_id,
@@ -1054,7 +1054,7 @@ where
         let view = cx.view().clone();
         let vertical_scroll_handle = self.vertical_scroll_handle.clone();
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
-        let cols_count: usize = self.delegate.cols_count();
+        let cols_count: usize = self.delegate.cols_count(cx);
         let rows_count = self.delegate.rows_count(cx);
 
         let row_height = self
