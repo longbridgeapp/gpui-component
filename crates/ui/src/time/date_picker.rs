@@ -8,8 +8,12 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    dropdown::Escape, h_flex, input::ClearButton, theme::ActiveTheme, v_flex, Icon, IconName,
-    Sizable, Size, StyleSized as _, StyledExt as _,
+    button::{Button, ButtonStyled as _},
+    dropdown::Escape,
+    h_flex,
+    input::ClearButton,
+    theme::ActiveTheme,
+    v_flex, Icon, IconName, Sizable, Size, StyleSized as _, StyledExt as _,
 };
 
 use super::calendar::{Calendar, CalendarEvent, Date};
@@ -318,42 +322,26 @@ impl Render for DatePicker {
                                 .child(
                                     h_flex()
                                         .gap_3()
-                                        .justify_start()
+                                        .h_full()
                                         .items_start()
                                         .when_some(self.presets.clone(), |this, presets| {
                                             this.child(
-                                                v_flex().gap_2().children(
-                                                    presets
-                                                        .into_iter()
-                                                        .map(|preset| {
-                                                            h_flex()
-                                                                .w(px(120.0))
-                                                                .rounded_md()
-                                                                .px_2()
-                                                                .py_1()
-                                                                .mx_1()
-                                                                .justify_start()
-                                                                .cursor_pointer()
-                                                                .hover(|this| {
-                                                                    this.bg(cx.theme().accent)
-                                                                        .text_color(
-                                                                            cx.theme()
-                                                                                .accent_foreground,
-                                                                        )
-                                                                })
-                                                                .child(preset.label.clone())
-                                                                .on_mouse_up(
-                                                                    MouseButton::Left,
-                                                                    cx.listener(
-                                                                        move |this, _, cx| {
-                                                                            this.select_preset(
-                                                                                &preset, cx,
-                                                                            );
-                                                                        },
-                                                                    ),
-                                                                )
-                                                        })
-                                                        .collect::<Vec<_>>(),
+                                                v_flex().my_1().gap_2().justify_end().children(
+                                                    presets.into_iter().enumerate().map(
+                                                        |(i, preset)| {
+                                                            Button::new(("preset", i))
+                                                                .small()
+                                                                .ghost()
+                                                                .label(preset.label.clone())
+                                                                .on_click(cx.listener(
+                                                                    move |this, _, cx| {
+                                                                        this.select_preset(
+                                                                            &preset, cx,
+                                                                        );
+                                                                    },
+                                                                ))
+                                                        },
+                                                    ),
                                                 ),
                                             )
                                         })
