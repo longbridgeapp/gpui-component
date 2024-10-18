@@ -16,7 +16,7 @@ pub trait ContextMenuExt: ParentElement + Sized {
         self,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Self {
-        self.child(ContextMenu::new("context_menu").menu(f))
+        self.child(ContextMenu::new("context-menu").menu(f))
     }
 }
 
@@ -118,23 +118,32 @@ impl Element for ContextMenu {
             let menu_view = state.menu_view.borrow().clone();
 
             let (menu_element, menu_layout_id) = if *open.borrow() {
-                let mut menu_element = deferred(
-                    anchored()
-                        .position(*position)
-                        .snap_to_window_with_margin(px(8.))
-                        .anchor(anchor)
-                        .when_some(menu_view, |this, menu| {
-                            // Focus the menu, so that can be handle the action.
-                            menu.focus_handle(cx).focus(cx);
+                let has_menu_item = menu_view
+                    .as_ref()
+                    .map(|menu| !menu.read(cx).is_empty())
+                    .unwrap_or(false);
 
-                            this.child(div().occlude().child(menu.clone()))
-                        }),
-                )
-                .with_priority(1)
-                .into_any();
+                if has_menu_item {
+                    let mut menu_element = deferred(
+                        anchored()
+                            .position(*position)
+                            .snap_to_window_with_margin(px(8.))
+                            .anchor(anchor)
+                            .when_some(menu_view, |this, menu| {
+                                // Focus the menu, so that can be handle the action.
+                                menu.focus_handle(cx).focus(cx);
 
-                let menu_layout_id = menu_element.request_layout(cx);
-                (Some(menu_element), Some(menu_layout_id))
+                                this.child(div().occlude().child(menu.clone()))
+                            }),
+                    )
+                    .with_priority(1)
+                    .into_any();
+
+                    let menu_layout_id = menu_element.request_layout(cx);
+                    (Some(menu_element), Some(menu_layout_id))
+                } else {
+                    (None, None)
+                }
             } else {
                 (None, None)
             };
@@ -199,9 +208,6 @@ impl Element for ContextMenu {
                         && event.button == MouseButton::Right
                         && bounds.contains(&event.position)
                     {
-                        cx.prevent_default();
-                        cx.stop_propagation();
-
                         *position.borrow_mut() = event.position;
                         *open.borrow_mut() = true;
 

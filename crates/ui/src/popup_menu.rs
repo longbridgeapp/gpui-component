@@ -334,6 +334,10 @@ impl PopupMenu {
         None
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.menu_items.is_empty()
+    }
+
     fn clickable_menu_items(&self) -> impl Iterator<Item = (usize, &PopupMenuItem)> {
         self.menu_items
             .iter()

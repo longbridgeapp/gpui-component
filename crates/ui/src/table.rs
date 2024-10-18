@@ -1,14 +1,16 @@
 use std::{cell::Cell, ops::Range, rc::Rc};
 
 use crate::{
+    context_menu::ContextMenuExt,
     h_flex,
+    popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
-    DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
+    actions, canvas, deferred, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds,
+    Div, DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
     ScrollHandle, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
     UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
@@ -119,6 +121,7 @@ pub struct Table<D: TableDelegate> {
 
     selection_state: SelectionState,
     selected_row: Option<usize>,
+    right_clicked_row: Option<usize>,
     selected_col: Option<usize>,
 
     /// The column index that is being resized.
@@ -188,6 +191,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Render the row at the given row and column.
     fn render_tr(&self, row_ix: usize, cx: &mut ViewContext<Table<Self>>) -> Stateful<Div> {
         h_flex().id(("table-row", row_ix))
+    }
+
+    /// Render the context menu for the row at the given row index.
+    fn context_menu(&self, row_ix: usize, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        menu
     }
 
     /// Render cell at the given row and column.
@@ -265,6 +273,7 @@ where
             horizontal_scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
             selection_state: SelectionState::Row,
             selected_row: None,
+            right_clicked_row: None,
             selected_col: None,
             resizing_col: None,
             bounds: Bounds::default(),
@@ -335,6 +344,7 @@ where
 
     fn set_selected_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Row;
+        self.right_clicked_row = None;
         self.selected_row = Some(row_ix);
         if let Some(row_ix) = self.selected_row {
             self.vertical_scroll_handle.scroll_to_item(row_ix);
@@ -356,8 +366,17 @@ where
         cx.notify();
     }
 
-    fn on_row_click(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
-        self.set_selected_row(row_ix, cx)
+    fn on_row_click(
+        &mut self,
+        mouse_button: MouseButton,
+        row_ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) {
+        if mouse_button == MouseButton::Right {
+            self.right_clicked_row = Some(row_ix);
+        } else {
+            self.set_selected_row(row_ix, cx)
+        }
     }
 
     fn on_col_head_click(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
@@ -938,10 +957,14 @@ where
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
         let is_stripe_row = self.stripe && row_ix % 2 != 0;
         let is_selected = self.selected_row == Some(row_ix);
+        let view = cx.view().clone();
 
         if row_ix < rows_count {
             self.delegate
                 .render_tr(row_ix, cx)
+                .context_menu(move |this, cx: &mut ViewContext<PopupMenu>| {
+                    view.read(cx).delegate.context_menu(row_ix, this, cx)
+                })
                 .w_full()
                 .h(self.size.table_row_height())
                 .when(row_ix > 0, |this| {
@@ -949,7 +972,7 @@ where
                 })
                 .when(is_stripe_row, |this| this.bg(cx.theme().table_even))
                 .hover(|this| {
-                    if is_selected {
+                    if is_selected || self.right_clicked_row == Some(row_ix) {
                         this
                     } else {
                         this.bg(cx.theme().table_hover)
@@ -994,13 +1017,44 @@ where
                 .when_some(self.selected_row, |this, _| {
                     this.when(
                         is_selected && self.selection_state == SelectionState::Row,
-                        |this| this.bg(cx.theme().table_active),
+                        |this| {
+                            this.child(deferred(
+                                div()
+                                    .top(px(-1.))
+                                    .left(px(-1.))
+                                    .right(px(-1.))
+                                    .bottom_0()
+                                    .absolute()
+                                    .bg(cx.theme().table_active)
+                                    .border_1()
+                                    .border_color(cx.theme().table_active_border),
+                            ))
+                        },
                     )
+                })
+                // Row right click row style
+                .when(self.right_clicked_row == Some(row_ix), |this| {
+                    this.child(deferred(
+                        div()
+                            .top(px(-1.))
+                            .left(px(-1.))
+                            .right(px(-1.))
+                            .bottom_0()
+                            .absolute()
+                            .border_1()
+                            .border_color(cx.theme().selection),
+                    ))
                 })
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener(move |this, _, cx| {
-                        this.on_row_click(row_ix, cx);
+                        this.on_row_click(MouseButton::Left, row_ix, cx);
+                    }),
+                )
+                .on_mouse_down(
+                    MouseButton::Right,
+                    cx.listener(move |this, _, cx| {
+                        this.on_row_click(MouseButton::Right, row_ix, cx);
                     }),
                 )
         } else {
@@ -1169,6 +1223,13 @@ where
             .child(self.render_horizontal_scrollbar(cx))
             .when(rows_count > 0, |this| {
                 this.children(self.render_scrollbar(cx))
+            })
+            // Click out to cancel right clicked row
+            .when(self.right_clicked_row.is_some(), |this| {
+                this.on_mouse_down_out(cx.listener(|this, _, cx| {
+                    this.right_clicked_row = None;
+                    cx.notify();
+                }))
             })
     }
 }

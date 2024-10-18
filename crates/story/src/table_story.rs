@@ -10,12 +10,11 @@ use serde::Deserialize;
 use ui::{
     button::{Button, ButtonStyled},
     checkbox::Checkbox,
-    context_menu::ContextMenuExt,
     h_flex,
     indicator::Indicator,
     input::{InputEvent, TextInput},
     label::Label,
-    popup_menu::PopupMenuExt,
+    popup_menu::{PopupMenu, PopupMenuExt},
     prelude::FluentBuilder as _,
     table::{ColFixed, ColSort, Table, TableDelegate, TableEvent},
     v_flex, Selectable, Size, StyleSized as _,
@@ -341,17 +340,11 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn render_tr(
-        &self,
-        row_ix: usize,
-        _: &mut ViewContext<Table<Self>>,
-    ) -> gpui::Stateful<gpui::Div> {
-        h_flex().id(("table-row", row_ix)).context_menu(|this, _| {
-            this.menu("Size Large", Box::new(ChangeSize(Size::Large)))
-                .menu("Size Medium", Box::new(ChangeSize(Size::Medium)))
-                .menu("Size Small", Box::new(ChangeSize(Size::Small)))
-                .menu("Size XSmall", Box::new(ChangeSize(Size::XSmall)))
-        })
+    fn context_menu(&self, _: usize, menu: PopupMenu, _: &WindowContext) -> PopupMenu {
+        menu.menu("Size Large", Box::new(ChangeSize(Size::Large)))
+            .menu("Size Medium", Box::new(ChangeSize(Size::Medium)))
+            .menu("Size Small", Box::new(ChangeSize(Size::Small)))
+            .menu("Size XSmall", Box::new(ChangeSize(Size::XSmall)))
     }
 
     fn render_td(
