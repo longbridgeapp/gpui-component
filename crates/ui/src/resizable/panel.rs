@@ -278,7 +278,7 @@ pub struct ResizablePanel {
     group: Option<View<ResizablePanelGroup>>,
     /// Initial size is the size that the panel has when it is created.
     initial_size: Option<Pixels>,
-    /// size is the size that the panel has when it is resized or ajusted by flex layout.
+    /// size is the size that the panel has when it is resized or adjusted by flex layout.
     size: Option<Pixels>,
     /// the size ratio that the panel has relative to its group
     size_ratio: Option<f32>,
@@ -352,7 +352,7 @@ impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
         let total_size = self.group.as_ref().map(|group| group.read(cx).total_size());
-        
+
         div()
             .flex()
             .flex_grow()
@@ -367,16 +367,14 @@ impl Render for ResizablePanel {
                 this.when(self.size.is_none(), |this| this.flex_shrink_0())
                     .flex_basis(size)
             })
-            .map(
-                |this| match (self.size_ratio, self.size, total_size) {
-                    (Some(size_ratio), _, _) => this.flex_basis(relative(size_ratio)),
-                    (None, Some(size), Some(total_size)) => {
-                        this.flex_basis(relative(size / total_size))
-                    }
-                    (None, Some(size), None) => this.flex_basis(size),
-                    _ => this,
-                },
-            )
+            .map(|this| match (self.size_ratio, self.size, total_size) {
+                (Some(size_ratio), _, _) => this.flex_basis(relative(size_ratio)),
+                (None, Some(size), Some(total_size)) => {
+                    this.flex_basis(relative(size / total_size))
+                }
+                (None, Some(size), None) => this.flex_basis(size),
+                _ => this,
+            })
             .child({
                 canvas(
                     move |bounds, cx| view.update(cx, |r, cx| r.update_size(bounds, cx)),

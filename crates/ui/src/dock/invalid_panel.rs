@@ -50,7 +50,7 @@ impl Render for InvalidPanel {
             .justify_center()
             .text_color(cx.theme().muted_foreground)
             .child(format!(
-                "The `{}` panel type is not registed in PanelRegistry.",
+                "The `{}` panel type is not registered in PanelRegistry.",
                 self.name.clone()
             ))
     }

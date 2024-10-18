@@ -202,7 +202,7 @@ impl<'a, V> ContextModal for ViewContext<'a, V> {
 ///
 /// It is used to manage the Drawer, Modal, and Notification.
 pub struct Root {
-    /// Used to store the focus handle of the previus revious view.
+    /// Used to store the focus handle of the previous view.
     /// When the Modal, Drawer closes, we will focus back to the previous view.
     previous_focus_handle: Option<FocusHandle>,
     active_drawer: Option<ActiveDrawer>,
