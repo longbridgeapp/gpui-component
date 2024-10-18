@@ -8,13 +8,13 @@ use crate::{
     theme::ActiveTheme,
     v_flex, IconName, Size,
 };
+use gpui::px;
 use gpui::{
     actions, div, prelude::FluentBuilder, uniform_list, AnyElement, AppContext, Entity,
     FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, Length,
     ListSizingBehavior, MouseButton, ParentElement, Render, SharedString, Styled, Task,
     UniformListScrollHandle, View, ViewContext, VisualContext, WindowContext,
 };
-use gpui::{deferred, px};
 use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -315,30 +315,30 @@ where
             .children(self.delegate.render_item(ix, cx))
             .when_some(self.selected_index, |this, selected_index| {
                 this.when(ix == selected_index, |this| {
-                    this.child(deferred(
+                    this.child(
                         div()
                             .absolute()
-                            .top(px(-1.))
-                            .left(px(-1.))
-                            .right(px(-1.))
-                            .bottom(px(-1.))
+                            .top(px(0.))
+                            .left(px(0.))
+                            .right(px(0.))
+                            .bottom(px(0.))
                             .bg(cx.theme().list_active)
                             .border_1()
                             .border_color(cx.theme().list_active_border),
-                    ))
+                    )
                 })
             })
             .when(self.right_clicked_index == Some(ix), |this| {
-                this.child(deferred(
+                this.child(
                     div()
                         .absolute()
-                        .top(px(-1.))
-                        .left(px(-1.))
-                        .right(px(-1.))
-                        .bottom(px(-1.))
+                        .top(px(0.))
+                        .left(px(0.))
+                        .right(px(0.))
+                        .bottom(px(0.))
                         .border_1()
                         .border_color(cx.theme().list_active_border),
-                ))
+                )
             })
             .on_mouse_down(
                 MouseButton::Left,
