@@ -40,7 +40,7 @@ pub trait ListDelegate: Sized + 'static {
     }
 
     /// Return the number of items in the list.
-    fn items_count(&self) -> usize;
+    fn items_count(&self, cx: &AppContext) -> usize;
 
     /// Render the item at the given index.
     ///
@@ -64,7 +64,7 @@ pub trait ListDelegate: Sized + 'static {
     }
 
     /// Return the confirmed index of the selected item.
-    fn confirmed_index(&self) -> Option<usize> {
+    fn confirmed_index(&self, cx: &AppContext) -> Option<usize> {
         None
     }
 
@@ -261,7 +261,7 @@ where
     }
 
     fn on_action_confirm(&mut self, _: &Confirm, cx: &mut ViewContext<Self>) {
-        if self.delegate.items_count() == 0 {
+        if self.delegate.items_count(cx) == 0 {
             return;
         }
 
@@ -270,7 +270,7 @@ where
     }
 
     fn on_action_select_prev(&mut self, _: &SelectPrev, cx: &mut ViewContext<Self>) {
-        if self.delegate.items_count() == 0 {
+        if self.delegate.items_count(cx) == 0 {
             return;
         }
 
@@ -278,7 +278,7 @@ where
         if selected_index > 0 {
             self.selected_index = Some(selected_index - 1);
         } else {
-            self.selected_index = Some(self.delegate.items_count() - 1);
+            self.selected_index = Some(self.delegate.items_count(cx) - 1);
         }
 
         self.scroll_to_selected_item(cx);
@@ -286,12 +286,12 @@ where
     }
 
     fn on_action_select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
-        if self.delegate.items_count() == 0 {
+        if self.delegate.items_count(cx) == 0 {
             return;
         }
 
         if let Some(selected_index) = self.selected_index {
-            if selected_index < self.delegate.items_count() - 1 {
+            if selected_index < self.delegate.items_count(cx) - 1 {
                 self.selected_index = Some(selected_index + 1);
             } else {
                 self.selected_index = Some(0);
@@ -325,7 +325,7 @@ where
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
         let vertical_scroll_handle = self.vertical_scroll_handle.clone();
-        let items_count = self.delegate.items_count();
+        let items_count = self.delegate.items_count(cx);
         let sizing_behavior = if self.max_height.is_some() {
             ListSizingBehavior::Infer
         } else {
