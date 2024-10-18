@@ -1,10 +1,10 @@
-use chrono::Days;
+use chrono::{Days, Duration, Utc};
 use gpui::{
     px, IntoElement, ParentElement as _, Render, Styled as _, View, ViewContext,
     VisualContext as _, WindowContext,
 };
 use ui::{
-    date_picker::{DatePicker, DatePickerEvent},
+    date_picker::{DatePicker, DatePickerEvent, DateRangePreset},
     v_flex, Sizable as _,
 };
 
@@ -37,11 +37,48 @@ impl CalendarStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
+        let presets = vec![
+            DateRangePreset::single(
+                "Yesterday",
+                (Utc::now() - Duration::days(1)).naive_local().date(),
+            ),
+            DateRangePreset::single(
+                "Last Week",
+                (Utc::now() - Duration::weeks(1)).naive_local().date(),
+            ),
+            DateRangePreset::single(
+                "Last Month",
+                (Utc::now() - Duration::days(30)).naive_local().date(),
+            ),
+        ];
+        let range_presets = vec![
+            DateRangePreset::range(
+                "Last 7 Days",
+                (Utc::now() - Duration::days(7)).naive_local().date(),
+                Utc::now().naive_local().date(),
+            ),
+            DateRangePreset::range(
+                "Last 14 Days",
+                (Utc::now() - Duration::days(14)).naive_local().date(),
+                Utc::now().naive_local().date(),
+            ),
+            DateRangePreset::range(
+                "Last 30 Days",
+                (Utc::now() - Duration::days(30)).naive_local().date(),
+                Utc::now().naive_local().date(),
+            ),
+            DateRangePreset::range(
+                "Last 90 Days",
+                (Utc::now() - Duration::days(90)).naive_local().date(),
+                Utc::now().naive_local().date(),
+            ),
+        ];
         let now = chrono::Local::now().naive_local().date();
         let date_picker = cx.new_view(|cx| {
             let mut picker = DatePicker::new("date_picker_medium", cx)
                 .cleanable()
-                .width(px(220.));
+                .width(px(220.))
+                .presets(presets);
             picker.set_date(now, cx);
             picker
         });
@@ -62,7 +99,8 @@ impl CalendarStory {
             let mut picker = DatePicker::new("date_range_picker", cx)
                 .width(px(300.))
                 .number_of_months(2)
-                .cleanable();
+                .cleanable()
+                .presets(range_presets.clone());
             picker.set_date((now, now.checked_add_days(Days::new(4)).unwrap()), cx);
             picker
         });
@@ -85,6 +123,7 @@ impl CalendarStory {
                 .width(px(300.))
                 .placeholder("Range mode picker")
                 .cleanable()
+                .presets(range_presets.clone())
         });
 
         cx.subscribe(&default_range_mode_picker, |this, _, ev, _| match ev {
