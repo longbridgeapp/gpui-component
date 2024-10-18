@@ -9,8 +9,8 @@ use crate::{
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
 use gpui::{
-    actions, canvas, deferred, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds,
-    Div, DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
+    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
+    DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
     ScrollHandle, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
     UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
@@ -967,9 +967,11 @@ where
                 })
                 .w_full()
                 .h(self.size.table_row_height())
-                .when(row_ix > 0, |this| {
-                    this.border_t_1().border_color(cx.theme().table_row_border)
+                .border_b_1()
+                .when(row_ix == rows_count, |this| {
+                    this.border_color(gpui::transparent_white())
                 })
+                .border_color(cx.theme().table_row_border)
                 .when(is_stripe_row, |this| this.bg(cx.theme().table_even))
                 .hover(|this| {
                     if is_selected || self.right_clicked_row == Some(row_ix) {
@@ -1018,32 +1020,32 @@ where
                     this.when(
                         is_selected && self.selection_state == SelectionState::Row,
                         |this| {
-                            this.child(deferred(
+                            this.child(
                                 div()
                                     .top(px(-1.))
-                                    .left(px(-1.))
-                                    .right(px(-1.))
+                                    .left(px(0.))
+                                    .right(px(0.))
                                     .bottom_0()
                                     .absolute()
                                     .bg(cx.theme().table_active)
                                     .border_1()
                                     .border_color(cx.theme().table_active_border),
-                            ))
+                            )
                         },
                     )
                 })
                 // Row right click row style
                 .when(self.right_clicked_row == Some(row_ix), |this| {
-                    this.child(deferred(
+                    this.child(
                         div()
                             .top(px(-1.))
-                            .left(px(-1.))
-                            .right(px(-1.))
+                            .left(px(0.))
+                            .right(px(0.))
                             .bottom_0()
                             .absolute()
                             .border_1()
                             .border_color(cx.theme().selection),
-                    ))
+                    )
                 })
                 .on_mouse_down(
                     MouseButton::Left,
