@@ -1020,9 +1020,9 @@ where
                     this.when(
                         is_selected && self.selection_state == SelectionState::Row,
                         |this| {
-                            this.child(
+                            this.border_color(gpui::transparent_white()).child(
                                 div()
-                                    .top(px(-1.))
+                                    .top(if row_ix == 0 { px(0.) } else { px(-1.) })
                                     .left(px(0.))
                                     .right(px(0.))
                                     .bottom_0()
@@ -1036,9 +1036,9 @@ where
                 })
                 // Row right click row style
                 .when(self.right_clicked_row == Some(row_ix), |this| {
-                    this.child(
+                    this.border_color(gpui::transparent_white()).child(
                         div()
-                            .top(px(-1.))
+                            .top(if row_ix == 0 { px(0.) } else { px(-1.) })
                             .left(px(0.))
                             .right(px(0.))
                             .bottom_0()
