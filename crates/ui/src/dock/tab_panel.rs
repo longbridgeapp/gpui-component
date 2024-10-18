@@ -706,7 +706,7 @@ impl TabPanel {
             }
         }
 
-        // Here is looks like remove_panel on a same item, but it differnece.
+        // Here is looks like remove_panel on a same item, but it difference.
         //
         // We must to split it to remove_panel, unless it will be crash by error:
         // Cannot update ui::dock::tab_panel::TabPanel while it is already being updated

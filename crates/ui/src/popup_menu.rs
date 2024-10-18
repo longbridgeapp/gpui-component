@@ -130,7 +130,7 @@ impl PopupMenu {
         })
     }
 
-    /// Bind the focus handle of the menu, when clicked, it will focus back to this handle and then dispath the action
+    /// Bind the focus handle of the menu, when clicked, it will focus back to this handle and then dispatch the action
     pub fn track_focus(mut self, focus_handle: &FocusHandle) -> Self {
         self.action_focus_handle = Some(focus_handle.clone());
         self

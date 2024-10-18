@@ -48,7 +48,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         true
     }
 
-    /// Return true if the panel is collapsable, default is `false`.
+    /// Return true if the panel is collapsible, default is `false`.
     fn collapsible(&self, _cx: &WindowContext) -> bool {
         false
     }

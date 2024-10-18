@@ -102,7 +102,7 @@ impl Render for SwitchStory {
                     card(cx)
                     .child(
                         title("Security emails").child(
-                            Label::new("Receive emails about your account security. When turn off, you never recive email again.").text_color(theme.muted_foreground)
+                            Label::new("Receive emails about your account security. When turn off, you never receive email again.").text_color(theme.muted_foreground)
                         )
                     )
                         .child(
@@ -116,7 +116,7 @@ impl Render for SwitchStory {
                 )
                 .child(
                     card(cx).v_flex()
-                        .items_start().child(title("Disabled Switchs")).child(
+                        .items_start().child(title("Disabled Switches")).child(
                         h_flex().items_center()
                         .gap_6()
                         .child(Switch::new("switch3").disabled(true).on_click(|v, _| {
@@ -133,7 +133,7 @@ impl Render for SwitchStory {
                 )
                 .child(
                     card(cx).v_flex()
-                        .items_start().child(title("Small Switchs")).child(
+                        .items_start().child(title("Small Switches")).child(
                         h_flex().items_center()
                         .gap_6()
                         .child(Switch::new("switch3").checked(self.switch3).label("Small Size").small().on_click(cx.listener(move |view, checked, cx| {

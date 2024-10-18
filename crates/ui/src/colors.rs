@@ -136,12 +136,12 @@ pub(crate) struct ShadcnColors {
 pub(crate) struct ShadcnColor {
     #[serde(default)]
     pub(crate) scale: usize,
-    #[serde(deserialize_with = "from_hsa_channel", alias = "hslChannel")]
+    #[serde(deserialize_with = "from_hsl_channel", alias = "hslChannel")]
     pub(crate) hsla: Hsla,
 }
 
 /// Deserialize Hsla from a string in the format "210 40% 98%"
-fn from_hsa_channel<'de, D>(deserializer: D) -> Result<Hsla, D::Error>
+fn from_hsl_channel<'de, D>(deserializer: D) -> Result<Hsla, D::Error>
 where
     D: Deserializer<'de>,
 {

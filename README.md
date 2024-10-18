@@ -1,4 +1,4 @@
-# GPUI Compoment
+# GPUI Component
 
 > This is still an early stage of development, we may change API frequently.
 > But the features is ok to use, you must keep tracking our changes.
