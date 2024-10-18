@@ -279,15 +279,15 @@ impl StockTableDelegate {
 }
 
 impl TableDelegate for StockTableDelegate {
-    fn cols_count(&self) -> usize {
+    fn cols_count(&self, _: &AppContext) -> usize {
         self.columns.len()
     }
 
-    fn rows_count(&self, _: &'_ AppContext) -> usize {
+    fn rows_count(&self, _: &AppContext) -> usize {
         self.stocks.len()
     }
 
-    fn col_name(&self, col_ix: usize) -> SharedString {
+    fn col_name(&self, col_ix: usize, _: &AppContext) -> SharedString {
         if let Some(col) = self.columns.get(col_ix) {
             col.name.clone()
         } else {
@@ -295,7 +295,7 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn col_width(&self, col_ix: usize) -> Option<Pixels> {
+    fn col_width(&self, col_ix: usize, _: &AppContext) -> Option<Pixels> {
         if let Some(_) = self.columns.get(col_ix) {
             Some(120.0.into())
         } else {
@@ -303,7 +303,7 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn col_padding(&self, col_ix: usize) -> Option<Edges<Pixels>> {
+    fn col_padding(&self, col_ix: usize, _: &AppContext) -> Option<Edges<Pixels>> {
         if col_ix >= 3 && col_ix <= 10 {
             Some(Edges::all(px(0.)))
         } else {
@@ -311,7 +311,7 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn col_fixed(&self, col_ix: usize) -> Option<ui::table::ColFixed> {
+    fn col_fixed(&self, col_ix: usize, _: &AppContext) -> Option<ui::table::ColFixed> {
         if !self.fixed_cols {
             return None;
         }
@@ -323,16 +323,16 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn can_resize_col(&self, col_ix: usize) -> bool {
+    fn can_resize_col(&self, col_ix: usize, _: &AppContext) -> bool {
         return self.col_resize && col_ix > 1;
     }
 
-    fn can_select_col(&self, _: usize) -> bool {
+    fn can_select_col(&self, _: usize, _: &AppContext) -> bool {
         return self.col_selection;
     }
 
-    fn render_th(&self, col_ix: usize, _cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
-        let th = div().child(self.col_name(col_ix));
+    fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Table<Self>>) -> impl IntoElement {
+        let th = div().child(self.col_name(col_ix, cx));
 
         if col_ix >= 3 && col_ix <= 10 {
             th.table_cell_size(self.size)
@@ -418,20 +418,20 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn can_loop_select(&self) -> bool {
+    fn can_loop_select(&self, _: &AppContext) -> bool {
         self.loop_selection
     }
 
-    fn can_move_col(&self, _: usize) -> bool {
+    fn can_move_col(&self, _: usize, _: &AppContext) -> bool {
         self.col_order
     }
 
-    fn move_col(&mut self, col_ix: usize, to_ix: usize) {
+    fn move_col(&mut self, col_ix: usize, to_ix: usize, _: &mut ViewContext<Table<Self>>) {
         let col = self.columns.remove(col_ix);
         self.columns.insert(to_ix, col);
     }
 
-    fn col_sort(&self, col_ix: usize) -> Option<ColSort> {
+    fn col_sort(&self, col_ix: usize, _: &AppContext) -> Option<ColSort> {
         if !self.col_sort {
             return None;
         }
@@ -458,7 +458,7 @@ impl TableDelegate for StockTableDelegate {
         }
     }
 
-    fn can_load_more(&self) -> bool {
+    fn can_load_more(&self, _: &AppContext) -> bool {
         return !self.loading && !self.is_eof;
     }
 
