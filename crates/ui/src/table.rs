@@ -1,7 +1,9 @@
 use std::{cell::Cell, ops::Range, rc::Rc};
 
 use crate::{
+    context_menu::ContextMenuExt,
     h_flex,
+    popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
@@ -189,6 +191,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Render the row at the given row and column.
     fn render_tr(&self, row_ix: usize, cx: &mut ViewContext<Table<Self>>) -> Stateful<Div> {
         h_flex().id(("table-row", row_ix))
+    }
+
+    /// Render the context menu for the row at the given row index.
+    fn context_menu(&self, row_ix: usize, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        menu
     }
 
     /// Render cell at the given row and column.
@@ -950,10 +957,14 @@ where
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
         let is_stripe_row = self.stripe && row_ix % 2 != 0;
         let is_selected = self.selected_row == Some(row_ix);
+        let view = cx.view().clone();
 
         if row_ix < rows_count {
             self.delegate
                 .render_tr(row_ix, cx)
+                .context_menu(move |this, cx: &mut ViewContext<PopupMenu>| {
+                    view.read(cx).delegate.context_menu(row_ix, this, cx)
+                })
                 .w_full()
                 .h(self.size.table_row_height())
                 .when(row_ix > 0, |this| {
@@ -961,7 +972,7 @@ where
                 })
                 .when(is_stripe_row, |this| this.bg(cx.theme().table_even))
                 .hover(|this| {
-                    if is_selected {
+                    if is_selected || self.right_clicked_row == Some(row_ix) {
                         this
                     } else {
                         this.bg(cx.theme().table_hover)
@@ -1212,6 +1223,13 @@ where
             .child(self.render_horizontal_scrollbar(cx))
             .when(rows_count > 0, |this| {
                 this.children(self.render_scrollbar(cx))
+            })
+            // Click out to cancel right clicked row
+            .when(self.right_clicked_row.is_some(), |this| {
+                this.on_mouse_down_out(cx.listener(|this, _, cx| {
+                    this.right_clicked_row = None;
+                    cx.notify();
+                }))
             })
     }
 }

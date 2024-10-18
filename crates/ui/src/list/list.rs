@@ -451,5 +451,12 @@ where
                     )
                 }
             })
+            // Click out to cancel right clicked row
+            .when(self.right_clicked_index.is_some(), |this| {
+                this.on_mouse_down_out(cx.listener(|this, _, cx| {
+                    this.right_clicked_index = None;
+                    cx.notify();
+                }))
+            })
     }
 }
