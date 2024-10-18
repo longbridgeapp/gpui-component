@@ -25,17 +25,30 @@ pub enum DatePickerEvent {
 }
 
 #[derive(Clone)]
+pub enum DateRangePresetValue {
+    Single(NaiveDate),
+    Range(NaiveDate, NaiveDate),
+}
+
+#[derive(Clone)]
 pub struct DateRangePreset {
     label: SharedString,
-    value: (NaiveDate, NaiveDate),
+    value: DateRangePresetValue,
 }
 
 impl DateRangePreset {
-    /// Creates a new DateRangePreset.
-    pub fn new(label: impl Into<SharedString>, start: NaiveDate, end: NaiveDate) -> Self {
+    /// Creates a new DateRangePreset with single date.
+    pub fn single(label: impl Into<SharedString>, single: NaiveDate) -> Self {
         DateRangePreset {
             label: label.into(),
-            value: (start, end),
+            value: DateRangePresetValue::Single(single),
+        }
+    }
+    /// Creates a new DateRangePreset with a range of dates.
+    pub fn range(label: impl Into<SharedString>, start: NaiveDate, end: NaiveDate) -> Self {
+        DateRangePreset {
+            label: label.into(),
+            value: DateRangePresetValue::Range(start, end),
         }
     }
 }
@@ -184,8 +197,14 @@ impl DatePicker {
     }
 
     fn select_preset(&mut self, preset: &DateRangePreset, cx: &mut ViewContext<Self>) {
-        let (start, end) = preset.value;
-        self.update_date(Date::Range(Some(start), Some(end)), true, cx);
+        match preset.value {
+            DateRangePresetValue::Single(single) => {
+                self.update_date(Date::Single(Some(single)), true, cx)
+            }
+            DateRangePresetValue::Range(start, end) => {
+                self.update_date(Date::Range(Some(start), Some(end)), true, cx)
+            }
+        }
     }
 }
 

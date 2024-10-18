@@ -37,23 +37,37 @@ impl CalendarStory {
     }
 
     fn new(cx: &mut ViewContext<Self>) -> Self {
+        let presets = vec![
+            DateRangePreset::single(
+                "Yesterday",
+                (Utc::now() - Duration::days(1)).naive_local().date(),
+            ),
+            DateRangePreset::single(
+                "Last Week",
+                (Utc::now() - Duration::weeks(1)).naive_local().date(),
+            ),
+            DateRangePreset::single(
+                "Last Month",
+                (Utc::now() - Duration::days(30)).naive_local().date(),
+            ),
+        ];
         let range_presets = vec![
-            DateRangePreset::new(
+            DateRangePreset::range(
                 "Last 7 Days",
                 (Utc::now() - Duration::days(7)).naive_local().date(),
                 Utc::now().naive_local().date(),
             ),
-            DateRangePreset::new(
+            DateRangePreset::range(
                 "Last 14 Days",
                 (Utc::now() - Duration::days(14)).naive_local().date(),
                 Utc::now().naive_local().date(),
             ),
-            DateRangePreset::new(
+            DateRangePreset::range(
                 "Last 30 Days",
                 (Utc::now() - Duration::days(30)).naive_local().date(),
                 Utc::now().naive_local().date(),
             ),
-            DateRangePreset::new(
+            DateRangePreset::range(
                 "Last 90 Days",
                 (Utc::now() - Duration::days(90)).naive_local().date(),
                 Utc::now().naive_local().date(),
@@ -63,7 +77,8 @@ impl CalendarStory {
         let date_picker = cx.new_view(|cx| {
             let mut picker = DatePicker::new("date_picker_medium", cx)
                 .cleanable()
-                .width(px(220.));
+                .width(px(220.))
+                .presets(presets);
             picker.set_date(now, cx);
             picker
         });
