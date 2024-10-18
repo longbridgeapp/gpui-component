@@ -159,6 +159,7 @@ pub struct Calendar {
     year_page: i32,
     /// Number of the months view to show.
     number_of_months: usize,
+    today: NaiveDate,
 }
 
 impl Calendar {
@@ -173,6 +174,7 @@ impl Calendar {
             years: vec![],
             year_page: 0,
             number_of_months: 1,
+            today,
         }
         .year_range((today.year() - 50, today.year() + 50))
     }
@@ -399,6 +401,7 @@ impl Calendar {
         let is_in_range = self.date.is_in_range(d);
 
         let date = *d;
+        let is_today = *d == self.today;
 
         self.item_button(
             ix,
@@ -408,6 +411,9 @@ impl Calendar {
             !is_current_month,
             cx,
         )
+        .when(is_today && !is_active, |this| {
+            this.border_1().border_color(cx.theme().border)
+        }) // Add border for today
         .on_click(cx.listener(move |view, _: &ClickEvent, cx| {
             if view.date.is_single() {
                 view.set_date(date, cx);
