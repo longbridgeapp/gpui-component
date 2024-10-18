@@ -1,14 +1,15 @@
+use chrono::NaiveDate;
 use gpui::{
     anchored, deferred, div, prelude::FluentBuilder as _, px, AppContext, ElementId, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement as _, KeyBinding, Length, MouseButton,
-    ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _, View,
+    ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled, View,
     ViewContext, VisualContext as _,
 };
 use rust_i18n::t;
 
 use crate::{
-    dropdown::Escape, h_flex, input::ClearButton, theme::ActiveTheme as _, Icon, IconName, Sizable,
-    Size, StyleSized as _, StyledExt as _,
+    dropdown::Escape, h_flex, input::ClearButton, theme::ActiveTheme, v_flex, Icon, IconName,
+    Sizable, Size, StyleSized as _, StyledExt as _,
 };
 
 use super::calendar::{Calendar, CalendarEvent, Date};
@@ -23,6 +24,21 @@ pub enum DatePickerEvent {
     Change(Date),
 }
 
+#[derive(Clone)]
+pub struct DateRangePreset {
+    label: SharedString,
+    value: (NaiveDate, NaiveDate),
+}
+
+impl DateRangePreset {
+    /// Creates a new DateRangePreset.
+    pub fn new(label: impl Into<SharedString>, start: NaiveDate, end: NaiveDate) -> Self {
+        DateRangePreset {
+            label: label.into(),
+            value: (start, end),
+        }
+    }
+}
 pub struct DatePicker {
     id: ElementId,
     focus_handle: FocusHandle,
@@ -35,6 +51,7 @@ pub struct DatePicker {
     date_format: SharedString,
     calendar: View<Calendar>,
     number_of_months: usize,
+    presets: Option<Vec<DateRangePreset>>,
 }
 
 impl DatePicker {
@@ -82,6 +99,7 @@ impl DatePicker {
             cleanable: false,
             number_of_months: 1,
             placeholder: None,
+            presets: None,
         }
     }
 
@@ -112,6 +130,12 @@ impl DatePicker {
     /// Set the number of months calendar view to display, default is 1.
     pub fn number_of_months(mut self, number_of_months: usize) -> Self {
         self.number_of_months = number_of_months;
+        self
+    }
+
+    /// Set preset ranges for the date picker.
+    pub fn presets(mut self, presets: Vec<DateRangePreset>) -> Self {
+        self.presets = Some(presets);
         self
     }
 
@@ -158,6 +182,11 @@ impl DatePicker {
         self.open = !self.open;
         cx.notify();
     }
+
+    fn select_preset(&mut self, preset: &DateRangePreset, cx: &mut ViewContext<Self>) {
+        let (start, end) = preset.value;
+        self.update_date(Date::Range(Some(start), Some(end)), true, cx);
+    }
 }
 
 impl EventEmitter<DatePickerEvent> for DatePicker {}
@@ -190,8 +219,9 @@ impl Render for DatePicker {
             view.set_number_of_months(self.number_of_months, cx);
         });
 
-        let popover_width =
-            285.0 * self.number_of_months as f32 + (self.number_of_months - 1) as f32 * 16.0;
+        let popover_width = self.presets.as_ref().map_or(0.0, |_| 136.0)
+            + 285.0 * self.number_of_months as f32
+            + (self.number_of_months - 1) as f32 * 16.0;
 
         div()
             .id(self.id.clone())
@@ -266,7 +296,50 @@ impl Render for DatePicker {
                                     MouseButton::Left,
                                     cx.listener(|view, _, cx| view.escape(&Escape, cx)),
                                 )
-                                .child(self.calendar.clone()),
+                                .child(
+                                    h_flex()
+                                        .gap_3()
+                                        .justify_start()
+                                        .items_start()
+                                        .when_some(self.presets.clone(), |this, presets| {
+                                            this.child(
+                                                v_flex().gap_2().children(
+                                                    presets
+                                                        .into_iter()
+                                                        .map(|preset| {
+                                                            h_flex()
+                                                                .w(px(120.0))
+                                                                .rounded_md()
+                                                                .px_2()
+                                                                .py_1()
+                                                                .mx_1()
+                                                                .justify_start()
+                                                                .cursor_pointer()
+                                                                .hover(|this| {
+                                                                    this.bg(cx.theme().accent)
+                                                                        .text_color(
+                                                                            cx.theme()
+                                                                                .accent_foreground,
+                                                                        )
+                                                                })
+                                                                .child(preset.label.clone())
+                                                                .on_mouse_up(
+                                                                    MouseButton::Left,
+                                                                    cx.listener(
+                                                                        move |this, _, cx| {
+                                                                            this.select_preset(
+                                                                                &preset, cx,
+                                                                            );
+                                                                        },
+                                                                    ),
+                                                                )
+                                                        })
+                                                        .collect::<Vec<_>>(),
+                                                ),
+                                            )
+                                        })
+                                        .child(self.calendar.clone()),
+                                ),
                         ),
                     )
                     .with_priority(2),
