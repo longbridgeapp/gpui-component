@@ -181,6 +181,8 @@ impl RenderOnce for TitleBar {
             None
         };
 
+        const HEIGHT: Pixels = px(34.);
+
         div()
             .flex_shrink_0()
             .child(
@@ -188,6 +190,7 @@ impl RenderOnce for TitleBar {
                     .id("title-bar")
                     .items_center()
                     .justify_between()
+                    .h(HEIGHT)
                     .pl(px(12.))
                     .when(!cx.is_fullscreen(), |this| {
                         // Leave space for the macOS window controls.
@@ -199,7 +202,7 @@ impl RenderOnce for TitleBar {
                     .on_double_click(|_, cx| cx.zoom_window())
                     .child(
                         h_flex()
-                            .h(px(34.))
+                            .h_full()
                             .justify_between()
                             .flex_shrink_0()
                             .flex_1()
