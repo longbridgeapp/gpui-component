@@ -1,7 +1,8 @@
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, RenderOnce, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, Element, Hsla,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce,
+    StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
 
 /// TitleBar used to customize the appearance of the title bar.
@@ -174,34 +175,119 @@ impl RenderOnce for WindowControls {
 
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let is_linux = cfg!(target_os = "linux");
         let macos_pl = if cfg!(target_os = "macos") {
             Some(px(80.))
         } else {
             None
         };
 
-        h_flex()
-            .id("title-bar")
+        const HEIGHT: Pixels = px(34.);
+
+        div()
             .flex_shrink_0()
-            .items_center()
-            .justify_between()
-            .pl(px(12.))
-            .when(!cx.is_fullscreen(), |this| {
-                // Leave space for the macOS window controls.
-                this.when_some(macos_pl, |this, pl| this.pl(pl))
-            })
-            .border_b_1()
-            .border_color(cx.theme().title_bar_border)
-            .bg(cx.theme().title_bar_background)
-            .on_double_click(|_, cx| cx.zoom_window())
             .child(
                 h_flex()
-                    .h(px(34.))
+                    .id("title-bar")
+                    .items_center()
                     .justify_between()
-                    .flex_shrink_0()
-                    .flex_1()
-                    .children(self.children),
+                    .h(HEIGHT)
+                    .pl(px(12.))
+                    .when(!cx.is_fullscreen(), |this| {
+                        // Leave space for the macOS window controls.
+                        this.when_some(macos_pl, |this, pl| this.pl(pl))
+                    })
+                    .border_b_1()
+                    .border_color(cx.theme().title_bar_border)
+                    .bg(cx.theme().title_bar_background)
+                    .on_double_click(|_, cx| cx.zoom_window())
+                    .child(
+                        h_flex()
+                            .h_full()
+                            .justify_between()
+                            .flex_shrink_0()
+                            .flex_1()
+                            .children(self.children),
+                    )
+                    .child(WindowControls {}),
             )
-            .child(WindowControls {})
+            .when(is_linux, |this| {
+                this.child(
+                    div()
+                        .top_0()
+                        .left_0()
+                        .absolute()
+                        .size_full()
+                        .h_full()
+                        .child(TitleBarElement {}),
+                )
+            })
+    }
+}
+
+struct TitleBarElement {}
+
+impl IntoElement for TitleBarElement {
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
+impl Element for TitleBarElement {
+    type RequestLayoutState = ();
+
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<gpui::ElementId> {
+        None
+    }
+
+    fn request_layout(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        cx: &mut WindowContext,
+    ) -> (gpui::LayoutId, Self::RequestLayoutState) {
+        let mut style = Style::default();
+        style.flex_grow = 1.0;
+        style.flex_shrink = 1.0;
+        style.size.width = relative(1.).into();
+        style.size.height = relative(1.).into();
+
+        let id = cx.request_layout(style, []);
+        (id, ())
+    }
+
+    fn prepaint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<Pixels>,
+        _: &mut Self::RequestLayoutState,
+        _: &mut WindowContext,
+    ) -> Self::PrepaintState {
+    }
+
+    #[allow(unused_variables)]
+    fn paint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        bounds: gpui::Bounds<Pixels>,
+        _: &mut Self::RequestLayoutState,
+        _: &mut Self::PrepaintState,
+        cx: &mut WindowContext,
+    ) {
+        use gpui::{MouseButton, MouseMoveEvent, MouseUpEvent};
+        cx.on_mouse_event(move |ev: &MouseMoveEvent, _, cx: &mut WindowContext| {
+            if bounds.contains(&ev.position) && ev.pressed_button == Some(MouseButton::Left) {
+                cx.start_window_move();
+            }
+        });
+
+        cx.on_mouse_event(move |ev: &MouseUpEvent, _, cx: &mut WindowContext| {
+            if ev.button == MouseButton::Left {
+                cx.show_window_menu(ev.position);
+            }
+        });
     }
 }
