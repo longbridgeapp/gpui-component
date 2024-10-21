@@ -182,11 +182,10 @@ impl RenderOnce for TitleBar {
         };
 
         div()
-            .relative()
+            .flex_shrink_0()
             .child(
                 h_flex()
                     .id("title-bar")
-                    .flex_shrink_0()
                     .items_center()
                     .justify_between()
                     .pl(px(12.))
@@ -208,7 +207,15 @@ impl RenderOnce for TitleBar {
                     )
                     .child(WindowControls {}),
             )
-            .child(TitleBarElement {})
+            .child(
+                div()
+                    .top_0()
+                    .left_0()
+                    .absolute()
+                    .size_full()
+                    .h_full()
+                    .child(TitleBarElement {}),
+            )
     }
 }
 
@@ -265,7 +272,6 @@ impl Element for TitleBarElement {
         cx: &mut WindowContext,
     ) {
         cx.on_mouse_event(move |ev: &MouseMoveEvent, _, cx: &mut WindowContext| {
-            #[cfg(target_os = "linux")]
             if bounds.contains(&ev.position) && ev.pressed_button == Some(MouseButton::Left) {
                 cx.start_window_move();
             }
