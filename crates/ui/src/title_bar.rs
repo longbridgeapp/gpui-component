@@ -182,30 +182,34 @@ impl RenderOnce for TitleBar {
             None
         };
 
-        h_flex()
-            .id("title-bar")
-            .flex_shrink_0()
-            .items_center()
-            .justify_between()
-            .pl(px(12.))
-            .when(!cx.is_fullscreen(), |this| {
-                // Leave space for the macOS window controls.
-                this.when_some(macos_pl, |this, pl| this.pl(pl))
-            })
-            .border_b_1()
-            .border_color(cx.theme().title_bar_border)
-            .bg(cx.theme().title_bar_background)
-            .on_double_click(|_, cx| cx.zoom_window())
+        div()
+            .relative()
             .child(
                 h_flex()
-                    .h(px(34.))
-                    .justify_between()
+                    .id("title-bar")
                     .flex_shrink_0()
-                    .flex_1()
-                    .children(self.children),
+                    .items_center()
+                    .justify_between()
+                    .pl(px(12.))
+                    .when(!cx.is_fullscreen(), |this| {
+                        // Leave space for the macOS window controls.
+                        this.when_some(macos_pl, |this, pl| this.pl(pl))
+                    })
+                    .border_b_1()
+                    .border_color(cx.theme().title_bar_border)
+                    .bg(cx.theme().title_bar_background)
+                    .on_double_click(|_, cx| cx.zoom_window())
+                    .child(
+                        h_flex()
+                            .h(px(34.))
+                            .justify_between()
+                            .flex_shrink_0()
+                            .flex_1()
+                            .children(self.children),
+                    )
+                    .child(WindowControls {}),
             )
             .child(TitleBarElement {})
-            .child(WindowControls {})
     }
 }
 
