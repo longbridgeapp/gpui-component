@@ -1,7 +1,8 @@
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, AnyElement, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, RenderOnce, StatefulInteractiveElement as _, Styled, WindowContext,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, Element, Hsla,
+    InteractiveElement as _, IntoElement, MouseButton, MouseMoveEvent, ParentElement, Pixels,
+    Render, RenderOnce, StatefulInteractiveElement as _, Style, Styled, ViewContext, WindowContext,
 };
 
 /// TitleBar used to customize the appearance of the title bar.
@@ -174,6 +175,7 @@ impl RenderOnce for WindowControls {
 
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let is_linux = cfg!(target_os = "linux");
         let macos_pl = if cfg!(target_os = "macos") {
             Some(px(80.))
         } else {
@@ -202,6 +204,66 @@ impl RenderOnce for TitleBar {
                     .flex_1()
                     .children(self.children),
             )
+            .child(TitleBarElement {})
             .child(WindowControls {})
+    }
+}
+
+struct TitleBarElement {}
+
+impl IntoElement for TitleBarElement {
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
+impl Element for TitleBarElement {
+    type RequestLayoutState = ();
+
+    type PrepaintState = ();
+
+    fn id(&self) -> Option<gpui::ElementId> {
+        None
+    }
+
+    fn request_layout(
+        &mut self,
+        id: Option<&gpui::GlobalElementId>,
+        cx: &mut WindowContext,
+    ) -> (gpui::LayoutId, Self::RequestLayoutState) {
+        let mut style = Style::default();
+        style.flex_grow = 1.0;
+        style.flex_shrink = 1.0;
+        style.size.width = relative(1.).into();
+        style.size.height = relative(1.).into();
+
+        let id = cx.request_layout(style, []);
+        (id, ())
+    }
+
+    fn prepaint(
+        &mut self,
+        id: Option<&gpui::GlobalElementId>,
+        bounds: gpui::Bounds<Pixels>,
+        request_layout: &mut Self::RequestLayoutState,
+        cx: &mut WindowContext,
+    ) -> Self::PrepaintState {
+    }
+
+    fn paint(
+        &mut self,
+        id: Option<&gpui::GlobalElementId>,
+        bounds: gpui::Bounds<Pixels>,
+        request_layout: &mut Self::RequestLayoutState,
+        prepaint: &mut Self::PrepaintState,
+        cx: &mut WindowContext,
+    ) {
+        cx.on_mouse_event(move |ev: &MouseMoveEvent, phase, cx: &mut WindowContext| {
+            if bounds.contains(&ev.position) && ev.pressed_button == Some(MouseButton::Left) {
+                cx.start_window_move();
+            }
+        });
     }
 }
