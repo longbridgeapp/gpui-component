@@ -53,7 +53,7 @@ pub use focusable::FocusableCycle;
 pub use root::{ContextModal, Root};
 pub use styled::*;
 pub use time::*;
-pub use title_bar::TitleBar;
+pub use title_bar::*;
 
 pub use colors::*;
 pub use icon::*;
