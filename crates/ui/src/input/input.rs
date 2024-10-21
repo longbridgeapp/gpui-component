@@ -131,6 +131,8 @@ pub struct TextInput {
     marked_range: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
+    last_cursor_offset: Option<usize>,
+    last_selected_range: Option<Range<usize>>,
     scroll_offset: Point<Pixels>,
     is_selecting: bool,
     disabled: bool,
@@ -160,6 +162,8 @@ impl TextInput {
             marked_range: None,
             last_layout: None,
             last_bounds: None,
+            last_cursor_offset: None,
+            last_selected_range: None,
             scroll_offset: point(px(0.), px(0.)),
             is_selecting: false,
             disabled: false,
@@ -975,26 +979,30 @@ impl Element for TextElement {
         let cursor_pos = line.x_for_index(cursor);
         let cursor_start = line.x_for_index(selected_range.start);
         let cursor_end = line.x_for_index(selected_range.end);
+        let cursor_moved = input.last_cursor_offset != Some(cursor);
+        let selection_changed = input.last_selected_range != Some(selected_range.clone());
 
-        scroll_offset.x = if scroll_offset.x + cursor_pos > (bounds.size.width - right_margin) {
-            // cursor is out of right
-            bounds.size.width - right_margin - cursor_pos
-        } else if scroll_offset.x + cursor_pos < px(0.) {
-            // cursor is out of left
-            scroll_offset.x - cursor_pos
-        } else {
-            scroll_offset.x
-        };
+        if cursor_moved || selection_changed {
+            scroll_offset.x = if scroll_offset.x + cursor_pos > (bounds.size.width - right_margin) {
+                // cursor is out of right
+                bounds.size.width - right_margin - cursor_pos
+            } else if scroll_offset.x + cursor_pos < px(0.) {
+                // cursor is out of left
+                scroll_offset.x - cursor_pos
+            } else {
+                scroll_offset.x
+            };
 
-        if input.selection_reversed {
-            if scroll_offset.x + cursor_start < px(0.) {
-                // selection start is out of left
-                scroll_offset.x = -cursor_start;
-            }
-        } else {
-            if scroll_offset.x + cursor_end <= px(0.) {
-                // selection end is out of left
-                scroll_offset.x = -cursor_end;
+            if input.selection_reversed {
+                if scroll_offset.x + cursor_start < px(0.) {
+                    // selection start is out of left
+                    scroll_offset.x = -cursor_start;
+                }
+            } else {
+                if scroll_offset.x + cursor_end <= px(0.) {
+                    // selection end is out of left
+                    scroll_offset.x = -cursor_end;
+                }
             }
         }
 
@@ -1053,6 +1061,8 @@ impl Element for TextElement {
         let focus_handle = self.input.read(cx).focus_handle.clone();
         let focused = focus_handle.is_focused(cx);
         let bounds = prepaint.bounds;
+        let selected_range = self.input.read(cx).selected_range.clone();
+        let cursor = self.input.read(cx).cursor_offset();
 
         cx.handle_input(
             &focus_handle,
@@ -1073,6 +1083,8 @@ impl Element for TextElement {
             input.scroll_offset = prepaint.scroll_offset;
             input.last_layout = Some(line);
             input.last_bounds = Some(bounds);
+            input.last_cursor_offset = Some(cursor);
+            input.last_selected_range = Some(selected_range);
         });
 
         self.paint_mouse_listeners(cx);
