@@ -1,8 +1,8 @@
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
     div, prelude::FluentBuilder as _, px, relative, AnyElement, Element, Hsla,
-    InteractiveElement as _, IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement,
-    Pixels, RenderOnce, StatefulInteractiveElement as _, Style, Styled, WindowContext,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce,
+    StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
 
 /// TitleBar used to customize the appearance of the title bar.
@@ -175,6 +175,7 @@ impl RenderOnce for WindowControls {
 
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        let is_linux = cfg!(target_os = "linux");
         let macos_pl = if cfg!(target_os = "macos") {
             Some(px(80.))
         } else {
@@ -210,15 +211,17 @@ impl RenderOnce for TitleBar {
                     )
                     .child(WindowControls {}),
             )
-            .child(
-                div()
-                    .top_0()
-                    .left_0()
-                    .absolute()
-                    .size_full()
-                    .h_full()
-                    .child(TitleBarElement {}),
-            )
+            .when(is_linux, |this| {
+                this.child(
+                    div()
+                        .top_0()
+                        .left_0()
+                        .absolute()
+                        .size_full()
+                        .h_full()
+                        .child(TitleBarElement {}),
+                )
+            })
     }
 }
 
@@ -274,6 +277,7 @@ impl Element for TitleBarElement {
         _: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
+        use gpui::{MouseButton, MouseMoveEvent, MouseUpEvent};
         cx.on_mouse_event(move |ev: &MouseMoveEvent, _, cx: &mut WindowContext| {
             if bounds.contains(&ev.position) && ev.pressed_button == Some(MouseButton::Left) {
                 cx.start_window_move();
@@ -281,7 +285,6 @@ impl Element for TitleBarElement {
         });
 
         cx.on_mouse_event(move |ev: &MouseUpEvent, _, cx: &mut WindowContext| {
-            #[cfg(target_os = "linux")]
             if ev.button == MouseButton::Left {
                 cx.show_window_menu(ev.position);
             }
