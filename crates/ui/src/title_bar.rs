@@ -1,8 +1,9 @@
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
     div, prelude::FluentBuilder as _, px, relative, AnyElement, Element, Hsla,
-    InteractiveElement as _, IntoElement, MouseButton, MouseMoveEvent, ParentElement, Pixels,
-    Render, RenderOnce, StatefulInteractiveElement as _, Style, Styled, ViewContext, WindowContext,
+    InteractiveElement as _, IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement,
+    Pixels, Render, RenderOnce, StatefulInteractiveElement as _, Style, Styled, ViewContext,
+    WindowContext,
 };
 
 /// TitleBar used to customize the appearance of the title bar.
@@ -175,7 +176,6 @@ impl RenderOnce for WindowControls {
 
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let is_linux = cfg!(target_os = "linux");
         let macos_pl = if cfg!(target_os = "macos") {
             Some(px(80.))
         } else {
@@ -230,7 +230,7 @@ impl Element for TitleBarElement {
 
     fn request_layout(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let mut style = Style::default();
@@ -245,24 +245,33 @@ impl Element for TitleBarElement {
 
     fn prepaint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
-        cx: &mut WindowContext,
+        _: Option<&gpui::GlobalElementId>,
+        _: gpui::Bounds<Pixels>,
+        _: &mut Self::RequestLayoutState,
+        _: &mut WindowContext,
     ) -> Self::PrepaintState {
     }
 
+    #[allow(unused_variables)]
     fn paint(
         &mut self,
-        id: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::GlobalElementId>,
         bounds: gpui::Bounds<Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
-        prepaint: &mut Self::PrepaintState,
+        _: &mut Self::RequestLayoutState,
+        _: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
-        cx.on_mouse_event(move |ev: &MouseMoveEvent, phase, cx: &mut WindowContext| {
+        cx.on_mouse_event(move |ev: &MouseMoveEvent, _, cx: &mut WindowContext| {
+            #[cfg(target_os = "linux")]
             if bounds.contains(&ev.position) && ev.pressed_button == Some(MouseButton::Left) {
                 cx.start_window_move();
+            }
+        });
+
+        cx.on_mouse_event(move |ev: &MouseUpEvent, _, cx: &mut WindowContext| {
+            #[cfg(target_os = "linux")]
+            if ev.button == MouseButton::Left {
+                cx.show_window_menu(ev.position);
             }
         });
     }
