@@ -2,8 +2,7 @@ use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as
 use gpui::{
     div, prelude::FluentBuilder as _, px, relative, AnyElement, Element, Hsla,
     InteractiveElement as _, IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement,
-    Pixels, Render, RenderOnce, StatefulInteractiveElement as _, Style, Styled, ViewContext,
-    WindowContext,
+    Pixels, RenderOnce, StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
 
 /// TitleBar used to customize the appearance of the title bar.
