@@ -225,7 +225,8 @@ impl RenderOnce for TitleBar {
     }
 }
 
-struct TitleBarElement {}
+/// A TitleBar Element that can be move the window.
+pub struct TitleBarElement {}
 
 impl IntoElement for TitleBarElement {
     type Element = Self;
