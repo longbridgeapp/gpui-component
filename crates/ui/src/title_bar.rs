@@ -1,7 +1,7 @@
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, relative, AnyElement, Element, Hsla,
-    InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, Div, Element, Hsla,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
 
@@ -10,6 +10,7 @@ use gpui::{
 /// We can put some elements inside the title bar.
 #[derive(IntoElement)]
 pub struct TitleBar {
+    base: Stateful<Div>,
     children: Vec<AnyElement>,
 }
 
@@ -18,14 +19,9 @@ pub const TITLE_BAR_HEIGHT: Pixels = px(35.);
 impl TitleBar {
     pub fn new() -> Self {
         Self {
+            base: div().id("title-bar"),
             children: Vec::new(),
         }
-    }
-}
-
-impl ParentElement for TitleBar {
-    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
-        self.children.extend(elements);
     }
 }
 
@@ -173,6 +169,18 @@ impl RenderOnce for WindowControls {
     }
 }
 
+impl Styled for TitleBar {
+    fn style(&mut self) -> &mut gpui::StyleRefinement {
+        self.base.style()
+    }
+}
+
+impl ParentElement for TitleBar {
+    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
+        self.children.extend(elements);
+    }
+}
+
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let is_linux = cfg!(target_os = "linux");
@@ -187,8 +195,9 @@ impl RenderOnce for TitleBar {
         div()
             .flex_shrink_0()
             .child(
-                h_flex()
-                    .id("title-bar")
+                self.base
+                    .flex()
+                    .flex_col()
                     .items_center()
                     .justify_between()
                     .h(HEIGHT)
