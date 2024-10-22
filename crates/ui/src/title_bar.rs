@@ -197,7 +197,7 @@ impl RenderOnce for TitleBar {
             .child(
                 self.base
                     .flex()
-                    .flex_col()
+                    .flex_row()
                     .items_center()
                     .justify_between()
                     .h(HEIGHT)
