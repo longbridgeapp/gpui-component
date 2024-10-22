@@ -312,9 +312,11 @@ impl NotificationList {
             cx.spawn(|_, mut cx| async move {
                 Timer::after(Duration::from_secs(5)).await;
 
-                notification
+                if let Err(err) = notification
                     .update(&mut cx, |note, cx| note.dismiss(&ClickEvent::default(), cx))
-                    .expect("failed to auto hide notification");
+                {
+                    println!("failed to auto hide notification: {:?}", err);
+                }
             })
             .detach();
         }
