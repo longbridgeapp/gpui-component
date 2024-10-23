@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, relative, Along, AnyElement, AnyView, Axis, Bounds,
-    Element, Entity, EntityId, EventEmitter, IntoElement, MouseMoveEvent, MouseUpEvent,
+    Element, Entity, EntityId, EventEmitter, IntoElement, IsZero, MouseMoveEvent, MouseUpEvent,
     ParentElement, Pixels, Render, StatefulInteractiveElement as _, Style, Styled, View,
     ViewContext, VisualContext as _, WindowContext,
 };
@@ -362,10 +362,16 @@ impl Render for ResizablePanel {
             .when(self.axis.is_vertical(), |this| this.min_h(PANEL_MIN_SIZE))
             .when(self.axis.is_horizontal(), |this| this.min_w(PANEL_MIN_SIZE))
             .when_some(self.initial_size, |this, size| {
-                // The `self.size` is None, that mean the initial size for the panel, so we need set flex_shrink_0
-                // To let it keep the initial size.
-                this.when(self.size.is_none(), |this| this.flex_shrink_0())
+                if size.is_zero() {
+                    this
+                } else {
+                    // The `self.size` is None, that mean the initial size for the panel, so we need set flex_shrink_0
+                    // To let it keep the initial size.
+                    this.when(self.size.is_none() && size > px(0.), |this| {
+                        this.flex_shrink_0()
+                    })
                     .flex_basis(size)
+                }
             })
             .map(|this| match (self.size_ratio, self.size, total_size) {
                 (Some(size_ratio), _, _) => this.flex_basis(relative(size_ratio)),
