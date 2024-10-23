@@ -4,6 +4,7 @@ use gpui::{
     InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
+use gpui_gradient::{GradientElement, GradientSide};
 
 /// TitleBar used to customize the appearance of the title bar.
 ///
@@ -208,12 +209,12 @@ impl RenderOnce for TitleBar {
                     })
                     .border_b_1()
                     .border_color(cx.theme().title_bar_border)
-                    // .bg(cx.theme().title_bar_background)
+                    // .bg(cx.theme().title_bar)
                     .child(
                         div().absolute().size_full().child(
-                            gpui_gradient::GradientElement::linear()
-                                .side(gpui_gradient::GradientSide::Bottom)
-                                .color(cx.theme().title_bar_background)
+                            GradientElement::linear()
+                                .side(GradientSide::Bottom)
+                                .color(cx.theme().title_bar)
                                 .color(cx.theme().accent),
                         ),
                     )
