@@ -10,6 +10,7 @@ doctest = false
 
 [dependencies]
 gpui.workspace = true
+gpui-gradient.workspace = true
 anyhow = "1"
 itertools = "0.13.0"
 serde = "1.0.203"
