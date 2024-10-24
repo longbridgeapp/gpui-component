@@ -212,10 +212,16 @@ impl RenderOnce for TitleBar {
                     // .bg(cx.theme().title_bar)
                     .child(
                         div().absolute().size_full().child(
-                            GradientElement::linear()
-                                .side(GradientSide::Bottom)
-                                .color(cx.theme().title_bar)
-                                .color(cx.theme().accent),
+                            GradientElement::linear().side(GradientSide::Bottom).map(
+                                |this| match cx.theme().mode.is_dark() {
+                                    true => {
+                                        this.color(cx.theme().title_bar).color(cx.theme().accent)
+                                    }
+                                    false => {
+                                        this.color(cx.theme().accent).color(cx.theme().title_bar)
+                                    }
+                                },
+                            ),
                         ),
                     )
                     .on_double_click(|_, cx| cx.zoom_window())
