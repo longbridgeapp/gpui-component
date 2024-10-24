@@ -506,7 +506,7 @@ where
 
         let sort = sort.unwrap();
         let sort = match sort {
-            ColSort::Ascending => ColSort::Descending,
+            ColSort::Ascending => ColSort::Default,
             ColSort::Descending => ColSort::Ascending,
             ColSort::Default => ColSort::Descending,
         };
