@@ -6,6 +6,7 @@ resolver = "2"
 
 [workspace.dependencies]
 gpui = { git = "https://github.com/huacnlee/zed.git", branch = "export-platform-window" }
+gpui-gradient = { git = "https://github.com/huacnlee/gpui-gradient.git" }
 windows = { version = "0.58.0", features = [
     "Wdk",
     "Wdk_System",

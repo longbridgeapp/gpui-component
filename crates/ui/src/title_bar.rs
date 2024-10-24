@@ -4,6 +4,7 @@ use gpui::{
     InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
+use gpui_gradient::{GradientElement, GradientSide};
 
 /// TitleBar used to customize the appearance of the title bar.
 ///
@@ -201,14 +202,23 @@ impl RenderOnce for TitleBar {
                     .items_center()
                     .justify_between()
                     .h(HEIGHT)
-                    .pl(px(12.))
-                    .when(!cx.is_fullscreen(), |this| {
-                        // Leave space for the macOS window controls.
-                        this.when_some(macos_pl, |this, pl| this.pl(pl))
-                    })
                     .border_b_1()
                     .border_color(cx.theme().title_bar_border)
-                    .bg(cx.theme().title_bar_background)
+                    // .bg(cx.theme().title_bar)
+                    .child(
+                        div().absolute().size_full().child(
+                            GradientElement::linear().side(GradientSide::Bottom).map(
+                                |this| match cx.theme().mode.is_dark() {
+                                    true => {
+                                        this.color(cx.theme().title_bar).color(cx.theme().accent)
+                                    }
+                                    false => {
+                                        this.color(cx.theme().accent).color(cx.theme().title_bar)
+                                    }
+                                },
+                            ),
+                        ),
+                    )
                     .on_double_click(|_, cx| cx.zoom_window())
                     .child(
                         h_flex()
@@ -216,6 +226,11 @@ impl RenderOnce for TitleBar {
                             .justify_between()
                             .flex_shrink_0()
                             .flex_1()
+                            .pl(px(12.))
+                            .when(!cx.is_fullscreen(), |this| {
+                                // Leave space for the macOS window controls.
+                                this.when_some(macos_pl, |this, pl| this.pl(pl))
+                            })
                             .children(self.children),
                     )
                     .child(WindowControls {}),

@@ -143,7 +143,7 @@ impl Colorize for Hsla {
 
 #[derive(Debug, Clone, Copy)]
 struct Colors {
-    pub title_bar_background: Hsla,
+    pub title_bar: Hsla,
     pub title_bar_border: Hsla,
     pub background: Hsla,
     pub foreground: Hsla,
@@ -185,7 +185,7 @@ struct Colors {
 impl Colors {
     fn light() -> Colors {
         Colors {
-            title_bar_background: hsl(0.0, 0.0, 100.),
+            title_bar: hsl(0.0, 0.0, 100.),
             title_bar_border: hsl(240.0, 5.9, 90.0),
             background: hsl(0.0, 0.0, 100.),
             foreground: hsl(240.0, 10., 3.9),
@@ -227,7 +227,7 @@ impl Colors {
 
     fn dark() -> Colors {
         Colors {
-            title_bar_background: hsl(0., 0., 9.7),
+            title_bar: hsl(0., 0., 9.7),
             title_bar_border: hsl(240.0, 3.7, 15.9),
             background: hsl(0.0, 0.0, 8.0),
             foreground: hsl(0., 0., 78.),
@@ -272,7 +272,7 @@ impl Colors {
 pub struct Theme {
     pub mode: ThemeMode,
     pub transparent: Hsla,
-    pub title_bar_background: Hsla,
+    pub title_bar: Hsla,
     pub title_bar_border: Hsla,
     /// Basic font size
     pub font_size: f32,
@@ -350,7 +350,7 @@ impl Theme {
     }
 
     pub fn apply_color(&mut self, mask_color: Hsla) {
-        self.title_bar_background = self.title_bar_background.apply(mask_color);
+        self.title_bar = self.title_bar.apply(mask_color);
         self.title_bar_border = self.title_bar_border.apply(mask_color);
         self.background = self.background.apply(mask_color);
         self.foreground = self.foreground.apply(mask_color);
@@ -430,7 +430,7 @@ impl From<Colors> for Theme {
             },
             radius: 4.0,
             shadow: true,
-            title_bar_background: colors.title_bar_background,
+            title_bar: colors.title_bar,
             title_bar_border: colors.title_bar_border,
             background: colors.background,
             foreground: colors.foreground,
