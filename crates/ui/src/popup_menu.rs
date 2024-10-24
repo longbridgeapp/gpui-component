@@ -32,14 +32,25 @@ pub fn init(cx: &mut AppContext) {
 }
 
 pub trait PopupMenuExt: Selectable + IntoElement + 'static {
+    /// Create a popup menu with the given items, anchored to the TopLeft corner
     fn popup_menu(
         self,
+        f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
+    ) -> Popover<PopupMenu> {
+        self.popup_menu_with_anchor(AnchorCorner::TopLeft, f)
+    }
+
+    /// Create a popup menu with the given items, anchored to the given corner
+    fn popup_menu_with_anchor(
+        self,
+        anchor: impl Into<AnchorCorner>,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
         let element_id = self.element_id();
         Popover::new(SharedString::from(format!("popup-menu:{:?}", element_id)))
             .no_style()
             .trigger(self)
+            .anchor(anchor.into())
             .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
     }
 }

@@ -302,7 +302,7 @@ impl Render for PopupStory {
                     .child(
                         Button::new("popup-menu-11112")
                             .label("Scrollable Menu")
-                            .popup_menu(move |this, _| {
+                            .popup_menu_with_anchor(AnchorCorner::TopRight, move |this, _| {
                                 let mut this = this.scrollable();
                                 for i in 0..100 {
                                     this = this.menu(
