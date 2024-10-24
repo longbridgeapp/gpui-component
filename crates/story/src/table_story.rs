@@ -439,12 +439,9 @@ impl TableDelegate for StockTableDelegate {
 
         if let Some(col) = self.columns.get_mut(col_ix) {
             match col.id.as_ref() {
-                "id" => self.stocks.sort_by(|a, b| {
-                    if sort == ColSort::Ascending {
-                        a.id.cmp(&b.id)
-                    } else {
-                        b.id.cmp(&a.id)
-                    }
+                "id" => self.stocks.sort_by(|a, b| match sort {
+                    ColSort::Descending => b.id.cmp(&a.id),
+                    _ => a.id.cmp(&b.id),
                 }),
                 _ => {}
             }
