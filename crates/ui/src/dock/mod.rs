@@ -440,6 +440,7 @@ impl DockArea {
                 .detach()
             }
             PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+            _ => {}
         });
 
         self._subscriptions.push(subscription);

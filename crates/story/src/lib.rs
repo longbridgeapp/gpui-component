@@ -38,9 +38,10 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
-    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
-    SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    actions, canvas, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
+    EventEmitter, FocusableView, Global, Hsla, InteractiveElement, IntoElement, ParentElement,
+    Pixels, Render, SharedString, Size, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
@@ -60,6 +61,7 @@ pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
+    StoryGlobal::init(cx);
 
     register_panel(cx, PANEL_NAME, |_, _, info, cx| {
         let story_state = match info {
@@ -82,7 +84,37 @@ pub fn init(cx: &mut AppContext) {
     });
 }
 
-actions!(story, [PanelInfo]);
+pub struct WillSplitView {
+    pub title: SharedString,
+    pub view: Option<View<StoryContainer>>,
+    pub size: Size<Pixels>,
+}
+
+pub struct StoryGlobal {
+    pub will_split_view: WillSplitView,
+}
+impl Global for StoryGlobal {}
+impl StoryGlobal {
+    pub fn init(cx: &mut AppContext) {
+        cx.set_global(Self {
+            will_split_view: WillSplitView {
+                title: SharedString::default(),
+                view: None,
+                size: Size::default(),
+            },
+        });
+    }
+
+    pub fn global(cx: &AppContext) -> &Self {
+        cx.global::<Self>()
+    }
+
+    pub fn global_mut(cx: &mut AppContext) -> &mut Self {
+        cx.global_mut::<Self>()
+    }
+}
+
+actions!(story, [PanelInfo, SplitToWindow]);
 
 pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {
     use ui::theme::ActiveTheme;
@@ -106,8 +138,7 @@ pub struct StoryContainer {
     name: SharedString,
     title_bg: Option<Hsla>,
     description: SharedString,
-    width: Option<gpui::Pixels>,
-    height: Option<gpui::Pixels>,
+    size: Size<Pixels>,
     story: Option<AnyView>,
     story_klass: Option<SharedString>,
     closeable: bool,
@@ -151,10 +182,9 @@ impl StoryContainer {
             name: "".into(),
             title_bg: None,
             description: "".into(),
-            width: None,
-            height: None,
             story: None,
             story_klass: None,
+            size: Default::default(),
             closeable: true,
             zoomable: true,
         }
@@ -181,16 +211,6 @@ impl StoryContainer {
         view
     }
 
-    pub fn width(mut self, width: gpui::Pixels) -> Self {
-        self.width = Some(width);
-        self
-    }
-
-    pub fn height(mut self, height: gpui::Pixels) -> Self {
-        self.height = Some(height);
-        self
-    }
-
     pub fn story(mut self, story: AnyView, story_klass: impl Into<SharedString>) -> Self {
         self.story = Some(story);
         self.story_klass = Some(story_klass.into());
@@ -202,6 +222,16 @@ impl StoryContainer {
         let note = Notification::new(format!("You have clicked panel info on: {}", self.name))
             .id::<Info>();
         cx.push_notification(note);
+    }
+
+    fn on_action_split_to_window(&mut self, _: &SplitToWindow, cx: &mut ViewContext<Self>) {
+        cx.propagate();
+
+        StoryGlobal::global_mut(cx).will_split_view = WillSplitView {
+            title: self.name.clone(),
+            view: Some(cx.view().clone()),
+            size: self.size,
+        }
     }
 }
 
@@ -294,6 +324,7 @@ impl Panel for StoryContainer {
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.track_focus(&self.focus_handle)
             .menu("Info", Box::new(PanelInfo))
+            .menu("Split to Window", Box::new(SplitToWindow))
     }
 
     fn dump(&self, _cx: &AppContext) -> DockItemState {
@@ -314,11 +345,13 @@ impl FocusableView for StoryContainer {
 }
 impl Render for StoryContainer {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let view = cx.view().clone();
         v_flex()
             .id("story-container")
             .size_full()
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_panel_info))
+            .on_action(cx.listener(Self::on_action_split_to_window))
             .when(self.description.len() > 0, |this| {
                 this.child(
                     div()
@@ -333,5 +366,13 @@ impl Render for StoryContainer {
             .when_some(self.story.clone(), |this, story| {
                 this.child(v_flex().id("story-children").size_full().p_4().child(story))
             })
+            .child(
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.size = bounds.size),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full(),
+            )
     }
 }

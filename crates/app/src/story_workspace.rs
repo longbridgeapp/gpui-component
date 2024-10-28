@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Duration};
 use story::{
     AccordionStory, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory,
     ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
-    StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
+    SplitToWindow, StoryContainer, StoryGlobal, SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
     button::{Button, ButtonStyled as _},
@@ -300,6 +300,46 @@ impl StoryWorkspace {
             Ok(window)
         })
     }
+
+    fn open_child_window(
+        &mut self,
+        title: SharedString,
+        view: AnyView,
+        size: Size<Pixels>,
+        cx: &mut WindowContext,
+    ) {
+        let workspace = ChildWorkspace { root: view };
+
+        let window_options = WindowOptions {
+            window_bounds: Some(WindowBounds::Windowed(Bounds::centered(None, size, cx))),
+            window_min_size: Some(gpui::Size {
+                width: px(640.),
+                height: px(480.),
+            }),
+            titlebar: Some(TitlebarOptions {
+                title: None,
+                appears_transparent: true,
+                traffic_light_position: Some(point(px(9.0), px(9.0))),
+            }),
+            kind: WindowKind::Normal,
+            ..Default::default()
+        };
+
+        _ = cx.open_window(window_options, |cx| {
+            cx.set_window_title(&title);
+            cx.activate_window();
+            let story_view = cx.new_view(|_| workspace);
+            cx.new_view(|cx| Root::new(story_view.into(), cx))
+        });
+    }
+
+    fn on_action_split_to_window(&mut self, _: &SplitToWindow, cx: &mut ViewContext<Self>) {
+        let state = StoryGlobal::global(cx);
+        if let Some(view) = state.will_split_view.view.clone() {
+            let size = state.will_split_view.size;
+            self.open_child_window(state.will_split_view.title.clone(), view.into(), size, cx);
+        }
+    }
 }
 
 pub fn open_new(
@@ -325,6 +365,8 @@ impl Render for StoryWorkspace {
         let notifications_count = cx.notifications().len();
 
         div()
+            .id("story-workspace")
+            .on_action(cx.listener(Self::on_action_split_to_window))
             .font_family(".SystemUIFont")
             .relative()
             .size_full()
@@ -449,5 +491,25 @@ impl Render for LocaleSelector {
                     })
                     .anchor(AnchorCorner::TopRight),
             )
+    }
+}
+
+struct ChildWorkspace {
+    root: AnyView,
+}
+
+impl Render for ChildWorkspace {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+            .id("child-workspace")
+            .font_family(".SystemUIFont")
+            .relative()
+            .size_full()
+            .flex()
+            .flex_col()
+            .bg(cx.theme().background)
+            .text_color(cx.theme().foreground)
+            .child(TitleBar::new())
+            .child(self.root.clone())
     }
 }

@@ -14,6 +14,7 @@ pub enum PanelEvent {
     ZoomIn,
     ZoomOut,
     LayoutChanged,
+    SplitToWindow(AnyView),
 }
 
 pub struct TitleStyle {
