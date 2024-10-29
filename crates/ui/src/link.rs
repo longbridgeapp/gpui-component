@@ -69,7 +69,6 @@ impl RenderOnce for Link {
                             .text_decoration_1()
                     })
                     .on_mouse_down(MouseButton::Left, |_, cx| {
-                        cx.prevent_default();
                         cx.stop_propagation();
                     })
                     .on_click({
