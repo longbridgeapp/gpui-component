@@ -128,7 +128,6 @@ impl RenderOnce for ListItem {
                     this.cursor_pointer()
                         .on_mouse_down(MouseButton::Left, move |_, cx| {
                             cx.stop_propagation();
-                            cx.prevent_default();
                         })
                         .on_click(on_click)
                 } else {
