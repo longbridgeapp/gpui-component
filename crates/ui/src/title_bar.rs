@@ -208,7 +208,7 @@ impl RenderOnce for TitleBar {
                     })
                     .border_b_1()
                     .border_color(cx.theme().title_bar_border)
-                    .bg(cx.theme().title_bar_background)
+                    .bg(cx.theme().title_bar)
                     .on_double_click(|_, cx| cx.zoom_window())
                     .child(
                         h_flex()
