@@ -9,7 +9,7 @@ use super::{
 };
 
 /// Used to serialize and deserialize the DockArea
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DockAreaState {
     /// The version is used to mark this persisted state is compatible with the current version
     /// For example, some times we many totally changed the structure of the Panel,
