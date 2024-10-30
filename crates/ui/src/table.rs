@@ -114,10 +114,10 @@ pub struct Table<D: TableDelegate> {
 
     col_groups: Vec<ColGroup>,
 
-    vertical_scroll_handle: UniformListScrollHandle,
-    scrollbar_state: Rc<Cell<ScrollbarState>>,
-    horizontal_scroll_handle: ScrollHandle,
-    horizontal_scrollbar_state: Rc<Cell<ScrollbarState>>,
+    pub vertical_scroll_handle: UniformListScrollHandle,
+    pub scrollbar_state: Rc<Cell<ScrollbarState>>,
+    pub horizontal_scroll_handle: ScrollHandle,
+    pub horizontal_scrollbar_state: Rc<Cell<ScrollbarState>>,
 
     selection_state: SelectionState,
     selected_row: Option<usize>,
