@@ -208,7 +208,7 @@ pub struct Root {
     active_drawer: Option<ActiveDrawer>,
     active_modals: Vec<ActiveModal>,
     pub notification: View<NotificationList>,
-    child: AnyView,
+    view: AnyView,
 }
 
 #[derive(Clone)]
@@ -224,13 +224,13 @@ struct ActiveModal {
 }
 
 impl Root {
-    pub fn new(child: AnyView, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(view: AnyView, cx: &mut ViewContext<Self>) -> Self {
         Self {
             previous_focus_handle: None,
             active_drawer: None,
             active_modals: Vec::new(),
             notification: cx.new_view(NotificationList::new),
-            child,
+            view,
         }
     }
 
@@ -332,6 +332,11 @@ impl Root {
             })),
         )
     }
+
+    /// Return the root view of the Root.
+    pub fn view(&self) -> &AnyView {
+        &self.view
+    }
 }
 
 impl Render for Root {
@@ -340,6 +345,6 @@ impl Render for Root {
             .id("root")
             .size_full()
             .text_color(cx.theme().foreground)
-            .child(self.child.clone())
+            .child(self.view.clone())
     }
 }
