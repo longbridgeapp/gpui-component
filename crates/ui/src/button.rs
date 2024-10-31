@@ -175,7 +175,7 @@ impl From<Button> for AnyElement {
 impl Button {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
-            base: div(),
+            base: div().flex_shrink_0(),
             id: id.into(),
             icon: None,
             label: None,
