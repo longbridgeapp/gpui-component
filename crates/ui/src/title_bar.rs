@@ -18,8 +18,14 @@ pub const TITLE_BAR_HEIGHT: Pixels = px(35.);
 
 impl TitleBar {
     pub fn new() -> Self {
+        // Leave more space for the macOS window controls.
+        #[cfg(target_os = "macos")]
+        let pl = px(80.);
+        #[cfg(not(target_os = "macos"))]
+        let pl = px(12.);
+
         Self {
-            base: div().id("title-bar"),
+            base: div().id("title-bar").pl(pl),
             children: Vec::new(),
         }
     }
@@ -184,11 +190,6 @@ impl ParentElement for TitleBar {
 impl RenderOnce for TitleBar {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let is_linux = cfg!(target_os = "linux");
-        let macos_pl = if cfg!(target_os = "macos") {
-            Some(px(80.))
-        } else {
-            None
-        };
 
         const HEIGHT: Pixels = px(34.);
 
@@ -201,14 +202,10 @@ impl RenderOnce for TitleBar {
                     .items_center()
                     .justify_between()
                     .h(HEIGHT)
-                    .pl(px(12.))
-                    .when(!cx.is_fullscreen(), |this| {
-                        // Leave space for the macOS window controls.
-                        this.when_some(macos_pl, |this, pl| this.pl(pl))
-                    })
                     .border_b_1()
                     .border_color(cx.theme().title_bar_border)
                     .bg(cx.theme().title_bar)
+                    .when(cx.is_fullscreen(), |this| this.pl(px(12.)))
                     .on_double_click(|_, cx| cx.zoom_window())
                     .child(
                         h_flex()
