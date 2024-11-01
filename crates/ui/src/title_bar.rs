@@ -1,9 +1,17 @@
+use std::rc::Rc;
+
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
     div, prelude::FluentBuilder as _, px, relative, AnyElement, Div, Element, Hsla,
     InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
+
+pub const TITLE_BAR_HEIGHT: Pixels = px(35.);
+#[cfg(target_os = "macos")]
+const TITLE_BAR_LEFT_PADDING: Pixels = px(80.);
+#[cfg(not(target_os = "macos"))]
+const TITLE_BAR_LEFT_PADDING: Pixels = px(12.);
 
 /// TitleBar used to customize the appearance of the title bar.
 ///
@@ -12,22 +20,25 @@ use gpui::{
 pub struct TitleBar {
     base: Stateful<Div>,
     children: Vec<AnyElement>,
+    on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>,
 }
-
-pub const TITLE_BAR_HEIGHT: Pixels = px(35.);
 
 impl TitleBar {
     pub fn new() -> Self {
-        // Leave more space for the macOS window controls.
-        #[cfg(target_os = "macos")]
-        let pl = px(80.);
-        #[cfg(not(target_os = "macos"))]
-        let pl = px(12.);
-
         Self {
-            base: div().id("title-bar").pl(pl),
+            base: div().id("title-bar").pl(TITLE_BAR_LEFT_PADDING),
             children: Vec::new(),
+            on_close_window: None,
         }
+    }
+
+    /// Add custom for close window event, default is None, then click X button will call `cx.remove_window()`.
+    /// Linux only, this will do nothing on other platforms.
+    pub fn on_close_window(mut self, f: impl Fn(&mut WindowContext) + 'static) -> Self {
+        if cfg!(target_os = "linux") {
+            self.on_close_window = Some(Rc::new(Box::new(f)));
+        }
+        self
     }
 }
 
@@ -35,12 +46,14 @@ impl TitleBar {
 //
 // We don't need implementation the click event for the control buttons.
 // If user clicked in the bounds, the window event will be triggered.
-#[derive(IntoElement, Clone, Copy)]
+#[derive(IntoElement, Clone)]
 enum ControlIcon {
     Minimize,
     Restore,
     Maximize,
-    Close,
+    Close {
+        on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>,
+    },
 }
 
 impl ControlIcon {
@@ -56,8 +69,8 @@ impl ControlIcon {
         Self::Maximize
     }
 
-    fn close() -> Self {
-        Self::Close
+    fn close(on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>) -> Self {
+        Self::Close { on_close_window }
     }
 
     fn id(&self) -> &'static str {
@@ -65,7 +78,7 @@ impl ControlIcon {
             Self::Minimize => "minimize",
             Self::Restore => "restore",
             Self::Maximize => "maximize",
-            Self::Close => "close",
+            Self::Close { .. } => "close",
         }
     }
 
@@ -74,12 +87,12 @@ impl ControlIcon {
             Self::Minimize => IconName::WindowMinimize,
             Self::Restore => IconName::WindowRestore,
             Self::Maximize => IconName::WindowMaximize,
-            Self::Close => IconName::WindowClose,
+            Self::Close { .. } => IconName::WindowClose,
         }
     }
 
     fn is_close(&self) -> bool {
-        matches!(self, Self::Close)
+        matches!(self, Self::Close { .. })
     }
 
     fn fg(&self, cx: &WindowContext) -> Hsla {
@@ -118,8 +131,12 @@ impl RenderOnce for ControlIcon {
         let fg = self.fg(cx);
         let hover_fg = self.hover_fg(cx);
         let hover_bg = self.hover_bg(cx);
-        let icon = self;
+        let icon = self.clone();
         let is_linux = cfg!(target_os = "linux");
+        let on_close_window = match &icon {
+            ControlIcon::Close { on_close_window } => on_close_window.clone(),
+            _ => None,
+        };
 
         div()
             .id(self.id())
@@ -136,7 +153,13 @@ impl RenderOnce for ControlIcon {
                     Self::Minimize => cx.minimize_window(),
                     Self::Restore => cx.zoom_window(),
                     Self::Maximize => cx.zoom_window(),
-                    Self::Close => cx.remove_window(),
+                    Self::Close { .. } => {
+                        if let Some(f) = on_close_window.clone() {
+                            f(cx);
+                        } else {
+                            cx.remove_window();
+                        }
+                    }
                 })
             })
             .hover(|style| style.bg(hover_bg).text_color(hover_fg))
@@ -146,7 +169,9 @@ impl RenderOnce for ControlIcon {
 }
 
 #[derive(IntoElement)]
-struct WindowControls {}
+struct WindowControls {
+    on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>,
+}
 
 impl RenderOnce for WindowControls {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
@@ -171,7 +196,7 @@ impl RenderOnce for WindowControls {
                         ControlIcon::maximize()
                     }),
             )
-            .child(ControlIcon::close())
+            .child(ControlIcon::close(self.on_close_window))
     }
 }
 
@@ -215,7 +240,9 @@ impl RenderOnce for TitleBar {
                             .flex_1()
                             .children(self.children),
                     )
-                    .child(WindowControls {}),
+                    .child(WindowControls {
+                        on_close_window: self.on_close_window,
+                    }),
             )
             .when(is_linux, |this| {
                 this.child(
