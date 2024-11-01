@@ -103,19 +103,17 @@ impl Asset for Image {
                 }
             };
 
-            let options = usvg::Options {
-                ..Default::default()
-            };
+            let mut options = usvg::Options::default();
+            options.fontdb_mut().load_system_fonts();
+
             let tree = usvg::Tree::from_data(&bytes, &options)?;
 
             let mut pixmap =
                 resvg::tiny_skia::Pixmap::new(size.width.0 as u32, size.height.0 as u32)
                     .ok_or(usvg::Error::InvalidSize)?;
 
-            let transform = tree.view_box().to_transform(
-                resvg::tiny_skia::Size::from_wh(size.width.0, size.height.0)
-                    .ok_or(usvg::Error::InvalidSize)?,
-            );
+            let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
+
             resvg::render(&tree, transform, &mut pixmap.as_mut());
 
             let mut buffer = ImageBuffer::from_raw(pixmap.width(), pixmap.height(), pixmap.take())
