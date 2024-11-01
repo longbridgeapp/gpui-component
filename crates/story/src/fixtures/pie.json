@@ -60,7 +60,7 @@
     }
   ],
   "sub_title_text": "Sub Title",
-  "theme": "grafana",
+  "theme": "light",
   "title_text": "Nightingale Chart",
   "type": "pie",
   "width": 600
