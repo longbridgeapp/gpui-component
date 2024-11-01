@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{h_flex, theme::ActiveTheme, Icon, IconName, InteractiveElementExt as _, Sizable as _};
 use gpui::{
-    div, prelude::FluentBuilder as _, px, relative, AnyElement, Div, Element, Hsla,
+    div, prelude::FluentBuilder as _, px, relative, AnyElement, ClickEvent, Div, Element, Hsla,
     InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce, Stateful,
     StatefulInteractiveElement as _, Style, Styled, WindowContext,
 };
@@ -20,7 +20,7 @@ const TITLE_BAR_LEFT_PADDING: Pixels = px(12.);
 pub struct TitleBar {
     base: Stateful<Div>,
     children: Vec<AnyElement>,
-    on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>,
+    on_close_window: Option<Rc<Box<dyn Fn(&ClickEvent, &mut WindowContext)>>>,
 }
 
 impl TitleBar {
@@ -34,7 +34,10 @@ impl TitleBar {
 
     /// Add custom for close window event, default is None, then click X button will call `cx.remove_window()`.
     /// Linux only, this will do nothing on other platforms.
-    pub fn on_close_window(mut self, f: impl Fn(&mut WindowContext) + 'static) -> Self {
+    pub fn on_close_window(
+        mut self,
+        f: impl Fn(&ClickEvent, &mut WindowContext) + 'static,
+    ) -> Self {
         if cfg!(target_os = "linux") {
             self.on_close_window = Some(Rc::new(Box::new(f)));
         }
@@ -52,7 +55,7 @@ enum ControlIcon {
     Restore,
     Maximize,
     Close {
-        on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>,
+        on_close_window: Option<Rc<Box<dyn Fn(&ClickEvent, &mut WindowContext)>>>,
     },
 }
 
@@ -69,7 +72,7 @@ impl ControlIcon {
         Self::Maximize
     }
 
-    fn close(on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>) -> Self {
+    fn close(on_close_window: Option<Rc<Box<dyn Fn(&ClickEvent, &mut WindowContext)>>>) -> Self {
         Self::Close { on_close_window }
     }
 
@@ -155,7 +158,7 @@ impl RenderOnce for ControlIcon {
                     Self::Maximize => cx.zoom_window(),
                     Self::Close { .. } => {
                         if let Some(f) = on_close_window.clone() {
-                            f(cx);
+                            f(&ClickEvent::default(), cx);
                         } else {
                             cx.remove_window();
                         }
@@ -170,7 +173,7 @@ impl RenderOnce for ControlIcon {
 
 #[derive(IntoElement)]
 struct WindowControls {
-    on_close_window: Option<Rc<Box<dyn Fn(&mut WindowContext)>>>,
+    on_close_window: Option<Rc<Box<dyn Fn(&ClickEvent, &mut WindowContext)>>>,
 }
 
 impl RenderOnce for WindowControls {
