@@ -373,27 +373,45 @@ impl Element for Scrollbar {
                     };
 
                     let state = self.state.clone();
-                    let mut thumb_bg = cx.theme().transparent;
-                    let mut bar_bg = cx.theme().transparent;
-
-                    if state.get().dragged_axis == Some(axis)
-                        || state.get().hovered_axis == Some(axis)
+                    let (thumb_bg, bar_bg, bar_border, inset, radius) = if state.get().dragged_axis
+                        == Some(axis)
                     {
-                        thumb_bg = cx.theme().scrollbar_thumb;
-                        bar_bg = cx.theme().scrollbar;
+                        (
+                            cx.theme().scrollbar_thumb,
+                            cx.theme().scrollbar,
+                            cx.theme().border,
+                            THUMB_INSET - px(1.),
+                            THUMB_RADIUS,
+                        )
+                    } else if state.get().hovered_axis == Some(axis) {
+                        (
+                            cx.theme().scrollbar_thumb,
+                            cx.theme().scrollbar,
+                            cx.theme().border,
+                            THUMB_INSET - px(1.),
+                            THUMB_RADIUS,
+                        )
                     } else {
+                        let mut idle_state = (
+                            cx.theme().scrollbar_thumb.opacity(0.3),
+                            cx.theme().transparent,
+                            gpui::transparent_black(),
+                            THUMB_INSET,
+                            THUMB_RADIUS - px(1.),
+                        );
                         if let Some(last_time) = state.get().last_scroll_time {
                             let elapsed = Instant::now().duration_since(last_time).as_secs_f32();
                             if elapsed < 1.0 {
-                                thumb_bg =
-                                    cx.theme().scrollbar_thumb.opacity(1.0 - elapsed.powi(10));
+                                let y_value = 1. - elapsed.powi(10); // y = 1 - x^10
+                                idle_state.0 =
+                                    cx.theme().scrollbar_thumb.opacity(0.3 + 0.7 * y_value);
+                                idle_state.1 = cx.theme().scrollbar.opacity(y_value);
+                                idle_state.2 = cx.theme().border.opacity(y_value);
                                 cx.request_animation_frame();
                             }
                         }
-                    }
-                    let bar_border = cx.theme().border;
-                    let inset = THUMB_INSET - px(1.);
-                    let radius = THUMB_RADIUS;
+                        idle_state
+                    };
 
                     let border_width = px(0.);
                     let thumb_bounds = if is_vertical {
