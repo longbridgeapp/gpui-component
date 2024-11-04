@@ -20,7 +20,7 @@ use gpui::{
 use smallvec::SmallVec;
 
 pub struct StackPanel {
-    pub(super) parent: Option<View<StackPanel>>,
+    pub(super) parent: Option<WeakView<StackPanel>>,
     pub(super) axis: Axis,
     focus_handle: FocusHandle,
     pub(crate) panels: SmallVec<[Arc<dyn PanelView>; 2]>,
@@ -180,9 +180,11 @@ impl StackPanel {
             move |cx| {
                 // If the panel is a TabPanel, set its parent to this.
                 if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                    tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view));
+                    tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.downgrade()));
                 } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
-                    stack_panel.update(cx, |stack_panel, _| stack_panel.parent = Some(view));
+                    stack_panel.update(cx, |stack_panel, _| {
+                        stack_panel.parent = Some(view.downgrade())
+                    });
                 }
 
                 // Subscribe to the panel's layout change event.
@@ -258,7 +260,7 @@ impl StackPanel {
 
         let view = cx.view().clone();
         if let Some(parent) = self.parent.as_ref() {
-            parent.update(cx, |parent, cx| {
+            _ = parent.update(cx, |parent, cx| {
                 parent.remove_panel(Arc::new(view.clone()), cx);
             });
         }
@@ -291,8 +293,8 @@ impl StackPanel {
     ) -> bool {
         let first_panel = self.panels.first();
 
-        if let Some(parent) = &self.parent {
-            if check_parent {
+        if check_parent {
+            if let Some(parent) = self.parent.as_ref().and_then(|parent| parent.upgrade()) {
                 return parent.read(cx).is_top_left_panel(panel, true, cx);
             }
         }
@@ -320,8 +322,8 @@ impl StackPanel {
             self.panels.last()
         };
 
-        if let Some(parent) = &self.parent {
-            if check_parent {
+        if check_parent {
+            if let Some(parent) = self.parent.as_ref().and_then(|parent| parent.upgrade()) {
                 return parent.read(cx).is_top_right_panel(panel, true, cx);
             }
         }
