@@ -46,7 +46,7 @@ impl ScrollHandleOffsetable for UniformListScrollHandle {
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
     hovered_axis: Option<ScrollbarAxis>,
-    hovered_on_thumb: bool,
+    hovered_on_thumb: Option<ScrollbarAxis>,
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
     last_scroll_offset: Point<Pixels>,
@@ -57,7 +57,7 @@ impl Default for ScrollbarState {
     fn default() -> Self {
         Self {
             hovered_axis: None,
-            hovered_on_thumb: false,
+            hovered_on_thumb: None,
             dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
             last_scroll_offset: point(px(0.), px(0.)),
@@ -95,9 +95,9 @@ impl ScrollbarState {
         state
     }
 
-    fn with_hovered_thumb(&self, hovered: bool) -> Self {
+    fn with_hovered_on_thumb(&self, axis: Option<ScrollbarAxis>) -> Self {
         let mut state = *self;
-        state.hovered_on_thumb = hovered;
+        state.hovered_on_thumb = axis;
         state
     }
 
@@ -394,7 +394,7 @@ impl Element for Scrollbar {
                             THUMB_RADIUS,
                         )
                     } else if state.get().hovered_axis == Some(axis) {
-                        if state.get().hovered_on_thumb {
+                        if state.get().hovered_on_thumb == Some(axis) {
                             (
                                 cx.theme().scrollbar_thumb,
                                 cx.theme().scrollbar,
@@ -550,28 +550,33 @@ impl Element for Scrollbar {
                         let view_id = self.view_id;
 
                         move |event: &MouseMoveEvent, _, cx| {
+                            // Update hovered state for scrollbar
                             if bounds.contains(&event.position) {
                                 if state.get().hovered_axis != Some(axis) {
                                     state.set(state.get().with_hovered(Some(axis)));
-
                                     cx.notify(view_id);
                                 }
                             } else {
                                 if state.get().hovered_axis == Some(axis) {
                                     if state.get().hovered_axis.is_some() {
                                         state.set(state.get().with_hovered(None));
-
                                         cx.notify(view_id);
                                     }
                                 }
                             }
 
+                            // Update hovered state for scrollbar thumb
                             if thumb_bounds.contains(&event.position) {
-                                state.set(state.get().with_hovered_thumb(true));
-                                cx.notify(view_id);
+                                if state.get().hovered_on_thumb != Some(axis) {
+                                    state.set(state.get().with_hovered_on_thumb(Some(axis)));
+
+                                    cx.notify(view_id);
+                                }
                             } else {
-                                state.set(state.get().with_hovered_thumb(false));
-                                cx.notify(view_id);
+                                if state.get().hovered_on_thumb == Some(axis) {
+                                    state.set(state.get().with_hovered_on_thumb(None));
+                                    cx.notify(view_id);
+                                }
                             }
 
                             // Move thumb position on dragging
