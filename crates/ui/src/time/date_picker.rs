@@ -178,6 +178,12 @@ impl DatePicker {
         cx.notify();
     }
 
+    /// Set size of the date picker.
+    pub fn set_size(&mut self, size: Size, cx: &mut ViewContext<Self>) {
+        self.size = size;
+        cx.notify();
+    }
+
     fn escape(&mut self, _: &Escape, cx: &mut ViewContext<Self>) {
         self.open = false;
         self.focus_handle.focus(cx);
@@ -239,12 +245,9 @@ impl Render for DatePicker {
             .unwrap_or(placeholder.clone());
 
         self.calendar.update(cx, |view, cx| {
+            view.set_size(self.size, cx);
             view.set_number_of_months(self.number_of_months, cx);
         });
-
-        let popover_width = self.presets.as_ref().map_or(0.0, |_| 136.0)
-            + 285.0 * self.number_of_months as f32
-            + (self.number_of_months - 1) as f32 * 16.0;
 
         div()
             .id(self.id.clone())
@@ -304,12 +307,9 @@ impl Render for DatePicker {
                             div()
                                 .track_focus(&self.focus_handle)
                                 .occlude()
-                                .absolute()
                                 .mt_1p5()
-                                .overflow_hidden()
                                 .rounded_lg()
                                 .p_3()
-                                .w(px(popover_width))
                                 .border_1()
                                 .border_color(cx.theme().border)
                                 .shadow_lg()
