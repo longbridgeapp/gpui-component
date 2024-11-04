@@ -46,6 +46,7 @@ impl ScrollHandleOffsetable for UniformListScrollHandle {
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
     hovered_axis: Option<ScrollbarAxis>,
+    hovered_on_thumb: Option<ScrollbarAxis>,
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
     last_scroll_offset: Point<Pixels>,
@@ -56,6 +57,7 @@ impl Default for ScrollbarState {
     fn default() -> Self {
         Self {
             hovered_axis: None,
+            hovered_on_thumb: None,
             dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
             last_scroll_offset: point(px(0.), px(0.)),
@@ -90,6 +92,12 @@ impl ScrollbarState {
     fn with_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
         let mut state = *self;
         state.hovered_axis = axis;
+        state
+    }
+
+    fn with_hovered_on_thumb(&self, axis: Option<ScrollbarAxis>) -> Self {
+        let mut state = *self;
+        state.hovered_on_thumb = axis;
         state
     }
 
@@ -340,6 +348,8 @@ impl Element for Scrollbar {
                         continue;
                     }
 
+                    const NORMAL_OPACITY: f32 = 0.35;
+
                     let thumb_length = (container_size / scroll_area_size * container_size)
                         .max(px(MIN_THUMB_SIZE));
                     let thumb_start = -(scroll_position / (scroll_area_size - container_size)
@@ -373,27 +383,52 @@ impl Element for Scrollbar {
                     };
 
                     let state = self.state.clone();
-                    let mut thumb_bg = cx.theme().transparent;
-                    let mut bar_bg = cx.theme().transparent;
-
-                    if state.get().dragged_axis == Some(axis)
-                        || state.get().hovered_axis == Some(axis)
+                    let (thumb_bg, bar_bg, bar_border, inset, radius) = if state.get().dragged_axis
+                        == Some(axis)
                     {
-                        thumb_bg = cx.theme().scrollbar_thumb;
-                        bar_bg = cx.theme().scrollbar;
+                        (
+                            cx.theme().scrollbar_thumb,
+                            cx.theme().scrollbar,
+                            cx.theme().border,
+                            THUMB_INSET - px(1.),
+                            THUMB_RADIUS,
+                        )
+                    } else if state.get().hovered_axis == Some(axis) {
+                        if state.get().hovered_on_thumb == Some(axis) {
+                            (
+                                cx.theme().scrollbar_thumb,
+                                cx.theme().scrollbar,
+                                cx.theme().border,
+                                THUMB_INSET - px(1.),
+                                THUMB_RADIUS,
+                            )
+                        } else {
+                            (
+                                cx.theme().scrollbar_thumb.opacity(NORMAL_OPACITY),
+                                gpui::transparent_black(),
+                                gpui::transparent_black(),
+                                THUMB_INSET,
+                                THUMB_RADIUS,
+                            )
+                        }
                     } else {
+                        let mut idle_state = (
+                            gpui::transparent_black(),
+                            gpui::transparent_black(),
+                            gpui::transparent_black(),
+                            THUMB_INSET,
+                            THUMB_RADIUS - px(1.),
+                        );
                         if let Some(last_time) = state.get().last_scroll_time {
                             let elapsed = Instant::now().duration_since(last_time).as_secs_f32();
                             if elapsed < 1.0 {
-                                thumb_bg =
-                                    cx.theme().scrollbar_thumb.opacity(1.0 - elapsed.powi(10));
+                                let y_value = NORMAL_OPACITY - elapsed.powi(10); // y = 1 - x^10
+                                idle_state.0 = cx.theme().scrollbar_thumb.opacity(y_value);
                                 cx.request_animation_frame();
                             }
                         }
-                    }
-                    let bar_border = cx.theme().border;
-                    let inset = THUMB_INSET - px(1.);
-                    let radius = THUMB_RADIUS;
+                        idle_state
+                    };
 
                     let border_width = px(0.);
                     let thumb_bounds = if is_vertical {
@@ -515,19 +550,32 @@ impl Element for Scrollbar {
                         let view_id = self.view_id;
 
                         move |event: &MouseMoveEvent, _, cx| {
+                            // Update hovered state for scrollbar
                             if bounds.contains(&event.position) {
                                 if state.get().hovered_axis != Some(axis) {
                                     state.set(state.get().with_hovered(Some(axis)));
-
                                     cx.notify(view_id);
                                 }
                             } else {
                                 if state.get().hovered_axis == Some(axis) {
                                     if state.get().hovered_axis.is_some() {
                                         state.set(state.get().with_hovered(None));
-
                                         cx.notify(view_id);
                                     }
+                                }
+                            }
+
+                            // Update hovered state for scrollbar thumb
+                            if thumb_bounds.contains(&event.position) {
+                                if state.get().hovered_on_thumb != Some(axis) {
+                                    state.set(state.get().with_hovered_on_thumb(Some(axis)));
+
+                                    cx.notify(view_id);
+                                }
+                            } else {
+                                if state.get().hovered_on_thumb == Some(axis) {
+                                    state.set(state.get().with_hovered_on_thumb(None));
+                                    cx.notify(view_id);
                                 }
                             }
 
