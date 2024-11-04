@@ -4,11 +4,13 @@ use gpui::{
     VisualContext as _, WindowContext,
 };
 use ui::{
+    button::Button,
     date_picker::{DatePicker, DatePickerEvent, DateRangePreset},
-    v_flex, Sizable as _,
+    v_flex, Sizable as _, Size,
 };
 
 pub struct CalendarStory {
+    size: Size,
     date_picker: View<DatePicker>,
     date_picker_small: View<DatePicker>,
     date_picker_large: View<DatePicker>,
@@ -134,6 +136,7 @@ impl CalendarStory {
         .detach();
 
         Self {
+            size: Size::default(),
             date_picker,
             date_picker_large,
             date_picker_small,
@@ -141,6 +144,20 @@ impl CalendarStory {
             default_range_mode_picker,
             date_picker_value: None,
         }
+    }
+
+    fn change_size(&mut self, size: Size, cx: &mut ViewContext<Self>) {
+        self.size = size;
+        self.date_picker
+            .update(cx, |picker, cx| picker.set_size(size, cx));
+        self.date_picker_large
+            .update(cx, |picker, cx| picker.set_size(size, cx));
+        self.date_picker_small
+            .update(cx, |picker, cx| picker.set_size(size, cx));
+        self.date_range_picker
+            .update(cx, |picker, cx| picker.set_size(size, cx));
+        self.default_range_mode_picker
+            .update(cx, |picker, cx| picker.set_size(size, cx));
     }
 }
 
@@ -151,9 +168,18 @@ impl gpui::FocusableView for CalendarStory {
 }
 
 impl Render for CalendarStory {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
             .gap_3()
+            .child(
+                Button::new("change-size")
+                    .label(format!("size: {:?}", self.size))
+                    .on_click(cx.listener(|this, _, cx| match this.size {
+                        Size::Small => this.change_size(Size::Medium, cx),
+                        Size::Large => this.change_size(Size::Small, cx),
+                        _ => this.change_size(Size::Large, cx),
+                    })),
+            )
             .child(self.date_picker.clone())
             .child(self.date_picker_small.clone())
             .child(self.date_picker_large.clone())

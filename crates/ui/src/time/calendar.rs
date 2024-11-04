@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use chrono::{Datelike, Local, NaiveDate};
 use gpui::{
-    prelude::FluentBuilder as _, relative, ClickEvent, ElementId, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, px, relative, ClickEvent, ElementId, EventEmitter, FocusHandle,
     InteractiveElement, IntoElement, ParentElement, Render, SharedString,
     StatefulInteractiveElement, Styled, ViewContext,
 };
@@ -12,7 +12,7 @@ use crate::{
     button::{Button, ButtonStyled as _},
     h_flex,
     theme::ActiveTheme,
-    v_flex, Disableable as _, IconName, Selectable,
+    v_flex, Disableable as _, IconName, Selectable, Sizable, Size,
 };
 
 use super::utils::days_in_month;
@@ -151,6 +151,7 @@ impl ViewMode {
 
 pub struct Calendar {
     focus_handle: FocusHandle,
+    size: Size,
     date: Date,
     view_mode: ViewMode,
     current_year: i32,
@@ -167,6 +168,7 @@ impl Calendar {
         let today = Local::now().naive_local().date();
         Self {
             focus_handle: cx.focus_handle(),
+            size: Size::default(),
             view_mode: ViewMode::Day,
             date: Date::Single(None),
             current_month: today.month() as u8,
@@ -209,6 +211,11 @@ impl Calendar {
     pub fn number_of_months(mut self, number_of_months: usize) -> Self {
         self.number_of_months = number_of_months;
         self
+    }
+
+    pub fn set_size(&mut self, size: Size, cx: &mut ViewContext<Self>) {
+        self.size = size;
+        cx.notify();
     }
 
     pub fn set_number_of_months(&mut self, number_of_months: usize, cx: &mut ViewContext<Self>) {
@@ -338,9 +345,11 @@ impl Calendar {
         cx: &mut ViewContext<Self>,
     ) -> impl IntoElement {
         h_flex()
-            .w_9()
-            .h_9()
-            .rounded_md()
+            .map(|this| match self.size {
+                Size::Small => this.size_7().rounded_sm(),
+                Size::Large => this.size_10().rounded_md(),
+                _ => this.size_9().rounded_md(),
+            })
             .justify_center()
             .text_color(cx.theme().muted_foreground)
             .text_sm()
@@ -358,9 +367,11 @@ impl Calendar {
     ) -> impl IntoElement + Styled + StatefulInteractiveElement {
         h_flex()
             .id(id.into())
-            .w_9()
-            .h_9()
-            .rounded_lg()
+            .map(|this| match self.size {
+                Size::Small => this.size_7().rounded_md(),
+                Size::Large => this.size_10().rounded_lg(),
+                _ => this.size_9().rounded_lg(),
+            })
             .justify_center()
             .cursor_pointer()
             .when(muted, |this| {
@@ -470,6 +481,11 @@ impl Calendar {
         let current_year = self.current_year;
         let disabled = self.view_mode.is_month();
         let multiple_months = self.number_of_months > 1;
+        let icon_size = match self.size {
+            Size::Small => Size::Small,
+            Size::Large => Size::Medium,
+            _ => Size::Medium,
+        };
 
         h_flex()
             .gap_0p5()
@@ -480,6 +496,7 @@ impl Calendar {
                     .icon(IconName::ArrowLeft)
                     .ghost()
                     .disabled(disabled)
+                    .with_size(icon_size)
                     .when(self.view_mode.is_day(), |this| {
                         this.on_click(cx.listener(Self::prev_month))
                     })
@@ -497,8 +514,9 @@ impl Calendar {
                             Button::new("month")
                                 .ghost()
                                 .label(self.month_name(0))
-                                .selected(self.view_mode.is_month())
                                 .compact()
+                                .with_size(self.size)
+                                .selected(self.view_mode.is_month())
                                 .on_click(cx.listener(|view, _, cx| {
                                     if view.view_mode.is_month() {
                                         view.set_view_mode(ViewMode::Day, cx);
@@ -513,6 +531,7 @@ impl Calendar {
                                 .ghost()
                                 .label(current_year.to_string())
                                 .compact()
+                                .with_size(self.size)
                                 .selected(self.view_mode.is_year())
                                 .on_click(cx.listener(|view, _, cx| {
                                     if view.view_mode.is_year() {
@@ -530,7 +549,11 @@ impl Calendar {
                     (0..self.number_of_months).map(|n| {
                         h_flex()
                             .justify_center()
-                            .gap_3()
+                            .map(|this| match self.size {
+                                Size::Small => this.gap_2(),
+                                Size::Large => this.gap_4(),
+                                _ => this.gap_3(),
+                            })
                             .child(self.month_name(n))
                             .child(current_year.to_string())
                     }),
@@ -541,6 +564,7 @@ impl Calendar {
                     .icon(IconName::ArrowRight)
                     .ghost()
                     .disabled(disabled)
+                    .with_size(icon_size)
                     .when(self.view_mode.is_day(), |this| {
                         this.on_click(cx.listener(Self::next_month))
                     })
@@ -562,27 +586,32 @@ impl Calendar {
             t!("Calendar.week.6"),
         ];
 
-        h_flex().gap_4().justify_between().text_sm().children(
-            self.days()
-                .chunks(5)
-                .enumerate()
-                .map(|(offset_month, days)| {
-                    v_flex()
-                        .gap_0p5()
-                        .child(
-                            h_flex().gap_0p5().justify_between().children(
+        h_flex()
+            .map(|this| match self.size {
+                Size::Small => this.gap_3().text_sm(),
+                Size::Large => this.gap_5().text_base(),
+                _ => this.gap_4().text_sm(),
+            })
+            .justify_between()
+            .children(
+                self.days()
+                    .chunks(5)
+                    .enumerate()
+                    .map(|(offset_month, days)| {
+                        v_flex()
+                            .gap_0p5()
+                            .child(h_flex().gap_0p5().justify_between().children(
                                 weeks.iter().map(|week| self.render_week(week.clone(), cx)),
-                            ),
-                        )
-                        .children(days.iter().map(|week| {
-                            h_flex().gap_0p5().justify_between().children(
-                                week.iter()
-                                    .enumerate()
-                                    .map(|(ix, d)| self.render_day(ix, d, offset_month, cx)),
-                            )
-                        }))
-                }),
-        )
+                            ))
+                            .children(days.iter().map(|week| {
+                                h_flex().gap_0p5().justify_between().children(
+                                    week.iter()
+                                        .enumerate()
+                                        .map(|(ix, d)| self.render_day(ix, d, offset_month, cx)),
+                                )
+                            }))
+                    }),
+            )
     }
 
     fn render_months(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -592,6 +621,11 @@ impl Calendar {
             .mt_3()
             .gap_0p5()
             .gap_y_3()
+            .map(|this| match self.size {
+                Size::Small => this.mt_2().gap_y_2().w(px(208.)),
+                Size::Large => this.mt_4().gap_y_4().w(px(292.)),
+                _ => this.mt_3().gap_y_3().w(px(264.)),
+            })
             .justify_between()
             .flex_wrap()
             .children(
@@ -619,9 +653,12 @@ impl Calendar {
 
         h_flex()
             .id("years")
-            .mt_3()
             .gap_0p5()
-            .gap_y_3()
+            .map(|this| match self.size {
+                Size::Small => this.mt_2().gap_y_2().w(px(208.)),
+                Size::Large => this.mt_4().gap_y_4().w(px(292.)),
+                _ => this.mt_3().gap_y_3().w(px(264.)),
+            })
             .justify_between()
             .flex_wrap()
             .children(
@@ -645,6 +682,12 @@ impl Calendar {
     }
 }
 
+impl Sizable for Calendar {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
 impl EventEmitter<CalendarEvent> for Calendar {}
 
 impl Render for Calendar {
