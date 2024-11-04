@@ -46,6 +46,7 @@ impl ScrollHandleOffsetable for UniformListScrollHandle {
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollbarState {
     hovered_axis: Option<ScrollbarAxis>,
+    hovered_on_thumb: bool,
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
     last_scroll_offset: Point<Pixels>,
@@ -56,6 +57,7 @@ impl Default for ScrollbarState {
     fn default() -> Self {
         Self {
             hovered_axis: None,
+            hovered_on_thumb: false,
             dragged_axis: None,
             drag_pos: point(px(0.), px(0.)),
             last_scroll_offset: point(px(0.), px(0.)),
@@ -90,6 +92,12 @@ impl ScrollbarState {
     fn with_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
         let mut state = *self;
         state.hovered_axis = axis;
+        state
+    }
+
+    fn with_hovered_thumb(&self, hovered: bool) -> Self {
+        let mut state = *self;
+        state.hovered_on_thumb = hovered;
         state
     }
 
@@ -340,6 +348,8 @@ impl Element for Scrollbar {
                         continue;
                     }
 
+                    const NORMAL_OPACITY: f32 = 0.35;
+
                     let thumb_length = (container_size / scroll_area_size * container_size)
                         .max(px(MIN_THUMB_SIZE));
                     let thumb_start = -(scroll_position / (scroll_area_size - container_size)
@@ -384,17 +394,27 @@ impl Element for Scrollbar {
                             THUMB_RADIUS,
                         )
                     } else if state.get().hovered_axis == Some(axis) {
-                        (
-                            cx.theme().scrollbar_thumb,
-                            cx.theme().scrollbar,
-                            cx.theme().border,
-                            THUMB_INSET - px(1.),
-                            THUMB_RADIUS,
-                        )
+                        if state.get().hovered_on_thumb {
+                            (
+                                cx.theme().scrollbar_thumb,
+                                cx.theme().scrollbar,
+                                cx.theme().border,
+                                THUMB_INSET - px(1.),
+                                THUMB_RADIUS,
+                            )
+                        } else {
+                            (
+                                cx.theme().scrollbar_thumb.opacity(NORMAL_OPACITY),
+                                gpui::transparent_black(),
+                                gpui::transparent_black(),
+                                THUMB_INSET,
+                                THUMB_RADIUS,
+                            )
+                        }
                     } else {
                         let mut idle_state = (
-                            cx.theme().scrollbar_thumb.opacity(0.3),
-                            cx.theme().transparent,
+                            gpui::transparent_black(),
+                            gpui::transparent_black(),
                             gpui::transparent_black(),
                             THUMB_INSET,
                             THUMB_RADIUS - px(1.),
@@ -402,11 +422,8 @@ impl Element for Scrollbar {
                         if let Some(last_time) = state.get().last_scroll_time {
                             let elapsed = Instant::now().duration_since(last_time).as_secs_f32();
                             if elapsed < 1.0 {
-                                let y_value = 1. - elapsed.powi(10); // y = 1 - x^10
-                                idle_state.0 =
-                                    cx.theme().scrollbar_thumb.opacity(0.3 + 0.7 * y_value);
-                                idle_state.1 = cx.theme().scrollbar.opacity(y_value);
-                                idle_state.2 = cx.theme().border.opacity(y_value);
+                                let y_value = NORMAL_OPACITY - elapsed.powi(10); // y = 1 - x^10
+                                idle_state.0 = cx.theme().scrollbar_thumb.opacity(y_value);
                                 cx.request_animation_frame();
                             }
                         }
@@ -547,6 +564,14 @@ impl Element for Scrollbar {
                                         cx.notify(view_id);
                                     }
                                 }
+                            }
+
+                            if thumb_bounds.contains(&event.position) {
+                                state.set(state.get().with_hovered_thumb(true));
+                                cx.notify(view_id);
+                            } else {
+                                state.set(state.get().with_hovered_thumb(false));
+                                cx.notify(view_id);
                             }
 
                             // Move thumb position on dragging
