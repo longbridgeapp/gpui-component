@@ -60,7 +60,7 @@ pub struct TabPanel {
     focus_handle: FocusHandle,
     dock_area: WeakView<DockArea>,
     /// The stock_panel can be None, if is None, that means the panels can't be split or move
-    stack_panel: Option<View<StackPanel>>,
+    stack_panel: Option<WeakView<StackPanel>>,
     pub(crate) panels: Vec<Arc<dyn PanelView>>,
     pub(crate) active_ix: usize,
     /// If this is true, the Panel closeable will follow the active panel's closeable,
@@ -128,7 +128,7 @@ impl Panel for TabPanel {
 
 impl TabPanel {
     pub fn new(
-        stack_panel: Option<View<StackPanel>>,
+        stack_panel: Option<WeakView<StackPanel>>,
         dock_area: WeakView<DockArea>,
         cx: &mut ViewContext<Self>,
     ) -> Self {
@@ -146,8 +146,8 @@ impl TabPanel {
         }
     }
 
-    pub(super) fn set_parent(&mut self, parent: View<StackPanel>) {
-        self.stack_panel = Some(parent);
+    pub(super) fn set_parent(&mut self, view: WeakView<StackPanel>) {
+        self.stack_panel = Some(view);
     }
 
     /// Return current active_panel View
@@ -253,9 +253,9 @@ impl TabPanel {
 
         let tab_view = cx.view().clone();
         if let Some(stack_panel) = self.stack_panel.as_ref() {
-            stack_panel.update(cx, |view, cx| {
+            _ = stack_panel.update(cx, |view, cx| {
                 view.remove_panel(Arc::new(tab_view), cx);
-            })
+            });
         }
     }
 
@@ -365,8 +365,11 @@ impl TabPanel {
                 if self_is_left_dock || self_is_right_dock || self_is_bottom_dock {
                     return None;
                 }
-
-                if let Some(parent) = self.stack_panel.as_ref() {
+                if let Some(parent) = self
+                    .stack_panel
+                    .as_ref()
+                    .and_then(|parent| parent.upgrade())
+                {
                     if !parent
                         .read(cx)
                         .is_top_left_panel(cx.view().clone(), true, cx)
@@ -384,7 +387,11 @@ impl TabPanel {
                     return None;
                 }
 
-                if let Some(parent) = self.stack_panel.as_ref() {
+                if let Some(parent) = self
+                    .stack_panel
+                    .as_ref()
+                    .and_then(|parent| parent.upgrade())
+                {
                     if !parent
                         .read(cx)
                         .is_top_right_panel(cx.view().clone(), true, cx)
@@ -749,7 +756,11 @@ impl TabPanel {
             view.add_panel(panel, cx);
         });
 
-        let stack_panel = self.stack_panel.as_ref().unwrap();
+        let stack_panel = match self.stack_panel.as_ref().and_then(|panel| panel.upgrade()) {
+            Some(panel) => panel,
+            None => return,
+        };
+
         let parent_axis = stack_panel.read(cx).axis;
 
         let ix = stack_panel
@@ -796,7 +807,7 @@ impl TabPanel {
             } else {
                 cx.new_view(|cx| {
                     let mut panel = StackPanel::new(placement.axis(), cx);
-                    panel.parent = Some(stack_panel.clone());
+                    panel.parent = Some(stack_panel.downgrade());
                     panel
                 })
             };
@@ -812,7 +823,7 @@ impl TabPanel {
                 }
             });
 
-            if *stack_panel != new_stack_panel {
+            if stack_panel != new_stack_panel {
                 stack_panel.update(cx, |view, cx| {
                     view.replace_panel(Arc::new(tab_panel.clone()), new_stack_panel.clone(), cx);
                 });

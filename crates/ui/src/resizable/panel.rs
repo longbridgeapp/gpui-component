@@ -4,7 +4,7 @@ use gpui::{
     canvas, div, prelude::FluentBuilder, px, relative, Along, AnyElement, AnyView, Axis, Bounds,
     Element, Entity, EntityId, EventEmitter, IntoElement, IsZero, MouseMoveEvent, MouseUpEvent,
     ParentElement, Pixels, Render, StatefulInteractiveElement as _, Style, Styled, View,
-    ViewContext, VisualContext as _, WindowContext,
+    ViewContext, VisualContext as _, WeakView, WindowContext,
 };
 
 use crate::{h_flex, v_flex, AxisExt};
@@ -96,7 +96,7 @@ impl ResizablePanelGroup {
     pub fn add_child(&mut self, panel: ResizablePanel, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;
-        panel.group = Some(cx.view().clone());
+        panel.group = Some(cx.view().downgrade());
         self.sizes.push(panel.initial_size.unwrap_or_default());
         self.panels.push(cx.new_view(|_| panel));
     }
@@ -104,7 +104,7 @@ impl ResizablePanelGroup {
     pub fn insert_child(&mut self, panel: ResizablePanel, ix: usize, cx: &mut ViewContext<Self>) {
         let mut panel = panel;
         panel.axis = self.axis;
-        panel.group = Some(cx.view().clone());
+        panel.group = Some(cx.view().downgrade());
 
         self.sizes
             .insert(ix, panel.initial_size.unwrap_or_default());
@@ -128,7 +128,7 @@ impl ResizablePanelGroup {
         panel.initial_size = old_panel_initial_size;
         panel.size_ratio = old_panel_size_ratio;
         panel.axis = self.axis;
-        panel.group = Some(cx.view().clone());
+        panel.group = Some(cx.view().downgrade());
         self.sizes[ix] = panel.initial_size.unwrap_or_default();
         self.panels[ix] = cx.new_view(|_| panel);
         cx.notify()
@@ -275,7 +275,7 @@ impl Render for ResizablePanelGroup {
 }
 
 pub struct ResizablePanel {
-    group: Option<View<ResizablePanelGroup>>,
+    group: Option<WeakView<ResizablePanelGroup>>,
     /// Initial size is the size that the panel has when it is created.
     initial_size: Option<Pixels>,
     /// size is the size that the panel has when it is resized or adjusted by flex layout.
@@ -332,7 +332,7 @@ impl ResizablePanel {
 
         let panel_view = cx.view().clone();
         if let Some(group) = self.group.as_ref() {
-            group.update(cx, |view, _| {
+            _ = group.update(cx, |view, _| {
                 if let Some(ix) = view
                     .panels
                     .iter()
@@ -340,7 +340,7 @@ impl ResizablePanel {
                 {
                     view.sizes[ix] = new_size;
                 }
-            })
+            });
         }
         cx.notify();
     }
@@ -351,7 +351,11 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
-        let total_size = self.group.as_ref().map(|group| group.read(cx).total_size());
+        let total_size = self
+            .group
+            .as_ref()
+            .and_then(|group| group.upgrade())
+            .map(|group| group.read(cx).total_size());
 
         div()
             .flex()
