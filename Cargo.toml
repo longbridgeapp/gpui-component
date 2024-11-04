@@ -6,7 +6,7 @@ resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1"
-gpui = { path = "../../madcodelife/zed/crates/gpui" }
+gpui = { git = "https://github.com/madcodelife/zed.git", branch = "bump-resvg-and-usvg" }
 log = "0.4"
 serde = "1.0.203"
 serde_json = "1"
