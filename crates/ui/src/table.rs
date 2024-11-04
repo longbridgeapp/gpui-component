@@ -754,7 +754,6 @@ where
                 })
                 .hover(|this| this.bg(cx.theme().secondary).opacity(7.))
                 .active(|this| this.bg(cx.theme().secondary_active).opacity(1.))
-                .on_mouse_down(MouseButton::Left, |_, cx| cx.stop_propagation())
                 .on_click(cx.listener(move |table, _, cx| table.perform_sort(col_ix, cx)))
                 .child(
                     Icon::new(icon)
@@ -780,7 +779,6 @@ where
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(move |this, _, cx| {
-                            cx.stop_propagation();
                             this.on_col_head_click(col_ix, cx);
                         }),
                     )
