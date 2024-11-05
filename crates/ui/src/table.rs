@@ -745,7 +745,6 @@ where
             div()
                 .id(("icon-sort", col_ix))
                 .cursor_pointer()
-                .ml_2()
                 .p(px(2.))
                 .rounded_sm()
                 .map(|this| match is_on {
