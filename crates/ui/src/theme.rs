@@ -422,6 +422,7 @@ impl Theme {
         cx.global::<Self>()
     }
 
+    /// Apply a mask color to the theme.
     pub fn apply_color(&mut self, mask_color: Hsla) {
         self.title_bar = self.title_bar.apply(mask_color);
         self.title_bar_border = self.title_bar_border.apply(mask_color);
