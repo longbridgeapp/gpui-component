@@ -4,7 +4,6 @@ use gpui::{
     hsla, point, AppContext, BoxShadow, Global, Hsla, ModelContext, Pixels, SharedString,
     ViewContext, WindowAppearance, WindowContext,
 };
-use serde::{Deserialize, Serialize};
 
 pub fn init(cx: &mut AppContext) {
     Theme::sync_system_appearance(cx)
