@@ -118,14 +118,14 @@ impl Colorize for Hsla {
 
     /// Return a new color with the lightness increased by the given factor.
     fn lighten(&self, factor: f32) -> Hsla {
-        let l = (self.l * 1.0 - factor.clamp(0.0, 1.0)).min(1.0);
+        let l = self.l + (1.0 - self.l) * factor.clamp(0.0, 1.0).min(1.0);
 
         Hsla { l, ..*self }
     }
 
     /// Return a new color with the darkness increased by the given factor.
     fn darken(&self, factor: f32) -> Hsla {
-        let l = (self.l * 1.0 - factor.clamp(0.0, 1.0)).max(0.0);
+        let l = self.l * (1.0 - factor.clamp(0.0, 1.0).min(1.0));
 
         Hsla { l, ..*self }
     }
@@ -239,9 +239,9 @@ impl Colors {
             primary_hover: hsl(223.0, 0.0, 90.0),
             primary_active: hsl(223.0, 0.0, 80.0),
             primary_foreground: hsl(223.0, 5.9, 10.0),
-            secondary: hsl(240.0, 3.7, 17.9),
-            secondary_hover: hsl(240.0, 3.7, 22.9).opacity(0.5),
-            secondary_active: hsl(240.0, 3.7, 22.9).opacity(0.8),
+            secondary: hsl(240.0, 0., 13.0),
+            secondary_hover: hsl(240.0, 0., 15.),
+            secondary_active: hsl(240.0, 0., 10.),
             secondary_foreground: hsl(0.0, 0.0, 78.0),
             destructive: hsl(0.0, 62.8, 30.6),
             destructive_hover: hsl(0.0, 62.8, 35.6),

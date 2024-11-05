@@ -540,7 +540,13 @@ impl ButtonStyle {
             ButtonStyle::Primary => cx.theme().primary_hover,
             ButtonStyle::Secondary | ButtonStyle::Outline => cx.theme().secondary_hover,
             ButtonStyle::Danger => cx.theme().destructive_hover,
-            ButtonStyle::Ghost => cx.theme().secondary_hover,
+            ButtonStyle::Ghost => {
+                if cx.theme().mode.is_dark() {
+                    cx.theme().secondary.lighten(0.1).opacity(0.8)
+                } else {
+                    cx.theme().secondary.darken(0.1).opacity(0.8)
+                }
+            }
             ButtonStyle::Link => cx.theme().transparent,
             ButtonStyle::Text => cx.theme().transparent,
             ButtonStyle::Custom(colors) => colors.hover,
