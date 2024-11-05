@@ -423,6 +423,7 @@ impl RenderOnce for Button {
                     .bg(disabled_style.bg)
                     .text_color(disabled_style.fg)
                     .border_color(disabled_style.border)
+                    .shadow_none()
             })
             .child({
                 h_flex()
@@ -621,22 +622,28 @@ impl ButtonStyle {
 
     fn disabled(&self, cx: &WindowContext) -> ButtonStyles {
         let bg = match self {
-            ButtonStyle::Link | ButtonStyle::Ghost | ButtonStyle::Text => cx.theme().transparent,
+            ButtonStyle::Link | ButtonStyle::Ghost | ButtonStyle::Outline | ButtonStyle::Text => {
+                cx.theme().transparent
+            }
             ButtonStyle::Primary => cx.theme().primary.opacity(0.15),
             ButtonStyle::Danger => cx.theme().destructive.opacity(0.15),
+            ButtonStyle::Secondary => cx.theme().secondary.opacity(1.5),
             ButtonStyle::Custom(style) => style.color.opacity(0.15),
-            _ => cx.theme().secondary.darken(0.2).grayscale(),
         };
         let fg = match self {
             ButtonStyle::Link | ButtonStyle::Text | ButtonStyle::Ghost => {
                 cx.theme().link.grayscale()
             }
-            _ => cx.theme().secondary_foreground.darken(0.2).grayscale(),
+            _ => cx.theme().secondary_foreground.opacity(0.5).grayscale(),
         };
 
-        let border = bg;
+        let border = match self {
+            ButtonStyle::Outline => cx.theme().border.opacity(0.5),
+            _ => bg,
+        };
+
         let underline = self.underline(cx);
-        let shadow = self.shadow(cx);
+        let shadow = false;
 
         ButtonStyles {
             bg,
