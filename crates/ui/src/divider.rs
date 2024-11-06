@@ -16,7 +16,7 @@ pub struct Divider {
 impl Divider {
     pub fn vertical() -> Self {
         Self {
-            base: div(),
+            base: div().h_full(),
             axis: Axis::Vertical,
             label: None,
         }
@@ -24,7 +24,7 @@ impl Divider {
 
     pub fn horizontal() -> Self {
         Self {
-            base: div(),
+            base: div().w_full(),
             axis: Axis::Horizontal,
             label: None,
         }
@@ -51,10 +51,6 @@ impl RenderOnce for Divider {
             .flex_shrink_0()
             .items_center()
             .justify_center()
-            .map(|this| match self.axis {
-                Axis::Vertical => this.h_full(),
-                Axis::Horizontal => this.w_full(),
-            })
             .child(
                 div()
                     .absolute()
