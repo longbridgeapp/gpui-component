@@ -284,7 +284,7 @@ where
             self.selected_index = Some(self.delegate.items_count(cx) - 1);
         }
 
-        self.set_selected_index(ix, cx);
+        self.delegate.set_selected_index(self.selected_index, cx);
         self.scroll_to_selected_item(cx);
         cx.notify();
     }
@@ -304,7 +304,7 @@ where
             self.selected_index = Some(0);
         }
 
-        self.set_selected_index(ix, cx);
+        self.delegate.set_selected_index(self.selected_index, cx);
         self.scroll_to_selected_item(cx);
         cx.notify();
     }
