@@ -256,6 +256,11 @@ pub trait TableDelegate: Sized + 'static {
     /// This is always called when the table is near the bottom,
     /// so you must check if there is more data to load or lock the loading state.
     fn load_more(&mut self, cx: &mut ViewContext<Table<Self>>) {}
+
+    /// Render the last empty column, default to empty.
+    fn render_last_empty_col(&mut self, cx: &mut ViewContext<Table<Self>>) -> Div {
+        h_flex().w(px(100.)).h_full().flex_shrink_0()
+    }
 }
 
 impl<D> Table<D>
@@ -920,7 +925,7 @@ where
                                                 table.render_th(left_cols_count + col_ix, cx)
                                             }),
                                     )
-                                    .child(Self::render_last_empty_col(cx))
+                                    .child(table.delegate.render_last_empty_col(cx))
                                     .child(
                                         canvas(
                                             move |bounds, cx| {
@@ -1010,7 +1015,7 @@ where
                                         .child(self.delegate.render_td(row_ix, col_ix, cx)),
                                 )
                         }))
-                        .child(Self::render_last_empty_col(cx)),
+                        .child(self.delegate.render_last_empty_col(cx)),
                 )
                 // Row selected style
                 .when_some(self.selected_row, |this, _| {
@@ -1070,12 +1075,8 @@ where
                         .left(horizontal_scroll_handle.offset().x)
                         .child(self.render_cell(col_ix, cx))
                 }))
-                .child(Self::render_last_empty_col(cx))
+                .child(self.delegate.render_last_empty_col(cx))
         }
-    }
-
-    fn render_last_empty_col(_: &mut WindowContext) -> Div {
-        h_flex().w(px(100.)).h_full().flex_shrink_0()
     }
 }
 
