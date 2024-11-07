@@ -28,7 +28,7 @@ impl ImageStory {
         Self {
             focus_handle: cx.focus_handle(),
             google_logo: svg_img().source(GOOGLE_LOGO.as_bytes(), px(300.), px(300.)),
-            pie_chart: svg_img().source(chart.svg().unwrap().as_bytes(), px(400.), px(400.)),
+            pie_chart: svg_img().source(chart.svg().unwrap().as_bytes(), px(600.), px(400.)),
             inbox_img: svg_img().source("icons/inbox.svg", px(300.), px(300.)),
         }
     }
