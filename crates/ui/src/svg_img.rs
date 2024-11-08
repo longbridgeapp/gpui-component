@@ -16,6 +16,7 @@ use image::ImageBuffer;
 
 use crate::Assets;
 
+const SCALE: f32 = 2.;
 const FONT_PATH: &str = "fonts/NotoSans-Regular.ttf";
 static OPTIONS: LazyLock<usvg::Options> = LazyLock::new(|| {
     let mut options = usvg::Options::default();
@@ -90,7 +91,6 @@ impl Asset for Image {
         source: Self::Source,
         cx: &mut AppContext,
     ) -> impl std::future::Future<Output = Self::Output> + Send + 'static {
-        let scale = 2.;
         let asset_source = cx.asset_source().clone();
 
         async move {
@@ -99,8 +99,8 @@ impl Asset for Image {
                 return Err(usvg::Error::InvalidSize.into());
             }
             let size = Size {
-                width: (size.width * 2).ceil(),
-                height: (size.height * scale).ceil(),
+                width: (size.width * SCALE).ceil(),
+                height: (size.height * SCALE).ceil(),
             };
 
             let bytes = match source.source {
@@ -124,7 +124,7 @@ impl Asset for Image {
                 resvg::tiny_skia::Pixmap::new(size.width.0 as u32, size.height.0 as u32)
                     .ok_or(usvg::Error::InvalidSize)?;
 
-            let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
+            let transform = resvg::tiny_skia::Transform::from_scale(SCALE, SCALE);
 
             resvg::render(&tree, transform, &mut pixmap.as_mut());
 
@@ -142,11 +142,6 @@ impl Asset for Image {
             ))))
         }
     }
-}
-
-/// An SVG image element.
-pub fn svg_img() -> SvgImg {
-    SvgImg::new()
 }
 
 pub struct SvgImg {
