@@ -1,4 +1,8 @@
-use std::{hash::Hash, ops::Deref, sync::Arc};
+use std::{
+    hash::Hash,
+    ops::Deref,
+    sync::{Arc, LazyLock},
+};
 
 use gpui::{
     px, size, AppContext, Asset, Bounds, Element, Hitbox, ImageCacheError, InteractiveElement,
@@ -9,6 +13,17 @@ use image::Frame;
 use smallvec::SmallVec;
 
 use image::ImageBuffer;
+
+use crate::Assets;
+
+const FONT_PATH: &str = "fonts/NotoSans-Regular.ttf";
+static OPTIONS: LazyLock<usvg::Options> = LazyLock::new(|| {
+    let mut options = usvg::Options::default();
+    if let Some(font_data) = Assets::get(FONT_PATH).map(|f| f.data) {
+        options.fontdb_mut().load_font_data(font_data.into());
+    }
+    options
+});
 
 #[derive(Debug, Clone, Hash)]
 pub enum SvgSource {
@@ -103,10 +118,7 @@ impl Asset for Image {
                 }
             };
 
-            let mut options = usvg::Options::default();
-            options.fontdb_mut().load_system_fonts();
-
-            let tree = usvg::Tree::from_data(&bytes, &options)?;
+            let tree = usvg::Tree::from_data(&bytes, &OPTIONS)?;
 
             let mut pixmap =
                 resvg::tiny_skia::Pixmap::new(size.width.0 as u32, size.height.0 as u32)

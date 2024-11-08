@@ -61,7 +61,15 @@ pub use svg_img::*;
 
 use std::ops::Deref;
 
+use rust_embed::RustEmbed;
+
 rust_i18n::i18n!("locales", fallback = "en");
+
+#[derive(RustEmbed)]
+#[folder = "./assets"]
+#[include = "fonts/**/*"]
+#[exclude = "*.DS_Store"]
+pub struct Assets;
 
 /// Initialize the UI module.
 ///
@@ -69,7 +77,6 @@ rust_i18n::i18n!("locales", fallback = "en");
 /// You can initialize the UI module at your application's entry point.
 pub fn init(cx: &mut gpui::AppContext) {
     theme::init(cx);
-    context_menu::init(cx);
     date_picker::init(cx);
     dock::init(cx);
     drawer::init(cx);
@@ -80,7 +87,6 @@ pub fn init(cx: &mut gpui::AppContext) {
     popover::init(cx);
     popup_menu::init(cx);
     table::init(cx);
-    webview::init(cx);
 }
 
 pub fn locale() -> impl Deref<Target = str> {
