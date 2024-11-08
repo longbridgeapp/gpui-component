@@ -1,5 +1,5 @@
 use gpui::{px, ParentElement as _, Render, Styled, View, VisualContext as _, WindowContext};
-use ui::{h_flex, svg_img, v_flex, SvgImg};
+use ui::{h_flex, v_flex, SvgImg};
 
 const GOOGLE_LOGO: &str = include_str!("./fixtures/google.svg");
 const PIE_JSON: &str = include_str!("./fixtures/pie.json");
@@ -27,9 +27,9 @@ impl ImageStory {
 
         Self {
             focus_handle: cx.focus_handle(),
-            google_logo: svg_img().source(GOOGLE_LOGO.as_bytes(), px(300.), px(300.)),
-            pie_chart: svg_img().source(chart.svg().unwrap().as_bytes(), px(600.), px(400.)),
-            inbox_img: svg_img().source("icons/inbox.svg", px(300.), px(300.)),
+            google_logo: SvgImg::new().source(GOOGLE_LOGO.as_bytes(), px(300.), px(300.)),
+            pie_chart: SvgImg::new().source(chart.svg().unwrap().as_bytes(), px(600.), px(400.)),
+            inbox_img: SvgImg::new().source("icons/inbox.svg", px(24.), px(24.)),
         }
     }
 
@@ -59,7 +59,7 @@ impl Render for ImageStory {
                     .child(self.google_logo.clone().size_12().flex_grow())
                     .child(self.google_logo.clone().w(px(300.)).h(px(300.))),
             )
-            .child(self.inbox_img.clone().w(px(80.)).h(px(80.)))
+            .child(self.inbox_img.clone().w(px(24.)).h(px(24.)))
             .child(self.pie_chart.clone().size_full())
     }
 }
