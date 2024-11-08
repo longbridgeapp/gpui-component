@@ -156,6 +156,18 @@ impl TabPanel {
     }
 
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
+        let mut ix = ix;
+        // Avoid to select invisible panel
+        if let Some(panel) = self.panels.get(ix) {
+            if !panel.visible(cx) {
+                if self.visible_panels(cx).count() > 1 {
+                    return self.set_active_ix(ix - 1, cx);
+                } else {
+                    ix = 0;
+                }
+            }
+        }
+
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
         self.focus_active_panel(cx);
@@ -257,6 +269,14 @@ impl TabPanel {
                 view.remove_panel(Arc::new(tab_view), cx);
             });
         }
+    }
+
+    /// Return the visible panels
+    fn visible_panels<'a>(
+        &'a self,
+        cx: &'a WindowContext,
+    ) -> impl Iterator<Item = &'a Arc<dyn PanelView>> + 'a {
+        self.panels.iter().filter(move |p| p.visible(cx))
     }
 
     /// Return true if the panel can be split or move
@@ -471,8 +491,15 @@ impl TabPanel {
         let bottom_dock_button = self.render_dock_toggle_button(DockPlacement::Bottom, cx);
         let right_dock_button = self.render_dock_toggle_button(DockPlacement::Right, cx);
 
-        if self.panels.len() == 1 {
-            let panel = self.panels.get(0).unwrap();
+        if self.visible_panels(cx).count() <= 1 {
+            let Some(panel) = self.visible_panels(cx).next() else {
+                return div().into_any_element();
+            };
+
+            if !panel.visible(cx) {
+                return div().into_any_element();
+            }
+
             let title_style = panel.title_style(cx);
 
             return h_flex()
@@ -564,7 +591,10 @@ impl TabPanel {
                     active = false;
                 }
 
+                let visible = panel.visible(cx);
+
                 Tab::new(("tab", ix), panel.title(cx))
+                    .visible(visible)
                     .py_2()
                     .selected(active)
                     .on_click(cx.listener(move |view, _, cx| {
@@ -630,51 +660,51 @@ impl TabPanel {
     }
 
     fn render_active_panel(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        self.active_panel()
-            .map(|panel| {
-                div()
-                    .id("tab-content")
-                    .group("")
-                    .overflow_y_scroll()
-                    .overflow_x_hidden()
-                    .flex_1()
-                    .child(panel.view())
-                    .when(self.can_split(), |this| {
-                        this.on_drag_move(cx.listener(Self::on_panel_drag_move))
-                            .child(
-                                div()
-                                    .invisible()
-                                    .absolute()
-                                    .bg(cx.theme().drop_target)
-                                    .map(|this| match self.will_split_placement {
-                                        Some(placement) => {
-                                            let size = DefiniteLength::Fraction(0.35);
-                                            match placement {
-                                                Placement::Left => {
-                                                    this.left_0().top_0().bottom_0().w(size)
-                                                }
-                                                Placement::Right => {
-                                                    this.right_0().top_0().bottom_0().w(size)
-                                                }
-                                                Placement::Top => {
-                                                    this.top_0().left_0().right_0().h(size)
-                                                }
-                                                Placement::Bottom => {
-                                                    this.bottom_0().left_0().right_0().h(size)
-                                                }
-                                            }
+        let Some(panel) = self.active_panel() else {
+            return Empty {}.into_any_element();
+        };
+
+        if !panel.visible(cx) {
+            return Empty {}.into_any_element();
+        }
+
+        div()
+            .id("tab-content")
+            .group("")
+            .overflow_y_scroll()
+            .overflow_x_hidden()
+            .flex_1()
+            .child(panel.view())
+            .when(self.can_split(), |this| {
+                this.on_drag_move(cx.listener(Self::on_panel_drag_move))
+                    .child(
+                        div()
+                            .invisible()
+                            .absolute()
+                            .bg(cx.theme().drop_target)
+                            .map(|this| match self.will_split_placement {
+                                Some(placement) => {
+                                    let size = DefiniteLength::Fraction(0.35);
+                                    match placement {
+                                        Placement::Left => this.left_0().top_0().bottom_0().w(size),
+                                        Placement::Right => {
+                                            this.right_0().top_0().bottom_0().w(size)
                                         }
-                                        None => this.top_0().left_0().size_full(),
-                                    })
-                                    .group_drag_over::<DragPanel>("", |this| this.visible())
-                                    .on_drop(cx.listener(|this, drag: &DragPanel, cx| {
-                                        this.on_drop(drag, None, cx)
-                                    })),
-                            )
-                    })
-                    .into_any_element()
+                                        Placement::Top => this.top_0().left_0().right_0().h(size),
+                                        Placement::Bottom => {
+                                            this.bottom_0().left_0().right_0().h(size)
+                                        }
+                                    }
+                                }
+                                None => this.top_0().left_0().size_full(),
+                            })
+                            .group_drag_over::<DragPanel>("", |this| this.visible())
+                            .on_drop(cx.listener(|this, drag: &DragPanel, cx| {
+                                this.on_drop(drag, None, cx)
+                            })),
+                    )
             })
-            .unwrap_or(Empty {}.into_any_element())
+            .into_any_element()
     }
 
     /// Calculate the split direction based on the current mouse position

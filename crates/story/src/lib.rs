@@ -287,6 +287,14 @@ impl Panel for StoryContainer {
         self.closeable
     }
 
+    fn visible(&self, _cx: &WindowContext) -> bool {
+        if self.name == "Icon" {
+            return false;
+        }
+
+        true
+    }
+
     fn zoomable(&self, _cx: &WindowContext) -> bool {
         self.zoomable
     }

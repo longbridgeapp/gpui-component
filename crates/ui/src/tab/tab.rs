@@ -15,6 +15,7 @@ pub struct Tab {
     suffix: Option<AnyElement>,
     disabled: bool,
     selected: bool,
+    visible: bool,
 }
 
 impl Tab {
@@ -26,6 +27,7 @@ impl Tab {
             label: label.into_any_element(),
             disabled: false,
             selected: false,
+            visible: true,
             prefix: None,
             suffix: None,
         }
@@ -40,6 +42,12 @@ impl Tab {
     /// Set the right side of the tab
     pub fn suffix(mut self, suffix: impl Into<AnyElement>) -> Self {
         self.suffix = Some(suffix.into());
+        self
+    }
+
+    /// Set the visibility of the tab
+    pub fn visible(mut self, visible: bool) -> Self {
+        self.visible = visible;
         self
     }
 }
@@ -71,6 +79,10 @@ impl Styled for Tab {
 
 impl RenderOnce for Tab {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
+        if !self.visible {
+            return div().id("");
+        }
+
         let (text_color, bg_color) = match (self.selected, self.disabled) {
             (true, _) => (cx.theme().tab_active_foreground, cx.theme().tab_active),
             (false, true) => (cx.theme().tab_foreground.opacity(0.5), cx.theme().tab),

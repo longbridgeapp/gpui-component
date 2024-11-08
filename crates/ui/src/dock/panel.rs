@@ -43,6 +43,12 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         true
     }
 
+    /// Whether the panel is visible, default is `true`, if return `false`, the panel will be hidden.
+    /// This is only work when used in TabPanel.
+    fn visible(&self, _cx: &WindowContext) -> bool {
+        true
+    }
+
     /// Return true if the panel is zoomable, default is `false`.
     fn zoomable(&self, _cx: &WindowContext) -> bool {
         true
@@ -69,6 +75,7 @@ pub trait PanelView: 'static + Send + Sync {
     fn title(&self, _cx: &WindowContext) -> AnyElement;
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
     fn closeable(&self, cx: &WindowContext) -> bool;
+    fn visible(&self, cx: &WindowContext) -> bool;
     fn zoomable(&self, cx: &WindowContext) -> bool;
     fn collapsible(&self, cx: &WindowContext) -> bool;
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
@@ -96,6 +103,10 @@ impl<T: Panel> PanelView for View<T> {
 
     fn zoomable(&self, cx: &WindowContext) -> bool {
         self.read(cx).zoomable(cx)
+    }
+
+    fn visible(&self, cx: &WindowContext) -> bool {
+        self.read(cx).visible(cx)
     }
 
     fn collapsible(&self, cx: &WindowContext) -> bool {
