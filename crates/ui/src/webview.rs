@@ -6,13 +6,11 @@ use wry::{
 };
 
 use gpui::{
-    div, AppContext, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter,
-    FocusHandle, FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
+    div, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter, FocusHandle,
+    FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
     MouseDownEvent, ParentElement as _, Pixels, Render, Size, Style, Styled as _, View,
     WindowContext,
 };
-
-pub fn init(_cx: &AppContext) {}
 
 pub struct WebView {
     focus_handle: FocusHandle,

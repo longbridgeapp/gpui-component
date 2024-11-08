@@ -2,14 +2,12 @@ use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
     anchored, deferred, div, prelude::FluentBuilder, px, relative, AnchorCorner, AnyElement,
-    AppContext, DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
+    DismissEvent, DispatchPhase, Element, ElementId, Focusable, GlobalElementId,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
     Position, Stateful, Style, View, ViewContext, WindowContext,
 };
 
 use crate::popup_menu::PopupMenu;
-
-pub fn init(_cx: &mut AppContext) {}
 
 pub trait ContextMenuExt: ParentElement + Sized {
     fn context_menu(
