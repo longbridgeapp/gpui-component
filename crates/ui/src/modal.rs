@@ -34,6 +34,7 @@ pub struct Modal {
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
     show_close: bool,
     overlay: bool,
+    keyboard: bool,
 
     /// This will be change when open the modal, the focus handle is create when open the modal.
     pub(crate) focus_handle: FocusHandle,
@@ -75,6 +76,7 @@ impl Modal {
             width: px(480.),
             max_width: None,
             overlay: true,
+            keyboard: true,
             layer_ix: 0,
             overlay_visible: true,
             on_close: Rc::new(|_, _| {}),
@@ -133,6 +135,12 @@ impl Modal {
         self
     }
 
+    /// Set whether to support keyboard esc to close the modal, defaults to `true`.
+    pub fn keyboard(mut self, keyboard: bool) -> Self {
+        self.keyboard = keyboard;
+        self
+    }
+
     pub(crate) fn has_overlay(&self) -> bool {
         self.overlay
     }
@@ -185,16 +193,18 @@ impl RenderOnce for Modal {
                         .id(SharedString::from(format!("modal-{layer_ix}")))
                         .key_context(CONTEXT)
                         .track_focus(&self.focus_handle)
-                        .on_action({
-                            let on_close = self.on_close.clone();
-                            move |_: &Escape, cx| {
-                                // FIXME:
-                                //
-                                // Here some Modal have no focus_handle, so it will not work will Escape key.
-                                // But by now, we `cx.close_modal()` going to close the last active model, so the Escape is unexpected to work.
-                                on_close(&ClickEvent::default(), cx);
-                                cx.close_modal();
-                            }
+                        .when(self.keyboard, |this| {
+                            this.on_action({
+                                let on_close = self.on_close.clone();
+                                move |_: &Escape, cx| {
+                                    // FIXME:
+                                    //
+                                    // Here some Modal have no focus_handle, so it will not work will Escape key.
+                                    // But by now, we `cx.close_modal()` going to close the last active model, so the Escape is unexpected to work.
+                                    on_close(&ClickEvent::default(), cx);
+                                    cx.close_modal();
+                                }
+                            })
                         })
                         .absolute()
                         .occlude()

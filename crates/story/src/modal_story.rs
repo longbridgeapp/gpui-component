@@ -154,6 +154,7 @@ pub struct ModalStory {
     modal_overlay: bool,
     model_show_close: bool,
     model_padding: bool,
+    model_keyboard: bool,
 }
 
 impl super::Story for ModalStory {
@@ -274,6 +275,7 @@ impl ModalStory {
             modal_overlay: true,
             model_show_close: true,
             model_padding: true,
+            model_keyboard: true,
         }
     }
 
@@ -335,11 +337,13 @@ impl ModalStory {
         let date_picker = self.date_picker.clone();
         let dropdown = self.dropdown.clone();
         let view = cx.view().clone();
+        let keyboard = self.model_keyboard;
 
         cx.open_modal(move |modal, _| {
             modal
                 .title("Form Modal")
                 .overlay(overlay)
+                .keyboard(keyboard)
                 .show_close(modal_show_close)
                 .when(!modal_padding, |this| this.p(px(0.)))
                 .child(
@@ -446,6 +450,15 @@ impl Render for ModalStory {
                                     .checked(self.model_padding)
                                     .on_click(cx.listener(|view, _, cx| {
                                         view.model_padding = !view.model_padding;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(
+                                Checkbox::new("modal-keyboard")
+                                    .label("Keyboard")
+                                    .checked(self.model_keyboard)
+                                    .on_click(cx.listener(|view, _, cx| {
+                                        view.model_keyboard = !view.model_keyboard;
                                         cx.notify();
                                     })),
                             ),
