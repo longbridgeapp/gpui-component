@@ -116,6 +116,14 @@ impl Panel for TabPanel {
         }
     }
 
+    fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button> {
+        if let Some(panel) = self.active_panel() {
+            panel.toolbar_buttons(cx)
+        } else {
+            vec![]
+        }
+    }
+
     fn dump(&self, cx: &AppContext) -> DockItemState {
         let mut state = DockItemState::new(self);
         for panel in self.panels.iter() {
@@ -269,7 +277,7 @@ impl TabPanel {
         cx.notify();
     }
 
-    fn render_menu_button(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_toolbar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let closeable = self.closeable(cx);
         let zoomable = self.zoomable(cx);
 
@@ -283,6 +291,11 @@ impl TabPanel {
             .gap_2()
             .occlude()
             .items_center()
+            .children(
+                self.toolbar_buttons(cx)
+                    .into_iter()
+                    .map(|btn| btn.xsmall().ghost()),
+            )
             .when(self.is_zoomed, |this| {
                 this.child(
                     Button::new("zoom")
@@ -464,7 +477,7 @@ impl TabPanel {
         )
     }
 
-    fn render_tabs(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_title_bar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
 
         let left_dock_button = self.render_dock_toggle_button(DockPlacement::Left, cx);
@@ -527,7 +540,7 @@ impl TabPanel {
                         .flex_shrink_0()
                         .ml_1()
                         .gap_1()
-                        .child(self.render_menu_button(cx))
+                        .child(self.render_toolbar(cx))
                         .children(right_dock_button),
                 )
                 .into_any_element();
@@ -623,7 +636,7 @@ impl TabPanel {
                     .bg(cx.theme().tab_bar)
                     .px_2()
                     .gap_1()
-                    .child(self.render_menu_button(cx))
+                    .child(self.render_toolbar(cx))
                     .when_some(right_dock_button, |this, btn| this.child(btn)),
             )
             .into_any_element()
@@ -887,7 +900,7 @@ impl Render for TabPanel {
             .size_full()
             .overflow_hidden()
             .bg(cx.theme().background)
-            .child(self.render_tabs(cx))
+            .child(self.render_title_bar(cx))
             .child(self.render_active_panel(cx))
     }
 }
