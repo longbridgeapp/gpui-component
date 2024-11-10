@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::popup_menu::PopupMenu;
+use crate::{button::Button, popup_menu::PopupMenu};
 use gpui::{
     AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
     IntoElement, SharedString, View, WeakView, WindowContext,
@@ -58,6 +58,11 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         this
     }
 
+    /// The addition toolbar buttons of the panel used to show in the right of the title bar, default is `None`.
+    fn toolbar_buttons(&self, _cx: &WindowContext) -> Vec<Button> {
+        vec![]
+    }
+
     /// Dump the panel, used to serialize the panel.
     fn dump(&self, _cx: &AppContext) -> DockItemState {
         DockItemState::new(self)
@@ -72,6 +77,7 @@ pub trait PanelView: 'static + Send + Sync {
     fn zoomable(&self, cx: &WindowContext) -> bool;
     fn collapsible(&self, cx: &WindowContext) -> bool;
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
+    fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button>;
     fn view(&self) -> AnyView;
     fn focus_handle(&self, cx: &AppContext) -> FocusHandle;
     fn dump(&self, cx: &AppContext) -> DockItemState;
@@ -104,6 +110,10 @@ impl<T: Panel> PanelView for View<T> {
 
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
         self.read(cx).popup_menu(menu, cx)
+    }
+
+    fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button> {
+        self.read(cx).toolbar_buttons(cx)
     }
 
     fn view(&self) -> AnyView {

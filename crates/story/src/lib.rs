@@ -44,6 +44,7 @@ use gpui::{
 };
 
 use ui::{
+    button::Button,
     divider::Divider,
     dock::{register_panel, DockItemInfo, DockItemState, Panel, PanelEvent, TitleStyle},
     h_flex,
@@ -51,7 +52,7 @@ use ui::{
     notification::Notification,
     popup_menu::PopupMenu,
     theme::ActiveTheme,
-    v_flex, ContextModal,
+    v_flex, ContextModal, IconName,
 };
 
 const PANEL_NAME: &str = "StoryContainer";
@@ -294,6 +295,19 @@ impl Panel for StoryContainer {
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.track_focus(&self.focus_handle)
             .menu("Info", Box::new(PanelInfo))
+    }
+
+    fn toolbar_buttons(&self, _cx: &WindowContext) -> Vec<Button> {
+        vec![
+            Button::new("info").icon(IconName::Info).on_click(|_, cx| {
+                cx.push_notification("You have clicked info button");
+            }),
+            Button::new("search")
+                .icon(IconName::Search)
+                .on_click(|_, cx| {
+                    cx.push_notification("You have clicked search button");
+                }),
+        ]
     }
 
     fn dump(&self, _cx: &AppContext) -> DockItemState {
