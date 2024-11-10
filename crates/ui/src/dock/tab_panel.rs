@@ -116,6 +116,14 @@ impl Panel for TabPanel {
         }
     }
 
+    fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button> {
+        if let Some(panel) = self.active_panel() {
+            panel.toolbar_buttons(cx)
+        } else {
+            vec![]
+        }
+    }
+
     fn dump(&self, cx: &AppContext) -> DockItemState {
         let mut state = DockItemState::new(self);
         for panel in self.panels.iter() {
