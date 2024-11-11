@@ -253,7 +253,7 @@ impl ThemeColor {
             secondary_foreground: hsl(240.0, 59.0, 10.),
             secondary_hover: hsl(240.0, 5.9, 98.),
             selection: hsl(211.0, 97.0, 85.0),
-            skeleton: hsla(223.0, 5.9, 10.0, 0.1),
+            skeleton: hsl(223.0, 5.9, 10.0).opacity(0.1),
             slider_bar: hsl(223.0, 5.9, 10.0),
             slider_thumb: hsl(0.0, 0.0, 100.0),
             tab: gpui::transparent_black(),
