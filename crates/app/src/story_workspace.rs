@@ -28,7 +28,10 @@ const MAIN_DOCK_AREA: DockAreaTab = DockAreaTab {
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 struct SelectLocale(SharedString);
 
-impl_actions!(locale_switcher, [SelectLocale]);
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+struct SelectFont(usize);
+
+impl_actions!(story, [SelectLocale, SelectFont]);
 
 actions!(workspace, [Open, CloseWindow]);
 
@@ -43,6 +46,7 @@ pub struct StoryWorkspace {
     theme_color: Option<Hsla>,
     dock_area: View<DockArea>,
     locale_selector: View<LocaleSelector>,
+    font_size_selector: View<FontSizeSelector>,
     theme_color_picker: View<ColorPicker>,
     last_layout_state: Option<DockAreaState>,
     _save_layout_task: Option<Task<()>>,
@@ -95,6 +99,7 @@ impl StoryWorkspace {
         .detach();
 
         let locale_selector = cx.new_view(LocaleSelector::new);
+        let font_size_selector = cx.new_view(FontSizeSelector::new);
 
         let theme_color_picker = cx.new_view(|cx| {
             let mut picker = ColorPicker::new("theme-color-picker", cx)
@@ -118,6 +123,7 @@ impl StoryWorkspace {
             theme_color: None,
             dock_area,
             locale_selector,
+            font_size_selector,
             theme_color_picker,
             last_layout_state: None,
             _save_layout_task: None,
@@ -325,13 +331,10 @@ impl Render for StoryWorkspace {
         let notifications_count = cx.notifications().len();
 
         div()
-            .font_family(".SystemUIFont")
             .relative()
             .size_full()
             .flex()
             .flex_col()
-            .bg(cx.theme().background)
-            .text_color(cx.theme().foreground)
             .child(
                 TitleBar::new()
                     // left side
@@ -358,6 +361,7 @@ impl Render for StoryWorkspace {
                                     .on_click(cx.listener(Self::change_color_mode)),
                             )
                             .child(self.locale_selector.clone())
+                            .child(self.font_size_selector.clone())
                             .child(
                                 Button::new("github")
                                     .icon(IconName::GitHub)
@@ -446,6 +450,47 @@ impl Render for LocaleSelector {
                             locale == "zh-CN",
                             Box::new(SelectLocale("zh-CN".into())),
                         )
+                    })
+                    .anchor(AnchorCorner::TopRight),
+            )
+    }
+}
+
+struct FontSizeSelector {
+    focus_handle: FocusHandle,
+}
+
+impl FontSizeSelector {
+    pub fn new(cx: &mut ViewContext<Self>) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
+    }
+
+    fn on_select(&mut self, font_size: &SelectFont, cx: &mut ViewContext<Self>) {
+        Theme::global_mut(cx).font_size = font_size.0 as f32;
+        cx.refresh();
+    }
+}
+
+impl Render for FontSizeSelector {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let focus_handle = self.focus_handle.clone();
+        let font_size = cx.theme().font_size as i32;
+
+        div()
+            .id("font-size-selector")
+            .track_focus(&focus_handle)
+            .on_action(cx.listener(Self::on_select))
+            .child(
+                Button::new("btn")
+                    .small()
+                    .ghost()
+                    .icon(IconName::ALargeSmall)
+                    .popup_menu(move |this, _| {
+                        this.menu_with_check("Large", font_size == 18, Box::new(SelectFont(18)))
+                            .menu_with_check("Default", font_size == 16, Box::new(SelectFont(16)))
+                            .menu_with_check("Small", font_size == 14, Box::new(SelectFont(14)))
                     })
                     .anchor(AnchorCorner::TopRight),
             )
