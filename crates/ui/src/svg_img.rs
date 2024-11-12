@@ -131,9 +131,15 @@ impl Asset for Image {
             let mut buffer = ImageBuffer::from_raw(pixmap.width(), pixmap.height(), pixmap.take())
                 .expect("invalid svg image buffer");
 
-            // Convert from RGBA to BGRA.
+            // Convert from RGBA with premultiplied alpha to BGRA with straight alpha.
             for pixel in buffer.chunks_exact_mut(4) {
                 pixel.swap(0, 2);
+                let a = pixel[3] as f32 / 255.;
+                if a > 0. {
+                    pixel[0] = (pixel[0] as f32 / a) as u8;
+                    pixel[1] = (pixel[1] as f32 / a) as u8;
+                    pixel[2] = (pixel[2] as f32 / a) as u8;
+                }
             }
 
             Ok(Arc::new(RenderImage::new(SmallVec::from_elem(
