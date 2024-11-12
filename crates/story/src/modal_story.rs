@@ -17,7 +17,12 @@ use ui::{
     list::{List, ListDelegate, ListItem},
     notification::{Notification, NotificationType},
     theme::ActiveTheme as _,
-    v_flex, ContextModal as _, Icon, IconName, Placement,
+    v_flex,
+    webview::WebView,
+    ContextModal as _,
+    Icon,
+    IconName,
+    Placement
 };
 
 actions!(modal_story, [TestAction]);
@@ -482,6 +487,35 @@ impl Render for ModalStory {
                             .items_start()
                             .gap_3()
                             .flex_wrap()
+                            .child(
+                                Button::new("webview")
+                                    .label("Open WebView")
+                                    .on_click(cx.listener(|_, _, cx| {
+                                        let webview = cx.new_view(|cx| {
+                                            let webview = ui::wry::WebViewBuilder::new()
+                                                .build_as_child(&cx.raw_window_handle())
+                                                .unwrap();
+
+                                            WebView::new(cx, webview)
+                                        });
+                                        webview.update(cx, |webview, _| {
+                                            webview.load_url("https://github.com");
+                                        });
+                                        cx.open_drawer(move |drawer, cx| {
+                                            let height = cx.window_bounds().get_bounds().size.height;
+                                            let webview_bounds = webview.read(cx).bounds();
+                                            let buffer_height = px(12.);
+
+                                            drawer
+                                                .title("WebView Title")
+                                                .child(
+                                                    div()
+                                                        .h(height - webview_bounds.origin.y - buffer_height)
+                                                        .child(webview.clone())
+                                                )
+                                        });
+                                    })),
+                            )
                             .child(
                                 Button::new("show-drawer-left")
                                     .label("Left Drawer...")

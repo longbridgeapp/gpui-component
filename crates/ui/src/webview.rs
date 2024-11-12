@@ -6,7 +6,7 @@ use wry::{
 };
 
 use gpui::{
-    div, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter, FocusHandle,
+    canvas, div, Bounds, ContentMask, DismissEvent, Element, ElementId, EventEmitter, FocusHandle,
     FocusableView, GlobalElementId, Hitbox, InteractiveElement, IntoElement, LayoutId,
     MouseDownEvent, ParentElement as _, Pixels, Render, Size, Style, Styled as _, View,
     WindowContext,
@@ -16,6 +16,7 @@ pub struct WebView {
     focus_handle: FocusHandle,
     webview: Rc<wry::WebView>,
     visible: bool,
+    bounds: Bounds<Pixels>,
 }
 
 impl Drop for WebView {
@@ -31,6 +32,7 @@ impl WebView {
         Self {
             focus_handle: cx.focus_handle(),
             visible: true,
+            bounds: Bounds::default(),
             webview: Rc::new(webview),
         }
     }
@@ -46,6 +48,10 @@ impl WebView {
 
     pub fn visible(&self) -> bool {
         self.visible
+    }
+
+    pub fn bounds(&self) -> Bounds<Pixels> {
+        self.bounds
     }
 
     /// Go back in the webview history.
@@ -81,6 +87,15 @@ impl Render for WebView {
         div()
             .track_focus(&self.focus_handle)
             .size_full()
+            .child({
+                let view = cx.view().clone();
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full()
+            })
             .child(WebViewElement::new(self.webview.clone(), view, cx))
     }
 }
