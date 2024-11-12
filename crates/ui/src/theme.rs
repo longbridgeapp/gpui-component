@@ -493,7 +493,7 @@ impl From<ThemeColor> for Theme {
         Theme {
             mode: ThemeMode::default(),
             transparent: Hsla::transparent_black(),
-            font_size: 14.0,
+            font_size: 16.0,
             font_family: if cfg!(target_os = "macos") {
                 ".SystemUIFont".into()
             } else if cfg!(target_os = "windows") {
@@ -606,5 +606,15 @@ impl Theme {
 
         cx.set_global(theme);
         cx.refresh();
+    }
+
+    /// Returns the global theme reference
+    pub fn global(cx: &AppContext) -> &Theme {
+        cx.global::<Theme>()
+    }
+
+    /// Returns the global theme mutable reference
+    pub fn global_mut(cx: &mut AppContext) -> &mut Theme {
+        cx.global_mut::<Theme>()
     }
 }

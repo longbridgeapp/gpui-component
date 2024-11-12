@@ -6,6 +6,7 @@ use gpui::{
 
 #[derive(IntoElement, Clone)]
 pub enum IconName {
+    ALargeSmall,
     ArrowDown,
     ArrowLeft,
     ArrowRight,
@@ -68,6 +69,7 @@ pub enum IconName {
 impl IconName {
     pub fn path(self) -> SharedString {
         match self {
+            IconName::ALargeSmall => "icons/a-large-small.svg",
             IconName::ArrowDown => "icons/arrow-down.svg",
             IconName::ArrowLeft => "icons/arrow-left.svg",
             IconName::ArrowRight => "icons/arrow-right.svg",
