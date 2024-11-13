@@ -5,12 +5,13 @@ mod stack_panel;
 mod state;
 mod tab_panel;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
-    EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render,
-    SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView, WindowContext,
+    Entity, EntityId, EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _,
+    Pixels, Render, SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView,
+    WindowContext,
 };
 pub use panel::*;
 pub use stack_panel::*;
@@ -193,6 +194,32 @@ impl DockItem {
             Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
         }
     }
+
+    pub fn set_collapsed(&self, collapsed: bool, cx: &mut WindowContext) {
+        match self {
+            DockItem::Tabs { view, .. } => {
+                view.update(cx, |tab_panel, cx| {
+                    tab_panel.set_collapsed(collapsed, cx);
+                });
+            }
+            DockItem::Split { items, .. } => {
+                // For each child item, set collapsed state
+                for item in items {
+                    item.set_collapsed(collapsed, cx);
+                }
+            }
+        }
+    }
+
+    /// Recursively checks if the DockItem or any of its children contain the entity_id of the TabPanel
+    pub fn contains_entity_id(&self, entity_id: EntityId) -> bool {
+        match self {
+            DockItem::Tabs { view, .. } => view.entity_id() == entity_id,
+            DockItem::Split { items, .. } => {
+                items.iter().any(|item| item.contains_entity_id(entity_id))
+            }
+        }
+    }
 }
 
 impl DockArea {
@@ -245,53 +272,56 @@ impl DockArea {
 
     pub fn set_left_dock(
         &mut self,
-        panels: Vec<Arc<dyn PanelView>>,
+        panel: DockItem,
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
+        self.subscribe_item(&panel, cx);
         let weak_self = cx.view().downgrade();
         self.left_dock = Some(cx.new_view(|cx| {
             let mut dock = Dock::left(weak_self.clone(), cx);
             if let Some(size) = size {
                 dock.set_size(size, cx);
             }
-            dock.set_panels(panels, cx);
+            dock.set_panel(panel, cx);
             dock
-        }))
+        }));
     }
 
     pub fn set_bottom_dock(
         &mut self,
-        panels: Vec<Arc<dyn PanelView>>,
+        panel: DockItem,
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
+        self.subscribe_item(&panel, cx);
         let weak_self = cx.view().downgrade();
         self.bottom_dock = Some(cx.new_view(|cx| {
             let mut dock = Dock::bottom(weak_self.clone(), cx);
             if let Some(size) = size {
                 dock.set_size(size, cx);
             }
-            dock.set_panels(panels, cx);
+            dock.set_panel(panel, cx);
             dock
-        }))
+        }));
     }
 
     pub fn set_right_dock(
         &mut self,
-        panels: Vec<Arc<dyn PanelView>>,
+        panel: DockItem,
         size: Option<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
+        self.subscribe_item(&panel, cx);
         let weak_self = cx.view().downgrade();
         self.right_dock = Some(cx.new_view(|cx| {
             let mut dock = Dock::right(weak_self.clone(), cx);
             if let Some(size) = size {
                 dock.set_size(size, cx);
             }
-            dock.set_panels(panels, cx);
+            dock.set_panel(panel, cx);
             dock
-        }))
+        }));
     }
 
     pub fn is_dock_open(&self, placement: DockPlacement, cx: &AppContext) -> bool {
@@ -334,25 +364,16 @@ impl DockArea {
         self.version = state.version;
         let weak_self = cx.view().downgrade();
 
-        if let Some(left_dock) = state.left_dock {
-            match left_dock.to_dock(weak_self.clone(), cx) {
-                Ok(dock) => self.left_dock = Some(dock),
-                Err(err) => bail!("failed to load left dock: {}", err),
-            }
+        if let Some(left_dock_state) = state.left_dock {
+            self.left_dock = Some(left_dock_state.to_dock(weak_self.clone(), cx));
         }
 
-        if let Some(right_dock) = state.right_dock {
-            match right_dock.to_dock(weak_self.clone(), cx) {
-                Ok(dock) => self.right_dock = Some(dock),
-                Err(err) => bail!("failed to load right dock: {}", err),
-            }
+        if let Some(right_dock_state) = state.right_dock {
+            self.right_dock = Some(right_dock_state.to_dock(weak_self.clone(), cx));
         }
 
-        if let Some(bottom_dock) = state.bottom_dock {
-            match bottom_dock.to_dock(weak_self.clone(), cx) {
-                Ok(dock) => self.bottom_dock = Some(dock),
-                Err(err) => bail!("failed to load bottom dock: {}", err),
-            }
+        if let Some(bottom_dock_state) = state.bottom_dock {
+            self.bottom_dock = Some(bottom_dock_state.to_dock(weak_self.clone(), cx));
         }
 
         self.items = state.center.to_item(weak_self, cx);
@@ -405,7 +426,7 @@ impl DockArea {
                     }));
             }
             DockItem::Tabs { .. } => {
-                // We subscribe the tab panel event is in StackPanel insert_panel
+                // We subscribe to the tab panel event in StackPanel's insert_panel
             }
         }
     }

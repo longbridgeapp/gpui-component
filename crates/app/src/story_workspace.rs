@@ -11,7 +11,7 @@ use story::{
 use ui::{
     button::{Button, ButtonStyled as _},
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockAreaState, DockEvent, DockItem, PanelView},
+    dock::{DockArea, DockAreaState, DockEvent, DockItem},
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Theme},
@@ -208,16 +208,56 @@ impl StoryWorkspace {
 
     fn reset_default_layout(dock_area: WeakView<DockArea>, cx: &mut WindowContext) {
         let dock_item = Self::init_default_layout(&dock_area, cx);
-        let left_panels: Vec<Arc<dyn PanelView>> =
-            vec![Arc::new(StoryContainer::panel::<ListStory>(cx))];
 
-        let bottom_panels: Vec<Arc<dyn PanelView>> = vec![
-            Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-            Arc::new(StoryContainer::panel::<IconStory>(cx)),
-        ];
+        let left_panels = DockItem::split_with_sizes(
+            Axis::Vertical,
+            vec![
+                DockItem::tabs(
+                    vec![Arc::new(StoryContainer::panel::<ListStory>(cx))],
+                    None,
+                    &dock_area,
+                    cx,
+                ),
+                DockItem::tabs(
+                    vec![
+                        Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
+                        Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
+                    ],
+                    None,
+                    &dock_area,
+                    cx,
+                ),
+            ],
+            vec![None, Some(px(360.))],
+            &dock_area,
+            cx,
+        );
 
-        let right_panels: Vec<Arc<dyn PanelView>> =
-            vec![Arc::new(StoryContainer::panel::<ImageStory>(cx))];
+        let bottom_panels = DockItem::tabs(
+            vec![
+                Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
+                Arc::new(StoryContainer::panel::<IconStory>(cx)),
+            ],
+            None,
+            &dock_area,
+            cx,
+        );
+
+        let right_panels = DockItem::split_with_sizes(
+            Axis::Vertical,
+            vec![DockItem::tabs(
+                vec![
+                    Arc::new(StoryContainer::panel::<ImageStory>(cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                ],
+                None,
+                &dock_area,
+                cx,
+            )],
+            vec![None],
+            &dock_area,
+            cx,
+        );
 
         _ = dock_area.update(cx, |view, cx| {
             view.set_version(MAIN_DOCK_AREA.version, cx);

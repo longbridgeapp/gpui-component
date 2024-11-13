@@ -351,19 +351,28 @@ impl TabPanel {
         let mut self_is_bottom_dock = false;
         if let Some(left_view) = &dock_area.read(cx).left_dock {
             has_left_dock = true;
-            if left_view.read(cx).panel.entity_id() == cx.view().entity_id() {
+            if left_view
+                .read(cx)
+                .panel_contains_entity_id(cx.view().entity_id())
+            {
                 self_is_left_dock = true;
             }
         }
         if let Some(right_view) = &dock_area.read(cx).right_dock {
             has_right_dock = true;
-            if right_view.read(cx).panel.entity_id() == cx.view().entity_id() {
+            if right_view
+                .read(cx)
+                .panel_contains_entity_id(cx.view().entity_id())
+            {
                 self_is_right_dock = true;
             }
         }
         if let Some(bottom_view) = &dock_area.read(cx).bottom_dock {
             has_bottom_dock = true;
-            if bottom_view.read(cx).panel.entity_id() == cx.view().entity_id() {
+            if bottom_view
+                .read(cx)
+                .panel_contains_entity_id(cx.view().entity_id())
+            {
                 self_is_bottom_dock = true;
             }
         }
