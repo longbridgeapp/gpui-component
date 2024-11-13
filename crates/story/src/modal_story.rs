@@ -19,10 +19,7 @@ use ui::{
     theme::ActiveTheme as _,
     v_flex,
     webview::WebView,
-    ContextModal as _,
-    Icon,
-    IconName,
-    Placement
+    ContextModal as _, Icon, IconName, Placement,
 };
 
 actions!(modal_story, [TestAction]);
@@ -499,18 +496,18 @@ impl Render for ModalStory {
                                             WebView::new(cx, webview)
                                         });
                                         webview.update(cx, |webview, _| {
-                                            webview.load_url("https://github.com");
+                                            webview.load_url("https://github.com/explore");
                                         });
                                         cx.open_drawer(move |drawer, cx| {
                                             let height = cx.window_bounds().get_bounds().size.height;
                                             let webview_bounds = webview.read(cx).bounds();
-                                            let buffer_height = px(12.);
 
                                             drawer
                                                 .title("WebView Title")
+                                                .p_0()
                                                 .child(
                                                     div()
-                                                        .h(height - webview_bounds.origin.y - buffer_height)
+                                                        .h(height - webview_bounds.origin.y)
                                                         .child(webview.clone())
                                                 )
                                         });

@@ -48,7 +48,7 @@ impl Drawer {
             resizable: true,
             title: None,
             footer: None,
-            content: v_flex(),
+            content: v_flex().px_4().py_3(),
             margin_top: TITLE_BAR_HEIGHT,
             overlay: true,
             on_close: Rc::new(|_, _| {}),
@@ -189,7 +189,7 @@ impl RenderOnce for Drawer {
                                 h_flex()
                                     .justify_between()
                                     .px_4()
-                                    .py_3()
+                                    .py_2()
                                     .w_full()
                                     .child(self.title.unwrap_or(div().into_any_element()))
                                     .child(
@@ -204,10 +204,9 @@ impl RenderOnce for Drawer {
                                     ),
                             )
                             .child(
+                                // Body
                                 div().flex_1().overflow_hidden().child(
                                     v_flex()
-                                        .p_4()
-                                        .pt_0()
                                         .scrollable(
                                             cx.parent_view_id().unwrap_or_default(),
                                             ScrollbarAxis::Vertical,
@@ -216,6 +215,7 @@ impl RenderOnce for Drawer {
                                 ),
                             )
                             .when_some(self.footer, |this, footer| {
+                                // Footer
                                 this.child(
                                     h_flex()
                                         .justify_between()
