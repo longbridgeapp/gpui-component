@@ -19,10 +19,7 @@ use ui::{
     theme::ActiveTheme as _,
     v_flex,
     webview::WebView,
-    ContextModal as _,
-    Icon,
-    IconName,
-    Placement
+    ContextModal as _, Icon, IconName, Placement,
 };
 
 actions!(modal_story, [TestAction]);
@@ -508,6 +505,7 @@ impl Render for ModalStory {
 
                                             drawer
                                                 .title("WebView Title")
+                                                .no_padding(true)
                                                 .child(
                                                     div()
                                                         .h(height - webview_bounds.origin.y - buffer_height)

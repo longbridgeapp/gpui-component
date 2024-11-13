@@ -37,6 +37,7 @@ pub struct Drawer {
     content: Div,
     margin_top: Pixels,
     overlay: bool,
+    no_padding: bool,
 }
 
 impl Drawer {
@@ -51,6 +52,7 @@ impl Drawer {
             content: v_flex(),
             margin_top: TITLE_BAR_HEIGHT,
             overlay: true,
+            no_padding: false,
             on_close: Rc::new(|_, _| {}),
         }
     }
@@ -110,6 +112,12 @@ impl Drawer {
         on_close: impl Fn(&ClickEvent, &mut WindowContext) + 'static,
     ) -> Self {
         self.on_close = Rc::new(on_close);
+        self
+    }
+
+    /// Set whether the drawer content should have no padding, default is `false`.
+    pub fn no_padding(mut self, no_padding: bool) -> Self {
+        self.no_padding = no_padding;
         self
     }
 }
@@ -206,12 +214,11 @@ impl RenderOnce for Drawer {
                             .child(
                                 div().flex_1().overflow_hidden().child(
                                     v_flex()
-                                        .p_4()
-                                        .pt_0()
                                         .scrollable(
                                             cx.parent_view_id().unwrap_or_default(),
                                             ScrollbarAxis::Vertical,
                                         )
+                                        .when(!self.no_padding, |this| this.p_4().pt_0())
                                         .child(self.content),
                                 ),
                             )
