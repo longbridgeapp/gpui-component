@@ -2,7 +2,7 @@ use std::{rc::Rc, time::Duration};
 
 use gpui::{
     actions, anchored, div, point, prelude::FluentBuilder as _, px, Animation, AnimationExt as _,
-    AnyElement, AppContext, ClickEvent, DefiniteLength, DismissEvent, Div, EventEmitter,
+    AnyElement, AppContext, ClickEvent, DefiniteLength, DismissEvent, Div, Edges, EventEmitter,
     FocusHandle, InteractiveElement as _, IntoElement, KeyBinding, MouseButton, ParentElement,
     Pixels, RenderOnce, Styled, WindowContext,
 };
@@ -30,6 +30,7 @@ pub struct Drawer {
     pub(crate) focus_handle: FocusHandle,
     placement: Placement,
     size: DefiniteLength,
+    padding: Edges<Pixels>,
     resizable: bool,
     on_close: Rc<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>,
     title: Option<AnyElement>,
@@ -37,7 +38,6 @@ pub struct Drawer {
     content: Div,
     margin_top: Pixels,
     overlay: bool,
-    no_padding: bool,
 }
 
 impl Drawer {
@@ -51,8 +51,13 @@ impl Drawer {
             footer: None,
             content: v_flex(),
             margin_top: TITLE_BAR_HEIGHT,
+            padding: Edges {
+                top: px(12.),
+                bottom: px(12.),
+                left: px(16.),
+                right: px(16.),
+            },
             overlay: true,
-            no_padding: false,
             on_close: Rc::new(|_, _| {}),
         }
     }
@@ -115,9 +120,9 @@ impl Drawer {
         self
     }
 
-    /// Set whether the drawer content should have no padding, default is `false`.
-    pub fn no_padding(mut self, no_padding: bool) -> Self {
-        self.no_padding = no_padding;
+    /// Set the padding of the drawer, default is 12px top and bottom, 16px left and right.
+    pub fn padding(mut self, padding: impl Into<Edges<Pixels>>) -> Self {
+        self.padding = padding.into();
         self
     }
 }
@@ -196,8 +201,10 @@ impl RenderOnce for Drawer {
                                 // TitleBar
                                 h_flex()
                                     .justify_between()
-                                    .px_4()
-                                    .py_3()
+                                    .pl(self.padding.top)
+                                    .pt(self.padding.top)
+                                    .pr(self.padding.right)
+                                    .pb(self.padding.bottom)
                                     .w_full()
                                     .child(self.title.unwrap_or(div().into_any_element()))
                                     .child(
@@ -214,11 +221,13 @@ impl RenderOnce for Drawer {
                             .child(
                                 div().flex_1().overflow_hidden().child(
                                     v_flex()
+                                        .pl(self.padding.left)
+                                        .pr(self.padding.right)
+                                        .pb(self.padding.bottom)
                                         .scrollable(
                                             cx.parent_view_id().unwrap_or_default(),
                                             ScrollbarAxis::Vertical,
                                         )
-                                        .when(!self.no_padding, |this| this.p_4().pt_0())
                                         .child(self.content),
                                 ),
                             )
@@ -226,8 +235,10 @@ impl RenderOnce for Drawer {
                                 this.child(
                                     h_flex()
                                         .justify_between()
-                                        .px_4()
-                                        .py_3()
+                                        .pl(self.padding.top)
+                                        .pt(self.padding.top)
+                                        .pr(self.padding.right)
+                                        .pb(self.padding.bottom)
                                         .w_full()
                                         .child(footer),
                                 )
