@@ -505,7 +505,7 @@ impl Render for ModalStory {
 
                                             drawer
                                                 .title("WebView Title")
-                                                .no_padding(true)
+                                                .padding(Edge::zero())
                                                 .child(
                                                     div()
                                                         .h(height - webview_bounds.origin.y - buffer_height)
