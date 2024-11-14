@@ -1,10 +1,8 @@
 //! Dock is a fixed container that places at left, bottom, right of the Windows.
 
-use std::sync::Arc;
-
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
-    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    div, prelude::FluentBuilder as _, px, Axis, Element, EntityId, InteractiveElement as _,
+    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
     WeakView, WindowContext,
 };
@@ -16,7 +14,7 @@ use crate::{
     AxisExt as _, StyledExt,
 };
 
-use super::{DockArea, PanelView, TabPanel};
+use super::{DockArea, DockItem, TabPanel};
 
 #[derive(Clone, Render)]
 struct ResizePanel;
@@ -58,7 +56,7 @@ impl DockPlacement {
 pub struct Dock {
     pub(super) placement: DockPlacement,
     dock_area: WeakView<DockArea>,
-    pub(crate) panel: View<TabPanel>,
+    pub(crate) panel: DockItem,
     /// The size is means the width or height of the Dock, if the placement is left or right, the size is width, otherwise the size is height.
     pub(super) size: Pixels,
     pub(super) open: bool,
@@ -77,7 +75,13 @@ impl Dock {
             tab
         });
 
-        Self::subscribe_panel_events(dock_area.clone(), panel.clone(), cx);
+        let panel = DockItem::Tabs {
+            items: Vec::new(),
+            active_ix: 0,
+            view: panel.clone(),
+        };
+
+        Self::subscribe_panel_events(dock_area.clone(), &panel, cx);
 
         Self {
             placement,
@@ -105,16 +109,21 @@ impl Dock {
         dock_area: WeakView<DockArea>,
         placement: DockPlacement,
         size: Pixels,
-        panel: View<TabPanel>,
+        panel: DockItem,
         open: bool,
         cx: &mut WindowContext,
     ) -> Self {
-        Self::subscribe_panel_events(dock_area.clone(), panel.clone(), cx);
+        Self::subscribe_panel_events(dock_area.clone(), &panel, cx);
 
         if !open {
-            panel.update(cx, |panel, cx| {
-                panel.set_collapsed(true, cx);
-            });
+            match panel.clone() {
+                DockItem::Tabs { view, .. } => {
+                    view.update(cx, |panel, cx| {
+                        panel.set_collapsed(true, cx);
+                    });
+                }
+                _ => {}
+            }
         }
 
         Self {
@@ -129,24 +138,38 @@ impl Dock {
 
     fn subscribe_panel_events(
         dock_area: WeakView<DockArea>,
-        panel: View<TabPanel>,
+        panel: &DockItem,
         cx: &mut WindowContext,
     ) {
-        // Subscribe the panel to the dock area.
-        cx.defer({
-            move |cx| {
-                _ = dock_area.update(cx, |this, cx| {
-                    this.subscribe_panel(&panel, cx);
+        match panel {
+            DockItem::Tabs { view, .. } => {
+                cx.defer({
+                    let view = view.clone();
+                    move |cx| {
+                        _ = dock_area.update(cx, |this, cx| {
+                            this.subscribe_panel(&view, cx);
+                        });
+                    }
                 });
             }
-        });
+            DockItem::Split { items, view, .. } => {
+                for item in items {
+                    Self::subscribe_panel_events(dock_area.clone(), item, cx);
+                }
+                cx.defer({
+                    let view = view.clone();
+                    move |cx| {
+                        _ = dock_area.update(cx, |this, cx| {
+                            this.subscribe_panel(&view, cx);
+                        });
+                    }
+                });
+            }
+        }
     }
 
-    pub fn set_panels(&mut self, panels: Vec<Arc<dyn PanelView>>, cx: &mut ViewContext<Self>) {
-        self.panel.update(cx, |tab_panel, _| {
-            tab_panel.panels = panels;
-            tab_panel.active_ix = 0;
-        });
+    pub fn set_panel(&mut self, panel: DockItem, cx: &mut ViewContext<Self>) {
+        self.panel = panel;
         cx.notify();
     }
 
@@ -174,10 +197,9 @@ impl Dock {
     /// Set the open state of the Dock.
     pub fn set_open(&mut self, open: bool, cx: &mut ViewContext<Self>) {
         self.open = open;
-        cx.defer(move |this, cx| {
-            this.panel.update(cx, |panel, cx| {
-                panel.set_collapsed(!open, cx);
-            });
+        let item = self.panel.clone();
+        cx.defer(move |_, cx| {
+            item.set_collapsed(!open, cx);
         });
         cx.notify();
     }
@@ -257,6 +279,11 @@ impl Dock {
     fn done_resizing(&mut self, _: &mut ViewContext<Self>) {
         self.is_resizing = false;
     }
+
+    /// This method allows the Dock to determine if its panel contains the entity_id of the TabPanel
+    pub(crate) fn panel_contains_entity_id(&self, entity_id: EntityId) -> bool {
+        self.panel.contains_entity_id(entity_id)
+    }
 }
 
 impl Render for Dock {
@@ -276,7 +303,10 @@ impl Render for Dock {
             .when(!self.open && self.placement.is_bottom(), |this| {
                 this.h(px(30.))
             })
-            .child(self.panel.clone())
+            .map(|this| match &self.panel {
+                DockItem::Split { view, .. } => this.child(view.clone()),
+                DockItem::Tabs { view, .. } => this.child(view.clone()),
+            })
             .child(self.render_resize_handle(cx))
             .child(DockElement {
                 view: cx.view().clone(),

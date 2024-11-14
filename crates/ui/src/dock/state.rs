@@ -1,11 +1,9 @@
-use anyhow::{bail, Result};
 use gpui::{AppContext, Axis, Pixels, View, VisualContext as _, WeakView, WindowContext};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
 use super::{
     invalid_panel::InvalidPanel, Dock, DockArea, DockItem, DockPlacement, Panel, PanelRegistry,
-    PanelView, TabPanel,
 };
 
 /// Used to serialize and deserialize the DockArea
@@ -39,33 +37,23 @@ impl DockState {
             placement: dock.placement,
             size: dock.size,
             open: dock.open,
-            panel: dock.panel.dump(cx),
+            panel: dock.panel.view().dump(cx),
         }
     }
 
     /// Convert the DockState to Dock
-    pub fn to_dock(
-        &self,
-        dock_area: WeakView<DockArea>,
-        cx: &mut WindowContext,
-    ) -> Result<View<Dock>> {
-        let view = self.panel.to_item(dock_area.clone(), cx).view();
-        if let Ok(tab_panel) = view.view().downcast::<TabPanel>() {
-            let dock = cx.new_view(|cx| {
-                Dock::from_state(
-                    dock_area.clone(),
-                    self.placement,
-                    self.size,
-                    tab_panel,
-                    self.open,
-                    cx,
-                )
-            });
-
-            Ok(dock)
-        } else {
-            bail!("Invalid panel, failed to downcast to TabPanel")
-        }
+    pub fn to_dock(&self, dock_area: WeakView<DockArea>, cx: &mut WindowContext) -> View<Dock> {
+        let item = self.panel.to_item(dock_area.clone(), cx);
+        cx.new_view(|cx| {
+            Dock::from_state(
+                dock_area.clone(),
+                self.placement,
+                self.size,
+                item,
+                self.open,
+                cx,
+            )
+        })
     }
 }
 
