@@ -54,7 +54,7 @@ pub struct DockArea {
     /// The top zoom view of the dockarea, if any.
     zoom_view: Option<AnyView>,
 
-    /// The dock area is locked, the user can't change the layout, but can still interact and resize with the panels.
+    /// Lock panels layout, but allow to resize.
     is_locked: bool,
 
     _subscriptions: Vec<Subscription>,
