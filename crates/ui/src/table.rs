@@ -733,14 +733,12 @@ where
     fn render_sort_icon(
         &self,
         col_ix: usize,
+        col_group: &ColGroup,
         cx: &mut ViewContext<Self>,
     ) -> Option<impl IntoElement> {
-        let sort = self.col_groups.get(col_ix).and_then(|g| g.sort);
-        if sort.is_none() {
+        let Some(sort) = col_group.sort else {
             return None;
-        }
-
-        let sort = sort.unwrap();
+        };
 
         let (icon, is_on) = match sort {
             ColSort::Ascending => (IconName::SortAscending, true),
@@ -776,8 +774,10 @@ where
     fn render_th(&self, col_ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let col_group = self.col_groups.get(col_ix).expect("BUG: invalid col index");
-
+        let moveable = self.delegate.can_move_col(col_ix, cx);
+        let paddings = self.delegate.col_padding(col_ix, cx);
         let name = self.delegate.col_name(col_ix, cx);
+
         h_flex()
             .child(
                 self.render_cell(col_ix, cx)
@@ -794,16 +794,15 @@ where
                             .justify_between()
                             .items_center()
                             .child(self.delegate.render_th(col_ix, cx))
-                            .when_some(self.delegate().col_padding(col_ix, cx), |this, padding| {
+                            .when_some(paddings, |this, paddings| {
                                 // Leave right space for the sort icon, if this column have custom padding
                                 let offset_pr =
-                                    self.size.table_cell_padding().right - padding.right;
-
+                                    self.size.table_cell_padding().right - paddings.right;
                                 this.pr(offset_pr.max(px(0.)))
                             })
-                            .children(self.render_sort_icon(col_ix, cx)),
+                            .children(self.render_sort_icon(col_ix, &col_group, cx)),
                     )
-                    .when(self.delegate.can_move_col(col_ix, cx), |this| {
+                    .when(moveable, |this| {
                         this.on_drag(
                             DragCol {
                                 entity_id,
