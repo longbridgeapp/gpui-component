@@ -10,8 +10,9 @@ use anyhow::Result;
 pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
-    EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render,
-    SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView, WindowContext,
+    Entity as _, EntityId, EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _,
+    Pixels, Render, SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView,
+    WindowContext,
 };
 use std::sync::Arc;
 
@@ -212,6 +213,16 @@ impl DockItem {
                 for item in items {
                     item.set_collapsed(collapsed, cx);
                 }
+            }
+        }
+    }
+
+    /// Recursively checks if the DockItem or any of its children contain the entity_id of the TabPanel
+    pub fn contains_entity_id(&self, entity_id: EntityId) -> bool {
+        match self {
+            DockItem::Tabs { view, .. } => view.entity_id() == entity_id,
+            DockItem::Split { items, .. } => {
+                items.iter().any(|item| item.contains_entity_id(entity_id))
             }
         }
     }

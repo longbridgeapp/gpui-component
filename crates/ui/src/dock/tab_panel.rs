@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use gpui::{
     div, prelude::FluentBuilder, px, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
-    DragMoveEvent, Empty, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _,
-    IntoElement, ParentElement, Pixels, Render, ScrollHandle, StatefulInteractiveElement, Styled,
-    View, ViewContext, VisualContext as _, WeakView, WindowContext,
+    DragMoveEvent, Edges, Empty, Entity, EventEmitter, FocusHandle, FocusableView,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
+    SharedString, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
+    WeakView, WindowContext,
 };
 use rust_i18n::t;
 
@@ -19,7 +20,8 @@ use crate::{
 };
 
 use super::{
-    ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel, ToggleZoom,
+    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelView, StackPanel,
+    ToggleZoom,
 };
 
 #[derive(Clone, Copy)]
@@ -76,6 +78,8 @@ pub struct TabPanel {
     tab_bar_scroll_handle: ScrollHandle,
     is_zoomed: bool,
     is_collapsed: bool,
+    /// Used to store the Toggle Dock Button status (true - Is Expanded, false - Is Collapsed, None - Invisable)
+    toggle_dock_buttons: Edges<Option<bool>>,
 
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
@@ -157,11 +161,13 @@ impl TabPanel {
             is_zoomed: false,
             is_collapsed: false,
             closeable: true,
+            toggle_dock_buttons: Edges::all(None),
         }
     }
 
-    pub(super) fn set_parent(&mut self, view: WeakView<StackPanel>, _: &mut ViewContext<Self>) {
+    pub(super) fn set_parent(&mut self, view: WeakView<StackPanel>, cx: &mut ViewContext<Self>) {
         self.stack_panel = Some(view);
+        self.update_toggle_button_statuses(cx);
     }
 
     /// Return current active_panel View
@@ -257,6 +263,7 @@ impl TabPanel {
         if self.active_ix >= self.panels.len() {
             self.set_active_ix(self.panels.len().saturating_sub(1), cx)
         }
+        self.update_toggle_button_statuses(cx);
     }
 
     /// Check to remove self from the parent StackPanel, if there is no panel left
@@ -271,6 +278,11 @@ impl TabPanel {
                 view.remove_panel(Arc::new(tab_view), cx);
             });
         }
+    }
+
+    pub(super) fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
+        self.is_collapsed = collapsed;
+        cx.notify();
     }
 
     fn is_locked(&self, cx: &AppContext) -> bool {
@@ -316,9 +328,74 @@ impl TabPanel {
         !self.is_locked(cx)
     }
 
-    pub(super) fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
-        self.is_collapsed = collapsed;
-        cx.notify();
+    fn update_toggle_button_statuses(&mut self, cx: &mut ViewContext<Self>) {
+        let Some(dock_area) = self.dock_area.upgrade() else {
+            return;
+        };
+
+        let entity_id = cx.view().entity_id();
+
+        let mut has_docks = Edges::all(false);
+        let mut inside_docks = Edges::all(false);
+
+        if let Some(left_view) = &dock_area.read(cx).left_dock {
+            has_docks.left = true;
+            if left_view.read(cx).panel_contains_entity_id(entity_id) {
+                inside_docks.left = true;
+            }
+        }
+        if let Some(right_view) = &dock_area.read(cx).right_dock {
+            has_docks.right = true;
+            if right_view.read(cx).panel_contains_entity_id(entity_id) {
+                inside_docks.right = true;
+            }
+        }
+        if let Some(bottom_view) = &dock_area.read(cx).bottom_dock {
+            has_docks.bottom = true;
+            if bottom_view.read(cx).panel_contains_entity_id(entity_id) {
+                inside_docks.bottom = true;
+            }
+        }
+
+        let is_inside_dock = inside_docks.left || inside_docks.right || inside_docks.bottom;
+        if !is_inside_dock {
+            let mut is_top_left_panel = false;
+            let mut is_top_right_panel = false;
+            if let Some(parent) = self
+                .stack_panel
+                .as_ref()
+                .and_then(|parent| parent.upgrade())
+            {
+                if parent
+                    .read(cx)
+                    .is_top_left_panel(cx.view().clone(), true, cx)
+                {
+                    is_top_left_panel = true;
+                }
+
+                if parent
+                    .read(cx)
+                    .is_top_right_panel(cx.view().clone(), true, cx)
+                {
+                    is_top_right_panel = true;
+                }
+            }
+
+            if has_docks.left && is_top_left_panel {
+                self.toggle_dock_buttons.left =
+                    Some(dock_area.read(cx).is_dock_open(DockPlacement::Left, cx));
+            }
+
+            if has_docks.right && is_top_right_panel {
+                self.toggle_dock_buttons.right =
+                    Some(dock_area.read(cx).is_dock_open(DockPlacement::Right, cx));
+            }
+        }
+
+        if has_docks.bottom && inside_docks.bottom {
+            self.toggle_dock_buttons.bottom =
+                Some(dock_area.read(cx).is_dock_open(DockPlacement::Bottom, cx));
+        }
     }
 
     fn render_toolbar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
@@ -373,8 +450,78 @@ impl TabPanel {
             )
     }
 
+    fn render_dock_toggle_button(
+        &self,
+        placement: DockPlacement,
+        cx: &mut ViewContext<Self>,
+    ) -> Option<impl IntoElement> {
+        if self.is_zoomed {
+            return None;
+        }
+
+        let (icon, is_open) = match placement {
+            DockPlacement::Left => {
+                let Some(open) = self.toggle_dock_buttons.left else {
+                    return None;
+                };
+
+                if open {
+                    (IconName::PanelLeft, true)
+                } else {
+                    (IconName::PanelLeftOpen, false)
+                }
+            }
+            DockPlacement::Right => {
+                let Some(open) = self.toggle_dock_buttons.right else {
+                    return None;
+                };
+
+                if open {
+                    (IconName::PanelRight, true)
+                } else {
+                    (IconName::PanelRightOpen, false)
+                }
+            }
+            DockPlacement::Bottom => {
+                let Some(open) = self.toggle_dock_buttons.bottom else {
+                    return None;
+                };
+
+                if open {
+                    (IconName::PanelBottom, true)
+                } else {
+                    (IconName::PanelBottomOpen, false)
+                }
+            }
+        };
+
+        Some(
+            Button::new(SharedString::from(format!("toggle-dock:{:?}", placement)))
+                .icon(icon)
+                .xsmall()
+                .ghost()
+                .tooltip(match is_open {
+                    true => t!("Dock.Collapse"),
+                    false => t!("Dock.Expand"),
+                })
+                .on_click(cx.listener({
+                    let dock_area = self.dock_area.clone();
+                    move |this, _, cx| {
+                        _ = dock_area.update(cx, |dock_area, cx| {
+                            dock_area.toggle_dock(placement, cx);
+                        });
+                        this.update_toggle_button_statuses(cx);
+                    }
+                })),
+        )
+    }
+
     fn render_title_bar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
+
+        let left_dock_button = self.render_dock_toggle_button(DockPlacement::Left, cx);
+        let bottom_dock_button = self.render_dock_toggle_button(DockPlacement::Bottom, cx);
+        let right_dock_button = self.render_dock_toggle_button(DockPlacement::Right, cx);
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
@@ -387,9 +534,24 @@ impl TabPanel {
                 .h(px(30.))
                 .py_2()
                 .px_3()
+                .when(left_dock_button.is_some(), |this| this.pl_2())
+                .when(right_dock_button.is_some(), |this| this.pr_2())
                 .when_some(title_style, |this, theme| {
                     this.bg(theme.background).text_color(theme.foreground)
                 })
+                .when(
+                    left_dock_button.is_some() || bottom_dock_button.is_some(),
+                    |this| {
+                        this.child(
+                            h_flex()
+                                .flex_shrink_0()
+                                .mr_1()
+                                .gap_1()
+                                .children(left_dock_button)
+                                .children(bottom_dock_button),
+                        )
+                    },
+                )
                 .child(
                     div()
                         .id("tab")
@@ -417,7 +579,8 @@ impl TabPanel {
                         .flex_shrink_0()
                         .ml_1()
                         .gap_1()
-                        .child(self.render_toolbar(state, cx)),
+                        .child(self.render_toolbar(state, cx))
+                        .children(right_dock_button),
                 )
                 .into_any_element();
         }
@@ -426,6 +589,25 @@ impl TabPanel {
 
         TabBar::new("tab-bar")
             .track_scroll(self.tab_bar_scroll_handle.clone())
+            .when(
+                left_dock_button.is_some() || bottom_dock_button.is_some(),
+                |this| {
+                    this.prefix(
+                        h_flex()
+                            .items_center()
+                            .top_0()
+                            .right_0()
+                            .border_r_1()
+                            .border_b_1()
+                            .h_full()
+                            .border_color(cx.theme().border)
+                            .bg(cx.theme().tab_bar)
+                            .px_2()
+                            .children(left_dock_button)
+                            .children(bottom_dock_button),
+                    )
+                },
+            )
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 let mut active = ix == self.active_ix;
 
@@ -495,7 +677,8 @@ impl TabPanel {
                     .bg(cx.theme().tab_bar)
                     .px_2()
                     .gap_1()
-                    .child(self.render_toolbar(state, cx)),
+                    .child(self.render_toolbar(state, cx))
+                    .when_some(right_dock_button, |this, btn| this.child(btn)),
             )
             .into_any_element()
     }

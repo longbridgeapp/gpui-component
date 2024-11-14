@@ -1,8 +1,8 @@
 //! Dock is a fixed container that places at left, bottom, right of the Windows.
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
-    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    div, prelude::FluentBuilder as _, px, Axis, Element, EntityId, InteractiveElement as _,
+    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
     WeakView, WindowContext,
 };
@@ -278,6 +278,11 @@ impl Dock {
 
     fn done_resizing(&mut self, _: &mut ViewContext<Self>) {
         self.is_resizing = false;
+    }
+
+    /// This method allows the Dock to determine if its panel contains the entity_id of the TabPanel
+    pub(crate) fn panel_contains_entity_id(&self, entity_id: EntityId) -> bool {
+        self.panel.contains_entity_id(entity_id)
     }
 }
 
