@@ -22,6 +22,14 @@ use super::{
     ClosePanel, DockArea, DockItemState, Panel, PanelEvent, PanelView, StackPanel, ToggleZoom,
 };
 
+#[derive(Clone, Copy)]
+struct TabState {
+    closeable: bool,
+    zoomable: bool,
+    draggable: bool,
+    droppable: bool,
+}
+
 #[derive(Clone)]
 pub(crate) struct DragPanel {
     pub(crate) panel: Arc<dyn PanelView>,
@@ -267,7 +275,7 @@ impl TabPanel {
 
     fn is_locked(&self, cx: &AppContext) -> bool {
         let Some(dock_area) = self.dock_area.upgrade() else {
-            return false;
+            return true;
         };
 
         if dock_area.read(cx).is_locked() {
@@ -281,16 +289,40 @@ impl TabPanel {
         self.stack_panel.is_none()
     }
 
+    /// Return true if self or parent only have last panel.
+    fn is_last_panel(&self, cx: &AppContext) -> bool {
+        if let Some(parent) = &self.stack_panel {
+            if let Some(stack_panel) = parent.upgrade() {
+                if !stack_panel.read(cx).is_last_panel(cx) {
+                    return false;
+                }
+            }
+        }
+
+        self.panels.len() <= 1
+    }
+
+    /// Return true if the tab panel is draggable.
+    ///
+    /// E.g. if the parent and self only have one panel, it is not draggable.
+    fn draggable(&self, cx: &AppContext) -> bool {
+        !self.is_locked(cx) && !self.is_last_panel(cx)
+    }
+
+    /// Return true if the tab panel is droppable.
+    ///
+    /// E.g. if the tab panel is locked, it is not droppable.
+    fn droppable(&self, cx: &AppContext) -> bool {
+        !self.is_locked(cx)
+    }
+
     pub(super) fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
         self.is_collapsed = collapsed;
         cx.notify();
     }
 
-    fn render_toolbar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let closeable = self.closeable(cx);
-        let zoomable = self.zoomable(cx);
-
-        let is_zoomed = self.is_zoomed && zoomable;
+    fn render_toolbar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let is_zoomed = self.is_zoomed && state.zoomable;
         let view = cx.view().clone();
         let build_popup_menu = move |this, cx: &WindowContext| view.read(cx).popup_menu(this, cx);
 
@@ -324,7 +356,7 @@ impl TabPanel {
                     .ghost()
                     .popup_menu(move |this, cx| {
                         build_popup_menu(this, cx)
-                            .when(zoomable, |this| {
+                            .when(state.zoomable, |this| {
                                 let name = if is_zoomed {
                                     t!("Dock.Zoom Out")
                                 } else {
@@ -332,7 +364,7 @@ impl TabPanel {
                                 };
                                 this.separator().menu(name, Box::new(ToggleZoom))
                             })
-                            .when(closeable, |this| {
+                            .when(state.closeable, |this| {
                                 this.separator()
                                     .menu(t!("Dock.Close"), Box::new(ClosePanel))
                             })
@@ -341,9 +373,8 @@ impl TabPanel {
             )
     }
 
-    fn render_title_bar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_title_bar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
-        let is_locked = self.is_locked(cx);
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
@@ -368,7 +399,7 @@ impl TabPanel {
                         .text_ellipsis()
                         .whitespace_nowrap()
                         .child(panel.title(cx))
-                        .when(!is_locked, |this| {
+                        .when(state.draggable, |this| {
                             this.on_drag(
                                 DragPanel {
                                     panel: panel.clone(),
@@ -386,7 +417,7 @@ impl TabPanel {
                         .flex_shrink_0()
                         .ml_1()
                         .gap_1()
-                        .child(self.render_toolbar(cx)),
+                        .child(self.render_toolbar(state, cx)),
                 )
                 .into_any_element();
         }
@@ -409,12 +440,14 @@ impl TabPanel {
                     .on_click(cx.listener(move |view, _, cx| {
                         view.set_active_ix(ix, cx);
                     }))
-                    .when(!is_locked, |this| {
+                    .when(state.draggable, |this| {
                         this.on_drag(DragPanel::new(panel.clone(), view.clone()), |drag, cx| {
                             cx.stop_propagation();
                             cx.new_view(|_| drag.clone())
                         })
-                        .drag_over::<DragPanel>(|this, _, cx| {
+                    })
+                    .when(state.droppable, |this| {
+                        this.drag_over::<DragPanel>(|this, _, cx| {
                             this.rounded_l_none()
                                 .border_l_2()
                                 .border_r_0()
@@ -435,7 +468,7 @@ impl TabPanel {
                     .h_full()
                     .flex_grow()
                     .min_w_16()
-                    .when(!is_locked, |this| {
+                    .when(state.droppable, |this| {
                         this.drag_over::<DragPanel>(|this, _, cx| this.bg(cx.theme().drop_target))
                             .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
                                 this.will_split_placement = None;
@@ -462,14 +495,12 @@ impl TabPanel {
                     .bg(cx.theme().tab_bar)
                     .px_2()
                     .gap_1()
-                    .child(self.render_toolbar(cx)),
+                    .child(self.render_toolbar(state, cx)),
             )
             .into_any_element()
     }
 
-    fn render_active_panel(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let is_locked = self.is_locked(cx);
-
+    fn render_active_panel(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
         self.active_panel()
             .map(|panel| {
                 div()
@@ -479,7 +510,7 @@ impl TabPanel {
                     .overflow_x_hidden()
                     .flex_1()
                     .child(panel.view())
-                    .when(!is_locked, |this| {
+                    .when(state.droppable, |this| {
                         this.on_drag_move(cx.listener(Self::on_panel_drag_move))
                             .child(
                                 div()
@@ -718,6 +749,15 @@ impl EventEmitter<PanelEvent> for TabPanel {}
 impl Render for TabPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         let focus_handle = self.focus_handle(cx);
+        let mut state = TabState {
+            closeable: self.closeable(cx),
+            draggable: self.draggable(cx),
+            droppable: self.droppable(cx),
+            zoomable: self.zoomable(cx),
+        };
+        if !state.draggable {
+            state.closeable = false;
+        }
 
         v_flex()
             .id("tab-panel")
@@ -727,7 +767,7 @@ impl Render for TabPanel {
             .size_full()
             .overflow_hidden()
             .bg(cx.theme().background)
-            .child(self.render_title_bar(cx))
-            .child(self.render_active_panel(cx))
+            .child(self.render_title_bar(state, cx))
+            .child(self.render_active_panel(state, cx))
     }
 }

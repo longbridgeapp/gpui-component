@@ -233,12 +233,18 @@ impl StoryWorkspace {
             cx,
         );
 
-        let bottom_panels = DockItem::tabs(
-            vec![
-                Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-                Arc::new(StoryContainer::panel::<IconStory>(cx)),
-            ],
-            None,
+        let bottom_panels = DockItem::split_with_sizes(
+            Axis::Vertical,
+            vec![DockItem::tabs(
+                vec![
+                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                ],
+                None,
+                &dock_area,
+                cx,
+            )],
+            vec![None],
             &dock_area,
             cx,
         );
