@@ -4,20 +4,22 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
+mod toggle_buttons;
 
 use anyhow::Result;
 pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
-    Entity, EntityId, EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _,
-    Pixels, Render, SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView,
-    WindowContext,
+    EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render,
+    SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
+use std::sync::Arc;
+
 pub use panel::*;
 pub use stack_panel::*;
 pub use state::*;
-use std::sync::Arc;
 pub use tab_panel::*;
+pub use toggle_buttons::*;
 
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
@@ -210,16 +212,6 @@ impl DockItem {
             }
         }
     }
-
-    /// Recursively checks if the DockItem or any of its children contain the entity_id of the TabPanel
-    pub fn contains_entity_id(&self, entity_id: EntityId) -> bool {
-        match self {
-            DockItem::Tabs { view, .. } => view.entity_id() == entity_id,
-            DockItem::Split { items, .. } => {
-                items.iter().any(|item| item.contains_entity_id(entity_id))
-            }
-        }
-    }
 }
 
 impl DockArea {
@@ -324,6 +316,16 @@ impl DockArea {
         }));
     }
 
+    /// Determine if the dock area has a dock at the given placement.
+    pub fn has_dock(&self, placement: DockPlacement) -> bool {
+        match placement {
+            DockPlacement::Left => self.left_dock.is_some(),
+            DockPlacement::Bottom => self.bottom_dock.is_some(),
+            DockPlacement::Right => self.right_dock.is_some(),
+        }
+    }
+
+    /// Determine if the dock at the given placement is open.
     pub fn is_dock_open(&self, placement: DockPlacement, cx: &AppContext) -> bool {
         match placement {
             DockPlacement::Left => self

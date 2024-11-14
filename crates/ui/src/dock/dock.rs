@@ -1,8 +1,8 @@
 //! Dock is a fixed container that places at left, bottom, right of the Windows.
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, EntityId, InteractiveElement as _,
-    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
+    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
     StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
     WeakView, WindowContext,
 };
@@ -279,16 +279,11 @@ impl Dock {
     fn done_resizing(&mut self, _: &mut ViewContext<Self>) {
         self.is_resizing = false;
     }
-
-    /// This method allows the Dock to determine if its panel contains the entity_id of the TabPanel
-    pub(crate) fn panel_contains_entity_id(&self, entity_id: EntityId) -> bool {
-        self.panel.contains_entity_id(entity_id)
-    }
 }
 
 impl Render for Dock {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
-        if !self.open && !self.placement.is_bottom() {
+        if !self.open {
             return div();
         }
 
@@ -298,10 +293,6 @@ impl Render for Dock {
             .map(|this| match self.placement {
                 DockPlacement::Left | DockPlacement::Right => this.h_flex().h_full().w(self.size),
                 DockPlacement::Bottom => this.w_full().h(self.size),
-            })
-            // Bottom Dock should keep the title bar, then user can click the Toggle button
-            .when(!self.open && self.placement.is_bottom(), |this| {
-                this.h(px(30.))
             })
             .map(|this| match &self.panel {
                 DockItem::Split { view, .. } => this.child(view.clone()),

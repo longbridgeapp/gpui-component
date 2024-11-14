@@ -8,12 +8,12 @@ use crate::{
         ResizablePanelGroup,
     },
     theme::ActiveTheme,
-    AxisExt, Placement,
+    Placement,
 };
 
 use super::{DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
 use gpui::{
-    prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, Entity, EventEmitter, FocusHandle,
+    prelude::FluentBuilder as _, AppContext, Axis, DismissEvent, EventEmitter, FocusHandle,
     FocusableView, IntoElement, ParentElement, Pixels, Render, Styled, Subscription, View,
     ViewContext, VisualContext, WeakView,
 };
@@ -180,7 +180,9 @@ impl StackPanel {
             move |cx| {
                 // If the panel is a TabPanel, set its parent to this.
                 if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                    tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.downgrade()));
+                    tab_panel.update(cx, |tab_panel, cx| {
+                        tab_panel.set_parent(view.downgrade(), cx)
+                    });
                 } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
                     stack_panel.update(cx, |stack_panel, _| {
                         stack_panel.parent = Some(view.downgrade())
@@ -282,61 +284,6 @@ impl StackPanel {
         self.panel_group
             .update(cx, |view, cx| view.set_axis(axis, cx));
         cx.notify();
-    }
-
-    /// Check if the given panel is at the first top left in the stack.
-    pub(super) fn is_top_left_panel(
-        &self,
-        panel: View<TabPanel>,
-        check_parent: bool,
-        cx: &AppContext,
-    ) -> bool {
-        let first_panel = self.panels.first();
-
-        if check_parent {
-            if let Some(parent) = self.parent.as_ref().and_then(|parent| parent.upgrade()) {
-                return parent.read(cx).is_top_left_panel(panel, true, cx);
-            }
-        }
-
-        if let Some(view) = first_panel {
-            if let Ok(view) = view.view().downcast::<TabPanel>() {
-                return view.entity_id() == panel.entity_id();
-            } else if let Ok(view) = view.view().downcast::<Self>() {
-                return view.read(cx).is_top_left_panel(panel, false, cx);
-            }
-        }
-        false
-    }
-
-    /// Check if the given panel is at the first top right in the stack.
-    pub(super) fn is_top_right_panel(
-        &self,
-        panel: View<TabPanel>,
-        check_parent: bool,
-        cx: &AppContext,
-    ) -> bool {
-        let first_panel = if self.axis.is_vertical() {
-            self.panels.first()
-        } else {
-            self.panels.last()
-        };
-
-        if check_parent {
-            if let Some(parent) = self.parent.as_ref().and_then(|parent| parent.upgrade()) {
-                return parent.read(cx).is_top_right_panel(panel, true, cx);
-            }
-        }
-
-        if let Some(view) = first_panel {
-            if let Ok(view) = view.view().downcast::<TabPanel>() {
-                return view.entity_id() == panel.entity_id();
-            } else if let Ok(view) = view.view().downcast::<Self>() {
-                return view.read(cx).is_top_right_panel(panel, false, cx);
-            }
-        }
-
-        false
     }
 }
 

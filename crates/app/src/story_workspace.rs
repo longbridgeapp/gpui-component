@@ -11,7 +11,7 @@ use story::{
 use ui::{
     button::{Button, ButtonStyled as _},
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockAreaState, DockEvent, DockItem},
+    dock::{DockArea, DockAreaState, DockEvent, DockItem, ToggleButtons},
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Theme},
@@ -386,6 +386,12 @@ impl Render for StoryWorkspace {
                             .justify_end()
                             .px_2()
                             .gap_2()
+                            .child(
+                                ToggleButtons::new(self.dock_area.downgrade())
+                                    .small()
+                                    .outline()
+                                    .mr_4(),
+                            )
                             .child(self.theme_color_picker.clone())
                             .child(
                                 Button::new("theme-mode")
