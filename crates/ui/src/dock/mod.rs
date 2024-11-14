@@ -54,6 +54,9 @@ pub struct DockArea {
     /// The top zoom view of the dockarea, if any.
     zoom_view: Option<AnyView>,
 
+    /// The dock area is locked, the user can't change the layout, but can still interact and resize with the panels.
+    is_locked: bool,
+
     _subscriptions: Vec<Subscription>,
 }
 
@@ -238,6 +241,7 @@ impl DockArea {
             left_dock: None,
             right_dock: None,
             bottom_dock: None,
+            is_locked: false,
             _subscriptions: vec![],
         };
 
@@ -314,6 +318,16 @@ impl DockArea {
             dock.set_panel(panel, cx);
             dock
         }));
+    }
+
+    /// Set locked state of the dock area, if locked, the dock area cannot be split or move, but allows to resize panels.
+    pub fn set_locked(&mut self, locked: bool, _: &mut WindowContext) {
+        self.is_locked = locked;
+    }
+
+    /// Determine if the dock area is locked.
+    pub fn is_locked(&self) -> bool {
+        self.is_locked
     }
 
     /// Determine if the dock area has a dock at the given placement.

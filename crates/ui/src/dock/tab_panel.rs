@@ -265,9 +265,20 @@ impl TabPanel {
         }
     }
 
-    /// Return true if the panel can be split or move
-    fn can_split(&self) -> bool {
-        self.stack_panel.is_some() && !self.is_zoomed
+    fn is_locked(&self, cx: &AppContext) -> bool {
+        let Some(dock_area) = self.dock_area.upgrade() else {
+            return false;
+        };
+
+        if dock_area.read(cx).is_locked() {
+            return true;
+        }
+
+        if self.is_zoomed {
+            return true;
+        }
+
+        self.stack_panel.is_none()
     }
 
     pub(super) fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
@@ -332,6 +343,7 @@ impl TabPanel {
 
     fn render_title_bar(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
+        let is_locked = self.is_locked(cx);
 
         if self.panels.len() == 1 {
             let panel = self.panels.get(0).unwrap();
@@ -356,7 +368,7 @@ impl TabPanel {
                         .text_ellipsis()
                         .whitespace_nowrap()
                         .child(panel.title(cx))
-                        .when(self.can_split(), |this| {
+                        .when(!is_locked, |this| {
                             this.on_drag(
                                 DragPanel {
                                     panel: panel.clone(),
@@ -397,7 +409,7 @@ impl TabPanel {
                     .on_click(cx.listener(move |view, _, cx| {
                         view.set_active_ix(ix, cx);
                     }))
-                    .when(self.can_split(), |this| {
+                    .when(!is_locked, |this| {
                         this.on_drag(DragPanel::new(panel.clone(), view.clone()), |drag, cx| {
                             cx.stop_propagation();
                             cx.new_view(|_| drag.clone())
@@ -423,7 +435,7 @@ impl TabPanel {
                     .h_full()
                     .flex_grow()
                     .min_w_16()
-                    .when(self.can_split(), |this| {
+                    .when(!is_locked, |this| {
                         this.drag_over::<DragPanel>(|this, _, cx| this.bg(cx.theme().drop_target))
                             .on_drop(cx.listener(move |this, drag: &DragPanel, cx| {
                                 this.will_split_placement = None;
@@ -456,6 +468,8 @@ impl TabPanel {
     }
 
     fn render_active_panel(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let is_locked = self.is_locked(cx);
+
         self.active_panel()
             .map(|panel| {
                 div()
@@ -465,7 +479,7 @@ impl TabPanel {
                     .overflow_x_hidden()
                     .flex_1()
                     .child(panel.view())
-                    .when(self.can_split(), |this| {
+                    .when(!is_locked, |this| {
                         this.on_drag_move(cx.listener(Self::on_panel_drag_move))
                             .child(
                                 div()
