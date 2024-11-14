@@ -49,6 +49,8 @@ pub struct DockArea {
     left_dock: Option<View<Dock>>,
     /// The bottom dock of the dockarea.
     bottom_dock: Option<View<Dock>>,
+    /// If true, the bottom dock is floating on bottom of the center view.
+    float_bottom_dock: bool,
     /// The right dock of the dockarea.
     right_dock: Option<View<Dock>>,
     /// The top zoom view of the dockarea, if any.
@@ -242,6 +244,7 @@ impl DockArea {
             right_dock: None,
             bottom_dock: None,
             is_locked: false,
+            float_bottom_dock: true,
             _subscriptions: vec![],
         };
 
@@ -538,6 +541,7 @@ impl Render for DockArea {
                             // Center
                             .child(
                                 div()
+                                    .relative()
                                     .flex()
                                     .flex_1()
                                     .flex_col()
@@ -551,7 +555,18 @@ impl Render for DockArea {
                                     )
                                     // Bottom Dock
                                     .when_some(self.bottom_dock.clone(), |this, dock| {
-                                        this.child(dock)
+                                        if self.float_bottom_dock {
+                                            this.child(
+                                                div()
+                                                    .absolute()
+                                                    .left_0()
+                                                    .right_0()
+                                                    .bottom_0()
+                                                    .child(dock),
+                                            )
+                                        } else {
+                                            this
+                                        }
                                     }),
                             )
                             // Right Dock
