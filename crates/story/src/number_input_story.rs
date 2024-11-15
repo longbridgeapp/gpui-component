@@ -137,7 +137,6 @@ impl NumberInputStory {
         _cx: &mut ViewContext<Self>,
     ) {
         match event {
-            InputEvent::Cleaned => println!("Cleaned"),
             InputEvent::Change(text) => println!("Change: {}", text),
             InputEvent::PressEnter => println!("PressEnter"),
             InputEvent::Focus => println!("Focus"),

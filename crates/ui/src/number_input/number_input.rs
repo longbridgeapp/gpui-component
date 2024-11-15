@@ -189,17 +189,18 @@ impl<T: SteppableNumber> NumberInput<T> {
     ) {
         match event {
             InputEvent::Change(text) => {
-                let number = T::from_string(text);
-                if let Some(number) = number {
-                    self.value = number;
+                if text.is_empty() {
+                    self.value = self.config.initial_value;
+                    self.set_number_text_repr(self.config.initial_value, _cx);
+                } else {
+                    let number = T::from_string(text);
+                    if let Some(number) = number {
+                        self.value = number;
+                    }
                 }
             }
             InputEvent::Focus => self.is_focused = true,
             InputEvent::Blur => self.is_focused = false,
-            InputEvent::Cleaned => {
-                self.value = self.config.initial_value;
-                self.set_number_text_repr(self.config.initial_value, _cx);
-            }
             _ => {}
         };
     }
