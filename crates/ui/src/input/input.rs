@@ -59,6 +59,7 @@ pub enum InputEvent {
     PressEnter,
     Focus,
     Blur,
+    Cleaned,
 }
 
 const CONTEXT: &str = "Input";
@@ -399,6 +400,7 @@ impl TextInput {
 
     fn clean(&mut self, _: &ClickEvent, cx: &mut ViewContext<Self>) {
         self.replace_text("", cx);
+        cx.emit(InputEvent::Cleaned);
     }
 
     fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {

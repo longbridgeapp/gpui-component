@@ -183,6 +183,7 @@ impl InputStory {
             InputEvent::PressEnter => println!("PressEnter"),
             InputEvent::Focus => println!("Focus"),
             InputEvent::Blur => println!("Blur"),
+            InputEvent::Cleaned => println!("Cleaned"),
         };
     }
 
