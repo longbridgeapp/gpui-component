@@ -7,6 +7,7 @@ mod image_story;
 mod input_story;
 mod list_story;
 mod modal_story;
+mod number_input_story;
 mod popup_story;
 mod progress_story;
 mod resizable_story;
@@ -26,6 +27,7 @@ pub use image_story::ImageStory;
 pub use input_story::InputStory;
 pub use list_story::ListStory;
 pub use modal_story::ModalStory;
+pub use number_input_story::NumberInputStory;
 pub use popup_story::PopupStory;
 pub use progress_story::ProgressStory;
 pub use resizable_story::ResizableStory;
@@ -59,6 +61,7 @@ const PANEL_NAME: &str = "StoryContainer";
 
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
+    number_input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
 
@@ -245,6 +248,7 @@ impl StoryState {
             "IconStory" => story!(IconStory),
             "ImageStory" => story!(ImageStory),
             "InputStory" => story!(InputStory),
+            "NumberInputStory" => story!(NumberInputStory),
             "ListStory" => story!(ListStory),
             "ModalStory" => story!(ModalStory),
             "PopupStory" => story!(PopupStory),

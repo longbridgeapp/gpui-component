@@ -5,8 +5,8 @@ use serde::Deserialize;
 use std::{sync::Arc, time::Duration};
 use story::{
     AccordionStory, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory,
-    ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
-    StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
+    ListStory, ModalStory, NumberInputStory, PopupStory, ProgressStory, ResizableStory,
+    ScrollableStory, StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
     button::{Button, ButtonStyled as _},
@@ -283,6 +283,7 @@ impl StoryWorkspace {
                 vec![
                     Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
                     Arc::new(StoryContainer::panel::<InputStory>(cx)),
+                    Arc::new(StoryContainer::panel::<NumberInputStory>(cx)),
                     Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
                     Arc::new(StoryContainer::panel::<TextStory>(cx)),
                     Arc::new(StoryContainer::panel::<ModalStory>(cx)),

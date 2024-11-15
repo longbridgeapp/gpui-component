@@ -8,11 +8,13 @@ resolver = "2"
 anyhow = "1"
 gpui = { git = "https://github.com/huacnlee/zed.git", branch = "export-platform-window" }
 log = "0.4"
+rust_decimal = "1.36.0"
+rust_decimal_macros = "1.36.0"
 serde = "1.0.203"
 serde_json = "1"
 smallvec = "1"
 story = { path = "crates/story" }
-ui = { path = "crates/ui" }
+ui = { path = "crates/ui", features = ["rust_decimal1"] }
 windows = { version = "0.58.0", features = [
     "Wdk",
     "Wdk_System",
