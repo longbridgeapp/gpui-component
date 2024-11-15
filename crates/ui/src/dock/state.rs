@@ -190,7 +190,7 @@ impl DockItemState {
                 } else {
                     // Show an invalid panel if the panel is not registered.
                     Box::new(
-                        cx.new_view(|cx| InvalidPanel::new(&self.panel_name, info.clone(), cx)),
+                        cx.new_view(|cx| InvalidPanel::new(&self.panel_name, self.clone(), cx)),
                     )
                 };
 
