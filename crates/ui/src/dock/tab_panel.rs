@@ -263,7 +263,7 @@ impl TabPanel {
         if self.active_ix >= self.panels.len() {
             self.set_active_ix(self.panels.len().saturating_sub(1), cx)
         }
-        self.update_toggle_button_statuses(cx);
+        self.update_toggle_button_statuses(cx); // TODO
     }
 
     /// Check to remove self from the parent StackPanel, if there is no panel left
@@ -328,7 +328,7 @@ impl TabPanel {
         !self.is_locked(cx)
     }
 
-    fn update_toggle_button_statuses(&mut self, cx: &mut ViewContext<Self>) {
+    pub(crate) fn update_toggle_button_statuses(&mut self, cx: &mut ViewContext<Self>) {
         let Some(dock_area) = self.dock_area.upgrade() else {
             return;
         };
@@ -338,63 +338,63 @@ impl TabPanel {
         let mut has_docks = Edges::all(false);
         let mut inside_docks = Edges::all(false);
 
-        if let Some(left_view) = &dock_area.read(cx).left_dock {
-            has_docks.left = true;
-            if left_view.read(cx).panel_contains_entity_id(entity_id) {
+        has_docks.left = dock_area.read(cx).left_dock.is_some();
+        has_docks.right = dock_area.read(cx).right_dock.is_some();
+        has_docks.bottom = dock_area.read(cx).bottom_dock.is_some();
+
+        if let Some(left_dock) = &dock_area.read(cx).left_dock {
+            if left_dock.read(cx).panel_contains_entity_id(entity_id) {
                 inside_docks.left = true;
             }
         }
-        if let Some(right_view) = &dock_area.read(cx).right_dock {
-            has_docks.right = true;
-            if right_view.read(cx).panel_contains_entity_id(entity_id) {
+        if let Some(right_dock) = &dock_area.read(cx).right_dock {
+            if right_dock.read(cx).panel_contains_entity_id(entity_id) {
                 inside_docks.right = true;
             }
         }
-        if let Some(bottom_view) = &dock_area.read(cx).bottom_dock {
-            has_docks.bottom = true;
-            if bottom_view.read(cx).panel_contains_entity_id(entity_id) {
+        if let Some(bottom_dock) = &dock_area.read(cx).bottom_dock {
+            if bottom_dock.read(cx).panel_contains_entity_id(entity_id) {
                 inside_docks.bottom = true;
             }
         }
 
         let is_inside_dock = inside_docks.left || inside_docks.right || inside_docks.bottom;
+
+        self.toggle_dock_buttons = Edges::all(None);
+
         if !is_inside_dock {
-            let mut is_top_left_panel = false;
-            let mut is_top_right_panel = false;
-            if let Some(parent) = self
-                .stack_panel
-                .as_ref()
-                .and_then(|parent| parent.upgrade())
-            {
-                if parent
-                    .read(cx)
-                    .is_top_left_panel(cx.view().clone(), true, cx)
-                {
-                    is_top_left_panel = true;
-                }
-
-                if parent
-                    .read(cx)
-                    .is_top_right_panel(cx.view().clone(), true, cx)
-                {
-                    is_top_right_panel = true;
+            if let Some(left_top_tab_panel) = dock_area.read(cx).items.left_top_tab_panel() {
+                if left_top_tab_panel.entity_id() == entity_id {
+                    if has_docks.left {
+                        self.toggle_dock_buttons.left =
+                            Some(dock_area.read(cx).is_dock_open(DockPlacement::Left, cx));
+                    }
                 }
             }
 
-            if has_docks.left && is_top_left_panel {
-                self.toggle_dock_buttons.left =
-                    Some(dock_area.read(cx).is_dock_open(DockPlacement::Left, cx));
-            }
-
-            if has_docks.right && is_top_right_panel {
-                self.toggle_dock_buttons.right =
-                    Some(dock_area.read(cx).is_dock_open(DockPlacement::Right, cx));
+            if let Some(right_top_tab_panel) = dock_area.read(cx).items.right_top_tab_panel() {
+                if right_top_tab_panel.entity_id() == entity_id {
+                    if has_docks.right {
+                        self.toggle_dock_buttons.right =
+                            Some(dock_area.read(cx).is_dock_open(DockPlacement::Right, cx));
+                    }
+                }
             }
         }
 
-        if has_docks.bottom && inside_docks.bottom {
-            self.toggle_dock_buttons.bottom =
-                Some(dock_area.read(cx).is_dock_open(DockPlacement::Bottom, cx));
+        if has_docks.bottom {
+            if let Some(bottom_dock) = &dock_area.read(cx).bottom_dock {
+                let bottom_dock_read = bottom_dock.read(cx);
+                let bottom_dock_panel = &bottom_dock_read.panel;
+                if bottom_dock_panel.contains_entity_id(entity_id) {
+                    if let Some(left_top_tab_panel) = bottom_dock_panel.left_top_tab_panel() {
+                        if left_top_tab_panel.entity_id() == entity_id {
+                            self.toggle_dock_buttons.bottom =
+                                Some(dock_area.read(cx).is_dock_open(DockPlacement::Bottom, cx));
+                        }
+                    }
+                }
+            }
         }
     }
 

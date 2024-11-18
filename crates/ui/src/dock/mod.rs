@@ -226,6 +226,30 @@ impl DockItem {
             }
         }
     }
+
+    /// Recursively traverses to find the left-most and top-most TabPanel.
+    pub fn left_top_tab_panel(&self) -> Option<View<TabPanel>> {
+        match self {
+            DockItem::Tabs { view, .. } => Some(view.clone()),
+            DockItem::Split { items, .. } => {
+                items.first().and_then(|item| item.left_top_tab_panel())
+            }
+        }
+    }
+
+    /// Recursively traverses to find the right-most and top-most TabPanel.
+    pub fn right_top_tab_panel(&self) -> Option<View<TabPanel>> {
+        match self {
+            DockItem::Tabs { view, .. } => Some(view.clone()),
+            DockItem::Split { items, axis, .. } => {
+                if *axis == Axis::Horizontal {
+                    items.last().and_then(|item| item.right_top_tab_panel())
+                } else {
+                    items.first().and_then(|item| item.right_top_tab_panel())
+                }
+            }
+        }
+    }
 }
 
 impl DockArea {
