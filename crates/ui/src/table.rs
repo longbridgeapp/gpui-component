@@ -894,11 +894,7 @@ where
                         )
                         .child(
                             canvas(
-                                move |bounds, cx| {
-                                    if view.read(cx).bounds != bounds {
-                                        view.update(cx, |r, _| r.bounds = bounds)
-                                    }
-                                },
+                                move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
                                 |_, _, _| {},
                             )
                             .absolute()
@@ -932,9 +928,7 @@ where
                             .child(
                                 canvas(
                                     move |bounds, cx| {
-                                        if view.read(cx).head_content_bounds != bounds {
-                                            view.update(cx, |r, _| r.head_content_bounds = bounds)
-                                        }
+                                        view.update(cx, |r, _| r.head_content_bounds = bounds)
                                     },
                                     |_, _, _| {},
                                 )
@@ -1106,6 +1100,7 @@ where
         let vertical_scroll_handle = self.vertical_scroll_handle.clone();
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
         let cols_count: usize = self.delegate.cols_count(cx);
+        let left_cols_count = self.fixed_cols.left;
         let rows_count = self.delegate.rows_count(cx);
 
         let row_height = self
@@ -1134,8 +1129,6 @@ where
                 }
             }
         }
-
-        let left_cols_count = self.fixed_cols.left;
 
         let inner_table = v_flex()
             .key_context("Table")
@@ -1210,11 +1203,7 @@ where
                 &horizontal_scroll_handle,
             ))
             .child(canvas(
-                move |bounds, cx| {
-                    if view.read(cx).bounds != bounds {
-                        view.update(cx, |r, _| r.bounds = bounds)
-                    }
-                },
+                move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
                 |_, _, _| {},
             ))
             .child(self.render_horizontal_scrollbar(cx))
