@@ -8,13 +8,13 @@ use crate::{
     theme::ActiveTheme,
     v_flex, IconName, Size,
 };
-use gpui::px;
 use gpui::{
     actions, div, prelude::FluentBuilder, uniform_list, AnyElement, AppContext, Entity,
     FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, Length,
     ListSizingBehavior, MouseButton, ParentElement, Render, SharedString, Styled, Task,
     UniformListScrollHandle, View, ViewContext, VisualContext, WindowContext,
 };
+use gpui::{px, ScrollStrategy};
 use smol::Timer;
 
 actions!(list, [Cancel, Confirm, SelectPrev, SelectNext]);
@@ -209,7 +209,8 @@ where
 
     fn scroll_to_selected_item(&mut self, _cx: &mut ViewContext<Self>) {
         if let Some(ix) = self.selected_index {
-            self.vertical_scroll_handle.scroll_to_item(ix);
+            self.vertical_scroll_handle
+                .scroll_to_item(ix, ScrollStrategy::Top);
         }
     }
 
@@ -233,7 +234,8 @@ where
                     search.await;
 
                     let _ = this.update(&mut cx, |this, _| {
-                        this.vertical_scroll_handle.scroll_to_item(0);
+                        this.vertical_scroll_handle
+                            .scroll_to_item(0, ScrollStrategy::Top);
                         this.last_query = Some(text);
                     });
 

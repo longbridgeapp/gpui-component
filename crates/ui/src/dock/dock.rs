@@ -245,7 +245,7 @@ impl Dock {
                     .when(axis.is_horizontal(), |this| this.h_full().w(HANDLE_SIZE))
                     .when(axis.is_vertical(), |this| this.w_full().h(HANDLE_SIZE)),
             )
-            .on_drag(ResizePanel {}, move |info, cx| {
+            .on_drag(ResizePanel {}, move |info, _, cx| {
                 cx.stop_propagation();
                 view.update(cx, |view, _| {
                     view.is_resizing = true;

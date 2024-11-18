@@ -567,7 +567,7 @@ impl TabPanel {
                                     panel: panel.clone(),
                                     tab_panel: view,
                                 },
-                                |drag, cx| {
+                                |drag, _, cx| {
                                     cx.stop_propagation();
                                     cx.new_view(|_| drag.clone())
                                 },
@@ -623,10 +623,13 @@ impl TabPanel {
                         view.set_active_ix(ix, cx);
                     }))
                     .when(state.draggable, |this| {
-                        this.on_drag(DragPanel::new(panel.clone(), view.clone()), |drag, cx| {
-                            cx.stop_propagation();
-                            cx.new_view(|_| drag.clone())
-                        })
+                        this.on_drag(
+                            DragPanel::new(panel.clone(), view.clone()),
+                            |drag, _, cx| {
+                                cx.stop_propagation();
+                                cx.new_view(|_| drag.clone())
+                            },
+                        )
                     })
                     .when(state.droppable, |this| {
                         this.drag_over::<DragPanel>(|this, _, cx| {
