@@ -908,8 +908,7 @@ where
                 // Columns
                 h_flex()
                     .id("table-head")
-                    .h_full()
-                    .w_full()
+                    .size_full()
                     .overflow_scroll()
                     .relative()
                     .track_scroll(&horizontal_scroll_handle)
