@@ -11,9 +11,10 @@ use crate::{
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
     DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
-    InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
-    ScrollHandle, ScrollStrategy, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
-    UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
+    InteractiveElement, IntoElement, KeyBinding, ListSizingBehavior, MouseButton, ParentElement,
+    Pixels, Point, Render, ScrollHandle, ScrollStrategy, SharedString, Stateful,
+    StatefulInteractiveElement as _, Styled, UniformListScrollHandle, ViewContext,
+    VisualContext as _, WindowContext,
 };
 
 actions!(
@@ -102,6 +103,11 @@ pub enum TableEvent {
     ColWidthsChanged(Vec<Option<Pixels>>),
 }
 
+#[derive(Clone, Copy, Default)]
+struct FixedCols {
+    left: usize,
+}
+
 pub struct Table<D: TableDelegate> {
     focus_handle: FocusHandle,
     delegate: D,
@@ -113,6 +119,7 @@ pub struct Table<D: TableDelegate> {
     head_content_bounds: Bounds<Pixels>,
 
     col_groups: Vec<ColGroup>,
+    fixed_cols: FixedCols,
 
     pub vertical_scroll_handle: UniformListScrollHandle,
     pub scrollbar_state: Rc<Cell<ScrollbarState>>,
@@ -272,6 +279,7 @@ where
             focus_handle: cx.focus_handle(),
             delegate,
             col_groups: Vec::new(),
+            fixed_cols: FixedCols::default(),
             horizontal_scroll_handle: ScrollHandle::new(),
             vertical_scroll_handle: UniformListScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::new())),
@@ -339,6 +347,11 @@ where
                 fixed: self.delegate.col_fixed(col_ix, cx),
             })
             .collect();
+        self.fixed_cols.left = self
+            .col_groups
+            .iter()
+            .filter(|col| col.fixed == Some(ColFixed::Left))
+            .count();
         cx.notify();
     }
 
@@ -854,11 +867,6 @@ where
     ) -> impl IntoElement {
         let view = cx.view().clone();
         let horizontal_scroll_handle = self.horizontal_scroll_handle.clone();
-        let fixed_cols_count = self
-            .col_groups
-            .iter()
-            .filter(|col| col.fixed.is_some())
-            .count();
 
         h_flex()
             .w_full()
@@ -867,7 +875,7 @@ where
             .border_b_1()
             .border_color(cx.theme().border)
             .text_color(cx.theme().table_head_foreground)
-            .when(fixed_cols_count > 0, |this| {
+            .when(left_cols_count > 0, |this| {
                 let view = view.clone();
                 // Render left fixed columns
                 this.child(
@@ -887,7 +895,9 @@ where
                         .child(
                             canvas(
                                 move |bounds, cx| {
-                                    view.update(cx, |r, _| r.fixed_head_cols_bounds = bounds)
+                                    if view.read(cx).bounds != bounds {
+                                        view.update(cx, |r, _| r.bounds = bounds)
+                                    }
                                 },
                                 |_, _, _| {},
                             )
@@ -897,55 +907,41 @@ where
                 )
             })
             .child(
-                // Render other normal columns
-                uniform_list(view.clone(), "table-head-uniform-list", 1, {
-                    let horizontal_scroll_handle = horizontal_scroll_handle.clone();
-                    let view = view.clone();
-                    move |table, _, cx| {
-                        let view = view.clone();
-
-                        // Columns
+                // Columns
+                h_flex()
+                    .id("table-head")
+                    .h_full()
+                    .w_full()
+                    .overflow_scroll()
+                    .relative()
+                    .track_scroll(&horizontal_scroll_handle)
+                    .bg(cx.theme().table_head)
+                    .child(
                         h_flex()
-                            .id("table-head")
-                            .h_full()
-                            .w_full()
-                            .overflow_scroll()
                             .relative()
-                            .track_scroll(&horizontal_scroll_handle)
-                            .bg(cx.theme().table_head)
-                            .child(
-                                h_flex()
-                                    .relative()
-                                    .children(
-                                        table
-                                            .col_groups
-                                            .iter()
-                                            .filter(|col| col.fixed == None)
-                                            .enumerate()
-                                            .map(|(col_ix, _)| {
-                                                table.render_th(left_cols_count + col_ix, cx)
-                                            }),
-                                    )
-                                    .child(table.delegate.render_last_empty_col(cx))
-                                    .child(
-                                        canvas(
-                                            move |bounds, cx| {
-                                                view.update(cx, |r, _| {
-                                                    r.head_content_bounds = bounds
-                                                })
-                                            },
-                                            |_, _, _| {},
-                                        )
-                                        .absolute()
-                                        .size_full(),
-                                    ),
+                            .children(
+                                self.col_groups
+                                    .iter()
+                                    .filter(|col| col.fixed == None)
+                                    .enumerate()
+                                    .map(|(col_ix, _)| {
+                                        self.render_th(left_cols_count + col_ix, cx)
+                                    }),
                             )
-                            .map(|this| vec![this])
-                    }
-                })
-                .h(self.size.table_row_height())
-                .h_full()
-                .flex_1(),
+                            .child(self.delegate.render_last_empty_col(cx))
+                            .child(
+                                canvas(
+                                    move |bounds, cx| {
+                                        if view.read(cx).head_content_bounds != bounds {
+                                            view.update(cx, |r, _| r.head_content_bounds = bounds)
+                                        }
+                                    },
+                                    |_, _, _| {},
+                                )
+                                .absolute()
+                                .size_full(),
+                            ),
+                    ),
             )
     }
 
@@ -1139,11 +1135,7 @@ where
             }
         }
 
-        let left_cols_count = self
-            .col_groups
-            .iter()
-            .filter(|col| col.fixed == Some(ColFixed::Left))
-            .count();
+        let left_cols_count = self.fixed_cols.left;
 
         let inner_table = v_flex()
             .key_context("Table")
@@ -1196,7 +1188,7 @@ where
                             )
                             .flex_grow()
                             .size_full()
-                            .with_sizing_behavior(gpui::ListSizingBehavior::Auto)
+                            .with_sizing_behavior(ListSizingBehavior::Auto)
                             .track_scroll(vertical_scroll_handle)
                             .into_any_element(),
                         ),
@@ -1218,7 +1210,11 @@ where
                 &horizontal_scroll_handle,
             ))
             .child(canvas(
-                move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                move |bounds, cx| {
+                    if view.read(cx).bounds != bounds {
+                        view.update(cx, |r, _| r.bounds = bounds)
+                    }
+                },
                 |_, _, _| {},
             ))
             .child(self.render_horizontal_scrollbar(cx))
