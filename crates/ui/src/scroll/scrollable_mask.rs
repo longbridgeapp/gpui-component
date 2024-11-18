@@ -149,7 +149,7 @@ impl Element for ScrollableMask {
                         }
 
                         if old_offset != scroll_handle.offset() {
-                            cx.notify(view_id);
+                            cx.notify(Some(view_id));
                             cx.stop_propagation();
                         }
                     }

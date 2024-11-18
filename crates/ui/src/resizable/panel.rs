@@ -150,7 +150,7 @@ impl ResizablePanelGroup {
         let view = cx.view().clone();
         resize_handle(("resizable-handle", ix), self.axis).on_drag(
             DragPanel((cx.entity_id(), ix, self.axis)),
-            move |drag_panel, cx| {
+            move |drag_panel, _, cx| {
                 cx.stop_propagation();
                 // Set current resizing panel ix
                 view.update(cx, |view, _| {
