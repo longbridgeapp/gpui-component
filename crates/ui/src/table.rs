@@ -12,7 +12,7 @@ use gpui::{
     actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
     DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render,
-    ScrollHandle, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
+    ScrollHandle, ScrollStrategy, SharedString, Stateful, StatefulInteractiveElement as _, Styled,
     UniformListScrollHandle, ViewContext, VisualContext as _, WindowContext,
 };
 
@@ -343,7 +343,8 @@ where
     }
 
     fn scroll_to_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
-        self.vertical_scroll_handle.scroll_to_item(row_ix);
+        self.vertical_scroll_handle
+            .scroll_to_item(row_ix, ScrollStrategy::Top);
         cx.notify();
     }
 
@@ -352,7 +353,8 @@ where
         self.right_clicked_row = None;
         self.selected_row = Some(row_ix);
         if let Some(row_ix) = self.selected_row {
-            self.vertical_scroll_handle.scroll_to_item(row_ix);
+            self.vertical_scroll_handle
+                .scroll_to_item(row_ix, ScrollStrategy::Top);
         }
         cx.emit(TableEvent::SelectRow(row_ix));
         cx.notify();
@@ -707,7 +709,7 @@ where
                     }
                 };
             }))
-            .on_drag(ResizeCol((cx.entity_id(), ix)), |drag, cx| {
+            .on_drag(ResizeCol((cx.entity_id(), ix)), |drag, _, cx| {
                 cx.stop_propagation();
                 cx.new_view(|_| drag.clone())
             })
@@ -809,7 +811,7 @@ where
                                 name,
                                 width: col_group.width,
                             },
-                            |drag, cx| {
+                            |drag, _, cx| {
                                 cx.stop_propagation();
                                 cx.new_view(|_| drag.clone())
                             },
