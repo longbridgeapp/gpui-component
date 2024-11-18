@@ -894,7 +894,9 @@ where
                         )
                         .child(
                             canvas(
-                                move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                                move |bounds, cx| {
+                                    view.update(cx, |r, _| r.fixed_head_cols_bounds = bounds)
+                                },
                                 |_, _, _| {},
                             )
                             .absolute()
