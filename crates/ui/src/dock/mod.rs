@@ -46,6 +46,11 @@ pub struct DockArea {
     /// The center view of the dockarea.
     items: DockItem,
 
+    /// The entity_id of the TabPanel where each toggle button should be displayed,
+    left_toggle_button_tab_panel_id: Option<EntityId>,
+    right_toggle_button_tab_panel_id: Option<EntityId>,
+    bottom_toggle_button_tab_panel_id: Option<EntityId>,
+
     /// The left dock of the dockarea.
     left_dock: Option<View<Dock>>,
     /// The bottom dock of the dockarea.
@@ -228,26 +233,18 @@ impl DockItem {
     }
 
     /// Recursively traverses to find the left-most and top-most TabPanel.
-    pub fn left_top_tab_panel(&self) -> Option<View<TabPanel>> {
+    pub fn left_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
-            DockItem::Split { items, .. } => {
-                items.first().and_then(|item| item.left_top_tab_panel())
-            }
+            DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
         }
     }
 
     /// Recursively traverses to find the right-most and top-most TabPanel.
-    pub fn right_top_tab_panel(&self) -> Option<View<TabPanel>> {
+    pub fn right_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
-            DockItem::Split { items, axis, .. } => {
-                if *axis == Axis::Horizontal {
-                    items.last().and_then(|item| item.right_top_tab_panel())
-                } else {
-                    items.first().and_then(|item| item.right_top_tab_panel())
-                }
-            }
+            DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
         }
     }
 }
@@ -273,6 +270,9 @@ impl DockArea {
             bounds: Bounds::default(),
             items: dock_item,
             zoom_view: None,
+            left_toggle_button_tab_panel_id: None,
+            right_toggle_button_tab_panel_id: None,
+            bottom_toggle_button_tab_panel_id: None,
             left_dock: None,
             right_dock: None,
             bottom_dock: None,
@@ -428,7 +428,7 @@ impl DockArea {
         }
 
         self.items = state.center.to_item(weak_self, cx);
-
+        self.update_toggle_button_tab_panels(cx);
         Ok(())
     }
 
@@ -472,7 +472,18 @@ impl DockArea {
 
                 self._subscriptions
                     .push(cx.subscribe(view, move |_, _, event, cx| match event {
-                        PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+                        PanelEvent::LayoutChanged => {
+                            let dock_area = cx.view().clone();
+                            cx.spawn(|_, mut cx| async move {
+                                let _ = cx.update(|cx| {
+                                    let _ = dock_area.update(cx, |view, cx| {
+                                        view.update_toggle_button_tab_panels(cx)
+                                    });
+                                });
+                            })
+                            .detach();
+                            cx.emit(DockEvent::LayoutChanged);
+                        }
                         _ => {}
                     }));
             }
@@ -511,7 +522,17 @@ impl DockArea {
                 })
                 .detach()
             }
-            PanelEvent::LayoutChanged => cx.emit(DockEvent::LayoutChanged),
+            PanelEvent::LayoutChanged => {
+                let dock_area = cx.view().clone();
+                cx.spawn(|_, mut cx| async move {
+                    let _ = cx.update(|cx| {
+                        let _ = dock_area
+                            .update(cx, |view, cx| view.update_toggle_button_tab_panels(cx));
+                    });
+                })
+                .detach();
+                cx.emit(DockEvent::LayoutChanged);
+            }
         });
 
         self._subscriptions.push(subscription);
@@ -537,6 +558,27 @@ impl DockArea {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
         }
+    }
+
+    pub fn update_toggle_button_tab_panels(&mut self, cx: &mut ViewContext<Self>) {
+        // Left toggle button
+        self.left_toggle_button_tab_panel_id = self
+            .items
+            .left_top_tab_panel(cx)
+            .map(|view| view.entity_id());
+
+        // Right toggle button
+        self.right_toggle_button_tab_panel_id = self
+            .items
+            .right_top_tab_panel(cx)
+            .map(|view| view.entity_id());
+
+        // Bottom toggle button
+        self.bottom_toggle_button_tab_panel_id = self
+            .bottom_dock
+            .as_ref()
+            .and_then(|dock| dock.read(cx).panel.left_top_tab_panel(cx))
+            .map(|view| view.entity_id());
     }
 }
 impl EventEmitter<DockEvent> for DockArea {}

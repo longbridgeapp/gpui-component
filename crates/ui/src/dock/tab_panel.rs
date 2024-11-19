@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{
     div, prelude::FluentBuilder, px, rems, AnchorCorner, AppContext, DefiniteLength, DismissEvent,
-    DragMoveEvent, Edges, Empty, Entity, EventEmitter, FocusHandle, FocusableView,
+    DragMoveEvent, Empty, Entity, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, ScrollHandle,
     SharedString, StatefulInteractiveElement, Styled, View, ViewContext, VisualContext as _,
     WeakView, WindowContext,
@@ -78,9 +78,6 @@ pub struct TabPanel {
     tab_bar_scroll_handle: ScrollHandle,
     is_zoomed: bool,
     is_collapsed: bool,
-    /// Used to store the Toggle Dock Button status (true - Is Expanded, false - Is Collapsed, None - Invisable)
-    toggle_dock_buttons: Edges<Option<bool>>,
-
     /// When drag move, will get the placement of the panel to be split
     will_split_placement: Option<Placement>,
 }
@@ -161,13 +158,11 @@ impl TabPanel {
             is_zoomed: false,
             is_collapsed: false,
             closeable: true,
-            toggle_dock_buttons: Edges::all(None),
         }
     }
 
-    pub(super) fn set_parent(&mut self, view: WeakView<StackPanel>, cx: &mut ViewContext<Self>) {
+    pub(super) fn set_parent(&mut self, view: WeakView<StackPanel>) {
         self.stack_panel = Some(view);
-        self.update_toggle_button_statuses(cx);
     }
 
     /// Return current active_panel View
@@ -263,7 +258,6 @@ impl TabPanel {
         if self.active_ix >= self.panels.len() {
             self.set_active_ix(self.panels.len().saturating_sub(1), cx)
         }
-        self.update_toggle_button_statuses(cx); // TODO
     }
 
     /// Check to remove self from the parent StackPanel, if there is no panel left
@@ -328,76 +322,6 @@ impl TabPanel {
         !self.is_locked(cx)
     }
 
-    pub(crate) fn update_toggle_button_statuses(&mut self, cx: &mut ViewContext<Self>) {
-        let Some(dock_area) = self.dock_area.upgrade() else {
-            return;
-        };
-
-        let entity_id = cx.view().entity_id();
-
-        let mut has_docks = Edges::all(false);
-        let mut inside_docks = Edges::all(false);
-
-        has_docks.left = dock_area.read(cx).left_dock.is_some();
-        has_docks.right = dock_area.read(cx).right_dock.is_some();
-        has_docks.bottom = dock_area.read(cx).bottom_dock.is_some();
-
-        if let Some(left_dock) = &dock_area.read(cx).left_dock {
-            if left_dock.read(cx).panel_contains_entity_id(entity_id) {
-                inside_docks.left = true;
-            }
-        }
-        if let Some(right_dock) = &dock_area.read(cx).right_dock {
-            if right_dock.read(cx).panel_contains_entity_id(entity_id) {
-                inside_docks.right = true;
-            }
-        }
-        if let Some(bottom_dock) = &dock_area.read(cx).bottom_dock {
-            if bottom_dock.read(cx).panel_contains_entity_id(entity_id) {
-                inside_docks.bottom = true;
-            }
-        }
-
-        let is_inside_dock = inside_docks.left || inside_docks.right || inside_docks.bottom;
-
-        self.toggle_dock_buttons = Edges::all(None);
-
-        if !is_inside_dock {
-            if let Some(left_top_tab_panel) = dock_area.read(cx).items.left_top_tab_panel() {
-                if left_top_tab_panel.entity_id() == entity_id {
-                    if has_docks.left {
-                        self.toggle_dock_buttons.left =
-                            Some(dock_area.read(cx).is_dock_open(DockPlacement::Left, cx));
-                    }
-                }
-            }
-
-            if let Some(right_top_tab_panel) = dock_area.read(cx).items.right_top_tab_panel() {
-                if right_top_tab_panel.entity_id() == entity_id {
-                    if has_docks.right {
-                        self.toggle_dock_buttons.right =
-                            Some(dock_area.read(cx).is_dock_open(DockPlacement::Right, cx));
-                    }
-                }
-            }
-        }
-
-        if has_docks.bottom {
-            if let Some(bottom_dock) = &dock_area.read(cx).bottom_dock {
-                let bottom_dock_read = bottom_dock.read(cx);
-                let bottom_dock_panel = &bottom_dock_read.panel;
-                if bottom_dock_panel.contains_entity_id(entity_id) {
-                    if let Some(left_top_tab_panel) = bottom_dock_panel.left_top_tab_panel() {
-                        if left_top_tab_panel.entity_id() == entity_id {
-                            self.toggle_dock_buttons.bottom =
-                                Some(dock_area.read(cx).is_dock_open(DockPlacement::Bottom, cx));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     fn render_toolbar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let is_zoomed = self.is_zoomed && state.zoomable;
         let view = cx.view().clone();
@@ -459,38 +383,60 @@ impl TabPanel {
             return None;
         }
 
-        let (icon, is_open) = match placement {
-            DockPlacement::Left => {
-                let Some(open) = self.toggle_dock_buttons.left else {
-                    return None;
-                };
+        let dock_area = self.dock_area.upgrade()?;
+        let dock_area_read = dock_area.read(cx);
 
-                if open {
-                    (IconName::PanelLeft, true)
+        // Check if current TabPanel's entity_id matches the one stored in DockArea for this placement
+        let matches = match placement {
+            DockPlacement::Left => {
+                if let Some(entity_id) = dock_area_read.left_toggle_button_tab_panel_id {
+                    entity_id == cx.view().entity_id()
                 } else {
-                    (IconName::PanelLeftOpen, false)
+                    false
                 }
             }
             DockPlacement::Right => {
-                let Some(open) = self.toggle_dock_buttons.right else {
-                    return None;
-                };
-
-                if open {
-                    (IconName::PanelRight, true)
+                if let Some(entity_id) = dock_area_read.right_toggle_button_tab_panel_id {
+                    entity_id == cx.view().entity_id()
                 } else {
-                    (IconName::PanelRightOpen, false)
+                    false
                 }
             }
             DockPlacement::Bottom => {
-                let Some(open) = self.toggle_dock_buttons.bottom else {
-                    return None;
-                };
-
-                if open {
-                    (IconName::PanelBottom, true)
+                if let Some(entity_id) = dock_area_read.bottom_toggle_button_tab_panel_id {
+                    entity_id == cx.view().entity_id()
                 } else {
-                    (IconName::PanelBottomOpen, false)
+                    false
+                }
+            }
+        };
+
+        if !matches {
+            return None;
+        }
+
+        let is_open = dock_area_read.is_dock_open(placement, cx);
+
+        let icon = match placement {
+            DockPlacement::Left => {
+                if is_open {
+                    IconName::PanelLeft
+                } else {
+                    IconName::PanelLeftOpen
+                }
+            }
+            DockPlacement::Right => {
+                if is_open {
+                    IconName::PanelRight
+                } else {
+                    IconName::PanelRightOpen
+                }
+            }
+            DockPlacement::Bottom => {
+                if is_open {
+                    IconName::PanelBottom
+                } else {
+                    IconName::PanelBottomOpen
                 }
             }
         };
@@ -506,11 +452,10 @@ impl TabPanel {
                 })
                 .on_click(cx.listener({
                     let dock_area = self.dock_area.clone();
-                    move |this, _, cx| {
+                    move |_, _, cx| {
                         _ = dock_area.update(cx, |dock_area, cx| {
                             dock_area.toggle_dock(placement, cx);
                         });
-                        this.update_toggle_button_statuses(cx);
                     }
                 })),
         )
