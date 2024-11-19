@@ -297,7 +297,7 @@ impl DockArea {
     pub fn set_root(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
         self.subscribe_item(&item, cx);
         self.items = item;
-
+        self.update_toggle_button_tab_panels(cx);
         cx.notify();
     }
 
@@ -317,6 +317,7 @@ impl DockArea {
             dock.set_panel(panel, cx);
             dock
         }));
+        self.update_toggle_button_tab_panels(cx);
     }
 
     pub fn set_bottom_dock(
@@ -335,6 +336,7 @@ impl DockArea {
             dock.set_panel(panel, cx);
             dock
         }));
+        self.update_toggle_button_tab_panels(cx);
     }
 
     pub fn set_right_dock(
@@ -353,6 +355,7 @@ impl DockArea {
             dock.set_panel(panel, cx);
             dock
         }));
+        self.update_toggle_button_tab_panels(cx);
     }
 
     /// Set locked state of the dock area, if locked, the dock area cannot be split or move, but allows to resize panels.
