@@ -268,9 +268,9 @@ impl StoryWorkspace {
         _ = dock_area.update(cx, |view, cx| {
             view.set_version(MAIN_DOCK_AREA.version, cx);
             view.set_root(dock_item, cx);
-            view.set_left_dock(left_panels, Some(px(350.)), cx);
-            view.set_bottom_dock(bottom_panels, Some(px(200.)), cx);
-            view.set_right_dock(right_panels, Some(px(320.)), cx);
+            view.set_left_dock(left_panels, Some(px(350.)), true, cx);
+            view.set_bottom_dock(bottom_panels, Some(px(200.)), true, cx);
+            view.set_right_dock(right_panels, Some(px(320.)), true, cx);
 
             Self::save_state(&view.dump(cx)).unwrap();
         });
