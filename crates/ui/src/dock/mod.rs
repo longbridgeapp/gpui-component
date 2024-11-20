@@ -270,6 +270,7 @@ impl DockArea {
         &mut self,
         panel: DockItem,
         size: Option<Pixels>,
+        open: bool,
         cx: &mut ViewContext<Self>,
     ) {
         self.subscribe_item(&panel, cx);
@@ -280,6 +281,7 @@ impl DockArea {
                 dock.set_size(size, cx);
             }
             dock.set_panel(panel, cx);
+            dock.set_open(open, cx);
             dock
         }));
     }
@@ -288,6 +290,7 @@ impl DockArea {
         &mut self,
         panel: DockItem,
         size: Option<Pixels>,
+        open: bool,
         cx: &mut ViewContext<Self>,
     ) {
         self.subscribe_item(&panel, cx);
@@ -298,6 +301,7 @@ impl DockArea {
                 dock.set_size(size, cx);
             }
             dock.set_panel(panel, cx);
+            dock.set_open(open, cx);
             dock
         }));
     }
@@ -306,6 +310,7 @@ impl DockArea {
         &mut self,
         panel: DockItem,
         size: Option<Pixels>,
+        open: bool,
         cx: &mut ViewContext<Self>,
     ) {
         self.subscribe_item(&panel, cx);
@@ -316,6 +321,7 @@ impl DockArea {
                 dock.set_size(size, cx);
             }
             dock.set_panel(panel, cx);
+            dock.set_open(open, cx);
             dock
         }));
     }
