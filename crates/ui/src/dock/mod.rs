@@ -10,9 +10,9 @@ use anyhow::Result;
 pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
-    Entity as _, EntityId, EventEmitter, InteractiveElement as _, IntoElement, ParentElement as _,
-    Pixels, Render, SharedString, Styled, Subscription, View, ViewContext, VisualContext, WeakView,
-    WindowContext,
+    Edges, Entity as _, EntityId, EventEmitter, InteractiveElement as _, IntoElement,
+    ParentElement as _, Pixels, Render, SharedString, Styled, Subscription, View, ViewContext,
+    VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
 
@@ -47,9 +47,7 @@ pub struct DockArea {
     items: DockItem,
 
     /// The entity_id of the TabPanel where each toggle button should be displayed,
-    left_toggle_button_tab_panel_id: Option<EntityId>,
-    right_toggle_button_tab_panel_id: Option<EntityId>,
-    bottom_toggle_button_tab_panel_id: Option<EntityId>,
+    toggle_button_tab_panel_ids: Edges<Option<EntityId>>,
 
     /// The left dock of the dockarea.
     left_dock: Option<View<Dock>>,
@@ -270,9 +268,7 @@ impl DockArea {
             bounds: Bounds::default(),
             items: dock_item,
             zoom_view: None,
-            left_toggle_button_tab_panel_id: None,
-            right_toggle_button_tab_panel_id: None,
-            bottom_toggle_button_tab_panel_id: None,
+            toggle_button_tab_panel_ids: Edges::default(),
             left_dock: None,
             right_dock: None,
             bottom_dock: None,
@@ -571,19 +567,19 @@ impl DockArea {
 
     pub fn update_toggle_button_tab_panels(&mut self, cx: &mut ViewContext<Self>) {
         // Left toggle button
-        self.left_toggle_button_tab_panel_id = self
+        self.toggle_button_tab_panel_ids.left = self
             .items
             .left_top_tab_panel(cx)
             .map(|view| view.entity_id());
 
         // Right toggle button
-        self.right_toggle_button_tab_panel_id = self
+        self.toggle_button_tab_panel_ids.right = self
             .items
             .right_top_tab_panel(cx)
             .map(|view| view.entity_id());
 
         // Bottom toggle button
-        self.bottom_toggle_button_tab_panel_id = self
+        self.toggle_button_tab_panel_ids.bottom = self
             .bottom_dock
             .as_ref()
             .and_then(|dock| dock.read(cx).panel.left_top_tab_panel(cx))

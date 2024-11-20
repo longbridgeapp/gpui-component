@@ -389,21 +389,21 @@ impl TabPanel {
         // Check if current TabPanel's entity_id matches the one stored in DockArea for this placement
         let matches = match placement {
             DockPlacement::Left => {
-                if let Some(entity_id) = dock_area_read.left_toggle_button_tab_panel_id {
+                if let Some(entity_id) = dock_area_read.toggle_button_tab_panel_ids.left {
                     entity_id == cx.view().entity_id()
                 } else {
                     false
                 }
             }
             DockPlacement::Right => {
-                if let Some(entity_id) = dock_area_read.right_toggle_button_tab_panel_id {
+                if let Some(entity_id) = dock_area_read.toggle_button_tab_panel_ids.right {
                     entity_id == cx.view().entity_id()
                 } else {
                     false
                 }
             }
             DockPlacement::Bottom => {
-                if let Some(entity_id) = dock_area_read.bottom_toggle_button_tab_panel_id {
+                if let Some(entity_id) = dock_area_read.toggle_button_tab_panel_ids.bottom {
                     entity_id == cx.view().entity_id()
                 } else {
                     false
