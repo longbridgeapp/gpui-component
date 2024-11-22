@@ -8,7 +8,7 @@ use crate::{
         ResizablePanelGroup,
     },
     theme::ActiveTheme,
-    Placement,
+    AxisExt as _, Placement,
 };
 
 use super::{DockArea, DockItemState, Panel, PanelEvent, PanelView, TabPanel};
@@ -82,17 +82,13 @@ impl StackPanel {
 
     /// Return true if self or parent only have last panel.
     pub(super) fn is_last_panel(&self, cx: &AppContext) -> bool {
-        if self.is_root() {
-            return self.panels.len() == 1;
-        }
-
         if let Some(parent) = &self.parent {
             if let Some(parent) = parent.upgrade() {
                 return parent.read(cx).is_last_panel(cx);
             }
         }
 
-        return false;
+        self.panels.len() == 1
     }
 
     pub(super) fn panels_len(&self) -> usize {
@@ -195,9 +191,7 @@ impl StackPanel {
             move |cx| {
                 // If the panel is a TabPanel, set its parent to this.
                 if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
-                    tab_panel.update(cx, |tab_panel, cx| {
-                        tab_panel.set_parent(view.downgrade(), cx)
-                    });
+                    tab_panel.update(cx, |tab_panel, _| tab_panel.set_parent(view.downgrade()));
                 } else if let Ok(stack_panel) = panel.view().downcast::<Self>() {
                     stack_panel.update(cx, |stack_panel, _| {
                         stack_panel.parent = Some(view.downgrade())
@@ -284,6 +278,67 @@ impl StackPanel {
 
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
+    }
+
+    /// Find the first top left in the stack.
+    pub(super) fn left_top_tab_panel(
+        &self,
+        check_parent: bool,
+        cx: &AppContext,
+    ) -> Option<View<TabPanel>> {
+        if check_parent {
+            if let Some(parent) = self.parent.as_ref().and_then(|parent| parent.upgrade()) {
+                if let Some(panel) = parent.read(cx).left_top_tab_panel(true, cx) {
+                    return Some(panel);
+                }
+            }
+        }
+
+        let first_panel = self.panels.first();
+        if let Some(view) = first_panel {
+            if let Ok(tab_panel) = view.view().downcast::<TabPanel>() {
+                Some(tab_panel)
+            } else if let Ok(stack_panel) = view.view().downcast::<StackPanel>() {
+                stack_panel.read(cx).left_top_tab_panel(false, cx)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Find the first top right in the stack.
+    pub(super) fn right_top_tab_panel(
+        &self,
+        check_parent: bool,
+        cx: &AppContext,
+    ) -> Option<View<TabPanel>> {
+        if check_parent {
+            if let Some(parent) = self.parent.as_ref().and_then(|parent| parent.upgrade()) {
+                if let Some(panel) = parent.read(cx).right_top_tab_panel(true, cx) {
+                    return Some(panel);
+                }
+            }
+        }
+
+        let panel = if self.axis.is_vertical() {
+            self.panels.first()
+        } else {
+            self.panels.last()
+        };
+
+        if let Some(view) = panel {
+            if let Ok(tab_panel) = view.view().downcast::<TabPanel>() {
+                Some(tab_panel)
+            } else if let Ok(stack_panel) = view.view().downcast::<StackPanel>() {
+                stack_panel.read(cx).right_top_tab_panel(false, cx)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     /// Remove all panels from the stack.

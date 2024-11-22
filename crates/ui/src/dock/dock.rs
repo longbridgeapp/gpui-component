@@ -283,7 +283,7 @@ impl Dock {
 
 impl Render for Dock {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
-        if !self.open {
+        if !self.open && !self.placement.is_bottom() {
             return div();
         }
 
@@ -293,6 +293,10 @@ impl Render for Dock {
             .map(|this| match self.placement {
                 DockPlacement::Left | DockPlacement::Right => this.h_flex().h_full().w(self.size),
                 DockPlacement::Bottom => this.w_full().h(self.size),
+            })
+            // Bottom Dock should keep the title bar, then user can click the Toggle button
+            .when(!self.open && self.placement.is_bottom(), |this| {
+                this.h(px(30.))
             })
             .map(|this| match &self.panel {
                 DockItem::Split { view, .. } => this.child(view.clone()),
