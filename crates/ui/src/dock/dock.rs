@@ -296,7 +296,7 @@ impl Render for Dock {
             })
             // Bottom Dock should keep the title bar, then user can click the Toggle button
             .when(!self.open && self.placement.is_bottom(), |this| {
-                this.h(px(30.))
+                this.h(px(29.))
             })
             .map(|this| match &self.panel {
                 DockItem::Split { view, .. } => this.child(view.clone()),
