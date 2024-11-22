@@ -281,7 +281,7 @@ impl StackPanel {
     }
 
     /// Find the first top left in the stack.
-    pub fn left_top_tab_panel(
+    pub(super) fn left_top_tab_panel(
         &self,
         check_parent: bool,
         cx: &AppContext,
@@ -309,7 +309,7 @@ impl StackPanel {
     }
 
     /// Find the first top right in the stack.
-    pub fn right_top_tab_panel(
+    pub(super) fn right_top_tab_panel(
         &self,
         check_parent: bool,
         cx: &AppContext,
