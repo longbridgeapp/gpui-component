@@ -45,7 +45,7 @@ pub struct DockArea {
     items: DockItem,
 
     /// The entity_id of the TabPanel where each toggle button should be displayed,
-    toggle_button_tab_panel_ids: Edges<Option<EntityId>>,
+    toggle_button_panels: Edges<Option<EntityId>>,
 
     /// The left dock of the dockarea.
     left_dock: Option<View<Dock>>,
@@ -266,7 +266,7 @@ impl DockArea {
             bounds: Bounds::default(),
             items: dock_item,
             zoom_view: None,
-            toggle_button_tab_panel_ids: Edges::default(),
+            toggle_button_panels: Edges::default(),
             left_dock: None,
             right_dock: None,
             bottom_dock: None,
@@ -565,19 +565,19 @@ impl DockArea {
 
     pub fn update_toggle_button_tab_panels(&mut self, cx: &mut ViewContext<Self>) {
         // Left toggle button
-        self.toggle_button_tab_panel_ids.left = self
+        self.toggle_button_panels.left = self
             .items
             .left_top_tab_panel(cx)
             .map(|view| view.entity_id());
 
         // Right toggle button
-        self.toggle_button_tab_panel_ids.right = self
+        self.toggle_button_panels.right = self
             .items
             .right_top_tab_panel(cx)
             .map(|view| view.entity_id());
 
         // Bottom toggle button
-        self.toggle_button_tab_panel_ids.bottom = self
+        self.toggle_button_panels.bottom = self
             .bottom_dock
             .as_ref()
             .and_then(|dock| dock.read(cx).panel.left_top_tab_panel(cx))
