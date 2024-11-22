@@ -4,7 +4,6 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
-mod toggle_buttons;
 
 use anyhow::Result;
 pub use dock::*;
@@ -20,7 +19,6 @@ pub use panel::*;
 pub use stack_panel::*;
 pub use state::*;
 pub use tab_panel::*;
-pub use toggle_buttons::*;
 
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
