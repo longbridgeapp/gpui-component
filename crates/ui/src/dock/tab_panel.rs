@@ -383,39 +383,20 @@ impl TabPanel {
             return None;
         }
 
-        let dock_area = self.dock_area.upgrade()?;
-        let dock_area_read = dock_area.read(cx);
+        let view_entity_id = cx.view().entity_id();
+        let dock_area = self.dock_area.upgrade()?.read(cx);
+        let toggle_button_panels = dock_area.toggle_button_panels;
 
         // Check if current TabPanel's entity_id matches the one stored in DockArea for this placement
-        let matches = match placement {
-            DockPlacement::Left => {
-                if let Some(entity_id) = dock_area_read.toggle_button_panels.left {
-                    entity_id == cx.view().entity_id()
-                } else {
-                    false
-                }
-            }
-            DockPlacement::Right => {
-                if let Some(entity_id) = dock_area_read.toggle_button_panels.right {
-                    entity_id == cx.view().entity_id()
-                } else {
-                    false
-                }
-            }
-            DockPlacement::Bottom => {
-                if let Some(entity_id) = dock_area_read.toggle_button_panels.bottom {
-                    entity_id == cx.view().entity_id()
-                } else {
-                    false
-                }
-            }
-        };
-
-        if !matches {
+        if !match placement {
+            DockPlacement::Left => toggle_button_panels.left == Some(view_entity_id),
+            DockPlacement::Right => toggle_button_panels.right == Some(view_entity_id),
+            DockPlacement::Bottom => toggle_button_panels.bottom == Some(view_entity_id),
+        } {
             return None;
         }
 
-        let is_open = dock_area_read.is_dock_open(placement, cx);
+        let is_open = dock_area.is_dock_open(placement, cx);
 
         let icon = match placement {
             DockPlacement::Left => {
