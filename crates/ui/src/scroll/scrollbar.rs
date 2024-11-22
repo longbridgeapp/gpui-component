@@ -460,7 +460,7 @@ impl Element for Scrollbar {
                     cx.paint_quad(PaintQuad {
                         bounds,
                         corner_radii: (0.).into(),
-                        background: gpui::transparent_black().into(),
+                        background: gpui::transparent_black(),
                         border_widths: if is_vertical {
                             Edges {
                                 top: px(0.),
