@@ -218,18 +218,8 @@ impl DockItem {
         }
     }
 
-    /// Recursively checks if the DockItem or any of its children contain the entity_id of the TabPanel
-    pub fn contains_entity_id(&self, entity_id: EntityId) -> bool {
-        match self {
-            DockItem::Tabs { view, .. } => view.entity_id() == entity_id,
-            DockItem::Split { items, .. } => {
-                items.iter().any(|item| item.contains_entity_id(entity_id))
-            }
-        }
-    }
-
     /// Recursively traverses to find the left-most and top-most TabPanel.
-    pub fn left_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
+    pub(crate) fn left_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
@@ -237,7 +227,7 @@ impl DockItem {
     }
 
     /// Recursively traverses to find the right-most and top-most TabPanel.
-    pub fn right_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
+    pub(crate) fn right_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
