@@ -385,13 +385,21 @@ impl TabPanel {
 
         let view_entity_id = cx.view().entity_id();
         let dock_area = self.dock_area.upgrade()?.read(cx);
+
         let toggle_button_panels = dock_area.toggle_button_panels;
 
         // Check if current TabPanel's entity_id matches the one stored in DockArea for this placement
         if !match placement {
-            DockPlacement::Left => toggle_button_panels.left == Some(view_entity_id),
-            DockPlacement::Right => toggle_button_panels.right == Some(view_entity_id),
-            DockPlacement::Bottom => toggle_button_panels.bottom == Some(view_entity_id),
+            DockPlacement::Left => {
+                dock_area.left_dock.is_some() && toggle_button_panels.left == Some(view_entity_id)
+            }
+            DockPlacement::Right => {
+                dock_area.right_dock.is_some() && toggle_button_panels.right == Some(view_entity_id)
+            }
+            DockPlacement::Bottom => {
+                dock_area.bottom_dock.is_some()
+                    && toggle_button_panels.bottom == Some(view_entity_id)
+            }
         } {
             return None;
         }
