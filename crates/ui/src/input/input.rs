@@ -285,7 +285,7 @@ impl TextInput {
         self
     }
 
-    ///  Set the placeholder text without ownership.
+    /// Set the placeholder text of the input field with reference.
     pub fn set_placeholder(&mut self, placeholder: impl Into<SharedString>) {
         self.placeholder = placeholder.into();
     }
@@ -300,6 +300,11 @@ impl TextInput {
     pub fn pattern(mut self, pattern: regex::Regex) -> Self {
         self.pattern = Some(pattern);
         self
+    }
+
+    /// Set the regular expression pattern of the input field with reference.
+    pub fn set_pattern(&mut self, pattern: regex::Regex) {
+        self.pattern = Some(pattern);
     }
 
     /// Set the validation function of the input field.

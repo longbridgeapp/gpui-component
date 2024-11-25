@@ -3,6 +3,7 @@ use gpui::{
     ParentElement as _, Render, SharedString, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
+use regex::Regex;
 
 use crate::section;
 use ui::{
@@ -10,6 +11,7 @@ use ui::{
     checkbox::Checkbox,
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
+    number_input::{NumberInput, NumberInputEvent},
     prelude::FluentBuilder as _,
     scroll::ScrollbarAxis,
     v_flex, FocusableCycle, IconName, Sizable, StyledExt,
@@ -29,6 +31,10 @@ pub fn init(cx: &mut AppContext) {
 pub struct InputStory {
     input1: View<TextInput>,
     input2: View<TextInput>,
+    number_input1_value: i64,
+    number_input1: View<NumberInput>,
+    number_input2: View<NumberInput>,
+    number_input2_value: u64,
     mash_input: View<TextInput>,
     disabled_input: View<TextInput>,
     prefix_input1: View<TextInput>,
@@ -72,12 +78,29 @@ impl InputStory {
             );
             input
         });
-
         cx.subscribe(&input1, Self::on_input_event).detach();
 
         let input2 = cx.new_view(|cx| TextInput::new(cx).placeholder("Enter text here..."));
-
         cx.subscribe(&input2, Self::on_input_event).detach();
+
+        let number_input1_value = 1;
+        let number_input1 = cx.new_view(|cx| {
+            let input = NumberInput::new(cx).placeholder("Number Input", cx);
+            input.set_value(number_input1_value.to_string(), cx);
+            input
+        });
+        cx.subscribe(&number_input1, Self::on_number_input1_event)
+            .detach();
+
+        let number_input2 = cx.new_view(|cx| {
+            NumberInput::new(cx)
+                .placeholder("Unsized Integer Number Input", cx)
+                .pattern(Regex::new(r"^\d+$").unwrap(), cx)
+                .small(cx)
+        });
+
+        cx.subscribe(&number_input2, Self::on_number_input2_event)
+            .detach();
 
         let mask_input = cx.new_view(|cx| {
             let mut input = TextInput::new(cx).cleanable();
@@ -120,6 +143,10 @@ impl InputStory {
         Self {
             input1,
             input2,
+            number_input1,
+            number_input1_value,
+            number_input2,
+            number_input2_value: 0,
             mash_input: mask_input,
             disabled_input: cx.new_view(|cx| {
                 let mut input = TextInput::new(cx);
@@ -186,6 +213,70 @@ impl InputStory {
         };
     }
 
+    fn on_number_input1_event(
+        &mut self,
+        _: View<NumberInput>,
+        event: &NumberInputEvent,
+        cx: &mut ViewContext<Self>,
+    ) {
+        match event {
+            NumberInputEvent::Input(input_event) => match input_event {
+                InputEvent::Change(text) => println!("Change: {}", text),
+                InputEvent::PressEnter => println!("PressEnter"),
+                InputEvent::Focus => println!("Focus"),
+                InputEvent::Blur => println!("Blur"),
+            },
+            NumberInputEvent::Step(step_action) => match step_action {
+                ui::number_input::StepAction::Decrement => {
+                    self.number_input1_value = self.number_input1_value - 1;
+                    self.number_input1.update(cx, |input, cx| {
+                        input.set_value(self.number_input1_value.to_string(), cx);
+                    });
+                }
+                ui::number_input::StepAction::Increment => {
+                    self.number_input1_value = self.number_input1_value + 1;
+                    self.number_input1.update(cx, |input, cx| {
+                        input.set_value(self.number_input1_value.to_string(), cx);
+                    });
+                }
+            },
+        }
+    }
+
+    fn on_number_input2_event(
+        &mut self,
+        _: View<NumberInput>,
+        event: &NumberInputEvent,
+        cx: &mut ViewContext<Self>,
+    ) {
+        match event {
+            NumberInputEvent::Input(input_event) => match input_event {
+                InputEvent::Change(text) => println!("Change: {}", text),
+                InputEvent::PressEnter => println!("PressEnter"),
+                InputEvent::Focus => println!("Focus"),
+                InputEvent::Blur => println!("Blur"),
+            },
+            NumberInputEvent::Step(step_action) => match step_action {
+                ui::number_input::StepAction::Decrement => {
+                    if self.number_input2_value.le(&0) {
+                        return;
+                    }
+
+                    self.number_input2_value = self.number_input2_value - 1;
+                    self.number_input2.update(cx, |input, cx| {
+                        input.set_value(self.number_input2_value.to_string(), cx);
+                    });
+                }
+                ui::number_input::StepAction::Increment => {
+                    self.number_input2_value = self.number_input2_value + 1;
+                    self.number_input2.update(cx, |input, cx| {
+                        input.set_value(self.number_input2_value.to_string(), cx);
+                    });
+                }
+            },
+        }
+    }
+
     fn toggle_opt_masked(&mut self, _: &bool, cx: &mut ViewContext<Self>) {
         self.otp_masked = !self.otp_masked;
         self.otp_input
@@ -241,7 +332,15 @@ impl Render for InputStory {
                     .child(
                         section("Normal Input", cx)
                             .child(self.input1.clone())
-                            .child(self.input2.clone()),
+                            .child(self.input2.clone())
+                            .child(
+                                v_flex()
+                                    .gap_y_4()
+                                    .w_full()
+                                    .child("Number Input")
+                                    .child(self.number_input1.clone())
+                                    .child(self.number_input2.clone()),
+                            ),
                     )
                     .child(
                         section("Input State", cx)
