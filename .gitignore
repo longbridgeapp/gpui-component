@@ -1,4 +1,5 @@
 /target
 .DS_Store
 /layout.json
+/tiles.json
 .vscode

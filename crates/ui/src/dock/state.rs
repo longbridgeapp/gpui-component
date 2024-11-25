@@ -1,4 +1,7 @@
-use gpui::{AppContext, Axis, Pixels, View, VisualContext as _, WeakView, WindowContext};
+use gpui::{
+    point, size, AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView,
+    WindowContext,
+};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +68,15 @@ pub struct DockItemState {
     pub info: DockItemInfo,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CanvasPanelState {
+    pub(crate) panel_state: DockItemState,
+    pub(crate) x: Pixels,
+    pub(crate) y: Pixels,
+    pub(crate) w: Pixels,
+    pub(crate) h: Pixels,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DockItemInfo {
     #[serde(rename = "stack")]
@@ -73,6 +85,8 @@ pub enum DockItemInfo {
         /// The axis of the stack, 0 is horizontal, 1 is vertical
         axis: usize,
     },
+    #[serde(rename = "canvas")]
+    Canvas { panels: Vec<CanvasPanelState> },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
@@ -85,6 +99,10 @@ impl DockItemInfo {
             sizes,
             axis: if axis == Axis::Horizontal { 0 } else { 1 },
         }
+    }
+
+    pub fn canvas(panels: Vec<CanvasPanelState>) -> Self {
+        Self::Canvas { panels }
     }
 
     pub fn tabs(active_index: usize) -> Self {
@@ -161,6 +179,22 @@ impl DockItemState {
                 };
                 let sizes = sizes.iter().map(|s| Some(*s)).collect_vec();
                 DockItem::split_with_sizes(axis, items, sizes, &dock_area, cx)
+            }
+            DockItemInfo::Canvas { panels } => {
+                let canvas_items = panels
+                    .iter()
+                    .map(|panel_state| {
+                        let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
+                        (
+                            item,
+                            Bounds::new(
+                                point(panel_state.x, panel_state.y),
+                                size(panel_state.w, panel_state.h),
+                            ),
+                        )
+                    })
+                    .collect();
+                DockItem::tiles_with_sizes(canvas_items, &dock_area, cx)
             }
             DockItemInfo::Tabs { active_index } => {
                 if items.len() == 1 {

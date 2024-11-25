@@ -165,6 +165,16 @@ impl Dock {
                     }
                 });
             }
+            DockItem::Tiles { view, .. } => {
+                cx.defer({
+                    let view = view.clone();
+                    move |cx| {
+                        _ = dock_area.update(cx, |this, cx| {
+                            this.subscribe_panel(&view, cx);
+                        });
+                    }
+                });
+            }
         }
     }
 
@@ -301,6 +311,7 @@ impl Render for Dock {
             .map(|this| match &self.panel {
                 DockItem::Split { view, .. } => this.child(view.clone()),
                 DockItem::Tabs { view, .. } => this.child(view.clone()),
+                DockItem::Tiles { view, .. } => this.child(view.clone()),
             })
             .child(self.render_resize_handle(cx))
             .child(DockElement {
