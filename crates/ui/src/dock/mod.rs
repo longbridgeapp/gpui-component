@@ -217,6 +217,17 @@ impl DockItem {
                 });
             }
             Self::Split { view, items, .. } => {
+                // Iter items to add panel to the first tabs
+                for item in items.into_iter() {
+                    if let DockItem::Tabs { view, .. } = item {
+                        view.update(cx, |tab_panel, cx| {
+                            tab_panel.add_panel(panel.clone(), cx);
+                        });
+                        return;
+                    }
+                }
+
+                // Unable to find tabs, create new tabs
                 let new_item = Self::tabs(vec![panel.clone()], None, dock_area, cx);
                 items.push(new_item.clone());
                 view.update(cx, |stack_panel, cx| {
