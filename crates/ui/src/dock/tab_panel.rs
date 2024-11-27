@@ -534,7 +534,8 @@ impl TabPanel {
                         h_flex()
                             .items_center()
                             .top_0()
-                            .right_0()
+                            // Right -1 for avoid border overlap with the first tab
+                            .right(-px(1.))
                             .border_r_1()
                             .border_b_1()
                             .h_full()
