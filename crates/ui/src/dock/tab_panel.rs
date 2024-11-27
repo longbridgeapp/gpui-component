@@ -20,8 +20,8 @@ use crate::{
 };
 
 use super::{
-    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelView, StackPanel,
-    ToggleZoom,
+    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelStyle, PanelView,
+    StackPanel, ToggleZoom,
 };
 
 #[derive(Clone, Copy)]
@@ -455,11 +455,16 @@ impl TabPanel {
     fn render_title_bar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
 
+        let Some(dock_area) = self.dock_area.upgrade() else {
+            return div().into_any_element();
+        };
+        let panel_style = dock_area.read(cx).panel_style;
+
         let left_dock_button = self.render_dock_toggle_button(DockPlacement::Left, cx);
         let bottom_dock_button = self.render_dock_toggle_button(DockPlacement::Bottom, cx);
         let right_dock_button = self.render_dock_toggle_button(DockPlacement::Right, cx);
 
-        if self.panels.len() == 1 {
+        if self.panels.len() == 1 && panel_style == PanelStyle::Default {
             let panel = self.panels.get(0).unwrap();
             let title_style = panel.title_style(cx);
 
