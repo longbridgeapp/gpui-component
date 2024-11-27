@@ -34,30 +34,41 @@ pub enum DockEvent {
     LayoutChanged,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PanelStyle {
+    /// When only have one panel, the panel will not display the tab bar.
+    Default,
+    /// Always display the tab bar.
+    Tab,
+}
+
 /// The main area of the dock.
 pub struct DockArea {
     id: SharedString,
-    /// The version is used to special the default layout, this is like the `panel_version` in `trait Panel`.
+    /// The version is used to special the default layout, this is like the `panel_version` in [`Panel`](Panel).
     version: Option<usize>,
     pub(crate) bounds: Bounds<Pixels>,
 
     /// The center view of the dockarea.
     items: DockItem,
 
-    /// The entity_id of the TabPanel where each toggle button should be displayed,
+    /// The entity_id of the [`TabPanel`](TabPanel) where each toggle button should be displayed,
     toggle_button_panels: Edges<Option<EntityId>>,
 
-    /// The left dock of the dockarea.
+    /// The left dock of the dock_area.
     left_dock: Option<View<Dock>>,
-    /// The bottom dock of the dockarea.
+    /// The bottom dock of the dock_area.
     bottom_dock: Option<View<Dock>>,
-    /// The right dock of the dockarea.
+    /// The right dock of the dock_area.
     right_dock: Option<View<Dock>>,
-    /// The top zoom view of the dockarea, if any.
+    /// The top zoom view of the dock_area, if any.
     zoom_view: Option<AnyView>,
 
     /// Lock panels layout, but allow to resize.
     is_locked: bool,
+
+    /// The panel style, default is [`PanelStyle::Default`](PanelStyle::Default).
+    pub(crate) panel_style: PanelStyle,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -296,12 +307,19 @@ impl DockArea {
             right_dock: None,
             bottom_dock: None,
             is_locked: false,
+            panel_style: PanelStyle::Default,
             _subscriptions: vec![],
         };
 
         this.subscribe_panel(&stack_panel, cx);
 
         this
+    }
+
+    /// Set the panel style of the dock area.
+    pub fn panel_style(mut self, style: PanelStyle) -> Self {
+        self.panel_style = style;
+        self
     }
 
     /// Set version of the dock area.
