@@ -246,6 +246,41 @@ impl DockItem {
         }
     }
 
+    /// Add a panel to the dock item.
+    pub fn add_panel(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        dock_area: &WeakView<DockArea>,
+        cx: &mut WindowContext,
+    ) {
+        match self {
+            Self::Tabs { view, items, .. } => {
+                items.push(panel.clone());
+                view.update(cx, |tab_panel, cx| {
+                    tab_panel.add_panel(panel, cx);
+                });
+            }
+            Self::Split { view, items, .. } => {
+                // Iter items to add panel to the first tabs
+                for item in items.into_iter() {
+                    if let DockItem::Tabs { view, .. } = item {
+                        view.update(cx, |tab_panel, cx| {
+                            tab_panel.add_panel(panel.clone(), cx);
+                        });
+                        return;
+                    }
+                }
+
+                // Unable to find tabs, create new tabs
+                let new_item = Self::tabs(vec![panel.clone()], None, dock_area, cx);
+                items.push(new_item.clone());
+                view.update(cx, |stack_panel, cx| {
+                    stack_panel.add_panel(new_item.view(), None, dock_area.clone(), cx);
+                });
+            }
+        }
+    }
+
     pub fn set_collapsed(&self, collapsed: bool, cx: &mut WindowContext) {
         match self {
             DockItem::Tabs { view, .. } => {
@@ -411,6 +446,7 @@ impl DockArea {
             DockPlacement::Left => self.left_dock.is_some(),
             DockPlacement::Bottom => self.bottom_dock.is_some(),
             DockPlacement::Right => self.right_dock.is_some(),
+            DockPlacement::Center => false,
         }
     }
 
@@ -432,6 +468,7 @@ impl DockArea {
                 .as_ref()
                 .map(|dock| dock.read(cx).is_open())
                 .unwrap_or(false),
+            DockPlacement::Center => false,
         }
     }
 
@@ -440,11 +477,66 @@ impl DockArea {
             DockPlacement::Left => &self.left_dock,
             DockPlacement::Bottom => &self.bottom_dock,
             DockPlacement::Right => &self.right_dock,
+            DockPlacement::Center => return,
         };
+
         if let Some(dock) = dock {
             dock.update(cx, |view, cx| {
                 view.toggle_open(cx);
             })
+        }
+    }
+
+    /// Add a panel item to the dock area at the given placement.
+    ///
+    /// If the left, bottom, right dock is not present, it will set the dock at the placement.
+    pub fn add_panel(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        placement: DockPlacement,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let weak_self = cx.view().downgrade();
+        match placement {
+            DockPlacement::Left => {
+                if let Some(dock) = self.left_dock.as_ref() {
+                    dock.update(cx, |dock, cx| dock.add_panel(panel, cx))
+                } else {
+                    self.set_left_dock(
+                        DockItem::tabs(vec![panel], None, &weak_self, cx),
+                        None,
+                        true,
+                        cx,
+                    );
+                }
+            }
+            DockPlacement::Bottom => {
+                if let Some(dock) = self.bottom_dock.as_ref() {
+                    dock.update(cx, |dock, cx| dock.add_panel(panel, cx))
+                } else {
+                    self.set_bottom_dock(
+                        DockItem::tabs(vec![panel], None, &weak_self, cx),
+                        None,
+                        true,
+                        cx,
+                    );
+                }
+            }
+            DockPlacement::Right => {
+                if let Some(dock) = self.right_dock.as_ref() {
+                    dock.update(cx, |dock, cx| dock.add_panel(panel, cx))
+                } else {
+                    self.set_right_dock(
+                        DockItem::tabs(vec![panel], None, &weak_self, cx),
+                        None,
+                        true,
+                        cx,
+                    );
+                }
+            }
+            DockPlacement::Center => {
+                self.items.add_panel(panel, &cx.view().downgrade(), cx);
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 //! Dock is a fixed container that places at left, bottom, right of the Windows.
 
+use std::sync::Arc;
+
 use gpui::{
     div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
     MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
@@ -14,13 +16,15 @@ use crate::{
     AxisExt as _, StyledExt,
 };
 
-use super::{DockArea, DockItem, TabPanel};
+use super::{DockArea, DockItem, PanelView, TabPanel};
 
 #[derive(Clone, Render)]
 struct ResizePanel;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum DockPlacement {
+    #[serde(rename = "center")]
+    Center,
     #[serde(rename = "left")]
     Left,
     #[serde(rename = "bottom")]
@@ -34,6 +38,7 @@ impl DockPlacement {
         match self {
             Self::Left | Self::Right => Axis::Horizontal,
             Self::Bottom => Axis::Vertical,
+            Self::Center => unreachable!(),
         }
     }
 
@@ -214,6 +219,12 @@ impl Dock {
         cx.notify();
     }
 
+    /// Add item to the Dock.
+    pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        self.panel.add_panel(panel, &self.dock_area, cx);
+        cx.notify();
+    }
+
     fn render_resize_handle(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let axis = self.placement.axis();
         let neg_offset = -HANDLE_PADDING;
@@ -280,6 +291,7 @@ impl Dock {
             DockPlacement::Left => mouse_position.x - area_bounds.left(),
             DockPlacement::Right => area_bounds.right() - mouse_position.x,
             DockPlacement::Bottom => area_bounds.bottom() - mouse_position.y,
+            DockPlacement::Center => unreachable!(),
         };
 
         self.size = size.max(PANEL_MIN_SIZE);
@@ -303,6 +315,7 @@ impl Render for Dock {
             .map(|this| match self.placement {
                 DockPlacement::Left | DockPlacement::Right => this.h_flex().h_full().w(self.size),
                 DockPlacement::Bottom => this.w_full().h(self.size),
+                DockPlacement::Center => unreachable!(),
             })
             // Bottom Dock should keep the title bar, then user can click the Toggle button
             .when(!self.open && self.placement.is_bottom(), |this| {
