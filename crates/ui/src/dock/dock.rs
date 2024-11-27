@@ -65,6 +65,11 @@ pub struct Dock {
     /// The size is means the width or height of the Dock, if the placement is left or right, the size is width, otherwise the size is height.
     pub(super) size: Pixels,
     pub(super) open: bool,
+    /// Whether the Dock is collapsible, default: true
+    pub(super) collapsible: bool,
+
+    // Runtime state
+    /// Whether the Dock is resizing
     is_resizing: bool,
 }
 
@@ -93,6 +98,7 @@ impl Dock {
             dock_area,
             panel,
             open: true,
+            collapsible: true,
             size: px(200.0),
             is_resizing: false,
         }
@@ -108,6 +114,17 @@ impl Dock {
 
     pub fn right(dock_area: WeakView<DockArea>, cx: &mut ViewContext<Self>) -> Self {
         Self::new(dock_area, DockPlacement::Right, cx)
+    }
+
+    /// Update the Dock to be collapsible or not.
+    ///
+    /// And if the Dock is not collapsible, it will be open.
+    pub fn set_collapsible(&mut self, collapsible: bool, cx: &mut ViewContext<Self>) {
+        self.collapsible = collapsible;
+        if !collapsible {
+            self.open = true
+        }
+        cx.notify();
     }
 
     pub(super) fn from_state(
@@ -137,6 +154,7 @@ impl Dock {
             panel,
             open,
             size,
+            collapsible: true,
             is_resizing: false,
         }
     }

@@ -109,12 +109,6 @@ impl Panel for TabPanel {
             .unwrap_or(false)
     }
 
-    fn collapsible(&self, cx: &WindowContext) -> bool {
-        self.active_panel()
-            .map(|panel| panel.collapsible(cx))
-            .unwrap_or(false)
-    }
-
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
         if let Some(panel) = self.active_panel() {
             panel.popup_menu(menu, cx)
@@ -383,9 +377,12 @@ impl TabPanel {
             return None;
         }
 
-        let view_entity_id = cx.view().entity_id();
         let dock_area = self.dock_area.upgrade()?.read(cx);
+        if !dock_area.is_dock_collapsible(placement, cx) {
+            return None;
+        }
 
+        let view_entity_id = cx.view().entity_id();
         let toggle_button_panels = dock_area.toggle_button_panels;
 
         // Check if current TabPanel's entity_id matches the one stored in DockArea for this placement
