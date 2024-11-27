@@ -204,6 +204,15 @@ impl StoryWorkspace {
 
         dock_area.update(cx, |dock_area, cx| {
             dock_area.load(state, cx).context("load layout")?;
+            dock_area.set_dock_collapsible(
+                Edges {
+                    left: true,
+                    bottom: true,
+                    right: false,
+                    ..Default::default()
+                },
+                cx,
+            );
 
             Ok::<(), anyhow::Error>(())
         })

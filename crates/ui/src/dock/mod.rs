@@ -425,6 +425,55 @@ impl DockArea {
         }
     }
 
+    /// Set the dock at the given placement to be open or closed.
+    ///
+    /// Only the left, bottom, right dock can be toggled.
+    pub fn set_dock_collapsible(
+        &mut self,
+        collapsible_edges: Edges<bool>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        if let Some(left_dock) = self.left_dock.as_ref() {
+            left_dock.update(cx, |dock, cx| {
+                dock.set_collapsible(collapsible_edges.left, cx);
+            });
+        }
+
+        if let Some(bottom_dock) = self.bottom_dock.as_ref() {
+            bottom_dock.update(cx, |dock, cx| {
+                dock.set_collapsible(collapsible_edges.bottom, cx);
+            });
+        }
+
+        if let Some(right_dock) = self.right_dock.as_ref() {
+            right_dock.update(cx, |dock, cx| {
+                dock.set_collapsible(collapsible_edges.right, cx);
+            });
+        }
+    }
+
+    /// Determine if the dock at the given placement is collapsible.
+    pub fn is_dock_collapsible(&self, placement: DockPlacement, cx: &AppContext) -> bool {
+        match placement {
+            DockPlacement::Left => self
+                .left_dock
+                .as_ref()
+                .map(|dock| dock.read(cx).collapsible)
+                .unwrap_or(false),
+            DockPlacement::Bottom => self
+                .bottom_dock
+                .as_ref()
+                .map(|dock| dock.read(cx).collapsible)
+                .unwrap_or(false),
+            DockPlacement::Right => self
+                .right_dock
+                .as_ref()
+                .map(|dock| dock.read(cx).collapsible)
+                .unwrap_or(false),
+            DockPlacement::Center => false,
+        }
+    }
+
     pub fn toggle_dock(&self, placement: DockPlacement, cx: &mut ViewContext<Self>) {
         let dock = match placement {
             DockPlacement::Left => &self.left_dock,
