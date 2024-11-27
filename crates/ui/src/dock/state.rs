@@ -69,7 +69,7 @@ pub struct DockItemState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CanvasPanelState {
+pub struct TilePanelState {
     pub(crate) panel_state: DockItemState,
     pub(crate) x: Pixels,
     pub(crate) y: Pixels,
@@ -86,7 +86,7 @@ pub enum DockItemInfo {
         axis: usize,
     },
     #[serde(rename = "tiles")]
-    Tiles { panels: Vec<CanvasPanelState> },
+    Tiles { panels: Vec<TilePanelState> },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
@@ -101,7 +101,7 @@ impl DockItemInfo {
         }
     }
 
-    pub fn canvas(panels: Vec<CanvasPanelState>) -> Self {
+    pub fn canvas(panels: Vec<TilePanelState>) -> Self {
         Self::Tiles { panels }
     }
 

@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
-use super::{CanvasPanelState, DockItemInfo, DockItemState, Panel, PanelEvent, PanelView};
+use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TilePanelState};
 use gpui::{
-    div, px, AppContext, Bounds, DismissEvent, DragMoveEvent, EntityId, EventEmitter, FocusHandle,
-    FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent,
-    ParentElement, Pixels, Point, Render, StatefulInteractiveElement, Styled, ViewContext,
-    VisualContext,
+    canvas, div, px, AppContext, Bounds, DismissEvent, DragMoveEvent, EntityId, EventEmitter,
+    FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
+    MouseUpEvent, ParentElement, Pixels, Point, Render, StatefulInteractiveElement, Styled,
+    ViewContext, VisualContext,
 };
 
 const MINIMUM_WIDTH: f32 = 100.;
@@ -15,7 +15,7 @@ const MINIMUM_HEIGHT: f32 = 100.;
 const DRAG_BAR_HEIGHT: f32 = 30.;
 
 #[derive(Clone, Render)]
-pub struct DragBar(EntityId);
+pub struct DragMoving(EntityId);
 
 #[derive(Clone, Render)]
 pub struct DragResizing(EntityId);
@@ -48,6 +48,7 @@ pub struct TilePanel {
     dragging_initial_bounds: Bounds<Pixels>,
     resizing_panel_index: Option<usize>,
     resizing_drag_data: Option<ResizeDragData>,
+    bounds: Bounds<Pixels>,
 }
 
 impl Panel for TilePanel {
@@ -65,7 +66,7 @@ impl Panel for TilePanel {
             .iter()
             .map(|item: &TilesItem| {
                 let panel_state = item.panel.dump(cx);
-                CanvasPanelState {
+                TilePanelState {
                     panel_state,
                     x: item.bounds.origin.x,
                     y: item.bounds.origin.y,
@@ -93,6 +94,7 @@ impl TilePanel {
             dragging_initial_bounds: Bounds::default(),
             resizing_panel_index: None,
             resizing_drag_data: None,
+            bounds: Bounds::default(),
         }
     }
 
@@ -207,10 +209,11 @@ impl TilePanel {
         position: Point<Pixels>,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
+        let adjusted_position = position - self.bounds.origin;
         for (index, item) in self.panels.iter().enumerate() {
-            if item.bounds.contains(&position) {
+            if item.bounds.contains(&adjusted_position) {
                 self.dragging_panel_index = Some(index);
-                self.dragging_initial_mouse = position;
+                self.dragging_initial_mouse = adjusted_position;
                 self.dragging_initial_bounds = item.bounds;
                 cx.notify();
                 return;
@@ -225,7 +228,8 @@ impl TilePanel {
     ) {
         if let Some(index) = self.dragging_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
-                let delta = current_mouse_position - self.dragging_initial_mouse;
+                let adjusted_position = current_mouse_position - self.bounds.origin;
+                let delta = adjusted_position - self.dragging_initial_mouse;
                 let new_origin = self.dragging_initial_bounds.origin + delta;
                 item.bounds.origin = round_point_to_nearest_ten(new_origin);
                 cx.notify();
@@ -520,13 +524,13 @@ impl Render for TilePanel {
                                     this.update_initial_position(initial_mouse_position, cx);
                                 }),
                             )
-                            .on_drag(DragBar(entity_id), |drag, _, cx| {
+                            .on_drag(DragMoving(entity_id), |drag, _, cx| {
                                 cx.stop_propagation();
                                 cx.new_view(|_| drag.clone())
                             })
                             .on_drag_move(cx.listener(
-                                move |this, e: &DragMoveEvent<DragBar>, cx| match e.drag(cx) {
-                                    DragBar(id) => {
+                                move |this, e: &DragMoveEvent<DragMoving>, cx| match e.drag(cx) {
+                                    DragMoving(id) => {
                                         if *id != entity_id {
                                             return;
                                         }
@@ -537,5 +541,14 @@ impl Render for TilePanel {
                             )),
                     )
             }))
+            .child({
+                let view = cx.view().clone();
+                canvas(
+                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                    |_, _, _| {},
+                )
+                .absolute()
+                .size_full()
+            })
     }
 }
