@@ -474,7 +474,9 @@ impl Render for StoryWorkspace {
                                     .small()
                                     .ghost()
                                     .on_click(|_, cx| {
-                                        cx.open_url("https://github.com/huacnlee/gpui-component")
+                                        cx.open_url(
+                                            "https://github.com/longbridgeapp/gpui-component",
+                                        )
                                     }),
                             )
                             .child(
