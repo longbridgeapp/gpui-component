@@ -208,7 +208,7 @@ impl StoryWorkspace {
                 Edges {
                     left: true,
                     bottom: true,
-                    right: false,
+                    right: true,
                     ..Default::default()
                 },
                 cx,
