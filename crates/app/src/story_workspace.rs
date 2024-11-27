@@ -11,7 +11,7 @@ use story::{
 use ui::{
     button::{Button, ButtonStyled as _},
     color_picker::{ColorPicker, ColorPickerEvent},
-    dock::{DockArea, DockAreaState, DockEvent, DockItem},
+    dock::{DockArea, DockAreaState, DockEvent, DockItem, DockPlacement},
     h_flex,
     popup_menu::PopupMenuExt,
     theme::{ActiveTheme, Theme},
@@ -31,7 +31,10 @@ struct SelectLocale(SharedString);
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 struct SelectFont(usize);
 
-impl_actions!(story, [SelectLocale, SelectFont]);
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+struct AddPanel(DockPlacement);
+
+impl_actions!(story, [SelectLocale, SelectFont, AddPanel]);
 
 actions!(workspace, [Open, CloseWindow]);
 
@@ -352,6 +355,35 @@ impl StoryWorkspace {
             Ok(window)
         })
     }
+
+    fn on_action_add_panel(&mut self, action: &AddPanel, cx: &mut ViewContext<Self>) {
+        // Random pick up a panel to add
+        let panel = match rand::random::<usize>() % 18 {
+            0 => Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
+            1 => Arc::new(StoryContainer::panel::<InputStory>(cx)),
+            2 => Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
+            3 => Arc::new(StoryContainer::panel::<TextStory>(cx)),
+            4 => Arc::new(StoryContainer::panel::<ModalStory>(cx)),
+            5 => Arc::new(StoryContainer::panel::<PopupStory>(cx)),
+            6 => Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
+            7 => Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+            8 => Arc::new(StoryContainer::panel::<TableStory>(cx)),
+            9 => Arc::new(StoryContainer::panel::<ImageStory>(cx)),
+            10 => Arc::new(StoryContainer::panel::<IconStory>(cx)),
+            11 => Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
+            12 => Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+            13 => Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
+            14 => Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
+            15 => Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
+            16 => Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
+            // 17 => Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
+            _ => Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
+        };
+
+        self.dock_area.update(cx, |dock_area, cx| {
+            dock_area.add_panel(panel, action.0, cx);
+        });
+    }
 }
 
 pub fn open_new(
@@ -377,6 +409,8 @@ impl Render for StoryWorkspace {
         let notifications_count = cx.notifications().len();
 
         div()
+            .id("story-workspace")
+            .on_action(cx.listener(Self::on_action_add_panel))
             .relative()
             .size_full()
             .flex()
@@ -393,6 +427,32 @@ impl Render for StoryWorkspace {
                             .px_2()
                             .gap_2()
                             .child(self.theme_color_picker.clone())
+                            .child(
+                                Button::new("add-panel")
+                                    .icon(IconName::LayoutDashboard)
+                                    .small()
+                                    .ghost()
+                                    .popup_menu(|menu, _| {
+                                        menu.menu(
+                                            "Add Panel to Center",
+                                            Box::new(AddPanel(DockPlacement::Center)),
+                                        )
+                                        .separator()
+                                        .menu(
+                                            "Add Panel to Left",
+                                            Box::new(AddPanel(DockPlacement::Left)),
+                                        )
+                                        .menu(
+                                            "Add Panel to Right",
+                                            Box::new(AddPanel(DockPlacement::Right)),
+                                        )
+                                        .menu(
+                                            "Add Panel to Bottom",
+                                            Box::new(AddPanel(DockPlacement::Bottom)),
+                                        )
+                                    })
+                                    .anchor(AnchorCorner::TopRight),
+                            )
                             .child(
                                 Button::new("theme-mode")
                                     .map(|this| {

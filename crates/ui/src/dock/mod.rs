@@ -388,6 +388,7 @@ impl DockArea {
             DockPlacement::Left => self.left_dock.is_some(),
             DockPlacement::Bottom => self.bottom_dock.is_some(),
             DockPlacement::Right => self.right_dock.is_some(),
+            DockPlacement::Center => false,
         }
     }
 
@@ -409,6 +410,7 @@ impl DockArea {
                 .as_ref()
                 .map(|dock| dock.read(cx).is_open())
                 .unwrap_or(false),
+            DockPlacement::Center => false,
         }
     }
 
@@ -417,7 +419,9 @@ impl DockArea {
             DockPlacement::Left => &self.left_dock,
             DockPlacement::Bottom => &self.bottom_dock,
             DockPlacement::Right => &self.right_dock,
+            DockPlacement::Center => return,
         };
+
         if let Some(dock) = dock {
             dock.update(cx, |view, cx| {
                 view.toggle_open(cx);
@@ -428,52 +432,52 @@ impl DockArea {
     /// Add a panel item to the dock area at the given placement.
     ///
     /// If the left, bottom, right dock is not present, it will set the dock at the placement.
-    pub fn add_panel<P: Panel>(
+    pub fn add_panel(
         &mut self,
-        panel: View<P>,
-        placement: Option<DockPlacement>,
+        panel: Arc<dyn PanelView>,
+        placement: DockPlacement,
         cx: &mut ViewContext<Self>,
     ) {
+        let weak_self = cx.view().downgrade();
         match placement {
-            Some(DockPlacement::Left) => {
+            DockPlacement::Left => {
                 if let Some(dock) = self.left_dock.as_ref() {
                     dock.update(cx, |dock, cx| dock.add_panel(panel, cx))
                 } else {
                     self.set_left_dock(
-                        DockItem::tab(panel, &cx.view().downgrade(), cx),
+                        DockItem::tabs(vec![panel], None, &weak_self, cx),
                         None,
                         true,
                         cx,
                     );
                 }
             }
-            Some(DockPlacement::Bottom) => {
+            DockPlacement::Bottom => {
                 if let Some(dock) = self.bottom_dock.as_ref() {
                     dock.update(cx, |dock, cx| dock.add_panel(panel, cx))
                 } else {
                     self.set_bottom_dock(
-                        DockItem::tab(panel, &cx.view().downgrade(), cx),
+                        DockItem::tabs(vec![panel], None, &weak_self, cx),
                         None,
                         true,
                         cx,
                     );
                 }
             }
-            Some(DockPlacement::Right) => {
+            DockPlacement::Right => {
                 if let Some(dock) = self.right_dock.as_ref() {
                     dock.update(cx, |dock, cx| dock.add_panel(panel, cx))
                 } else {
                     self.set_right_dock(
-                        DockItem::tab(panel, &cx.view().downgrade(), cx),
+                        DockItem::tabs(vec![panel], None, &weak_self, cx),
                         None,
                         true,
                         cx,
                     );
                 }
             }
-            None => {
-                self.items
-                    .add_panel(Arc::new(panel), &cx.view().downgrade(), cx);
+            DockPlacement::Center => {
+                self.items.add_panel(panel, &cx.view().downgrade(), cx);
             }
         }
     }

@@ -12,6 +12,7 @@ ui.workspace = true
 story.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+rand = "0.8"
 
 [lints]
 workspace = true
