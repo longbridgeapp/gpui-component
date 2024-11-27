@@ -34,14 +34,6 @@ pub enum DockEvent {
     LayoutChanged,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PanelStyle {
-    /// When only have one panel, the panel will not display the tab bar.
-    Default,
-    /// Always display the tab bar.
-    Tab,
-}
-
 /// The main area of the dock.
 pub struct DockArea {
     id: SharedString,

@@ -70,10 +70,8 @@ impl StoryWorkspace {
         })
         .detach();
 
-        let dock_area = cx.new_view(|cx| {
-            DockArea::new(MAIN_DOCK_AREA.id, Some(MAIN_DOCK_AREA.version), cx)
-                .panel_style(PanelStyle::Tab)
-        });
+        let dock_area =
+            cx.new_view(|cx| DockArea::new(MAIN_DOCK_AREA.id, Some(MAIN_DOCK_AREA.version), cx));
         let weak_dock_area = dock_area.downgrade();
 
         match Self::load_layout(dock_area.clone(), cx) {

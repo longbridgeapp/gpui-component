@@ -16,6 +16,15 @@ pub enum PanelEvent {
     LayoutChanged,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PanelStyle {
+    /// Display the TabBar when there are multiple tabs, otherwise display the simple title.
+    Default,
+    /// Always display the tab bar.
+    TabBar,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TitleStyle {
     pub background: Hsla,
     pub foreground: Hsla,
