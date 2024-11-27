@@ -1,14 +1,13 @@
 mod dock;
-mod tile_panel;
 mod invalid_panel;
 mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
+mod tile_panel;
 
 use anyhow::Result;
 pub use dock::*;
-pub use tile_panel::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
     Edges, Entity as _, EntityId, EventEmitter, InteractiveElement as _, IntoElement,
@@ -16,6 +15,7 @@ use gpui::{
     VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
+pub use tile_panel::*;
 
 pub use panel::*;
 pub use stack_panel::*;
@@ -68,7 +68,7 @@ pub struct DockArea {
 #[derive(Clone)]
 pub enum DockItem {
     Split {
-        axis: gpui::Axis,
+        axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
         view: View<StackPanel>,
@@ -148,28 +148,27 @@ impl DockItem {
         dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
-        let canvas_panel = cx.new_view(|cx| {
-            let mut canvas_panel = TilePanel::new(cx);
-            for (_i, (dock_item, bounds)) in items.into_iter().enumerate() {
-                canvas_panel.add_panel(dock_item.view(), bounds, cx)
+        let tile_panel = cx.new_view(|cx| {
+            let mut tile_panel = TilePanel::new(cx);
+            for (dock_item, bounds) in items.into_iter() {
+                tile_panel.add_panel(dock_item.view(), bounds, cx);
             }
-
-            canvas_panel
+            tile_panel
         });
 
         cx.defer({
-            let canvas_panel = canvas_panel.clone();
+            let tile_panel = tile_panel.clone();
             let dock_area = dock_area.clone();
             move |cx| {
                 _ = dock_area.update(cx, |this, cx| {
-                    this.subscribe_panel(&canvas_panel, cx);
+                    this.subscribe_panel(&tile_panel, cx);
                 });
             }
         });
 
         Self::Tiles {
-            items: canvas_panel.read(cx).panels.clone(),
-            view: canvas_panel,
+            items: tile_panel.read(cx).panels.clone(),
+            view: tile_panel,
         }
     }
 
@@ -278,6 +277,7 @@ impl DockItem {
                     stack_panel.add_panel(new_item.view(), None, dock_area.clone(), cx);
                 });
             }
+            DockItem::Tiles { .. } => {}
         }
     }
 

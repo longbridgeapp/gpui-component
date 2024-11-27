@@ -76,7 +76,7 @@ impl Panel for TilePanel {
             .collect();
 
         let mut state = DockItemState::new(self);
-        state.info = DockItemInfo::Canvas {
+        state.info = DockItemInfo::Tiles {
             panels: panels_state,
         };
         state
@@ -257,11 +257,7 @@ impl TilePanel {
         }
     }
 
-    fn resize_panel_height(
-        &mut self,
-        new_height: Pixels,
-        cx: &mut ViewContext<'_, TilePanel>,
-    ) {
+    fn resize_panel_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
         if let Some(index) = self.resizing_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.height = round_to_nearest_ten(new_height);

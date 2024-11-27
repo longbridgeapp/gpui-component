@@ -85,8 +85,8 @@ pub enum DockItemInfo {
         /// The axis of the stack, 0 is horizontal, 1 is vertical
         axis: usize,
     },
-    #[serde(rename = "canvas")]
-    Canvas { panels: Vec<CanvasPanelState> },
+    #[serde(rename = "tiles")]
+    Tiles { panels: Vec<CanvasPanelState> },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
@@ -102,7 +102,7 @@ impl DockItemInfo {
     }
 
     pub fn canvas(panels: Vec<CanvasPanelState>) -> Self {
-        Self::Canvas { panels }
+        Self::Tiles { panels }
     }
 
     pub fn tabs(active_index: usize) -> Self {
@@ -180,8 +180,8 @@ impl DockItemState {
                 let sizes = sizes.iter().map(|s| Some(*s)).collect_vec();
                 DockItem::split_with_sizes(axis, items, sizes, &dock_area, cx)
             }
-            DockItemInfo::Canvas { panels } => {
-                let canvas_items = panels
+            DockItemInfo::Tiles { panels } => {
+                let tiles_items = panels
                     .iter()
                     .map(|panel_state| {
                         let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
@@ -194,7 +194,7 @@ impl DockItemState {
                         )
                     })
                     .collect();
-                DockItem::tiles_with_sizes(canvas_items, &dock_area, cx)
+                DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
             }
             DockItemInfo::Tabs { active_index } => {
                 if items.len() == 1 {
