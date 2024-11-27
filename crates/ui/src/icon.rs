@@ -36,6 +36,7 @@ pub enum IconName {
     HeartOff,
     Inbox,
     Info,
+    LayoutDashboard,
     Loader,
     LoaderCircle,
     Maximize,
@@ -60,10 +61,10 @@ pub enum IconName {
     ThumbsDown,
     ThumbsUp,
     TriangleAlert,
+    WindowClose,
     WindowMaximize,
     WindowMinimize,
     WindowRestore,
-    WindowClose,
 }
 
 impl IconName {
@@ -99,6 +100,7 @@ impl IconName {
             IconName::HeartOff => "icons/heart-off.svg",
             IconName::Inbox => "icons/inbox.svg",
             IconName::Info => "icons/info.svg",
+            IconName::LayoutDashboard => "icons/layout-dashboard.svg",
             IconName::Loader => "icons/loader.svg",
             IconName::LoaderCircle => "icons/loader-circle.svg",
             IconName::Maximize => "icons/maximize.svg",
@@ -123,10 +125,10 @@ impl IconName {
             IconName::ThumbsDown => "icons/thumbs-down.svg",
             IconName::ThumbsUp => "icons/thumbs-up.svg",
             IconName::TriangleAlert => "icons/triangle-alert.svg",
+            IconName::WindowClose => "icons/window-close.svg",
             IconName::WindowMaximize => "icons/window-maximize.svg",
             IconName::WindowMinimize => "icons/window-minimize.svg",
             IconName::WindowRestore => "icons/window-restore.svg",
-            IconName::WindowClose => "icons/window-close.svg",
         }
         .into()
     }

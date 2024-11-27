@@ -2355,6 +2355,7 @@ dependencies = [
  "anyhow",
  "gpui",
  "log",
+ "rand 0.8.5",
  "rust-embed",
  "serde",
  "serde_json",

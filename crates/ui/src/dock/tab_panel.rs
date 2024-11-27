@@ -400,6 +400,7 @@ impl TabPanel {
                 dock_area.bottom_dock.is_some()
                     && toggle_button_panels.bottom == Some(view_entity_id)
             }
+            DockPlacement::Center => unreachable!(),
         } {
             return None;
         }
@@ -428,6 +429,7 @@ impl TabPanel {
                     IconName::PanelBottomOpen
                 }
             }
+            DockPlacement::Center => unreachable!(),
         };
 
         Some(
