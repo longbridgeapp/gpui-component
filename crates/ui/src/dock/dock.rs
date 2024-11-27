@@ -3,10 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
-    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
-    StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
-    WeakView, WindowContext,
+    div, prelude::FluentBuilder as _, px, Axis, Element, Entity, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render, StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _, WeakView, WindowContext
 };
 use serde::{Deserialize, Serialize};
 
@@ -264,30 +261,61 @@ impl Dock {
                 cx.new_view(|_| info.clone())
             })
     }
-
     fn resize(&mut self, mouse_position: Point<Pixels>, cx: &mut ViewContext<Self>) {
         if !self.is_resizing {
             return;
         }
-
-        let area_bounds = self
-            .dock_area
-            .upgrade()
-            .expect("DockArea is missing")
-            .read(cx)
-            .bounds;
-
+    
+        let dock_area = self.dock_area.upgrade().expect("DockArea is missing").read(cx);
+        let area_bounds = dock_area.bounds;
+        let mut left_dock_size = Pixels(0.0);
+        let mut right_dock_size = Pixels(0.0);
+    
+        // Get the size of the left dock if it's open and not the current dock
+        if let Some(left_dock) = &dock_area.left_dock {
+            if left_dock.entity_id() != cx.view().entity_id() {
+                let left_dock_read = left_dock.read(cx);
+                if left_dock_read.is_open() {
+                    left_dock_size = left_dock_read.size;
+                }
+            }
+        }
+    
+        // Get the size of the right dock if it's open and not the current dock
+        if let Some(right_dock) = &dock_area.right_dock {
+            if right_dock.entity_id() != cx.view().entity_id() {
+                let right_dock_read = right_dock.read(cx);
+                if right_dock_read.is_open() {
+                    right_dock_size = right_dock_read.size;
+                }
+            }
+        }
+    
         let size = match self.placement {
             DockPlacement::Left => mouse_position.x - area_bounds.left(),
             DockPlacement::Right => area_bounds.right() - mouse_position.x,
             DockPlacement::Bottom => area_bounds.bottom() - mouse_position.y,
             DockPlacement::Center => unreachable!(),
         };
-
-        self.size = size.max(PANEL_MIN_SIZE);
+        match self.placement {
+            DockPlacement::Left => {
+                let max_size = area_bounds.size.width - PANEL_MIN_SIZE - right_dock_size;
+                self.size = size.clamp(PANEL_MIN_SIZE, max_size);
+            }
+            DockPlacement::Right => {
+                let max_size = area_bounds.size.width - PANEL_MIN_SIZE - left_dock_size;
+                self.size = size.clamp(PANEL_MIN_SIZE, max_size);
+            }
+            DockPlacement::Bottom => {
+                let max_size = area_bounds.size.height - PANEL_MIN_SIZE;
+                self.size = size.clamp(PANEL_MIN_SIZE, max_size);
+            }
+            DockPlacement::Center => unreachable!(),
+        }
+    
         cx.notify();
     }
-
+    
     fn done_resizing(&mut self, _: &mut ViewContext<Self>) {
         self.is_resizing = false;
     }
