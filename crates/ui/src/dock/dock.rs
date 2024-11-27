@@ -1,5 +1,7 @@
 //! Dock is a fixed container that places at left, bottom, right of the Windows.
 
+use std::sync::Arc;
+
 use gpui::{
     div, prelude::FluentBuilder as _, px, Axis, Element, InteractiveElement as _, IntoElement,
     MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
@@ -14,7 +16,7 @@ use crate::{
     AxisExt as _, StyledExt,
 };
 
-use super::{DockArea, DockItem, TabPanel};
+use super::{DockArea, DockItem, Panel, TabPanel};
 
 #[derive(Clone, Render)]
 struct ResizePanel;
@@ -201,6 +203,15 @@ impl Dock {
         cx.defer(move |_, cx| {
             item.set_collapsed(!open, cx);
         });
+        cx.notify();
+    }
+
+    /// Add item to the Dock.
+    pub fn add_panel<P>(&mut self, panel: View<P>, cx: &mut ViewContext<Self>)
+    where
+        P: Panel,
+    {
+        self.panel.add_panel(Arc::new(panel), &self.dock_area, cx);
         cx.notify();
     }
 
