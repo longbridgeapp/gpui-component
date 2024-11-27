@@ -3,7 +3,10 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Element, Entity, InteractiveElement as _, IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render, StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _, WeakView, WindowContext
+    div, prelude::FluentBuilder as _, px, Axis, Element, Entity, InteractiveElement as _,
+    IntoElement, MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render,
+    StatefulInteractiveElement, Style, Styled as _, View, ViewContext, VisualContext as _,
+    WeakView, WindowContext,
 };
 use serde::{Deserialize, Serialize};
 
@@ -265,12 +268,16 @@ impl Dock {
         if !self.is_resizing {
             return;
         }
-    
-        let dock_area = self.dock_area.upgrade().expect("DockArea is missing").read(cx);
+
+        let dock_area = self
+            .dock_area
+            .upgrade()
+            .expect("DockArea is missing")
+            .read(cx);
         let area_bounds = dock_area.bounds;
         let mut left_dock_size = Pixels(0.0);
         let mut right_dock_size = Pixels(0.0);
-    
+
         // Get the size of the left dock if it's open and not the current dock
         if let Some(left_dock) = &dock_area.left_dock {
             if left_dock.entity_id() != cx.view().entity_id() {
@@ -280,7 +287,7 @@ impl Dock {
                 }
             }
         }
-    
+
         // Get the size of the right dock if it's open and not the current dock
         if let Some(right_dock) = &dock_area.right_dock {
             if right_dock.entity_id() != cx.view().entity_id() {
@@ -290,7 +297,7 @@ impl Dock {
                 }
             }
         }
-    
+
         let size = match self.placement {
             DockPlacement::Left => mouse_position.x - area_bounds.left(),
             DockPlacement::Right => area_bounds.right() - mouse_position.x,
@@ -312,10 +319,10 @@ impl Dock {
             }
             DockPlacement::Center => unreachable!(),
         }
-    
+
         cx.notify();
     }
-    
+
     fn done_resizing(&mut self, _: &mut ViewContext<Self>) {
         self.is_resizing = false;
     }
