@@ -17,6 +17,7 @@ use ui::{
     popup_menu::{PopupMenu, PopupMenuExt},
     prelude::FluentBuilder as _,
     table::{ColFixed, ColSort, Table, TableDelegate, TableEvent},
+    theme::ActiveTheme as _,
     v_flex, Selectable, Size, StyleSized as _,
 };
 
@@ -255,7 +256,12 @@ impl StockTableDelegate {
         self.loading = false;
     }
 
-    fn render_value_cell(&self, val: f64) -> AnyElement {
+    fn render_value_cell(&self, val: f64, cx: &mut ViewContext<Table<Self>>) -> AnyElement {
+        let (fg_scale, bg_scale, opacity) = match cx.theme().mode.is_dark() {
+            true => (200, 950, 0.3),
+            false => (600, 50, 0.6),
+        };
+
         let this = div()
             .h_full()
             .table_cell_size(self.size)
@@ -265,10 +271,11 @@ impl StockTableDelegate {
         let right_num = ((val - val.floor()) * 1000.).floor() as i32;
 
         let this = if right_num % 3 == 0 {
-            this.text_color(ui::red_600()).bg(ui::red_50().opacity(0.6))
+            this.text_color(ui::red(fg_scale))
+                .bg(ui::red(bg_scale).opacity(opacity))
         } else if right_num % 3 == 1 {
-            this.text_color(ui::green_600())
-                .bg(ui::green_50().opacity(0.6))
+            this.text_color(ui::green(fg_scale))
+                .bg(ui::green(bg_scale).opacity(opacity))
         } else {
             this
         };
@@ -351,7 +358,7 @@ impl TableDelegate for StockTableDelegate {
         &self,
         row_ix: usize,
         col_ix: usize,
-        _cx: &mut ViewContext<Table<Self>>,
+        cx: &mut ViewContext<Table<Self>>,
     ) -> impl IntoElement {
         let stock = self.stocks.get(row_ix).unwrap();
         let col = self.columns.get(col_ix).unwrap();
@@ -360,33 +367,33 @@ impl TableDelegate for StockTableDelegate {
             "id" => stock.id.to_string().into_any_element(),
             "name" => stock.name.clone().into_any_element(),
             "symbol" => stock.symbol.clone().into_any_element(),
-            "price" => self.render_value_cell(stock.price),
-            "change" => self.render_value_cell(stock.change),
-            "change_percent" => self.render_value_cell(stock.change_percent),
-            "volume" => self.render_value_cell(stock.volume),
-            "turnover" => self.render_value_cell(stock.turnover),
-            "market_cap" => self.render_value_cell(stock.market_cap),
-            "ttm" => self.render_value_cell(stock.ttm),
-            "five_mins_ranking" => self.render_value_cell(stock.five_mins_ranking),
+            "price" => self.render_value_cell(stock.price, cx),
+            "change" => self.render_value_cell(stock.change, cx),
+            "change_percent" => self.render_value_cell(stock.change_percent, cx),
+            "volume" => self.render_value_cell(stock.volume, cx),
+            "turnover" => self.render_value_cell(stock.turnover, cx),
+            "market_cap" => self.render_value_cell(stock.market_cap, cx),
+            "ttm" => self.render_value_cell(stock.ttm, cx),
+            "five_mins_ranking" => self.render_value_cell(stock.five_mins_ranking, cx),
             "th60_days_ranking" => stock.th60_days_ranking.to_string().into_any_element(),
             "year_change_percent" => (stock.year_change_percent * 100.0)
                 .to_string()
                 .into_any_element(),
-            "bid" => self.render_value_cell(stock.bid),
-            "bid_volume" => self.render_value_cell(stock.bid_volume),
-            "ask" => self.render_value_cell(stock.ask),
-            "ask_volume" => self.render_value_cell(stock.ask_volume),
+            "bid" => self.render_value_cell(stock.bid, cx),
+            "bid_volume" => self.render_value_cell(stock.bid_volume, cx),
+            "ask" => self.render_value_cell(stock.ask, cx),
+            "ask_volume" => self.render_value_cell(stock.ask_volume, cx),
             "open" => stock.open.to_string().into_any_element(),
             "prev_close" => stock.prev_close.to_string().into_any_element(),
-            "high" => self.render_value_cell(stock.high),
-            "low" => self.render_value_cell(stock.low),
+            "high" => self.render_value_cell(stock.high, cx),
+            "low" => self.render_value_cell(stock.low, cx),
             "turnover_rate" => (stock.turnover_rate * 100.0).to_string().into_any_element(),
             "rise_rate" => (stock.rise_rate * 100.0).to_string().into_any_element(),
             "amplitude" => (stock.amplitude * 100.0).to_string().into_any_element(),
             "pe_status" => stock.pe_status.to_string().into_any_element(),
             "pb_status" => stock.pb_status.to_string().into_any_element(),
-            "volume_ratio" => self.render_value_cell(stock.volume_ratio),
-            "bid_ask_ratio" => self.render_value_cell(stock.bid_ask_ratio),
+            "volume_ratio" => self.render_value_cell(stock.volume_ratio, cx),
+            "bid_ask_ratio" => self.render_value_cell(stock.bid_ask_ratio, cx),
             "latest_pre_close" => stock.latest_pre_close.to_string().into_any_element(),
             "latest_post_close" => stock.latest_post_close.to_string().into_any_element(),
             "pre_market_cap" => stock.pre_market_cap.to_string().into_any_element(),
