@@ -75,6 +75,7 @@ pub struct TilePanelState {
     pub(crate) y: Pixels,
     pub(crate) w: Pixels,
     pub(crate) h: Pixels,
+    pub(crate) z_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -191,6 +192,7 @@ impl DockItemState {
                                 point(panel_state.x, panel_state.y),
                                 size(panel_state.w, panel_state.h),
                             ),
+                            panel_state.z_index,
                         )
                     })
                     .collect();

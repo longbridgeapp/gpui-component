@@ -38,6 +38,7 @@ enum ResizeAxis {
 pub struct TilesItem {
     pub(crate) panel: Arc<dyn PanelView>,
     bounds: Bounds<Pixels>,
+    z_index: usize,
 }
 
 pub struct TilePanel {
@@ -72,6 +73,7 @@ impl Panel for TilePanel {
                     y: item.bounds.origin.y,
                     w: item.bounds.size.width,
                     h: item.bounds.size.height,
+                    z_index: item.z_index,
                 }
             })
             .collect();
@@ -186,6 +188,13 @@ impl TilePanel {
             TilesItem {
                 panel: panel.clone(),
                 bounds: bounds,
+                z_index: self
+                    .panels
+                    .iter()
+                    .map(|item| item.z_index)
+                    .max()
+                    .unwrap_or(0)
+                    + 1,
             },
         );
 
@@ -269,6 +278,39 @@ impl TilePanel {
             }
         }
     }
+
+    pub fn add_panel_with_z_index(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        bounds: Bounds<Pixels>,
+        z_index: usize,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.panels.push(TilesItem {
+            panel: panel.clone(),
+            bounds,
+            z_index,
+        });
+
+        cx.emit(PanelEvent::LayoutChanged);
+        cx.notify();
+    }
+
+    fn bring_panel_to_front(&mut self, dragging_panel_index: Option<usize>) {
+        if let Some(index) = dragging_panel_index {
+            // Bring the panel to front by updating its z_index
+            let new_z_index = self
+                .panels
+                .iter()
+                .map(|item| item.z_index)
+                .max()
+                .unwrap_or(0)
+                + 1;
+            self.panels.get_mut(index).map(|item| {
+                item.z_index = new_z_index;
+            });
+        }
+    }
 }
 
 fn round_to_nearest_ten(value: Pixels) -> Pixels {
@@ -290,12 +332,16 @@ impl Render for TilePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
 
+        // Sort panels by z_index
+        let mut panels = self.panels.clone();
+        panels.sort_by_key(|item| item.z_index);
+
         h_flex()
             .size_full()
             .overflow_hidden()
             .relative()
             .bg(cx.theme().background)
-            .children(self.panels.clone().into_iter().map(|item| {
+            .children(panels.into_iter().map(|item| {
                 let panel = item.panel.clone();
                 let panel_view = panel.view();
 
@@ -347,6 +393,7 @@ impl Render for TilePanel {
                                         initial_panel_bounds: panel_bounds,
                                     };
                                     this.update_resizing_drag(drag_data, cx);
+                                    this.bring_panel_to_front(this.resizing_panel_index);
                                 }),
                             )
                             .on_drag(DragResizing(entity_id), |drag, _, cx| {
@@ -406,6 +453,7 @@ impl Render for TilePanel {
                                         initial_panel_bounds: panel_bounds,
                                     };
                                     this.update_resizing_drag(drag_data, cx);
+                                    this.bring_panel_to_front(this.resizing_panel_index);
                                 }),
                             )
                             .on_drag(DragResizing(entity_id), |drag, _, cx| {
@@ -463,6 +511,7 @@ impl Render for TilePanel {
                                         initial_panel_bounds: panel_bounds,
                                     };
                                     this.update_resizing_drag(drag_data, cx);
+                                    this.bring_panel_to_front(this.resizing_panel_index);
                                 }),
                             )
                             .on_drag(DragResizing(entity_id), |drag, _, cx| {
@@ -522,6 +571,7 @@ impl Render for TilePanel {
                                 cx.listener(move |this, event: &MouseDownEvent, cx| {
                                     let initial_mouse_position = event.position;
                                     this.update_initial_position(initial_mouse_position, cx);
+                                    this.bring_panel_to_front(this.dragging_panel_index);
                                 }),
                             )
                             .on_drag(DragMoving(entity_id), |drag, _, cx| {

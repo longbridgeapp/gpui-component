@@ -299,6 +299,7 @@ impl StoryWorkspace {
                         cx,
                     ),
                     Bounds::new(point(px(20.), px(20.)), size(px(610.), px(190.))),
+                    1,
                 ),
                 (
                     DockItem::tabs(
@@ -308,6 +309,7 @@ impl StoryWorkspace {
                         cx,
                     ),
                     Bounds::new(point(px(120.), px(230.)), size(px(650.), px(300.))),
+                    2,
                 ),
             ],
             dock_area,
