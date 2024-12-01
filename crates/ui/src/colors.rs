@@ -172,6 +172,7 @@ where
 macro_rules! color_method {
     ($color:tt, $scale:tt) => {
         paste::paste! {
+            #[inline]
             #[allow(unused)]
             pub fn [<$color _ $scale>]() -> Hsla {
                 if let Some(color) = DEFAULT_COLOR.$color.get(&($scale as usize)) {
@@ -186,6 +187,23 @@ macro_rules! color_method {
 
 macro_rules! color_methods {
     ($color:tt) => {
+        paste::paste! {
+            /// Get color by scale number.
+            ///
+            /// The possible scale numbers are:
+            /// 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950
+            ///
+            /// If the scale number is not found, it will return black color.
+            #[inline]
+            pub fn [<$color>](scale: usize) -> Hsla {
+                if let Some(color) = DEFAULT_COLOR.$color.get(&scale) {
+                    return color.hsla;
+                }
+
+                black()
+            }
+        }
+
         color_method!($color, 50);
         color_method!($color, 100);
         color_method!($color, 200);

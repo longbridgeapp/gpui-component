@@ -20,8 +20,8 @@ use crate::{
 };
 
 use super::{
-    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelView, StackPanel,
-    ToggleZoom,
+    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelStyle, PanelView,
+    StackPanel, ToggleZoom,
 };
 
 #[derive(Clone, Copy)]
@@ -106,12 +106,6 @@ impl Panel for TabPanel {
     fn zoomable(&self, cx: &WindowContext) -> bool {
         self.active_panel()
             .map(|panel| panel.zoomable(cx))
-            .unwrap_or(false)
-    }
-
-    fn collapsible(&self, cx: &WindowContext) -> bool {
-        self.active_panel()
-            .map(|panel| panel.collapsible(cx))
             .unwrap_or(false)
     }
 
@@ -383,9 +377,12 @@ impl TabPanel {
             return None;
         }
 
-        let view_entity_id = cx.view().entity_id();
         let dock_area = self.dock_area.upgrade()?.read(cx);
+        if !dock_area.is_dock_collapsible(placement, cx) {
+            return None;
+        }
 
+        let view_entity_id = cx.view().entity_id();
         let toggle_button_panels = dock_area.toggle_button_panels;
 
         // Check if current TabPanel's entity_id matches the one stored in DockArea for this placement
@@ -455,11 +452,16 @@ impl TabPanel {
     fn render_title_bar(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
 
+        let Some(dock_area) = self.dock_area.upgrade() else {
+            return div().into_any_element();
+        };
+        let panel_style = dock_area.read(cx).panel_style;
+
         let left_dock_button = self.render_dock_toggle_button(DockPlacement::Left, cx);
         let bottom_dock_button = self.render_dock_toggle_button(DockPlacement::Bottom, cx);
         let right_dock_button = self.render_dock_toggle_button(DockPlacement::Right, cx);
 
-        if self.panels.len() == 1 {
+        if self.panels.len() == 1 && panel_style == PanelStyle::Default {
             let panel = self.panels.get(0).unwrap();
             let title_style = panel.title_style(cx);
 
@@ -532,7 +534,8 @@ impl TabPanel {
                         h_flex()
                             .items_center()
                             .top_0()
-                            .right_0()
+                            // Right -1 for avoid border overlap with the first tab
+                            .right(-px(1.))
                             .border_r_1()
                             .border_b_1()
                             .h_full()

@@ -16,6 +16,15 @@ pub enum PanelEvent {
     LayoutChanged,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PanelStyle {
+    /// Display the TabBar when there are multiple tabs, otherwise display the simple title.
+    Default,
+    /// Always display the tab bar.
+    TabBar,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TitleStyle {
     pub background: Hsla,
     pub foreground: Hsla,
@@ -48,11 +57,6 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         true
     }
 
-    /// Return true if the panel is collapsible, default is `false`.
-    fn collapsible(&self, _cx: &WindowContext) -> bool {
-        false
-    }
-
     /// The addition popup menu of the panel, default is `None`.
     fn popup_menu(&self, this: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         this
@@ -75,7 +79,6 @@ pub trait PanelView: 'static + Send + Sync {
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
     fn closeable(&self, cx: &WindowContext) -> bool;
     fn zoomable(&self, cx: &WindowContext) -> bool;
-    fn collapsible(&self, cx: &WindowContext) -> bool;
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
     fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button>;
     fn view(&self) -> AnyView;
@@ -102,10 +105,6 @@ impl<T: Panel> PanelView for View<T> {
 
     fn zoomable(&self, cx: &WindowContext) -> bool {
         self.read(cx).zoomable(cx)
-    }
-
-    fn collapsible(&self, cx: &WindowContext) -> bool {
-        self.read(cx).collapsible(cx)
     }
 
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
