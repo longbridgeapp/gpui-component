@@ -305,10 +305,10 @@ impl TilePanel {
                 .map(|item| item.z_index)
                 .max()
                 .unwrap_or(0)
-                + 1;
-            self.panels.get_mut(index).map(|item| {
+                + 1; // TODO: overflow
+            if let Some(item) = self.panels.get_mut(index) {
                 item.z_index = new_z_index;
-            });
+            }
         }
     }
 }
