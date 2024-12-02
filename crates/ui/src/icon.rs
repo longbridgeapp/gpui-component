@@ -1,7 +1,7 @@
 use crate::{theme::ActiveTheme, Sizable, Size};
 use gpui::{
-    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
-    SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
+    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Radians, Render, RenderOnce,
+    SharedString, StyleRefinement, Styled, Svg, Transformation, View, VisualContext, WindowContext,
 };
 
 #[derive(IntoElement, Clone)]
@@ -163,6 +163,7 @@ pub struct Icon {
     path: SharedString,
     text_color: Option<Hsla>,
     size: Option<Size>,
+    rotation: Option<Radians>,
 }
 
 impl Default for Icon {
@@ -172,6 +173,7 @@ impl Default for Icon {
             path: "".into(),
             text_color: None,
             size: None,
+            rotation: None,
         }
     }
 }
@@ -219,6 +221,14 @@ impl Icon {
 
     pub fn empty() -> Self {
         Self::default()
+    }
+
+    /// Rotate the icon by the given angle
+    pub fn rotate(mut self, radians: impl Into<Radians>) -> Self {
+        self.base = self
+            .base
+            .with_transformation(Transformation::rotate(radians));
+        self
     }
 }
 
@@ -278,5 +288,8 @@ impl Render for Icon {
                 Size::Large => this.size_6(),
             })
             .path(self.path.clone())
+            .when_some(self.rotation, |this, rotation| {
+                this.with_transformation(Transformation::rotate(rotation))
+            })
     }
 }

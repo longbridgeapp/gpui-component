@@ -1,4 +1,4 @@
-use crate::{h_flex, theme::ActiveTheme, Disableable, Sizable, Size};
+use crate::{h_flex, theme::ActiveTheme, Disableable, Side, Sizable, Size};
 use gpui::{
     div, prelude::FluentBuilder as _, px, Animation, AnimationExt as _, AnyElement, Element,
     ElementId, GlobalElementId, InteractiveElement, IntoElement, LayoutId, ParentElement as _,
@@ -6,23 +6,12 @@ use gpui::{
 };
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-pub enum LabelSide {
-    Left,
-    Right,
-}
-
-impl LabelSide {
-    fn left(&self) -> bool {
-        matches!(self, Self::Left)
-    }
-}
-
 pub struct Switch {
     id: ElementId,
     checked: bool,
     disabled: bool,
     label: Option<SharedString>,
-    label_side: LabelSide,
+    label_side: Side,
     on_click: Option<Rc<dyn Fn(&bool, &mut WindowContext)>>,
     size: Size,
 }
@@ -36,7 +25,7 @@ impl Switch {
             disabled: false,
             label: None,
             on_click: None,
-            label_side: LabelSide::Right,
+            label_side: Side::Right,
             size: Size::Medium,
         }
     }
@@ -59,7 +48,7 @@ impl Switch {
         self
     }
 
-    pub fn label_side(mut self, label_side: LabelSide) -> Self {
+    pub fn label_side(mut self, label_side: Side) -> Self {
         self.label_side = label_side;
         self
     }
@@ -137,7 +126,7 @@ impl Element for Switch {
                 .id(self.id.clone())
                 .items_center()
                 .gap_2()
-                .when(self.label_side.left(), |this| this.flex_row_reverse())
+                .when(self.label_side.is_left(), |this| this.flex_row_reverse())
                 .child(
                     // Switch Bar
                     div()
