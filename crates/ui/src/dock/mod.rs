@@ -320,10 +320,16 @@ impl DockArea {
         cx.notify();
     }
 
-    /// The the DockItem as the root of the dock area.
+    // FIXME: Remove this method after 2025-01-01
+    #[deprecated(note = "Use `set_center` instead")]
+    pub fn set_root(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
+        self.set_center(item, cx);
+    }
+
+    /// The the DockItem as the center of the dock area.
     ///
     /// This is used to render at the Center of the DockArea.
-    pub fn set_root(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
+    pub fn set_center(&mut self, item: DockItem, cx: &mut ViewContext<Self>) {
         self.subscribe_item(&item, cx);
         self.items = item;
         self.update_toggle_button_tab_panels(cx);
