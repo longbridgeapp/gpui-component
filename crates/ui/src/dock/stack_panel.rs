@@ -82,13 +82,17 @@ impl StackPanel {
 
     /// Return true if self or parent only have last panel.
     pub(super) fn is_last_panel(&self, cx: &AppContext) -> bool {
+        if self.panels.len() > 1 {
+            return false;
+        }
+
         if let Some(parent) = &self.parent {
             if let Some(parent) = parent.upgrade() {
                 return parent.read(cx).is_last_panel(cx);
             }
         }
 
-        self.panels.len() == 1
+        true
     }
 
     pub(super) fn panels_len(&self) -> usize {

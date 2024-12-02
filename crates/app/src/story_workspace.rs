@@ -224,12 +224,7 @@ impl StoryWorkspace {
         let left_panels = DockItem::split_with_sizes(
             Axis::Vertical,
             vec![
-                DockItem::tabs(
-                    vec![Arc::new(StoryContainer::panel::<ListStory>(cx))],
-                    None,
-                    &dock_area,
-                    cx,
-                ),
+                DockItem::tab(StoryContainer::panel::<ListStory>(cx), &dock_area, cx),
                 DockItem::tabs(
                     vec![
                         Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
@@ -263,15 +258,10 @@ impl StoryWorkspace {
 
         let right_panels = DockItem::split_with_sizes(
             Axis::Vertical,
-            vec![DockItem::tabs(
-                vec![
-                    Arc::new(StoryContainer::panel::<ImageStory>(cx)),
-                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
-                ],
-                None,
-                &dock_area,
-                cx,
-            )],
+            vec![
+                DockItem::tab(StoryContainer::panel::<ImageStory>(cx), &dock_area, cx),
+                DockItem::tab(StoryContainer::panel::<IconStory>(cx), &dock_area, cx),
+            ],
             vec![None],
             &dock_area,
             cx,
@@ -279,7 +269,7 @@ impl StoryWorkspace {
 
         _ = dock_area.update(cx, |view, cx| {
             view.set_version(MAIN_DOCK_AREA.version, cx);
-            view.set_root(dock_item, cx);
+            view.set_center(dock_item, cx);
             view.set_left_dock(left_panels, Some(px(350.)), true, cx);
             view.set_bottom_dock(bottom_panels, Some(px(200.)), true, cx);
             view.set_right_dock(right_panels, Some(px(320.)), true, cx);
