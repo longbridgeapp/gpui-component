@@ -373,15 +373,6 @@ impl Render for TilePanel {
                             .right(px(-5.0))
                             .w(px(10.0))
                             .h(item.bounds.size.height)
-                            .on_mouse_up(
-                                MouseButton::Left,
-                                cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                                    this.resizing_panel_index = None;
-                                    this.resizing_drag_data = None;
-                                    cx.emit(PanelEvent::LayoutChanged);
-                                    cx.notify();
-                                }),
-                            )
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(move |this, event: &MouseDownEvent, cx| {
@@ -433,15 +424,6 @@ impl Render for TilePanel {
                             .bottom(px(-5.0))
                             .w(item.bounds.size.width)
                             .h(px(10.0))
-                            .on_mouse_up(
-                                MouseButton::Left,
-                                cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                                    this.resizing_panel_index = None;
-                                    this.resizing_drag_data = None;
-                                    cx.emit(PanelEvent::LayoutChanged);
-                                    cx.notify();
-                                }),
-                            )
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(move |this, event: &MouseDownEvent, cx| {
@@ -491,15 +473,6 @@ impl Render for TilePanel {
                             .bottom(px(-5.0))
                             .w(px(10.0))
                             .h(px(10.0))
-                            .on_mouse_up(
-                                MouseButton::Left,
-                                cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                                    this.resizing_panel_index = None;
-                                    this.resizing_drag_data = None;
-                                    cx.emit(PanelEvent::LayoutChanged);
-                                    cx.notify();
-                                }),
-                            )
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(move |this, event: &MouseDownEvent, cx| {
@@ -558,14 +531,6 @@ impl Render for TilePanel {
                             .w_full()
                             .h(px(DRAG_BAR_HEIGHT))
                             .bg(cx.theme().transparent)
-                            .on_mouse_up(
-                                MouseButton::Left,
-                                cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                                    this.dragging_panel_index = None;
-                                    cx.emit(PanelEvent::LayoutChanged);
-                                    cx.notify();
-                                }),
-                            )
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(move |this, event: &MouseDownEvent, cx| {
@@ -600,5 +565,31 @@ impl Render for TilePanel {
                 .absolute()
                 .size_full()
             })
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(move |this, _event: &MouseUpEvent, cx| {
+                    this.dragging_panel_index = None;
+                    this.resizing_panel_index = None;
+                    this.resizing_drag_data = None;
+                    cx.emit(PanelEvent::LayoutChanged);
+                    cx.notify();
+                }),
+            )
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, event: &MouseDownEvent, cx| {
+                    if this.resizing_panel_index.is_none() && this.dragging_panel_index.is_none() {
+                        let position = event.position;
+                        let adjusted_position = position - this.bounds.origin;
+                        for (index, item) in this.panels.iter().enumerate() {
+                            if item.bounds.contains(&adjusted_position) {
+                                this.bring_panel_to_front(Some(index));
+                                cx.notify();
+                                break;
+                            }
+                        }
+                    }
+                }),
+            )
     }
 }
