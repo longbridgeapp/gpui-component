@@ -55,7 +55,7 @@ impl<E: Collapsible + IntoElement> RenderOnce for SidebarGroup<E> {
                         .px_2()
                         .rounded_md()
                         .text_xs()
-                        .text_color(cx.theme().sidebar_foreground)
+                        .text_color(cx.theme().sidebar_foreground.opacity(0.7))
                         .h_8()
                         .child(self.label),
                 )

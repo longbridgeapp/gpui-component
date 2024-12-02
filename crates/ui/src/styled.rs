@@ -5,8 +5,8 @@ use crate::{
     theme::ActiveTheme,
 };
 use gpui::{
-    div, px, Axis, Div, Edges, Element, ElementId, EntityId, FocusHandle, Pixels, Styled,
-    WindowContext,
+    div, px, AnyElement, Axis, Div, Edges, Element, ElementId, EntityId, FocusHandle, Pixels,
+    Styled, WindowContext,
 };
 use serde::{Deserialize, Serialize};
 

@@ -12,9 +12,13 @@ use gpui::{
 };
 use std::rc::Rc;
 
+mod footer;
 mod group;
+mod header;
 mod menu;
+pub use footer::*;
 pub use group::*;
+pub use header::*;
 pub use menu::*;
 
 const DEFAULT_WIDTH: Pixels = px(255.);
@@ -77,11 +81,13 @@ impl<E: Collapsible + IntoElement> Sidebar<E> {
         self
     }
 
+    /// Set the header of the sidebar.
     pub fn header(mut self, header: impl IntoElement) -> Self {
         self.header = Some(header.into_any_element());
         self
     }
 
+    /// Set the footer of the sidebar.
     pub fn footer(mut self, footer: impl IntoElement) -> Self {
         self.footer = Some(footer.into_any_element());
         self
@@ -177,6 +183,7 @@ impl<E: Collapsible + IntoElement> RenderOnce for Sidebar<E> {
             .id("sidebar")
             .w(self.width)
             .when(self.is_collapsed, |this| this.w(COLLAPSED_WIDTH))
+            .flex_shrink_0()
             .h_full()
             .overflow_hidden()
             .relative()
@@ -188,7 +195,7 @@ impl<E: Collapsible + IntoElement> RenderOnce for Sidebar<E> {
                 Side::Right => this.text_2xl(),
             })
             .when_some(self.header.take(), |this, header| {
-                this.child(h_flex().id("header").gap_2().p_2().child(header))
+                this.child(h_flex().id("header").p_2().gap_2().child(header))
             })
             .child(
                 v_flex().id("content").flex_1().min_h_0().child(

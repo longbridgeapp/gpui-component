@@ -1,9 +1,9 @@
 use gpui::{
-    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, AnchorCorner, AnyElement,
-    AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
-    FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement, KeyBinding,
-    LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render,
-    SharedString, Style, Styled, View, ViewContext, VisualContext, WindowContext,
+    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, relative, AnchorCorner,
+    AnyElement, AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter,
+    FocusHandle, FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement,
+    KeyBinding, LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point,
+    Render, Style, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -130,16 +130,12 @@ where
         self
     }
 
-    fn render_trigger(&mut self, is_open: bool, cx: &mut WindowContext) -> impl IntoElement {
-        let base = div().id(SharedString::from(format!("{}-trigger", self.id)));
+    fn render_trigger(&mut self, is_open: bool, cx: &mut WindowContext) -> AnyElement {
+        let Some(trigger) = self.trigger.take() else {
+            return div().into_any_element();
+        };
 
-        if self.trigger.is_none() {
-            return base;
-        }
-
-        let trigger = self.trigger.take().unwrap();
-
-        base.child((trigger)(is_open, cx)).into_element()
+        (trigger)(is_open, cx)
     }
 
     fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
@@ -274,7 +270,7 @@ impl<M: ManagedView> Element for Popover<M> {
                 popover_element = Some(element);
             }
 
-            let mut trigger_element = view.render_trigger(is_open, cx).into_any_element();
+            let mut trigger_element = view.render_trigger(is_open, cx);
             let trigger_layout_id = trigger_element.request_layout(cx);
 
             let layout_id = cx.request_layout(
