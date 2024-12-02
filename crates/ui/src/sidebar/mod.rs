@@ -87,11 +87,13 @@ impl<E: Collapsible + IntoElement> Sidebar<E> {
         self
     }
 
+    /// Add a child element to the sidebar, the child must implement `Collapsible`
     pub fn child(mut self, child: E) -> Self {
         self.content.push(child);
         self
     }
 
+    /// Add multiple children to the sidebar, the children must implement `Collapsible`
     pub fn children(mut self, children: impl IntoIterator<Item = E>) -> Self {
         self.content.extend(children);
         self
