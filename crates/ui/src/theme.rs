@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use gpui::{
     hsla, point, AppContext, BoxShadow, Global, Hsla, ModelContext, Pixels, SharedString,
@@ -204,6 +204,13 @@ pub struct ThemeColor {
     pub table_row_border: Hsla,
     pub title_bar: Hsla,
     pub title_bar_border: Hsla,
+    pub sidebar: Hsla,
+    pub sidebar_accent: Hsla,
+    pub sidebar_accent_foreground: Hsla,
+    pub sidebar_border: Hsla,
+    pub sidebar_foreground: Hsla,
+    pub sidebar_primary: Hsla,
+    pub sidebar_primary_foreground: Hsla,
 }
 
 impl ThemeColor {
@@ -271,6 +278,13 @@ impl ThemeColor {
             table_row_border: hsl(240.0, 5.9, 90.0).opacity(0.5),
             title_bar: hsl(0.0, 0.0, 100.),
             title_bar_border: hsl(240.0, 5.9, 90.0),
+            sidebar: hsl(0.0, 0.0, 98.0),
+            sidebar_accent: hsl(240.0, 4.8, 95.9),
+            sidebar_accent_foreground: hsl(240.0, 5.9, 10.0),
+            sidebar_border: hsl(220.0, 13.0, 91.0),
+            sidebar_foreground: hsl(240.0, 5.3, 26.1),
+            sidebar_primary: hsl(240.0, 5.9, 10.0),
+            sidebar_primary_foreground: hsl(0.0, 0.0, 98.0),
         }
     }
 
@@ -338,6 +352,13 @@ impl ThemeColor {
             table_row_border: hsl(240.0, 3.7, 16.9).opacity(0.5),
             title_bar: hsl(0., 0., 9.7),
             title_bar_border: hsl(240.0, 3.7, 15.9),
+            sidebar: hsl(240.0, 5.9, 10.0),
+            sidebar_accent: hsl(240.0, 3.7, 15.9),
+            sidebar_accent_foreground: hsl(240.0, 4.8, 95.9),
+            sidebar_border: hsl(240.0, 3.7, 15.9),
+            sidebar_foreground: hsl(240.0, 4.8, 95.9),
+            sidebar_primary: hsl(0.0, 0.0, 98.0),
+            sidebar_primary_foreground: hsl(240.0, 5.9, 10.0),
         }
     }
 }
@@ -345,73 +366,27 @@ impl ThemeColor {
 #[derive(Debug, Clone)]
 pub struct Theme {
     pub mode: ThemeMode,
-    pub accent: Hsla,
-    pub accent_foreground: Hsla,
-    pub accordion: Hsla,
-    pub accordion_active: Hsla,
-    pub accordion_hover: Hsla,
-    pub background: Hsla,
-    pub border: Hsla,
-    pub card: Hsla,
-    pub card_foreground: Hsla,
-    pub destructive: Hsla,
-    pub destructive_active: Hsla,
-    pub destructive_foreground: Hsla,
-    pub destructive_hover: Hsla,
-    pub drag_border: Hsla,
-    pub drop_target: Hsla,
+    colors: ThemeColor,
+
     pub font_family: SharedString,
     pub font_size: f32,
-    pub foreground: Hsla,
-    pub input: Hsla,
-    pub link: Hsla,
-    pub link_active: Hsla,
-    pub link_hover: Hsla,
-    pub list: Hsla,
-    pub list_active: Hsla,
-    pub list_active_border: Hsla,
-    pub list_even: Hsla,
-    pub list_head: Hsla,
-    pub list_hover: Hsla,
-    pub muted: Hsla,
-    pub muted_foreground: Hsla,
-    pub panel: Hsla,
-    pub popover: Hsla,
-    pub popover_foreground: Hsla,
-    pub primary: Hsla,
-    pub primary_active: Hsla,
-    pub primary_foreground: Hsla,
-    pub primary_hover: Hsla,
-    pub progress_bar: Hsla,
     pub radius: f32,
-    pub ring: Hsla,
-    pub scrollbar: Hsla,
-    pub scrollbar_thumb: Hsla,
-    pub secondary: Hsla,
-    pub secondary_active: Hsla,
-    pub secondary_foreground: Hsla,
-    pub secondary_hover: Hsla,
-    pub selection: Hsla,
     pub shadow: bool,
-    pub skeleton: Hsla,
-    pub slider_bar: Hsla,
-    pub slider_thumb: Hsla,
-    pub tab: Hsla,
-    pub tab_active: Hsla,
-    pub tab_active_foreground: Hsla,
-    pub tab_bar: Hsla,
-    pub tab_foreground: Hsla,
-    pub table: Hsla,
-    pub table_active: Hsla,
-    pub table_active_border: Hsla,
-    pub table_even: Hsla,
-    pub table_head: Hsla,
-    pub table_head_foreground: Hsla,
-    pub table_hover: Hsla,
-    pub table_row_border: Hsla,
-    pub title_bar: Hsla,
-    pub title_bar_border: Hsla,
     pub transparent: Hsla,
+}
+
+impl Deref for Theme {
+    type Target = ThemeColor;
+
+    fn deref(&self) -> &Self::Target {
+        &self.colors
+    }
+}
+
+impl DerefMut for Theme {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.colors
+    }
 }
 
 impl Global for Theme {}
@@ -485,6 +460,15 @@ impl Theme {
         self.accordion = self.accordion.apply(mask_color);
         self.accordion_hover = self.accordion_hover.apply(mask_color);
         self.accordion_active = self.accordion_active.apply(mask_color);
+        self.title_bar = self.title_bar.apply(mask_color);
+        self.title_bar_border = self.title_bar_border.apply(mask_color);
+        self.sidebar = self.sidebar.apply(mask_color);
+        self.sidebar_accent = self.sidebar_accent.apply(mask_color);
+        self.sidebar_accent_foreground = self.sidebar_accent_foreground.apply(mask_color);
+        self.sidebar_border = self.sidebar_border.apply(mask_color);
+        self.sidebar_foreground = self.sidebar_foreground.apply(mask_color);
+        self.sidebar_primary = self.sidebar_primary.apply(mask_color);
+        self.sidebar_primary_foreground = self.sidebar_primary_foreground.apply(mask_color);
     }
 }
 
@@ -503,68 +487,7 @@ impl From<ThemeColor> for Theme {
             },
             radius: 4.0,
             shadow: true,
-            accent: colors.accent,
-            accent_foreground: colors.accent_foreground,
-            accordion: colors.accordion,
-            accordion_active: colors.accordion_active,
-            accordion_hover: colors.accordion_hover,
-            background: colors.background,
-            border: colors.border,
-            card: colors.card,
-            card_foreground: colors.card_foreground,
-            destructive: colors.destructive,
-            destructive_active: colors.destructive_active,
-            destructive_foreground: colors.destructive_foreground,
-            destructive_hover: colors.destructive_hover,
-            drag_border: colors.drag_border,
-            drop_target: colors.drop_target,
-            foreground: colors.foreground,
-            input: colors.input,
-            link: colors.link,
-            link_active: colors.link_active,
-            link_hover: colors.link_hover,
-            list: colors.list,
-            list_active: colors.list_active,
-            list_active_border: colors.list_active_border,
-            list_even: colors.list_even,
-            list_head: colors.list_head,
-            list_hover: colors.list_hover,
-            muted: colors.muted,
-            muted_foreground: colors.muted_foreground,
-            panel: colors.panel,
-            popover: colors.popover,
-            popover_foreground: colors.popover_foreground,
-            primary: colors.primary,
-            primary_active: colors.primary_active,
-            primary_foreground: colors.primary_foreground,
-            primary_hover: colors.primary_hover,
-            progress_bar: colors.progress_bar,
-            ring: colors.ring,
-            scrollbar: colors.scrollbar,
-            scrollbar_thumb: colors.scrollbar_thumb,
-            secondary: colors.secondary,
-            secondary_active: colors.secondary_active,
-            secondary_foreground: colors.secondary_foreground,
-            secondary_hover: colors.secondary_hover,
-            selection: colors.selection,
-            skeleton: colors.skeleton,
-            slider_bar: colors.slider_bar,
-            slider_thumb: colors.slider_thumb,
-            tab: colors.tab,
-            tab_active: colors.tab_active,
-            tab_active_foreground: colors.tab_active_foreground,
-            tab_bar: colors.tab_bar,
-            tab_foreground: colors.tab_foreground,
-            table: colors.table,
-            table_active: colors.table_active,
-            table_active_border: colors.table_active_border,
-            table_even: colors.table_even,
-            table_head: colors.table_head,
-            table_head_foreground: colors.table_head_foreground,
-            table_hover: colors.table_hover,
-            table_row_border: colors.table_row_border,
-            title_bar: colors.title_bar,
-            title_bar_border: colors.title_bar_border,
+            colors,
         }
     }
 }

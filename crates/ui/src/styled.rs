@@ -405,3 +405,16 @@ impl Placement {
         }
     }
 }
+
+/// A enum for defining the side of the element.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    pub(crate) fn is_left(&self) -> bool {
+        matches!(self, Self::Left)
+    }
+}
