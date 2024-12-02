@@ -1,23 +1,35 @@
-use crate::{theme::ActiveTheme, v_flex, Side};
+use crate::{
+    button::{Button, ButtonStyled},
+    h_flex,
+    scroll::ScrollbarAxis,
+    theme::ActiveTheme,
+    v_flex, Collapsible, Icon, IconName, Side, Sizable, StyledExt,
+};
 use gpui::{
-    div, prelude::FluentBuilder, px, AnyElement, Div, Empty, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, Render, RenderOnce, SharedString, Styled as _, ViewContext,
+    div, prelude::FluentBuilder, px, AnyElement, ClickEvent, Div, Entity, EntityId,
+    InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, RenderOnce, Styled, View,
     WindowContext,
 };
 use std::rc::Rc;
 
+mod group;
 mod menu;
+pub use group::*;
 pub use menu::*;
 
 const DEFAULT_WIDTH: Pixels = px(255.);
+const COLLAPSED_WIDTH: Pixels = px(48.);
 
 /// A sidebar
-pub struct Sidebar {
-    content: Rc<dyn Fn(&mut WindowContext) -> AnyElement>,
+#[derive(IntoElement)]
+pub struct Sidebar<E: Collapsible + IntoElement + 'static> {
+    /// The parent view id
+    view_id: EntityId,
+    content: Vec<E>,
     /// header view
-    header: Option<Rc<dyn Fn(&mut WindowContext) -> AnyElement>>,
+    header: Option<AnyElement>,
     /// footer view
-    footer: Option<Rc<dyn Fn(&mut WindowContext) -> AnyElement>>,
+    footer: Option<AnyElement>,
     /// The side of the sidebar
     side: Side,
     collapsible: bool,
@@ -25,29 +37,26 @@ pub struct Sidebar {
     is_collapsed: bool,
 }
 
-impl Sidebar {
-    pub fn left() -> Self {
+impl<E: Collapsible + IntoElement> Sidebar<E> {
+    fn new(view_id: EntityId, side: Side) -> Self {
         Self {
-            content: Rc::new(|_| Empty.into_any_element()),
+            view_id,
+            content: vec![],
             header: None,
             footer: None,
-            side: Side::Left,
+            side,
             collapsible: true,
             width: DEFAULT_WIDTH,
             is_collapsed: false,
         }
     }
 
-    pub fn right() -> Self {
-        Self {
-            content: Rc::new(|_| Empty.into_any_element()),
-            header: None,
-            footer: None,
-            side: Side::Right,
-            collapsible: true,
-            width: DEFAULT_WIDTH,
-            is_collapsed: false,
-        }
+    pub fn left<V: Render + 'static>(view: &View<V>) -> Self {
+        Self::new(view.entity_id(), Side::Left)
+    }
+
+    pub fn right<V: Render + 'static>(view: &View<V>) -> Self {
+        Self::new(view.entity_id(), Side::Right)
     }
 
     /// Set the width of the sidebar
@@ -68,79 +77,107 @@ impl Sidebar {
         self
     }
 
-    pub fn set_collapsed(&mut self, collapsed: bool, cx: &mut ViewContext<Self>) {
-        self.is_collapsed = collapsed;
-        cx.notify();
-    }
-
-    pub fn header<F, E>(mut self, header: F) -> Self
-    where
-        E: IntoElement,
-        F: Fn(&mut WindowContext) -> E + 'static,
-    {
-        self.header = Some(Rc::new(move |cx| header(cx).into_any_element()));
+    pub fn header(mut self, header: impl IntoElement) -> Self {
+        self.header = Some(header.into_any_element());
         self
     }
 
-    pub fn footer<F, E>(mut self, footer: F) -> Self
-    where
-        E: IntoElement,
-        F: Fn(&mut WindowContext) -> E + 'static,
-    {
-        self.footer = Some(Rc::new(move |cx| footer(cx).into_any_element()));
+    pub fn footer(mut self, footer: impl IntoElement) -> Self {
+        self.footer = Some(footer.into_any_element());
         self
     }
 
-    pub fn content<F, E>(mut self, content: F) -> Self
-    where
-        E: IntoElement,
-        F: Fn(&mut WindowContext) -> E + 'static,
-    {
-        self.content = Rc::new(move |cx| content(cx).into_any_element());
+    pub fn child(mut self, child: E) -> Self {
+        self.content.push(child);
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = E>) -> Self {
+        self.content.extend(children);
         self
     }
 }
 
-/// A sidebar group
+/// Sidebar collapse button with Icon.
 #[derive(IntoElement)]
-pub struct SidebarGroup {
-    base: Div,
-    label: SharedString,
+pub struct SidebarToggleButton {
+    btn: Button,
+    is_collapsed: bool,
+    side: Side,
+    on_click: Option<Rc<dyn Fn(&ClickEvent, &mut WindowContext)>>,
 }
 
-impl SidebarGroup {
-    pub fn new(label: impl Into<SharedString>) -> Self {
+impl SidebarToggleButton {
+    fn new(side: Side) -> Self {
         Self {
-            base: div().gap_2().flex_col(),
-            label: label.into(),
+            btn: Button::new("sidebar-collapse").ghost().small(),
+            is_collapsed: false,
+            side,
+            on_click: None,
         }
     }
-}
 
-impl RenderOnce for SidebarGroup {
-    fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
-        v_flex()
-            .relative()
-            .p_2()
-            .child(
-                div()
-                    .flex_shrink_0()
-                    .px_2()
-                    .rounded_md()
-                    .text_xs()
-                    .text_color(cx.theme().sidebar_foreground)
-                    .h_8()
-                    .child(self.label),
-            )
-            .child(self.base)
+    pub fn left() -> Self {
+        Self::new(Side::Left)
+    }
+
+    pub fn right() -> Self {
+        Self::new(Side::Right)
+    }
+
+    pub fn collapsed(mut self, is_collapsed: bool) -> Self {
+        self.is_collapsed = is_collapsed;
+        self
+    }
+
+    pub fn on_click(
+        mut self,
+        on_click: impl Fn(&ClickEvent, &mut WindowContext) + 'static,
+    ) -> Self {
+        self.on_click = Some(Rc::new(on_click));
+        self
     }
 }
 
-impl Render for Sidebar {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
+impl RenderOnce for SidebarToggleButton {
+    fn render(self, _: &mut WindowContext) -> impl IntoElement {
+        let is_collapsed = self.is_collapsed;
+        let on_click = self.on_click.clone();
+
+        let icon = if is_collapsed {
+            if self.side.is_left() {
+                IconName::PanelLeftOpen
+            } else {
+                IconName::PanelRightOpen
+            }
+        } else {
+            if self.side.is_left() {
+                IconName::PanelLeftClose
+            } else {
+                IconName::PanelRightClose
+            }
+        };
+
+        self.btn
+            .when_some(on_click, |this, on_click| {
+                this.on_click(move |ev, cx| {
+                    on_click(ev, cx);
+                })
+            })
+            .icon(Icon::new(icon).size_4())
+    }
+}
+
+impl<E: Collapsible + IntoElement> RenderOnce for Sidebar<E> {
+    fn render(mut self, cx: &mut WindowContext) -> impl IntoElement {
+        let is_collaped = self.is_collapsed;
         v_flex()
             .id("sidebar")
             .w(self.width)
+            .when(self.is_collapsed, |this| this.w(COLLAPSED_WIDTH))
+            .h_full()
+            .overflow_hidden()
+            .relative()
             .bg(cx.theme().sidebar)
             .text_color(cx.theme().sidebar_foreground)
             .border_color(cx.theme().sidebar_border)
@@ -148,14 +185,19 @@ impl Render for Sidebar {
                 Side::Left => this.border_r_1(),
                 Side::Right => this.text_2xl(),
             })
-            .when_some(self.header.clone(), |this, header| this.child(header(cx)))
+            .when_some(self.header.take(), |this, header| {
+                this.child(h_flex().id("header").gap_2().p_2().child(header))
+            })
             .child(
-                v_flex()
-                    .flex_1()
-                    .id("sidebar-content")
-                    .gap_2()
-                    .child((self.content)(cx)),
+                v_flex().id("content").flex_1().min_h_0().child(
+                    div()
+                        .children(self.content.into_iter().map(|c| c.collapsed(is_collaped)))
+                        .gap_2()
+                        .scrollable(self.view_id, ScrollbarAxis::Vertical),
+                ),
             )
-            .when_some(self.footer.clone(), |this, footer| this.child(footer(cx)))
+            .when_some(self.footer.take(), |this, footer| {
+                this.child(h_flex().id("footer").gap_2().p_2().child(footer))
+            })
     }
 }

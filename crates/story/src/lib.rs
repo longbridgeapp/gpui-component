@@ -11,6 +11,7 @@ mod popup_story;
 mod progress_story;
 mod resizable_story;
 mod scrollable_story;
+mod sidebar_story;
 mod switch_story;
 mod table_story;
 mod text_story;
@@ -31,6 +32,7 @@ pub use progress_story::ProgressStory;
 pub use resizable_story::ResizableStory;
 pub use scrollable_story::ScrollableStory;
 use serde::{Deserialize, Serialize};
+pub use sidebar_story::SidebarStory;
 pub use switch_story::SwitchStory;
 pub use table_story::TableStory;
 pub use text_story::TextStory;
@@ -257,6 +259,7 @@ impl StoryState {
             "TooltipStory" => story!(TooltipStory),
             "WebViewStory" => story!(WebViewStory),
             "AccordionStory" => story!(AccordionStory),
+            "SidebarStory" => story!(SidebarStory),
             _ => {
                 unreachable!("Invalid story klass: {}", self.story_klass)
             }

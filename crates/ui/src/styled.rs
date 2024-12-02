@@ -418,3 +418,9 @@ impl Side {
         matches!(self, Self::Left)
     }
 }
+
+/// A trait for defining element that can be collapsed.
+pub trait Collapsible {
+    fn collapsed(self, collapsed: bool) -> Self;
+    fn is_collapsed(&self) -> bool;
+}
