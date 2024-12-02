@@ -1,6 +1,6 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, Div, ElementId, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, Styled,
+    prelude::FluentBuilder as _, Div, ElementId, InteractiveElement, IntoElement, ParentElement,
+    RenderOnce, SharedString, Styled,
 };
 
 use crate::{h_flex, popup_menu::PopupMenuExt, theme::ActiveTheme as _, Collapsible, Selectable};

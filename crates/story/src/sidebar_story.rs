@@ -1,7 +1,6 @@
 use gpui::{
-    div, img, impl_actions, px, relative, AnchorCorner, ClickEvent, InteractiveElement,
-    ParentElement, Render, SharedString, Styled, View, ViewContext, VisualContext as _,
-    WindowContext,
+    div, impl_actions, relative, ClickEvent, ParentElement, Render, SharedString, Styled, View,
+    ViewContext, VisualContext as _, WindowContext,
 };
 
 use serde::Deserialize;
@@ -14,7 +13,7 @@ use ui::{
         Sidebar, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarToggleButton,
     },
     theme::ActiveTheme,
-    v_flex, Collapsible, Icon, IconName, StyledExt,
+    v_flex, Collapsible, Icon, IconName,
 };
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
@@ -208,7 +207,6 @@ impl Render for SidebarStory {
                     .header(
                         SidebarHeader::new()
                             .collapsed(self.is_collapsed)
-                            .justify_between()
                             .w_full()
                             .child(
                                 div()
@@ -230,6 +228,7 @@ impl Render for SidebarStory {
                                     v_flex()
                                         .gap_0()
                                         .text_sm()
+                                        .flex_1()
                                         .line_height(relative(1.25))
                                         .overflow_hidden()
                                         .text_ellipsis()

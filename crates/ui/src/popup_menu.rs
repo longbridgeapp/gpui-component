@@ -5,11 +5,11 @@ use std::rc::Rc;
 use gpui::{
     actions, div, prelude::FluentBuilder, px, Action, AppContext, DismissEvent, EventEmitter,
     FocusHandle, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels, Render,
-    SharedString, Styled as _, View, ViewContext, VisualContext as _, WindowContext,
+    SharedString, View, ViewContext, VisualContext as _, WindowContext,
 };
 use gpui::{
     anchored, canvas, rems, AnchorCorner, AnyElement, Bounds, Edges, FocusableView, Keystroke,
-    ScrollHandle, StatefulInteractiveElement, WeakView,
+    ScrollHandle, StatefulInteractiveElement, Styled, WeakView,
 };
 
 use crate::scroll::{Scrollbar, ScrollbarState};
@@ -31,7 +31,7 @@ pub fn init(cx: &mut AppContext) {
     ]);
 }
 
-pub trait PopupMenuExt: Selectable + IntoElement + 'static {
+pub trait PopupMenuExt: Styled + Selectable + IntoElement + 'static {
     /// Create a popup menu with the given items, anchored to the TopLeft corner
     fn popup_menu(
         self,
@@ -42,14 +42,17 @@ pub trait PopupMenuExt: Selectable + IntoElement + 'static {
 
     /// Create a popup menu with the given items, anchored to the given corner
     fn popup_menu_with_anchor(
-        self,
+        mut self,
         anchor: impl Into<AnchorCorner>,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
+        let style = self.style().clone();
         let element_id = self.element_id();
+
         Popover::new(SharedString::from(format!("popup-menu:{:?}", element_id)))
             .no_style()
             .trigger(self)
+            .trigger_style(style)
             .anchor(anchor.into())
             .content(move |cx| PopupMenu::build(cx, |menu, cx| f(menu, cx)))
     }

@@ -91,34 +91,26 @@ impl Render for ProgressStory {
             .child(
                 h_flex()
                     .gap_x_2()
-                    .child(
-                        Button::new("button-1")
-                            .label("0%")
-                            .on_click(cx.listener(|this, _, _| {
-                                this.set_value(0.);
-                            })),
-                    )
-                    .child(
-                        Button::new("button-2")
-                            .label("25%")
-                            .on_click(cx.listener(|this, _, _| {
-                                this.set_value(25.);
-                            })),
-                    )
-                    .child(
-                        Button::new("button-3")
-                            .label("75%")
-                            .on_click(cx.listener(|this, _, _| {
-                                this.set_value(75.);
-                            })),
-                    )
-                    .child(
-                        Button::new("button-4")
-                            .label("100%")
-                            .on_click(cx.listener(|this, _, _| {
-                                this.set_value(100.);
-                            })),
-                    ),
+                    .child(Button::new("button-1").label("0%").on_click(cx.listener(
+                        |this, _, _| {
+                            this.set_value(0.);
+                        },
+                    )))
+                    .child(Button::new("button-2").label("25%").on_click(cx.listener(
+                        |this, _, _| {
+                            this.set_value(25.);
+                        },
+                    )))
+                    .child(Button::new("button-3").label("75%").on_click(cx.listener(
+                        |this, _, _| {
+                            this.set_value(75.);
+                        },
+                    )))
+                    .child(Button::new("button-4").label("100%").on_click(cx.listener(
+                        |this, _, _| {
+                            this.set_value(100.);
+                        },
+                    ))),
             )
             .child(div().w_1_2().child(Progress::new().value(self.value)))
             .child(

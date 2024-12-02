@@ -6,7 +6,7 @@ use crate::{
     v_flex, Collapsible, Icon, IconName, Side, Sizable, StyledExt,
 };
 use gpui::{
-    div, prelude::FluentBuilder, px, AnyElement, ClickEvent, Div, Entity, EntityId,
+    div, prelude::FluentBuilder, px, AnyElement, ClickEvent, Entity, EntityId,
     InteractiveElement as _, IntoElement, ParentElement, Pixels, Render, RenderOnce, Styled, View,
     WindowContext,
 };
