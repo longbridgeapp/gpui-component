@@ -1,7 +1,7 @@
 use crate::{theme::ActiveTheme, Sizable, Size};
 use gpui::{
-    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Render, RenderOnce,
-    SharedString, StyleRefinement, Styled, Svg, View, VisualContext, WindowContext,
+    prelude::FluentBuilder as _, svg, AnyElement, Hsla, IntoElement, Radians, Render, RenderOnce,
+    SharedString, StyleRefinement, Styled, Svg, Transformation, View, VisualContext, WindowContext,
 };
 
 #[derive(IntoElement, Clone)]
@@ -13,7 +13,10 @@ pub enum IconName {
     ArrowUp,
     Asterisk,
     Bell,
+    BookOpen,
+    Bot,
     Calendar,
+    ChartPie,
     Check,
     ChevronDown,
     ChevronLeft,
@@ -21,6 +24,7 @@ pub enum IconName {
     ChevronUp,
     ChevronsUpDown,
     CircleCheck,
+    CircleUser,
     CircleX,
     Close,
     Copy,
@@ -30,6 +34,8 @@ pub enum IconName {
     EllipsisVertical,
     Eye,
     EyeOff,
+    Frame,
+    GalleryVerticalEnd,
     GitHub,
     Globe,
     Heart,
@@ -39,6 +45,7 @@ pub enum IconName {
     LayoutDashboard,
     Loader,
     LoaderCircle,
+    Map,
     Maximize,
     Menu,
     Minimize,
@@ -48,13 +55,18 @@ pub enum IconName {
     PanelBottom,
     PanelBottomOpen,
     PanelLeft,
+    PanelLeftClose,
     PanelLeftOpen,
     PanelRight,
+    PanelRightClose,
     PanelRightOpen,
     Plus,
     Search,
+    Settings,
+    Settings2,
     SortAscending,
     SortDescending,
+    SquareTerminal,
     Star,
     StarOff,
     Sun,
@@ -77,7 +89,10 @@ impl IconName {
             IconName::ArrowUp => "icons/arrow-up.svg",
             IconName::Asterisk => "icons/asterisk.svg",
             IconName::Bell => "icons/bell.svg",
+            IconName::BookOpen => "icons/book-open.svg",
+            IconName::Bot => "icons/bot.svg",
             IconName::Calendar => "icons/calendar.svg",
+            IconName::ChartPie => "icons/chart-pie.svg",
             IconName::Check => "icons/check.svg",
             IconName::ChevronDown => "icons/chevron-down.svg",
             IconName::ChevronLeft => "icons/chevron-left.svg",
@@ -85,6 +100,7 @@ impl IconName {
             IconName::ChevronUp => "icons/chevron-up.svg",
             IconName::ChevronsUpDown => "icons/chevrons-up-down.svg",
             IconName::CircleCheck => "icons/circle-check.svg",
+            IconName::CircleUser => "icons/circle-user.svg",
             IconName::CircleX => "icons/circle-x.svg",
             IconName::Close => "icons/close.svg",
             IconName::Copy => "icons/copy.svg",
@@ -94,6 +110,8 @@ impl IconName {
             IconName::EllipsisVertical => "icons/ellipsis-vertical.svg",
             IconName::Eye => "icons/eye.svg",
             IconName::EyeOff => "icons/eye-off.svg",
+            IconName::Frame => "icons/frame.svg",
+            IconName::GalleryVerticalEnd => "icons/gallery-vertical-end.svg",
             IconName::GitHub => "icons/github.svg",
             IconName::Globe => "icons/globe.svg",
             IconName::Heart => "icons/heart.svg",
@@ -103,6 +121,7 @@ impl IconName {
             IconName::LayoutDashboard => "icons/layout-dashboard.svg",
             IconName::Loader => "icons/loader.svg",
             IconName::LoaderCircle => "icons/loader-circle.svg",
+            IconName::Map => "icons/map.svg",
             IconName::Maximize => "icons/maximize.svg",
             IconName::Menu => "icons/menu.svg",
             IconName::Minimize => "icons/minimize.svg",
@@ -112,13 +131,18 @@ impl IconName {
             IconName::PanelBottom => "icons/panel-bottom.svg",
             IconName::PanelBottomOpen => "icons/panel-bottom-open.svg",
             IconName::PanelLeft => "icons/panel-left.svg",
+            IconName::PanelLeftClose => "icons/panel-left-close.svg",
             IconName::PanelLeftOpen => "icons/panel-left-open.svg",
             IconName::PanelRight => "icons/panel-right.svg",
+            IconName::PanelRightClose => "icons/panel-right-close.svg",
             IconName::PanelRightOpen => "icons/panel-right-open.svg",
             IconName::Plus => "icons/plus.svg",
             IconName::Search => "icons/search.svg",
+            IconName::Settings => "icons/settings.svg",
+            IconName::Settings2 => "icons/settings-2.svg",
             IconName::SortAscending => "icons/sort-ascending.svg",
             IconName::SortDescending => "icons/sort-descending.svg",
+            IconName::SquareTerminal => "icons/square-terminal.svg",
             IconName::Star => "icons/star.svg",
             IconName::StarOff => "icons/star-off.svg",
             IconName::Sun => "icons/sun.svg",
@@ -163,6 +187,7 @@ pub struct Icon {
     path: SharedString,
     text_color: Option<Hsla>,
     size: Option<Size>,
+    rotation: Option<Radians>,
 }
 
 impl Default for Icon {
@@ -172,6 +197,7 @@ impl Default for Icon {
             path: "".into(),
             text_color: None,
             size: None,
+            rotation: None,
         }
     }
 }
@@ -219,6 +245,14 @@ impl Icon {
 
     pub fn empty() -> Self {
         Self::default()
+    }
+
+    /// Rotate the icon by the given angle
+    pub fn rotate(mut self, radians: impl Into<Radians>) -> Self {
+        self.base = self
+            .base
+            .with_transformation(Transformation::rotate(radians));
+        self
     }
 }
 
@@ -278,5 +312,8 @@ impl Render for Icon {
                 Size::Large => this.size_6(),
             })
             .path(self.path.clone())
+            .when_some(self.rotation, |this, rotation| {
+                this.with_transformation(Transformation::rotate(rotation))
+            })
     }
 }

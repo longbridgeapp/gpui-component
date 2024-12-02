@@ -56,6 +56,12 @@ pub struct Notification {
     closing: bool,
 }
 
+impl From<String> for Notification {
+    fn from(s: String) -> Self {
+        Self::new(s)
+    }
+}
+
 impl From<SharedString> for Notification {
     fn from(s: SharedString) -> Self {
         Self::new(s)

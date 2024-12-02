@@ -4,11 +4,8 @@ use gpui::{
 };
 
 use ui::{
-    h_flex,
-    label::Label,
-    switch::{LabelSide, Switch},
-    theme::ActiveTheme,
-    v_flex, Disableable as _, Sizable, StyledExt,
+    h_flex, label::Label, switch::Switch, theme::ActiveTheme, v_flex, Disableable as _, Side,
+    Sizable, StyledExt,
 };
 
 pub struct SwitchStory {
@@ -90,7 +87,7 @@ impl Render for SwitchStory {
                         .child(
                             Switch::new("switch1")
                                 .checked(self.switch1)
-                                .label_side(LabelSide::Left)
+                                .label_side(Side::Left)
                                 .label("Subscribe")
                                 .on_click(cx.listener(move |view, checked, cx| {
                                     view.switch1 = *checked;
