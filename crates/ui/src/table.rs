@@ -535,7 +535,9 @@ where
             if ix == col_ix {
                 col_group.sort = Some(sort);
             } else {
-                col_group.sort = Some(ColSort::Default);
+                if col_group.sort.is_some() {
+                    col_group.sort = Some(ColSort::Default);
+                }
             }
         }
 
