@@ -1,5 +1,5 @@
 use crate::{
-    button::{Button, ButtonStyled},
+    button::{Button, ButtonVarianted},
     h_flex,
     scroll::ScrollbarAxis,
     theme::ActiveTheme,

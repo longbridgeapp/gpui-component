@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonStyle, ButtonStyled as _},
+    button::{Button, ButtonVariant, ButtonVarianted as _},
     checkbox::Checkbox,
     date_picker::DatePicker,
     dropdown::Dropdown,
@@ -84,7 +84,7 @@ impl ListDelegate for ListItemDeletegate {
                 .suffix(|_| {
                     Button::new("like")
                         .icon(IconName::Heart)
-                        .style(ButtonStyle::Ghost)
+                        .with_variant(ButtonVariant::Ghost)
                         .size(px(18.))
                         .on_click(move |_, cx| {
                             cx.stop_propagation();

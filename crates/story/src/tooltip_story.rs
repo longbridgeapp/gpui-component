@@ -4,7 +4,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonStyle},
+    button::{Button, ButtonVariant, ButtonVarianted},
     checkbox::Checkbox,
     h_flex,
     label::Label,
@@ -57,7 +57,7 @@ impl Render for TooltipStory {
                     .child(
                         Button::new("button")
                             .label("Hover me")
-                            .style(ButtonStyle::Primary),
+                            .with_variant(ButtonVariant::Primary),
                     )
                     .id("tooltip-1")
                     .tooltip(|cx| Tooltip::new("This is a Button", cx)),

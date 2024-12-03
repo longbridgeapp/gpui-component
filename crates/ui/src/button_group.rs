@@ -5,7 +5,7 @@ use gpui::{
 use std::{cell::Cell, rc::Rc};
 
 use crate::{
-    button::{Button, ButtonStyle, ButtonStyled},
+    button::{Button, ButtonVariant, ButtonVarianted},
     Disableable, Sizable, Size,
 };
 
@@ -20,7 +20,7 @@ pub struct ButtonGroup {
 
     // The button props
     compact: Option<bool>,
-    style: Option<ButtonStyle>,
+    variant: Option<ButtonVariant>,
     size: Option<Size>,
 
     on_click: Option<Box<dyn Fn(&Vec<usize>, &mut WindowContext) + 'static>>,
@@ -40,7 +40,7 @@ impl ButtonGroup {
             base: div(),
             children: Vec::new(),
             id: id.into(),
-            style: None,
+            variant: None,
             size: None,
             compact: None,
             multiple: false,
@@ -89,9 +89,9 @@ impl Styled for ButtonGroup {
     }
 }
 
-impl ButtonStyled for ButtonGroup {
-    fn with_style(mut self, style: ButtonStyle) -> Self {
-        self.style = Some(style);
+impl ButtonVarianted for ButtonGroup {
+    fn with_variant(mut self, variant: ButtonVariant) -> Self {
+        self.variant = Some(variant);
         self
     }
 }
@@ -163,7 +163,7 @@ impl RenderOnce for ButtonGroup {
                         }
                         .stop_propagation(false)
                         .when_some(self.size, |this, size| this.with_size(size))
-                        .when_some(self.style, |this, style| this.style(style))
+                        .when_some(self.variant, |this, variant| this.with_variant(variant))
                         .when_some(self.compact, |this, _| this.compact())
                         .on_click(move |_, _| {
                             state.set(Some(child_index));

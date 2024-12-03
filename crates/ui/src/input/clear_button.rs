@@ -1,7 +1,7 @@
 use gpui::{Styled, WindowContext};
 
 use crate::{
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVarianted as _},
     theme::ActiveTheme as _,
     Icon, IconName, Sizable as _,
 };

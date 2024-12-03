@@ -8,7 +8,7 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVarianted as _},
     dropdown::Escape,
     h_flex,
     input::ClearButton,

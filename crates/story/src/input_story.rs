@@ -7,7 +7,7 @@ use regex::Regex;
 
 use crate::section;
 use ui::{
-    button::Button,
+    button::{Button, ButtonVariant, ButtonVarianted as _},
     checkbox::Checkbox,
     h_flex,
     input::{InputEvent, OtpInput, TextInput},
@@ -398,7 +398,7 @@ impl Render for InputStory {
                     .child(
                         Button::new("btn-submit")
                             .w_full()
-                            .style(ui::button::ButtonStyle::Primary)
+                            .with_variant(ButtonVariant::Primary)
                             .label("Submit")
                             .on_click(cx.listener(|_, _, cx| cx.dispatch_action(Box::new(Tab)))),
                     )

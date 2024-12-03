@@ -6,7 +6,7 @@ use gpui::{
 use regex::Regex;
 
 use crate::{
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVarianted as _},
     h_flex,
     input::{InputEvent, TextInput},
     prelude::FluentBuilder,

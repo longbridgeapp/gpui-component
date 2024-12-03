@@ -4,7 +4,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonCustomStyle, ButtonStyled as _},
+    button::{Button, ButtonCustomVariant, ButtonVarianted as _},
     button_group::ButtonGroup,
     checkbox::Checkbox,
     h_flex,
@@ -204,7 +204,7 @@ impl Render for ButtonStory {
                             .child(
                                 Button::new("button-6-custom")
                                     .custom(
-                                        ButtonCustomStyle::new(cx)
+                                        ButtonCustomVariant::new(cx)
                                             .color(if cx.theme().mode.is_dark() {
                                                 ui::green_900()
                                             } else {
