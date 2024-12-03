@@ -11,6 +11,11 @@ pub enum BadgeVariant {
     Secondary,
     Outline,
     Destructive,
+    Custom {
+        color: Hsla,
+        foreground: Hsla,
+        border: Hsla,
+    },
 }
 impl BadgeVariant {
     fn bg(&self, cx: &gpui::WindowContext) -> Hsla {
@@ -19,6 +24,7 @@ impl BadgeVariant {
             Self::Secondary => cx.theme().secondary,
             Self::Outline => gpui::transparent_black(),
             Self::Destructive => cx.theme().destructive,
+            Self::Custom { color, .. } => *color,
         }
     }
 
@@ -28,6 +34,7 @@ impl BadgeVariant {
             Self::Secondary => cx.theme().secondary,
             Self::Outline => cx.theme().border,
             Self::Destructive => cx.theme().destructive,
+            Self::Custom { border, .. } => *border,
         }
     }
 
@@ -37,6 +44,7 @@ impl BadgeVariant {
             Self::Secondary => cx.theme().secondary_foreground,
             Self::Outline => cx.theme().foreground,
             Self::Destructive => cx.theme().destructive_foreground,
+            Self::Custom { foreground, .. } => *foreground,
         }
     }
 }
@@ -78,6 +86,14 @@ impl Badge {
 
     pub fn destructive() -> Self {
         Self::new().with_variant(BadgeVariant::Destructive)
+    }
+
+    pub fn custom(color: Hsla, foreground: Hsla, border: Hsla) -> Self {
+        Self::new().with_variant(BadgeVariant::Custom {
+            color,
+            foreground,
+            border,
+        })
     }
 }
 impl Sizable for Badge {

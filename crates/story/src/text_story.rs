@@ -254,6 +254,7 @@ impl Render for TextStory {
                             .child(Badge::secondary().small().child("Secondary"))
                             .child(Badge::outline().small().child("Outline"))
                             .child(Badge::destructive().small().child("Destructive"))
+                            .child(Badge::custom(ui::yellow_500(), ui::yellow_800(), ui::yellow_500()).small().child("Custom"))
                     )
                     .child(
                         h_flex().gap_2()
@@ -261,6 +262,7 @@ impl Render for TextStory {
                             .child(Badge::secondary().child("Secondary"))
                             .child(Badge::outline().child("Outline"))
                             .child(Badge::destructive().child("Destructive"))
+                            .child(Badge::custom(ui::yellow_500(), ui::yellow_800(), ui::yellow_500()).child("Custom"))
                     )
             )
     }
