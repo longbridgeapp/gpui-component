@@ -296,18 +296,21 @@ impl TilePanel {
         cx.notify();
     }
 
-    /// Bring the panel to front by updating its z_index
-    fn bring_panel_to_front(&mut self, dragging_panel_index: Option<usize>) {
-        if let Some(index) = dragging_panel_index {
-            let new_z_index = self
+    /// Bring the panel of target_index to front by updating its z_index
+    fn bring_panel_to_front(&mut self, target_index: Option<usize>) {
+        if let Some(index) = target_index {
+            let max_z_index = self
                 .panels
                 .iter()
                 .map(|item| item.z_index)
                 .max()
-                .unwrap_or(0)
-                + 1;
+                .unwrap_or(0);
+
             if let Some(item) = self.panels.get_mut(index) {
-                item.z_index = new_z_index % usize::MAX;
+                if item.z_index == max_z_index {
+                    return;
+                }
+                item.z_index = (max_z_index + 1) % usize::MAX;
             }
         }
     }
