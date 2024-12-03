@@ -361,7 +361,7 @@ where
         cx.notify();
     }
 
-    fn set_selected_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
+    pub fn set_selected_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Row;
         self.right_clicked_row = None;
         self.selected_row = Some(row_ix);
