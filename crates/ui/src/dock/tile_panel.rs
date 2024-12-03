@@ -10,6 +10,7 @@ use gpui::{
     ViewContext, VisualContext,
 };
 
+const MAX_Z_INDEX: usize = 1000;
 const MINIMUM_WIDTH: f32 = 100.;
 const MINIMUM_HEIGHT: f32 = 100.;
 const DRAG_BAR_HEIGHT: f32 = 30.;
@@ -296,18 +297,18 @@ impl TilePanel {
         cx.notify();
     }
 
+    /// Bring the panel to front by updating its z_index
     fn bring_panel_to_front(&mut self, dragging_panel_index: Option<usize>) {
         if let Some(index) = dragging_panel_index {
-            // Bring the panel to front by updating its z_index
             let new_z_index = self
                 .panels
                 .iter()
                 .map(|item| item.z_index)
                 .max()
                 .unwrap_or(0)
-                + 1; // TODO: overflow
+                + 1;
             if let Some(item) = self.panels.get_mut(index) {
-                item.z_index = new_z_index;
+                item.z_index = new_z_index % MAX_Z_INDEX;
             }
         }
     }
