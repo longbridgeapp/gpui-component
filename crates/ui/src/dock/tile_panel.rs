@@ -10,7 +10,6 @@ use gpui::{
     ViewContext, VisualContext,
 };
 
-const MAX_Z_INDEX: usize = 1000;
 const MINIMUM_WIDTH: f32 = 100.;
 const MINIMUM_HEIGHT: f32 = 100.;
 const DRAG_BAR_HEIGHT: f32 = 30.;
@@ -308,7 +307,7 @@ impl TilePanel {
                 .unwrap_or(0)
                 + 1;
             if let Some(item) = self.panels.get_mut(index) {
-                item.z_index = new_z_index % MAX_Z_INDEX;
+                item.z_index = new_z_index % usize::MAX;
             }
         }
     }
