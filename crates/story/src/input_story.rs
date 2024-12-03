@@ -7,7 +7,7 @@ use regex::Regex;
 
 use crate::section;
 use ui::{
-    button::{Button, ButtonVariant, ButtonVarianted as _},
+    button::{Button, ButtonVariant, ButtonVariants as _},
     checkbox::Checkbox,
     h_flex,
     input::{InputEvent, OtpInput, TextInput},

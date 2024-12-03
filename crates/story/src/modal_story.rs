@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonVariant, ButtonVarianted as _},
+    button::{Button, ButtonVariant, ButtonVariants as _},
     checkbox::Checkbox,
     date_picker::DatePicker,
     dropdown::Dropdown,

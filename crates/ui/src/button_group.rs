@@ -5,7 +5,7 @@ use gpui::{
 use std::{cell::Cell, rc::Rc};
 
 use crate::{
-    button::{Button, ButtonVariant, ButtonVarianted},
+    button::{Button, ButtonVariant, ButtonVariants},
     Disableable, Sizable, Size,
 };
 
@@ -89,7 +89,7 @@ impl Styled for ButtonGroup {
     }
 }
 
-impl ButtonVarianted for ButtonGroup {
+impl ButtonVariants for ButtonGroup {
     fn with_variant(mut self, variant: ButtonVariant) -> Self {
         self.variant = Some(variant);
         self

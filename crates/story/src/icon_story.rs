@@ -2,7 +2,7 @@ use gpui::{
     px, rems, ParentElement, Render, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
-    button::{Button, ButtonVariant, ButtonVarianted},
+    button::{Button, ButtonVariant, ButtonVariants},
     h_flex,
     theme::ActiveTheme as _,
     v_flex, Icon, IconName,

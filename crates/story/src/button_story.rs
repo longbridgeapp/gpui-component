@@ -4,7 +4,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonCustomVariant, ButtonVarianted as _},
+    button::{Button, ButtonCustomVariant, ButtonVariants as _},
     button_group::ButtonGroup,
     checkbox::Checkbox,
     h_flex,

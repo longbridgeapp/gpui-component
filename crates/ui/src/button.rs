@@ -35,7 +35,7 @@ pub struct ButtonCustomVariant {
     active: Hsla,
 }
 
-pub trait ButtonVarianted: Sized {
+pub trait ButtonVariants: Sized {
     fn with_variant(self, variant: ButtonVariant) -> Self;
 
     /// With the primary style for the Button.
@@ -292,7 +292,7 @@ impl Sizable for Button {
     }
 }
 
-impl ButtonVarianted for Button {
+impl ButtonVariants for Button {
     fn with_variant(mut self, variant: ButtonVariant) -> Self {
         self.variant = variant;
         self
@@ -460,7 +460,7 @@ impl RenderOnce for Button {
     }
 }
 
-struct ButtonVariants {
+struct ButtonVariantStyle {
     bg: Hsla,
     border: Hsla,
     fg: Hsla,
@@ -523,14 +523,14 @@ impl ButtonVariant {
         }
     }
 
-    fn normal(&self, cx: &WindowContext) -> ButtonVariants {
+    fn normal(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = self.bg_color(cx);
         let border = self.border_color(cx);
         let fg = self.text_color(cx);
         let underline = self.underline(cx);
         let shadow = self.shadow(cx);
 
-        ButtonVariants {
+        ButtonVariantStyle {
             bg,
             border,
             fg,
@@ -539,7 +539,7 @@ impl ButtonVariant {
         }
     }
 
-    fn hovered(&self, cx: &WindowContext) -> ButtonVariants {
+    fn hovered(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = match self {
             ButtonVariant::Primary => cx.theme().primary_hover,
             ButtonVariant::Secondary | ButtonVariant::Outline => cx.theme().secondary_hover,
@@ -563,7 +563,7 @@ impl ButtonVariant {
         let underline = self.underline(cx);
         let shadow = self.shadow(cx);
 
-        ButtonVariants {
+        ButtonVariantStyle {
             bg,
             border,
             fg,
@@ -572,7 +572,7 @@ impl ButtonVariant {
         }
     }
 
-    fn active(&self, cx: &WindowContext) -> ButtonVariants {
+    fn active(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = match self {
             ButtonVariant::Primary => cx.theme().primary_active,
             ButtonVariant::Secondary | ButtonVariant::Outline | ButtonVariant::Ghost => {
@@ -592,7 +592,7 @@ impl ButtonVariant {
         let underline = self.underline(cx);
         let shadow = self.shadow(cx);
 
-        ButtonVariants {
+        ButtonVariantStyle {
             bg,
             border,
             fg,
@@ -601,7 +601,7 @@ impl ButtonVariant {
         }
     }
 
-    fn selected(&self, cx: &WindowContext) -> ButtonVariants {
+    fn selected(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = match self {
             ButtonVariant::Primary => cx.theme().primary_active,
             ButtonVariant::Secondary | ButtonVariant::Outline | ButtonVariant::Ghost => {
@@ -621,7 +621,7 @@ impl ButtonVariant {
         let underline = self.underline(cx);
         let shadow = self.shadow(cx);
 
-        ButtonVariants {
+        ButtonVariantStyle {
             bg,
             border,
             fg,
@@ -630,7 +630,7 @@ impl ButtonVariant {
         }
     }
 
-    fn disabled(&self, cx: &WindowContext) -> ButtonVariants {
+    fn disabled(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = match self {
             ButtonVariant::Link
             | ButtonVariant::Ghost
@@ -656,7 +656,7 @@ impl ButtonVariant {
         let underline = self.underline(cx);
         let shadow = false;
 
-        ButtonVariants {
+        ButtonVariantStyle {
             bg,
             border,
             fg,

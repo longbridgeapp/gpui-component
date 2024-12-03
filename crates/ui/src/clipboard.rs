@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use crate::{
-    button::{Button, ButtonVarianted as _},
+    button::{Button, ButtonVariants as _},
     h_flex, IconName, Sizable as _,
 };
 
