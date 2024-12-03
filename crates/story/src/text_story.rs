@@ -4,6 +4,7 @@ use gpui::{
 };
 
 use ui::{
+    badge::Badge,
     button::{Button, ButtonVariant, ButtonVariants as _},
     checkbox::Checkbox,
     clipboard::Clipboard,
@@ -11,7 +12,7 @@ use ui::{
     label::Label,
     link::Link,
     radio::Radio,
-    v_flex, Disableable as _, IconName, StyledExt,
+    v_flex, Disableable as _, IconName, Sizable, StyledExt,
 };
 
 use crate::section;
@@ -244,6 +245,23 @@ impl Render for TextStory {
                                 .on_copied(|value, _| println!("Copied value: {}", value)),
                         )
                 ),
+            )
+            .child(
+                section("Badge", cx)
+                    .child(
+                        h_flex().gap_2()
+                            .child(Badge::primary().small().child("Badge"))
+                            .child(Badge::secondary().small().child("Secondary"))
+                            .child(Badge::outline().small().child("Outline"))
+                            .child(Badge::destructive().small().child("Destructive"))
+                    )
+                    .child(
+                        h_flex().gap_2()
+                            .child(Badge::primary().child("Badge"))
+                            .child(Badge::secondary().child("Secondary"))
+                            .child(Badge::outline().child("Outline"))
+                            .child(Badge::destructive().child("Destructive"))
+                    )
             )
     }
 }
