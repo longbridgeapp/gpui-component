@@ -6,10 +6,10 @@ use std::{sync::Arc, time::Duration};
 use story::{
     AccordionStory, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory,
     ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
-    StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
+    SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVariants},
     color_picker::{ColorPicker, ColorPickerEvent},
     dock::{DockArea, DockAreaState, DockEvent, DockItem, DockPlacement},
     h_flex,
@@ -328,16 +328,17 @@ impl StoryWorkspace {
                         Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
                         Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
                         Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
+                        Arc::new(StoryContainer::panel::<SidebarStory>(cx)),
                         // Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
                     ],
                     None,
-                    dock_area,
+                    &dock_area,
                     cx,
                 ),
                 tiles_panel,
             ],
             vec![None, Some(px(400.0))],
-            dock_area,
+            &dock_area,
             cx,
         )
     }

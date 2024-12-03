@@ -405,3 +405,22 @@ impl Placement {
         }
     }
 }
+
+/// A enum for defining the side of the element.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    pub(crate) fn is_left(&self) -> bool {
+        matches!(self, Self::Left)
+    }
+}
+
+/// A trait for defining element that can be collapsed.
+pub trait Collapsible {
+    fn collapsed(self, collapsed: bool) -> Self;
+    fn is_collapsed(&self) -> bool;
+}

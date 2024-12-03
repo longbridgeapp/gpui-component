@@ -92,34 +92,26 @@ impl Render for ScrollableStory {
             .child(
                 h_flex()
                     .gap_2()
-                    .child(
-                        Button::new("test-0")
-                            .label("Size 0")
-                            .on_click(cx.listener(|view, _, cx| {
-                                view.change_test_cases(0, cx);
-                            })),
-                    )
-                    .child(
-                        Button::new("test-1")
-                            .label("Size 1")
-                            .on_click(cx.listener(|view, _, cx| {
-                                view.change_test_cases(1, cx);
-                            })),
-                    )
-                    .child(
-                        Button::new("test-2")
-                            .label("Size 2")
-                            .on_click(cx.listener(|view, _, cx| {
-                                view.change_test_cases(2, cx);
-                            })),
-                    )
-                    .child(
-                        Button::new("test-3")
-                            .label("Size 3")
-                            .on_click(cx.listener(|view, _, cx| {
-                                view.change_test_cases(3, cx);
-                            })),
-                    )
+                    .child(Button::new("test-0").label("Size 0").on_click(cx.listener(
+                        |view, _, cx| {
+                            view.change_test_cases(0, cx);
+                        },
+                    )))
+                    .child(Button::new("test-1").label("Size 1").on_click(cx.listener(
+                        |view, _, cx| {
+                            view.change_test_cases(1, cx);
+                        },
+                    )))
+                    .child(Button::new("test-2").label("Size 2").on_click(cx.listener(
+                        |view, _, cx| {
+                            view.change_test_cases(2, cx);
+                        },
+                    )))
+                    .child(Button::new("test-3").label("Size 3").on_click(cx.listener(
+                        |view, _, cx| {
+                            view.change_test_cases(3, cx);
+                        },
+                    )))
                     .child(Divider::vertical().px_2())
                     .child(
                         Button::new("test-axis-both")

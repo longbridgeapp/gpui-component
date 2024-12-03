@@ -9,7 +9,7 @@ use smol::Timer;
 
 use crate::{
     animation::cubic_bezier,
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVariants as _},
     h_flex,
     theme::ActiveTheme as _,
     v_flex, Icon, IconName, Sizable as _, StyledExt,
@@ -54,6 +54,12 @@ pub struct Notification {
     autohide: bool,
     on_click: Option<Arc<dyn Fn(&ClickEvent, &mut WindowContext)>>,
     closing: bool,
+}
+
+impl From<String> for Notification {
+    fn from(s: String) -> Self {
+        Self::new(s)
+    }
 }
 
 impl From<SharedString> for Notification {

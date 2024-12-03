@@ -3,7 +3,7 @@ use gpui::{
     AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
     FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement, KeyBinding,
     LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render,
-    SharedString, Style, Styled, View, ViewContext, VisualContext, WindowContext,
+    Style, StyleRefinement, Styled, View, ViewContext, VisualContext, WindowContext,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -67,6 +67,9 @@ pub struct Popover<M: ManagedView> {
     anchor: AnchorCorner,
     trigger: Option<Box<dyn FnOnce(bool, &WindowContext) -> AnyElement + 'static>>,
     content: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
+    /// Style for trigger element.
+    /// This is used for hotfix the trigger element style to support w_full.
+    trigger_style: Option<StyleRefinement>,
     mouse_button: MouseButton,
     no_style: bool,
 }
@@ -81,6 +84,7 @@ where
             id: id.into(),
             anchor: AnchorCorner::TopLeft,
             trigger: None,
+            trigger_style: None,
             content: None,
             mouse_button: MouseButton::Left,
             no_style: false,
@@ -108,6 +112,11 @@ where
         self
     }
 
+    pub fn trigger_style(mut self, style: StyleRefinement) -> Self {
+        self.trigger_style = Some(style);
+        self
+    }
+
     /// Set the content of the popover.
     ///
     /// The `content` is a closure that returns an `AnyElement`.
@@ -130,16 +139,12 @@ where
         self
     }
 
-    fn render_trigger(&mut self, is_open: bool, cx: &mut WindowContext) -> impl IntoElement {
-        let base = div().id(SharedString::from(format!("{}-trigger", self.id)));
+    fn render_trigger(&mut self, is_open: bool, cx: &mut WindowContext) -> AnyElement {
+        let Some(trigger) = self.trigger.take() else {
+            return div().into_any_element();
+        };
 
-        if self.trigger.is_none() {
-            return base;
-        }
-
-        let trigger = self.trigger.take().unwrap();
-
-        base.child((trigger)(is_open, cx)).into_element()
+        (trigger)(is_open, cx)
     }
 
     fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
@@ -222,6 +227,21 @@ impl<M: ManagedView> Element for Popover<M> {
         id: Option<&gpui::GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
+        let mut style = Style::default();
+
+        // FIXME: Remove this and find a better way to handle this.
+        // Apply trigger style, for support w_full for trigger.
+        //
+        // If remove this, the trigger will not support w_full.
+        if let Some(trigger_style) = self.trigger_style.clone() {
+            if let Some(width) = trigger_style.size.width {
+                style.size.width = width;
+            }
+            if let Some(display) = trigger_style.display {
+                style.display = display;
+            }
+        }
+
         self.with_element_state(id.unwrap(), cx, |view, element_state, cx| {
             let mut popover_layout_id = None;
             let mut popover_element = None;
@@ -274,12 +294,12 @@ impl<M: ManagedView> Element for Popover<M> {
                 popover_element = Some(element);
             }
 
-            let mut trigger_element = view.render_trigger(is_open, cx).into_any_element();
+            let mut trigger_element = view.render_trigger(is_open, cx);
             let trigger_layout_id = trigger_element.request_layout(cx);
 
             let layout_id = cx.request_layout(
-                Style::default(),
-                popover_layout_id.into_iter().chain(Some(trigger_layout_id)),
+                style,
+                Some(trigger_layout_id).into_iter().chain(popover_layout_id),
             );
 
             (

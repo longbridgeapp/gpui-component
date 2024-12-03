@@ -4,7 +4,7 @@ use gpui::{
 };
 
 use ui::{
-    button::{Button, ButtonStyle},
+    button::{Button, ButtonVariant, ButtonVariants as _},
     checkbox::Checkbox,
     clipboard::Clipboard,
     h_flex,
@@ -118,7 +118,7 @@ impl Render for TextStory {
                                 .child(Label::new("9,182,1 USD").text_2xl().masked(self.masked))
                                 .child(
                                     Button::new("btn-mask")
-                                        .style(ButtonStyle::Ghost)
+                                        .with_variant(ButtonVariant::Ghost)
                                         .icon(if self.masked {
                                             IconName::EyeOff
                                         } else {

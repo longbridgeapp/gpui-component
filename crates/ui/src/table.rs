@@ -126,8 +126,8 @@ pub struct Table<D: TableDelegate> {
     pub horizontal_scroll_handle: ScrollHandle,
     pub horizontal_scrollbar_state: Rc<Cell<ScrollbarState>>,
 
-    selection_state: SelectionState,
     selected_row: Option<usize>,
+    selection_state: SelectionState,
     right_clicked_row: Option<usize>,
     selected_col: Option<usize>,
 
@@ -361,7 +361,13 @@ where
         cx.notify();
     }
 
-    fn set_selected_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
+    /// Returns the selected row index.
+    pub fn selected_row(&self) -> Option<usize> {
+        self.selected_row
+    }
+
+    /// Sets the selected row to the given index.
+    pub fn set_selected_row(&mut self, row_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Row;
         self.right_clicked_row = None;
         self.selected_row = Some(row_ix);
@@ -373,7 +379,13 @@ where
         cx.notify();
     }
 
-    fn set_selected_col(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
+    /// Returns the selected column index.
+    pub fn selected_col(&self) -> Option<usize> {
+        self.selected_col
+    }
+
+    /// Sets the selected col to the given index.
+    pub fn set_selected_col(&mut self, col_ix: usize, cx: &mut ViewContext<Self>) {
         self.selection_state = SelectionState::Column;
         self.selected_col = Some(col_ix);
         if let Some(_col_ix) = self.selected_col {

@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use crate::{
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVariants as _},
     h_flex,
     modal::overlay_color,
     root::ContextModal as _,

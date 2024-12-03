@@ -8,7 +8,7 @@ use gpui::{
 };
 use serde::Deserialize;
 use ui::{
-    button::{Button, ButtonStyled},
+    button::{Button, ButtonVariants},
     checkbox::Checkbox,
     h_flex,
     indicator::Indicator,

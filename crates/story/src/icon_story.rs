@@ -2,7 +2,7 @@ use gpui::{
     px, rems, ParentElement, Render, Styled, View, ViewContext, VisualContext as _, WindowContext,
 };
 use ui::{
-    button::{Button, ButtonStyle},
+    button::{Button, ButtonVariant, ButtonVariants},
     h_flex,
     theme::ActiveTheme as _,
     v_flex, Icon, IconName,
@@ -63,7 +63,7 @@ impl Render for IconStory {
                                 .text_color(ui::gray_500())
                                 .size_6(),
                         )
-                        .style(ButtonStyle::Ghost),
+                        .with_variant(ButtonVariant::Ghost),
                 )
                 .child(
                     Button::new("like2")
@@ -72,7 +72,7 @@ impl Render for IconStory {
                                 .text_color(ui::red_500())
                                 .size_6(),
                         )
-                        .style(ButtonStyle::Ghost),
+                        .with_variant(ButtonVariant::Ghost),
                 )
                 .child(
                     Icon::new(IconName::Plus)
