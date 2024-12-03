@@ -126,8 +126,8 @@ pub struct Table<D: TableDelegate> {
     pub horizontal_scroll_handle: ScrollHandle,
     pub horizontal_scrollbar_state: Rc<Cell<ScrollbarState>>,
 
+    pub selected_row: Option<usize>,
     selection_state: SelectionState,
-    selected_row: Option<usize>,
     right_clicked_row: Option<usize>,
     selected_col: Option<usize>,
 
