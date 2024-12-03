@@ -241,7 +241,7 @@ impl ThemeColor {
             list_active_border: hsl(211.0, 97.0, 85.0),
             list_even: hsl(240.0, 5.0, 96.0),
             list_head: hsl(0.0, 0.0, 100.),
-            list_hover: hsl(240.0, 97.0, 85.0).opacity(0.2),
+            list_hover: hsl(240.0, 4.8, 95.0),
             muted: hsl(240.0, 4.8, 95.9),
             muted_foreground: hsl(240.0, 3.8, 46.1),
             panel: hsl(0.0, 0.0, 100.0),
@@ -274,8 +274,8 @@ impl ThemeColor {
             table_even: hsl(240.0, 5.0, 96.0),
             table_head: hsl(0.0, 0.0, 100.),
             table_head_foreground: hsl(240.0, 10., 3.9).opacity(0.7),
-            table_hover: hsl(211.0, 97.0, 85.0).opacity(0.2),
-            table_row_border: hsl(240.0, 5.9, 90.0).opacity(0.5),
+            table_hover: hsl(240.0, 4.8, 95.0),
+            table_row_border: hsl(240.0, 7.7, 94.5),
             title_bar: hsl(0.0, 0.0, 100.),
             title_bar_border: hsl(240.0, 5.9, 90.0),
             sidebar: hsl(0.0, 0.0, 98.0),
@@ -297,7 +297,7 @@ impl ThemeColor {
             accordion_hover: hsl(240.0, 3.7, 15.9).opacity(0.7),
             background: hsl(0.0, 0.0, 8.0),
             border: hsl(240.0, 3.7, 16.9),
-            card: hsl(299.0, 2., 11.),
+            card: hsl(0.0, 0.0, 8.0),
             card_foreground: hsl(0.0, 0.0, 78.0),
             destructive: hsl(0.0, 62.8, 30.6),
             destructive_active: hsl(0.0, 62.8, 20.6),
@@ -311,11 +311,11 @@ impl ThemeColor {
             link_active: hsl(221.0, 83.0, 53.0).darken(0.2),
             link_hover: hsl(221.0, 83.0, 53.0).lighten(0.2),
             list: hsl(0.0, 0.0, 8.0),
-            list_active: hsl(211.0, 97.0, 22.0).opacity(0.2),
-            list_active_border: hsl(211.0, 97.0, 22.0),
+            list_active: hsl(240.0, 3.7, 15.0).opacity(0.2),
+            list_active_border: hsl(240.0, 5.9, 35.5),
             list_even: hsl(240.0, 3.7, 10.0),
             list_head: hsl(0.0, 0.0, 8.0),
-            list_hover: hsl(211.0, 97.0, 22.0).opacity(0.2),
+            list_hover: hsl(240.0, 3.7, 15.9),
             muted: hsl(240.0, 3.7, 15.9),
             muted_foreground: hsl(240.0, 5.0, 64.9),
             panel: hsl(299.0, 2., 11.),
@@ -343,16 +343,16 @@ impl ThemeColor {
             tab_bar: hsl(299.0, 0., 5.5),
             tab_foreground: hsl(0., 0., 78.),
             table: hsl(0.0, 0.0, 8.0),
-            table_active: hsl(211.0, 97.0, 22.0).opacity(0.2),
-            table_active_border: hsl(211.0, 97.0, 22.0),
+            table_active: hsl(240.0, 3.7, 15.0).opacity(0.2),
+            table_active_border: hsl(240.0, 5.9, 35.5),
             table_even: hsl(240.0, 3.7, 10.0),
             table_head: hsl(0.0, 0.0, 8.0),
             table_head_foreground: hsl(0., 0., 78.).opacity(0.7),
-            table_hover: hsl(211.0, 97.0, 22.0).opacity(0.2),
+            table_hover: hsl(240.0, 3.7, 15.9).opacity(0.5),
             table_row_border: hsl(240.0, 3.7, 16.9).opacity(0.5),
             title_bar: hsl(0., 0., 9.7),
             title_bar_border: hsl(240.0, 3.7, 15.9),
-            sidebar: hsl(240.0, 5.9, 10.0),
+            sidebar: hsl(240.0, 0.0, 10.0),
             sidebar_accent: hsl(240.0, 3.7, 15.9),
             sidebar_accent_foreground: hsl(240.0, 4.8, 95.9),
             sidebar_border: hsl(240.0, 3.7, 15.9),
@@ -442,13 +442,13 @@ impl Theme {
         self.list = self.list.apply(mask_color);
         self.list_even = self.list_even.apply(mask_color);
         self.list_head = self.list_head.apply(mask_color);
-        // self.list_active = self.list_active.apply(mask_color);
-        // self.list_active_border = self.list_active_border.apply(mask_color);
+        self.list_active = self.list_active.apply(mask_color);
+        self.list_active_border = self.list_active_border.apply(mask_color);
         self.list_hover = self.list_hover.apply(mask_color);
         self.table = self.table.apply(mask_color);
         self.table_even = self.table_even.apply(mask_color);
-        // self.table_active = self.table_active.apply(mask_color);
-        // self.table_active_border = self.table_active_border.apply(mask_color);
+        self.table_active = self.table_active.apply(mask_color);
+        self.table_active_border = self.table_active_border.apply(mask_color);
         self.table_hover = self.table_hover.apply(mask_color);
         self.table_row_border = self.table_row_border.apply(mask_color);
         self.table_head = self.table_head.apply(mask_color);
