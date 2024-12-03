@@ -145,7 +145,12 @@ impl Render for ProgressStory {
                     )
                     .child(Indicator::new().with_size(px(64.))),
             )
-            .child(Divider::horizontal().mt_10().label("Slider"))
+            .child(
+                Divider::horizontal()
+                    .mt_10()
+                    .label("Slider")
+                    .color(ui::gray_300()),
+            )
             .child(self.slider1.clone())
             .child(format!("Slider 1: {}", self.slider1_value))
             .child(

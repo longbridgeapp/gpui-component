@@ -1,5 +1,5 @@
 use gpui::{
-    div, prelude::FluentBuilder as _, px, Axis, Div, IntoElement, ParentElement, RenderOnce,
+    div, prelude::FluentBuilder as _, px, Axis, Div, Hsla, IntoElement, ParentElement, RenderOnce,
     SharedString, Styled,
 };
 
@@ -11,6 +11,7 @@ pub struct Divider {
     base: Div,
     label: Option<SharedString>,
     axis: Axis,
+    color: Option<Hsla>,
 }
 
 impl Divider {
@@ -19,6 +20,7 @@ impl Divider {
             base: div().h_full(),
             axis: Axis::Vertical,
             label: None,
+            color: None,
         }
     }
 
@@ -27,11 +29,17 @@ impl Divider {
             base: div().w_full(),
             axis: Axis::Horizontal,
             label: None,
+            color: None,
         }
     }
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    pub fn color(mut self, color: impl Into<Hsla>) -> Self {
+        self.color = Some(color.into());
         self
     }
 }
@@ -43,7 +51,7 @@ impl Styled for Divider {
 }
 
 impl RenderOnce for Divider {
-    fn render(self, cx: &mut gpui::WindowContext) -> impl gpui::IntoElement {
+    fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
         let theme = cx.theme();
 
         self.base
@@ -58,7 +66,7 @@ impl RenderOnce for Divider {
                         Axis::Vertical => this.w(px(1.)).h_full(),
                         Axis::Horizontal => this.h(px(1.)).w_full(),
                     })
-                    .bg(cx.theme().border),
+                    .bg(self.color.unwrap_or(cx.theme().border)),
             )
             .when_some(self.label, |this, label| {
                 this.child(
