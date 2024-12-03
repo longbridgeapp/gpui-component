@@ -1,6 +1,6 @@
 use crate::{theme::ActiveTheme as _, Sizable, Size};
 use gpui::{
-    div, prelude::FluentBuilder as _, Div, Hsla, InteractiveElement as _, IntoElement,
+    div, prelude::FluentBuilder as _, relative, Div, Hsla, InteractiveElement as _, IntoElement,
     ParentElement, RenderOnce, Styled,
 };
 
@@ -94,6 +94,7 @@ impl ParentElement for Badge {
 impl RenderOnce for Badge {
     fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
         self.base
+            .line_height(relative(1.3))
             .map(|this| match self.size {
                 Size::XSmall | Size::Small => this.text_xs().px_1p5().py_0(),
                 _ => this.text_xs().px_2p5().py_0p5(),
