@@ -15,7 +15,7 @@ pub trait ActiveTheme {
 
 impl ActiveTheme for AppContext {
     fn theme(&self) -> &Theme {
-        Theme::get_global(self)
+        Theme::global(self)
     }
 }
 
@@ -365,9 +365,9 @@ impl ThemeColor {
 
 #[derive(Debug, Clone)]
 pub struct Theme {
-    pub mode: ThemeMode,
     colors: ThemeColor,
 
+    pub mode: ThemeMode,
     pub font_family: SharedString,
     pub font_size: f32,
     pub radius: f32,
@@ -392,8 +392,14 @@ impl DerefMut for Theme {
 impl Global for Theme {}
 
 impl Theme {
-    pub fn get_global(cx: &AppContext) -> &Self {
-        cx.global::<Self>()
+    /// Returns the global theme reference
+    pub fn global(cx: &AppContext) -> &Theme {
+        cx.global::<Theme>()
+    }
+
+    /// Returns the global theme mutable reference
+    pub fn global_mut(cx: &mut AppContext) -> &mut Theme {
+        cx.global_mut::<Theme>()
     }
 
     /// Apply a mask color to the theme.
@@ -470,6 +476,31 @@ impl Theme {
         self.sidebar_primary = self.sidebar_primary.apply(mask_color);
         self.sidebar_primary_foreground = self.sidebar_primary_foreground.apply(mask_color);
     }
+
+    /// Sync the theme with the system appearance
+    pub fn sync_system_appearance(cx: &mut AppContext) {
+        match cx.window_appearance() {
+            WindowAppearance::Dark | WindowAppearance::VibrantDark => {
+                Self::change(ThemeMode::Dark, cx)
+            }
+            WindowAppearance::Light | WindowAppearance::VibrantLight => {
+                Self::change(ThemeMode::Light, cx)
+            }
+        }
+    }
+
+    pub fn change(mode: ThemeMode, cx: &mut AppContext) {
+        let colors = match mode {
+            ThemeMode::Light => ThemeColor::light(),
+            ThemeMode::Dark => ThemeColor::dark(),
+        };
+
+        let mut theme = Theme::from(colors);
+        theme.mode = mode;
+
+        cx.set_global(theme);
+        cx.refresh();
+    }
 }
 
 impl From<ThemeColor> for Theme {
@@ -502,42 +533,5 @@ pub enum ThemeMode {
 impl ThemeMode {
     pub fn is_dark(&self) -> bool {
         matches!(self, Self::Dark)
-    }
-}
-
-impl Theme {
-    /// Sync the theme with the system appearance
-    pub fn sync_system_appearance(cx: &mut AppContext) {
-        match cx.window_appearance() {
-            WindowAppearance::Dark | WindowAppearance::VibrantDark => {
-                Self::change(ThemeMode::Dark, cx)
-            }
-            WindowAppearance::Light | WindowAppearance::VibrantLight => {
-                Self::change(ThemeMode::Light, cx)
-            }
-        }
-    }
-
-    pub fn change(mode: ThemeMode, cx: &mut AppContext) {
-        let colors = match mode {
-            ThemeMode::Light => ThemeColor::light(),
-            ThemeMode::Dark => ThemeColor::dark(),
-        };
-
-        let mut theme = Theme::from(colors);
-        theme.mode = mode;
-
-        cx.set_global(theme);
-        cx.refresh();
-    }
-
-    /// Returns the global theme reference
-    pub fn global(cx: &AppContext) -> &Theme {
-        cx.global::<Theme>()
-    }
-
-    /// Returns the global theme mutable reference
-    pub fn global_mut(cx: &mut AppContext) -> &mut Theme {
-        cx.global_mut::<Theme>()
     }
 }
