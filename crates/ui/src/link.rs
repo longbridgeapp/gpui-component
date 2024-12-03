@@ -10,6 +10,7 @@ use crate::theme::ActiveTheme as _;
 pub struct Link {
     base: Stateful<Div>,
     href: Option<SharedString>,
+    disabled: bool,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut gpui::WindowContext) + 'static>>,
 }
 
@@ -19,6 +20,7 @@ impl Link {
             base: div().id(id),
             href: None,
             on_click: None,
+            disabled: false,
         }
     }
 
@@ -32,6 +34,11 @@ impl Link {
         handler: impl Fn(&ClickEvent, &mut gpui::WindowContext) + 'static,
     ) -> Self {
         self.on_click = Some(Box::new(handler));
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
         self
     }
 }
