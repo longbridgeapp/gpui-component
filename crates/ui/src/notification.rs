@@ -9,7 +9,7 @@ use smol::Timer;
 
 use crate::{
     animation::cubic_bezier,
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVariants as _},
     h_flex,
     theme::ActiveTheme as _,
     v_flex, Icon, IconName, Sizable as _, StyledExt,

@@ -9,7 +9,7 @@ use gpui::{
 use rust_i18n::t;
 
 use crate::{
-    button::{Button, ButtonStyled as _},
+    button::{Button, ButtonVariants as _},
     h_flex,
     theme::ActiveTheme,
     v_flex, Disableable as _, IconName, Selectable, Sizable, Size,
