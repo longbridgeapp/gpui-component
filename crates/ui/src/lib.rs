@@ -10,6 +10,7 @@ mod title_bar;
 
 pub mod accordion;
 pub mod animation;
+pub mod breadcrumb;
 pub mod button;
 pub mod button_group;
 pub mod checkbox;
