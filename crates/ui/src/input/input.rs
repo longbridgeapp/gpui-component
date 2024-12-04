@@ -425,6 +425,13 @@ impl TextInput {
     }
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
+        if self.multi_line {
+            self.replace_text_in_range(Some(self.selected_range.clone()), "\n", cx);
+            // Move cursor to the start of the next line
+            // TODO: To be test this line is valid
+            self.move_to(self.next_boundary(self.cursor_offset()), cx);
+        }
+
         cx.emit(InputEvent::PressEnter);
     }
 
@@ -478,7 +485,11 @@ impl TextInput {
 
     fn paste(&mut self, _: &Paste, cx: &mut ViewContext<Self>) {
         if let Some(clipboard) = cx.read_from_clipboard() {
-            let new_text = clipboard.text().unwrap_or_default().replace('\n', "");
+            let mut new_text = clipboard.text().unwrap_or_default();
+            if !self.multi_line {
+                new_text = new_text.replace('\n', "");
+            }
+
             self.replace_text_in_range(None, &new_text, cx);
         }
     }
