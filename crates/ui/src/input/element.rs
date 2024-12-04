@@ -1,7 +1,7 @@
 use gpui::{
     fill, point, px, relative, size, Bounds, Element, ElementId, ElementInputHandler,
     GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad, Pixels, Point,
-    ShapedLine, Style, TextRun, UnderlineStyle, View, WindowContext, WrappedLine,
+    Style, TextRun, UnderlineStyle, View, WindowContext, WrappedLine,
 };
 use smallvec::SmallVec;
 
@@ -35,10 +35,9 @@ impl TextElement {
 
 pub(super) struct PrepaintState {
     scroll_offset: Point<Pixels>,
-    line: Option<ShapedLine>,
-    lines: Option<SmallVec<[WrappedLine; 1]>>,
+    lines: SmallVec<[WrappedLine; 1]>,
     cursor: Option<PaintQuad>,
-    selection: Option<PaintQuad>,
+    selections: SmallVec<[PaintQuad; 1]>,
     bounds: Bounds<Pixels>,
 }
 
@@ -81,6 +80,7 @@ impl Element for TextElement {
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
         let multi_line = self.input.read(cx).multi_line;
+        let line_height = cx.line_height();
         let input = self.input.read(cx);
         let text = input.text.clone();
         let placeholder = input.placeholder.clone();
@@ -136,86 +136,138 @@ impl Element for TextElement {
         };
 
         let font_size = style.font_size.to_pixels(cx.rem_size());
-        let mut line = None;
-        let mut lines = None;
-        if multi_line {
-            let wrap_width = bounds.size.width;
-            lines = cx
-                .text_system()
-                .shape_text(display_text, font_size, &runs, Some(wrap_width))
-                .ok();
+        let wrap_width = if multi_line {
+            Some(bounds.size.width)
         } else {
-            line = cx
-                .text_system()
-                .shape_line(display_text, font_size, &runs)
-                .ok()
+            None
         };
+
+        let lines = cx
+            .text_system()
+            .shape_text(display_text, font_size, &runs, wrap_width)
+            .unwrap();
 
         // Calculate the scroll offset to keep the cursor in view
         let mut scroll_offset = input.scroll_offset;
         let mut bounds = bounds;
-        let mut selection = None;
+        let mut selections = SmallVec::new();
         let mut cursor = None;
         const RIGHT_MARGIN: Pixels = px(5.);
         const INSET: Pixels = px(0.5);
 
-        if let Some(line) = &line {
-            let cursor_pos = line.x_for_index(cursor_offset);
-            let cursor_start = line.x_for_index(selected_range.start);
-            let cursor_end = line.x_for_index(selected_range.end);
+        // layout_visible_cursors
+        let mut cursor_pos = None;
+        let mut cursor_start = None;
+        let mut cursor_end = None;
+        let has_selection = !selected_range.is_empty();
+
+        for (ix, line) in lines.iter().enumerate() {
+            // break loop if all cursor positions are found
+            if cursor_pos.is_some() && cursor_start.is_some() && cursor_end.is_some() {
+                break;
+            }
+
+            if cursor_pos.is_none() {
+                cursor_pos = line.position_for_index(cursor_offset, line_height);
+            }
+
+            let line_cursor_start = line.position_for_index(selected_range.start, line_height);
+            if cursor_start.is_none() {
+                cursor_start = line_cursor_start;
+            }
+            let line_cursor_end = line.position_for_index(selected_range.end, line_height);
+            if cursor_end.is_none() {
+                cursor_end = line_cursor_end;
+            }
+
+            // selections background for each lines
+            if has_selection {
+                if line_cursor_start.is_some() || line_cursor_end.is_some() {
+                    let start = line_cursor_start
+                        .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
+                    let end = line_cursor_end.unwrap_or_else(|| {
+                        line.position_for_index(line.len(), line_height).unwrap()
+                    });
+
+                    let selection = fill(
+                        Bounds::from_corners(
+                            point(
+                                bounds.left() + start.x,
+                                bounds.top() + ix as f32 * line_height,
+                            ),
+                            point(
+                                bounds.left() + end.x,
+                                bounds.top() + (ix + 1) as f32 * line_height,
+                            ),
+                        ),
+                        cx.theme().selection,
+                    );
+                    selections.push(selection);
+                }
+            }
+        }
+
+        if let (Some(cursor_pos), Some(cursor_start), Some(cursor_end)) =
+            (cursor_pos, cursor_start, cursor_end)
+        {
             let cursor_moved = input.last_cursor_offset != Some(cursor_offset);
             let selection_changed = input.last_selected_range != Some(selected_range.clone());
 
             if cursor_moved || selection_changed {
                 scroll_offset.x =
-                    if scroll_offset.x + cursor_pos > (bounds.size.width - RIGHT_MARGIN) {
+                    if scroll_offset.x + cursor_pos.x > (bounds.size.width - RIGHT_MARGIN) {
                         // cursor is out of right
-                        bounds.size.width - RIGHT_MARGIN - cursor_pos
-                    } else if scroll_offset.x + cursor_pos < px(0.) {
+                        bounds.size.width - RIGHT_MARGIN - cursor_pos.x
+                    } else if scroll_offset.x + cursor_pos.x < px(0.) {
                         // cursor is out of left
-                        scroll_offset.x - cursor_pos
+                        scroll_offset.x - cursor_pos.x
                     } else {
                         scroll_offset.x
                     };
+                scroll_offset.y = if scroll_offset.y + cursor_pos.y > (bounds.size.height) {
+                    // cursor is out of bottom
+                    bounds.size.height - cursor_pos.y
+                } else if scroll_offset.y + cursor_pos.y < px(0.) {
+                    // cursor is out of top
+                    scroll_offset.y - cursor_pos.y
+                } else {
+                    scroll_offset.y
+                };
 
                 if input.selection_reversed {
-                    if scroll_offset.x + cursor_start < px(0.) {
+                    if scroll_offset.x + cursor_start.x < px(0.) {
                         // selection start is out of left
-                        scroll_offset.x = -cursor_start;
+                        scroll_offset.x = -cursor_start.x;
+                    }
+                    if scroll_offset.y + cursor_start.y < px(0.) {
+                        // selection start is out of top
+                        scroll_offset.y = -cursor_start.y;
                     }
                 } else {
-                    if scroll_offset.x + cursor_end <= px(0.) {
+                    if scroll_offset.x + cursor_end.x <= px(0.) {
                         // selection end is out of left
-                        scroll_offset.x = -cursor_end;
+                        scroll_offset.x = -cursor_end.x;
+                    }
+                    if scroll_offset.y + cursor_end.y <= px(0.) {
+                        // selection end is out of top
+                        scroll_offset.y = -cursor_end.y;
                     }
                 }
             }
 
             bounds.origin = bounds.origin + scroll_offset;
 
-            if selected_range.is_empty() && input.show_cursor(cx) {
+            if input.show_cursor(cx) {
                 // cursor blink
                 cursor = Some(fill(
                     Bounds::new(
-                        point(bounds.left() + cursor_pos, bounds.top() + INSET),
-                        size(px(2.), bounds.bottom() - bounds.top() - INSET * 2),
+                        point(
+                            bounds.left() + cursor_pos.x,
+                            bounds.top() + cursor_pos.y + INSET,
+                        ),
+                        size(px(2.), line_height),
                     ),
                     crate::blue_500(),
-                ))
-            } else {
-                // selection background
-                selection = Some(fill(
-                    Bounds::from_corners(
-                        point(
-                            bounds.left() + line.x_for_index(selected_range.start),
-                            bounds.top(),
-                        ),
-                        point(
-                            bounds.left() + line.x_for_index(selected_range.end),
-                            bounds.bottom(),
-                        ),
-                    ),
-                    cx.theme().selection,
                 ))
             };
         }
@@ -223,10 +275,9 @@ impl Element for TextElement {
         PrepaintState {
             scroll_offset,
             bounds,
-            line,
             lines,
             cursor,
-            selection,
+            selections,
         }
     }
 
@@ -248,27 +299,25 @@ impl Element for TextElement {
             &focus_handle,
             ElementInputHandler::new(bounds, self.input.clone()),
         );
-        if let Some(selection) = prepaint.selection.take() {
-            cx.paint_quad(selection)
+
+        // Paint selections
+        for selection in prepaint.selections.iter() {
+            cx.paint_quad(selection.clone());
         }
 
-        let mut last_layout = None;
-
-        // Paint single line text
-        if let Some(line) = prepaint.line.take() {
-            line.paint(bounds.origin, cx.line_height(), cx).unwrap();
-            last_layout = Some(line);
-        }
+        // // Paint single line text
+        // if let Some(line) = prepaint.line.take() {
+        //     line.paint(bounds.origin, cx.line_height(), cx).unwrap();
+        //     last_layout = Some(line);
+        // }
 
         // Paint multi line text
-        if let Some(lines) = prepaint.lines.take() {
-            let line_height = cx.line_height();
-            let origin = bounds.origin;
+        let line_height = cx.line_height();
+        let origin = bounds.origin;
 
-            for (i, line) in lines.into_iter().enumerate() {
-                let p = point(origin.x, origin.y + i as f32 * line_height);
-                line.paint(p, line_height, cx).unwrap();
-            }
+        for (i, line) in prepaint.lines.iter().enumerate() {
+            let p = point(origin.x, origin.y + i as f32 * line_height);
+            _ = line.paint(p, line_height, cx);
         }
 
         if focused {
@@ -279,7 +328,7 @@ impl Element for TextElement {
         self.input.update(cx, |input, _cx| {
             input.scroll_offset = prepaint.scroll_offset;
             // FIXME: To support multi-line text, we need to store the last layout for each line.
-            input.last_layout = last_layout;
+            input.last_layout = Some(prepaint.lines.clone());
             input.last_bounds = Some(bounds);
             input.last_cursor_offset = Some(cursor);
             input.last_selected_range = Some(selected_range);

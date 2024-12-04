@@ -3,6 +3,7 @@
 //! Based on the `Input` example from the `gpui` crate.
 //! https://github.com/zed-industries/zed/blob/main/crates/gpui/examples/input.rs
 
+use smallvec::SmallVec;
 use std::ops::Range;
 use unicode_segmentation::*;
 
@@ -11,9 +12,13 @@ use gpui::{
     actions, div, point, px, AnyElement, AppContext, Bounds, ClickEvent, ClipboardItem,
     Context as _, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _, IntoElement,
     KeyBinding, KeyDownEvent, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    ParentElement as _, Pixels, Point, Rems, Render, ShapedLine, SharedString, Styled as _,
-    UTF16Selection, ViewContext, ViewInputHandler, WindowContext,
+    ParentElement as _, Pixels, Point, Rems, Render, SharedString, Styled as _, UTF16Selection,
+    ViewContext, ViewInputHandler, WindowContext, WrappedLine,
 };
+
+// TODO:
+// - Press Up,Down to move cursor up, down line if multi-line
+// - Move cursor to skip line eof empty chars.
 
 use super::blink_cursor::BlinkCursor;
 use super::change::Change;
@@ -33,8 +38,12 @@ actions!(
         Backspace,
         Delete,
         Enter,
+        Up,
+        Down,
         Left,
         Right,
+        SelectUp,
+        SelectDown,
         SelectLeft,
         SelectRight,
         SelectAll,
@@ -73,6 +82,10 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("right", Right, Some(CONTEXT)),
         KeyBinding::new("shift-left", SelectLeft, Some(CONTEXT)),
         KeyBinding::new("shift-right", SelectRight, Some(CONTEXT)),
+        KeyBinding::new("up", Up, Some(CONTEXT)),
+        KeyBinding::new("right", Down, Some(CONTEXT)),
+        KeyBinding::new("shift-up", SelectUp, Some(CONTEXT)),
+        KeyBinding::new("shift-down", SelectDown, Some(CONTEXT)),
         KeyBinding::new("home", Home, Some(CONTEXT)),
         KeyBinding::new("end", End, Some(CONTEXT)),
         KeyBinding::new("shift-home", SelectToHome, Some(CONTEXT)),
@@ -131,7 +144,7 @@ pub struct TextInput {
     pub(super) selected_range: Range<usize>,
     pub(super) selection_reversed: bool,
     pub(super) marked_range: Option<Range<usize>>,
-    pub(super) last_layout: Option<ShapedLine>,
+    pub(super) last_layout: Option<SmallVec<[WrappedLine; 1]>>,
     pub(super) last_bounds: Option<Bounds<Pixels>>,
     pub(super) last_cursor_offset: Option<usize>,
     pub(super) last_selected_range: Option<Range<usize>>,
@@ -360,6 +373,10 @@ impl TextInput {
         }
     }
 
+    fn select_up(&mut self, _: &SelectLeft, cx: &mut ViewContext<Self>) {
+        self.select_to(self.previous_boundary(self.cursor_offset()), cx);
+    }
+
     fn select_left(&mut self, _: &SelectLeft, cx: &mut ViewContext<Self>) {
         self.select_to(self.previous_boundary(self.cursor_offset()), cx);
     }
@@ -417,7 +434,7 @@ impl TextInput {
 
     fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {
         self.is_selecting = true;
-        let offset = self.index_for_mouse_position(event.position);
+        let offset = self.index_for_mouse_position(event.position, cx);
 
         // Double click to select word
         if event.button == MouseButton::Left && event.click_count == 2 {
@@ -521,23 +538,36 @@ impl TextInput {
         }
     }
 
-    fn index_for_mouse_position(&self, position: Point<Pixels>) -> usize {
+    fn index_for_mouse_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
+        let line_height = cx.line_height();
         // If the text is empty, always return 0
         if self.text.is_empty() {
             return 0;
         }
 
-        let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref())
+        let (Some(bounds), Some(lines)) = (self.last_bounds.as_ref(), self.last_layout.as_ref())
         else {
             return 0;
         };
+
         if position.y < bounds.top() {
             return 0;
         }
         if position.y > bounds.bottom() {
             return self.text.len();
         }
-        line.closest_index_for_x(position.x - bounds.left())
+
+        let mut ix = 0;
+        for line in lines {
+            if let Ok(index) = line.index_for_position(position, line_height) {
+                ix += index;
+                break;
+            } else {
+                ix += line.len();
+            }
+        }
+
+        ix
     }
 
     fn select_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
@@ -696,29 +726,36 @@ impl TextInput {
             return;
         }
 
-        let offset = self.offset_of_position(event.position);
+        let offset = self.offset_of_position(event.position, cx);
         self.select_to(offset, cx);
     }
 
-    fn offset_of_position(&self, position: Point<Pixels>) -> usize {
+    fn offset_of_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
+        let line_height = cx.line_height();
         let bounds = self.last_bounds.unwrap_or_default();
         let position = position - bounds.origin;
-        self.last_layout
-            .as_ref()
-            .map(|line| match line.index_for_x(position.x) {
-                Some(ix) => ix,
-                None => {
-                    let last_index = line.len();
-                    // If the mouse is on the right side of the last character, move to the end
-                    // Otherwise, move to the start of the line
-                    if position.x > line.x_for_index(last_index) {
-                        last_index
-                    } else {
-                        0
-                    }
-                }
-            })
-            .unwrap_or(0)
+
+        let Some(lines) = self.last_layout.as_ref() else {
+            return 0;
+        };
+
+        for line in lines {
+            if let Ok(index) = line.index_for_position(position, line_height) {
+                return index;
+            }
+        }
+
+        // If the mouse is on the right side of the last character, move to the end
+        // Otherwise, move to the start of the line
+        let last_line = lines.last().unwrap();
+        let last_index = last_line.len();
+        if let Some(last_x) = last_line.position_for_index(last_index, line_height) {
+            if position.x > last_x.x {
+                return last_index;
+            }
+        }
+
+        0
     }
 
     fn is_valid_input(&self, new_text: &str) -> bool {
@@ -847,19 +884,30 @@ impl ViewInputHandler for TextInput {
         &mut self,
         range_utf16: Range<usize>,
         bounds: Bounds<Pixels>,
-        _cx: &mut ViewContext<Self>,
+        cx: &mut ViewContext<Self>,
     ) -> Option<Bounds<Pixels>> {
-        let last_layout = self.last_layout.as_ref()?;
+        let line_height = cx.line_height();
+        let lines = self.last_layout.as_ref()?;
         let range = self.range_from_utf16(&range_utf16);
+
+        let mut start_origin = None;
+        let mut end_origin = None;
+        for line in lines {
+            if let Some(p) = line.position_for_index(range.start, line_height) {
+                start_origin = Some(p);
+            }
+            if let Some(p) = line.position_for_index(range.end, line_height) {
+                end_origin = Some(p);
+            }
+
+            if start_origin.is_some() && end_origin.is_some() {
+                break;
+            }
+        }
+
         Some(Bounds::from_corners(
-            point(
-                bounds.left() + last_layout.x_for_index(range.start),
-                bounds.top(),
-            ),
-            point(
-                bounds.left() + last_layout.x_for_index(range.end),
-                bounds.bottom(),
-            ),
+            bounds.origin + start_origin.unwrap_or_default(),
+            bounds.origin + end_origin.unwrap_or_default(),
         ))
     }
 }
