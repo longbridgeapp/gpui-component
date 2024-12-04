@@ -179,32 +179,6 @@ impl Element for TextElement {
             if cursor_end.is_none() {
                 cursor_end = line_cursor_end;
             }
-
-            // selections background for each lines
-            if has_selection {
-                if line_cursor_start.is_some() || line_cursor_end.is_some() {
-                    let start = line_cursor_start
-                        .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
-                    let end = line_cursor_end.unwrap_or_else(|| {
-                        line.position_for_index(line.len(), line_height).unwrap()
-                    });
-
-                    let selection = fill(
-                        Bounds::from_corners(
-                            point(
-                                bounds.left() + start.x,
-                                bounds.top() + ix as f32 * line_height,
-                            ),
-                            point(
-                                bounds.left() + end.x,
-                                bounds.top() + (ix + 1) as f32 * line_height,
-                            ),
-                        ),
-                        cx.theme().selection,
-                    );
-                    selections.push(selection);
-                }
-            }
         }
 
         if let (Some(cursor_pos), Some(cursor_start), Some(cursor_end)) =
@@ -272,6 +246,35 @@ impl Element for TextElement {
             };
         }
 
+        // layout selections
+        if has_selection {
+            for (ix, line) in lines.iter().enumerate() {
+                // selections background for each lines
+                if cursor_start.is_some() || cursor_end.is_some() {
+                    let start = cursor_start
+                        .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
+                    let end = cursor_end.unwrap_or_else(|| {
+                        line.position_for_index(line.len(), line_height).unwrap()
+                    });
+
+                    let selection = fill(
+                        Bounds::from_corners(
+                            point(
+                                bounds.left() + start.x,
+                                bounds.top() + ix as f32 * line_height,
+                            ),
+                            point(
+                                bounds.left() + end.x,
+                                bounds.top() + (ix + 1) as f32 * line_height,
+                            ),
+                        ),
+                        cx.theme().selection,
+                    );
+                    selections.push(selection);
+                }
+            }
+        }
+
         PrepaintState {
             scroll_offset,
             bounds,
@@ -327,7 +330,6 @@ impl Element for TextElement {
         }
         self.input.update(cx, |input, _cx| {
             input.scroll_offset = prepaint.scroll_offset;
-            // FIXME: To support multi-line text, we need to store the last layout for each line.
             input.last_layout = Some(prepaint.lines.clone());
             input.last_bounds = Some(bounds);
             input.last_cursor_offset = Some(cursor);
