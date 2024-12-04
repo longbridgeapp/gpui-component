@@ -540,6 +540,7 @@ impl TextInput {
 
     fn index_for_mouse_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
         let line_height = cx.line_height();
+
         // If the text is empty, always return 0
         if self.text.is_empty() {
             return 0;
@@ -559,11 +560,11 @@ impl TextInput {
 
         let mut ix = 0;
         for line in lines {
-            if let Ok(index) = line.index_for_position(position, line_height) {
+            if let Ok(index) = line.index_for_position(position - bounds.origin, line_height) {
                 ix += index;
                 break;
             } else {
-                ix += line.len();
+                ix += line.len()
             }
         }
 
