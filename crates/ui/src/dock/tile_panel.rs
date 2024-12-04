@@ -571,11 +571,16 @@ impl Render for TilePanel {
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                    this.dragging_panel_index = None;
-                    this.resizing_panel_index = None;
-                    this.resizing_drag_data = None;
-                    cx.emit(PanelEvent::LayoutChanged);
-                    cx.notify();
+                    if this.dragging_panel_index.is_some()
+                        || this.resizing_panel_index.is_some()
+                        || this.resizing_drag_data.is_some()
+                    {
+                        this.dragging_panel_index = None;
+                        this.resizing_panel_index = None;
+                        this.resizing_drag_data = None;
+                        cx.emit(PanelEvent::LayoutChanged);
+                        cx.notify();
+                    }
                 }),
             )
             .on_mouse_down(
