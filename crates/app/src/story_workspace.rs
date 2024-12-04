@@ -9,7 +9,7 @@ use story::{
     SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
-    button::{Button, ButtonVariants as _},
+    button::{Button, ButtonVariants},
     color_picker::{ColorPicker, ColorPickerEvent},
     dock::{DockArea, DockAreaState, DockEvent, DockItem, DockPlacement},
     h_flex,
@@ -279,40 +279,69 @@ impl StoryWorkspace {
     }
 
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
+        let tiles_panel = DockItem::tiles_with_sizes(
+            vec![
+                (
+                    DockItem::tabs(
+                        vec![Arc::new(StoryContainer::panel::<ButtonStory>(cx))],
+                        None,
+                        dock_area,
+                        cx,
+                    ),
+                    Bounds::new(point(px(20.), px(20.)), size(px(610.), px(190.))),
+                    1,
+                ),
+                (
+                    DockItem::tabs(
+                        vec![Arc::new(StoryContainer::panel::<InputStory>(cx))],
+                        None,
+                        dock_area,
+                        cx,
+                    ),
+                    Bounds::new(point(px(120.), px(230.)), size(px(650.), px(300.))),
+                    2,
+                ),
+            ],
+            dock_area,
+            cx,
+        );
+
         DockItem::split_with_sizes(
             Axis::Vertical,
-            vec![DockItem::tabs(
-                vec![
-                    Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
-                    Arc::new(StoryContainer::panel::<InputStory>(cx)),
-                    Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ModalStory>(cx)),
-                    Arc::new(StoryContainer::panel::<PopupStory>(cx)),
-                    Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ImageStory>(cx)),
-                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                    Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
-                    Arc::new(StoryContainer::panel::<SidebarStory>(cx)),
-                    // Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
-                ],
-                None,
-                &dock_area,
-                cx,
-            )],
-            vec![None],
+            vec![
+                DockItem::tabs(
+                    vec![
+                        Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
+                        Arc::new(StoryContainer::panel::<InputStory>(cx)),
+                        Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
+                        Arc::new(StoryContainer::panel::<TextStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ModalStory>(cx)),
+                        Arc::new(StoryContainer::panel::<PopupStory>(cx)),
+                        Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+                        Arc::new(StoryContainer::panel::<TableStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ImageStory>(cx)),
+                        Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                        Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
+                        Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
+                        Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
+                        Arc::new(StoryContainer::panel::<SidebarStory>(cx)),
+                        // Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
+                    ],
+                    None,
+                    &dock_area,
+                    cx,
+                ),
+                tiles_panel,
+            ],
+            vec![None, Some(px(400.0))],
             &dock_area,
             cx,
         )
     }
-
     pub fn new_local(
         app_state: Arc<AppState>,
         cx: &mut AppContext,

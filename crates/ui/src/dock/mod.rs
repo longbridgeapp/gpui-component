@@ -4,6 +4,7 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
+mod tile_panel;
 
 use anyhow::Result;
 pub use dock::*;
@@ -14,6 +15,7 @@ use gpui::{
     VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
+pub use tile_panel::*;
 
 pub use panel::*;
 pub use stack_panel::*;
@@ -69,10 +71,14 @@ pub struct DockArea {
 #[derive(Clone)]
 pub enum DockItem {
     Split {
-        axis: gpui::Axis,
+        axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
         view: View<StackPanel>,
+    },
+    Tiles {
+        items: Vec<TilesItem>,
+        view: View<TilePanel>,
     },
     Tabs {
         items: Vec<Arc<dyn PanelView>>,
@@ -140,6 +146,35 @@ impl DockItem {
         }
     }
 
+    pub fn tiles_with_sizes(
+        items: Vec<(DockItem, Bounds<Pixels>, usize)>,
+        dock_area: &WeakView<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        let tile_panel = cx.new_view(|cx| {
+            let mut tile_panel = TilePanel::new(cx);
+            for (dock_item, bounds, z_index) in items.into_iter() {
+                tile_panel.add_panel_with_z_index(dock_item.view(), bounds, z_index, cx);
+            }
+            tile_panel
+        });
+
+        cx.defer({
+            let tile_panel = tile_panel.clone();
+            let dock_area = dock_area.clone();
+            move |cx| {
+                _ = dock_area.update(cx, |this, cx| {
+                    this.subscribe_panel(&tile_panel, cx);
+                });
+            }
+        });
+
+        Self::Tiles {
+            items: tile_panel.read(cx).panels.clone(),
+            view: tile_panel,
+        }
+    }
+
     /// Create DockItem with tabs layout, items are displayed as tabs.
     ///
     /// The `active_ix` is the index of the active tab, if `None` the first tab is active.
@@ -191,6 +226,7 @@ impl DockItem {
     fn view(&self) -> Arc<dyn PanelView> {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
+            Self::Tiles { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
         }
     }
@@ -201,6 +237,13 @@ impl DockItem {
             Self::Split { items, .. } => {
                 items.iter().find_map(|item| item.find_panel(panel.clone()))
             }
+            Self::Tiles { items, .. } => items.iter().find_map(|item| {
+                if &item.panel == &panel {
+                    Some(item.panel.clone())
+                } else {
+                    None
+                }
+            }),
             Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
         }
     }
@@ -237,6 +280,7 @@ impl DockItem {
                     stack_panel.add_panel(new_item.view(), None, dock_area.clone(), cx);
                 });
             }
+            DockItem::Tiles { .. } => {}
         }
     }
 
@@ -253,6 +297,7 @@ impl DockItem {
                     item.set_collapsed(collapsed, cx);
                 }
             }
+            DockItem::Tiles { .. } => {}
         }
     }
 
@@ -261,6 +306,7 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
+            DockItem::Tiles { .. } => None,
         }
     }
 
@@ -269,6 +315,7 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
+            DockItem::Tiles { .. } => None,
         }
     }
 }
@@ -637,6 +684,9 @@ impl DockArea {
                         _ => {}
                     }));
             }
+            DockItem::Tiles { .. } => {
+                // We subscribe the tab panel event is in CanvasPanel insert_panel
+            }
             DockItem::Tabs { .. } => {
                 // We subscribe to the tab panel event in StackPanel's insert_panel
             }
@@ -706,6 +756,7 @@ impl DockArea {
     fn render_items(&self, _cx: &mut ViewContext<Self>) -> AnyElement {
         match &self.items {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
+            DockItem::Tiles { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
         }
     }
