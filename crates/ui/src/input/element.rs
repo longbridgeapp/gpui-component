@@ -147,6 +147,10 @@ impl Element for TextElement {
             .shape_text(display_text, font_size, &runs, wrap_width)
             .unwrap();
 
+        if multi_line {
+            dbg!(lines.len());
+        }
+
         // Calculate the scroll offset to keep the cursor in view
         let mut scroll_offset = input.scroll_offset;
         let mut bounds = bounds;
