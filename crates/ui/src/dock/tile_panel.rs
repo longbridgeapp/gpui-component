@@ -239,7 +239,13 @@ impl TilePanel {
             if let Some(item) = self.panels.get_mut(index) {
                 let adjusted_position = current_mouse_position - self.bounds.origin;
                 let delta = adjusted_position - self.dragging_initial_mouse;
-                let new_origin = self.dragging_initial_bounds.origin + delta;
+                let mut new_origin = self.dragging_initial_bounds.origin + delta;
+                if new_origin.x < px(0.0) {
+                    new_origin.x = px(0.0);
+                }
+                if new_origin.y < px(0.0) {
+                    new_origin.y = px(0.0);
+                }
                 item.bounds.origin = round_point_to_nearest_ten(new_origin);
                 cx.notify();
             }
@@ -571,6 +577,9 @@ impl Render for TilePanel {
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(move |this, _event: &MouseUpEvent, cx| {
+                    for item in this.panels.iter() {
+                        eprintln!("Panel bounds: {:?}", item.bounds);
+                    }
                     if this.dragging_panel_index.is_some()
                         || this.resizing_panel_index.is_some()
                         || this.resizing_drag_data.is_some()
