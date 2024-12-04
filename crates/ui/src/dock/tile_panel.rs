@@ -298,7 +298,17 @@ impl TilePanel {
         cx.notify();
     }
 
-    /// Helper function to find the panel at a given position, considering z-index
+    // Check if a bounds is occluded by higher z-index panels
+    fn is_bounds_occluded(&self, current_index: usize, bounds: &Bounds<Pixels>) -> bool {
+        let current_z_index = self.panels[current_index].z_index;
+        self.panels.iter().enumerate().any(|(index, item)| {
+            index != current_index
+                && item.z_index > current_z_index
+                && item.bounds.intersects(bounds)
+        })
+    }
+
+    // Find the panel at a given position, considering z-index
     fn find_panel_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
         let adjusted_position = position - self.bounds.origin;
         let mut panels_with_indices: Vec<(usize, &TilesItem)> =
@@ -607,13 +617,9 @@ impl Render for TilePanel {
                 cx.listener(move |this, event: &MouseDownEvent, cx| {
                     if this.resizing_panel_index.is_none() && this.dragging_panel_index.is_none() {
                         let position = event.position;
-                        let adjusted_position = position - this.bounds.origin;
-                        for (index, item) in this.panels.iter().enumerate() {
-                            if item.bounds.contains(&adjusted_position) {
-                                this.bring_panel_to_front(Some(index));
-                                cx.notify();
-                                break;
-                            }
+                        if let Some((index, _)) = this.find_panel_at_position(position) {
+                            this.bring_panel_to_front(Some(index));
+                            cx.notify();
                         }
                     }
                 }),
