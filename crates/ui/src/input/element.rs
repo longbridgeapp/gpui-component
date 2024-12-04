@@ -250,23 +250,19 @@ impl Element for TextElement {
         if has_selection {
             for (ix, line) in lines.iter().enumerate() {
                 // selections background for each lines
-                if cursor_start.is_some() || cursor_end.is_some() {
-                    let start = cursor_start
+                let line_cursor_start = line.position_for_index(selected_range.start, line_height);
+                let line_cursor_end = line.position_for_index(selected_range.end, line_height);
+                if line_cursor_start.is_some() || line_cursor_end.is_some() {
+                    let start = line_cursor_start
                         .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
-                    let end = cursor_end.unwrap_or_else(|| {
+                    let end = line_cursor_end.unwrap_or_else(|| {
                         line.position_for_index(line.len(), line_height).unwrap()
                     });
 
                     let selection = fill(
                         Bounds::from_corners(
-                            point(
-                                bounds.left() + start.x,
-                                bounds.top() + ix as f32 * line_height,
-                            ),
-                            point(
-                                bounds.left() + end.x,
-                                bounds.top() + (ix + 1) as f32 * line_height,
-                            ),
+                            point(bounds.left() + start.x, bounds.top() + start.y),
+                            point(bounds.left() + end.x, bounds.top() + end.y + line_height),
                         ),
                         cx.theme().selection,
                     );
