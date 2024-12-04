@@ -65,6 +65,8 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] WebView
 - [x] Accordion
 - [x] Sidebar
+- [x] Breadcrumb
+- [x] Badge
 
 ## Showcase
 

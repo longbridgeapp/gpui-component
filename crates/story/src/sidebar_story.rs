@@ -5,6 +5,7 @@ use gpui::{
 
 use serde::Deserialize;
 use ui::{
+    breadcrumb::{Breadcrumb, BreadcrumbItem},
     divider::Divider,
     h_flex,
     popup_menu::PopupMenuExt,
@@ -103,6 +104,7 @@ impl Item {
         let item = *self;
         move |this, _, cx| {
             this.active_item = item;
+            this.active_subitem = None;
             cx.notify();
         }
     }
@@ -332,10 +334,25 @@ impl Render for SidebarStory {
                                     })),
                             )
                             .child(Divider::vertical().h_4())
-                            .child(self.active_item.label())
-                            .when_some(self.active_subitem, |this, subitem| {
-                                this.child(Divider::vertical().h_4()).child(subitem.label())
-                            }),
+                            .child(
+                                Breadcrumb::new()
+                                    .item(BreadcrumbItem::new("0", "Home").on_click(cx.listener(
+                                        |this, _, cx| {
+                                            this.active_item = Item::Playground;
+                                            cx.notify();
+                                        },
+                                    )))
+                                    .item(
+                                        BreadcrumbItem::new("1", self.active_item.label())
+                                            .on_click(cx.listener(|this, _, cx| {
+                                                this.active_subitem = None;
+                                                cx.notify();
+                                            })),
+                                    )
+                                    .when_some(self.active_subitem, |this, subitem| {
+                                        this.item(BreadcrumbItem::new("2", subitem.label()))
+                                    }),
+                            ),
                     )
                     .child("This content"),
             )
