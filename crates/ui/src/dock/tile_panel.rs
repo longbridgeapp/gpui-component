@@ -6,7 +6,7 @@ use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TilePanel
 use gpui::{
     canvas, div, px, AppContext, Bounds, DismissEvent, DragMoveEvent, EntityId, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, ParentElement, Pixels, Point, Render, StatefulInteractiveElement, Styled,
+    MouseUpEvent, ParentElement, Pixels, Point, Render, Size, StatefulInteractiveElement, Styled,
     ViewContext, VisualContext,
 };
 
@@ -357,236 +357,322 @@ impl FocusableView for TilePanel {
 }
 impl EventEmitter<PanelEvent> for TilePanel {}
 impl EventEmitter<DismissEvent> for TilePanel {}
+
 impl Render for TilePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
-
-        // Sort panels by z_index
-        let mut panels = self.panels.clone();
-        panels.sort_by_key(|item| item.z_index);
+        let view = cx.view().clone();
+        let border = cx.theme().border;
+        let mut panels_with_indices: Vec<(usize, TilesItem)> =
+            self.panels.iter().cloned().enumerate().collect();
+        panels_with_indices.sort_by_key(|(_, item)| item.z_index);
 
         h_flex()
             .size_full()
             .overflow_hidden()
             .relative()
             .bg(cx.theme().background)
-            .children(panels.into_iter().map(|item| {
-                let panel = item.panel.clone();
-                let panel_view = panel.view();
+            .children(
+                panels_with_indices
+                    .into_iter()
+                    .map(|(current_index, item)| {
+                        let panel = item.panel.clone();
+                        let panel_view = panel.view();
 
-                v_flex()
-                    .border_1()
-                    .rounded_md()
-                    .border_color(cx.theme().border)
-                    .absolute()
-                    .left(item.bounds.origin.x)
-                    .top(item.bounds.origin.y)
-                    .w(item.bounds.size.width)
-                    .h(item.bounds.size.height)
-                    .child(
-                        // Panel content
-                        h_flex()
-                            .w_full()
-                            .h_full()
-                            .overflow_hidden()
-                            .child(panel_view),
-                    )
-                    // Resize handles
-                    .child(
-                        // Right edge resize handle
-                        div()
-                            .id("right-resize-handle")
-                            .cursor_col_resize()
-                            .absolute()
-                            .top(px(0.0))
-                            .right(px(-5.0))
-                            .w(px(10.0))
-                            .h(item.bounds.size.height)
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                    let initial_mouse_position = event.position;
-                                    let panel_bounds = item.bounds;
-                                    let drag_data = ResizeDragData {
-                                        axis: ResizeAxis::Horizontal,
-                                        initial_mouse_position,
-                                        initial_panel_bounds: panel_bounds,
-                                    };
-                                    this.update_resizing_drag(drag_data, cx);
-                                    this.bring_panel_to_front(this.resizing_panel_index);
-                                }),
-                            )
-                            .on_drag(DragResizing(entity_id), |drag, _, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
-                            })
-                            .on_drag_move(cx.listener(
-                                move |this, e: &DragMoveEvent<DragResizing>, cx| match e.drag(cx) {
-                                    DragResizing(id) => {
-                                        if *id != entity_id {
-                                            return;
-                                        }
+                        let is_occluded = |bounds: &Bounds<Pixels>| {
+                            self.is_bounds_occluded(current_index, bounds)
+                        };
 
-                                        if let Some(ref drag_data) = this.resizing_drag_data {
-                                            if drag_data.axis != ResizeAxis::Horizontal {
-                                                return;
-                                            }
-                                            let current_mouse_position = e.event.position;
-                                            let delta = current_mouse_position.x
-                                                - drag_data.initial_mouse_position.x;
-                                            let new_width =
-                                                (drag_data.initial_panel_bounds.size.width + delta)
-                                                    .max(px(MINIMUM_WIDTH));
-                                            this.resize_panel_width(new_width, cx);
-                                        }
-                                    }
-                                },
-                            )),
-                    )
-                    .child(
-                        // Bottom edge resize handle
-                        div()
-                            .id("bottom-resize-handle")
-                            .cursor_row_resize()
+                        let right_handle_bounds = Bounds::new(
+                            Point {
+                                x: item.bounds.origin.x + item.bounds.size.width - px(5.0),
+                                y: item.bounds.origin.y,
+                            },
+                            Size {
+                                width: px(10.0),
+                                height: item.bounds.size.height,
+                            },
+                        );
+
+                        let bottom_handle_bounds = Bounds::new(
+                            Point {
+                                x: item.bounds.origin.x,
+                                y: item.bounds.origin.y + item.bounds.size.height - px(5.0),
+                            },
+                            Size {
+                                width: item.bounds.size.width,
+                                height: px(10.0),
+                            },
+                        );
+
+                        let corner_handle_bounds = Bounds::new(
+                            Point {
+                                x: item.bounds.origin.x + item.bounds.size.width - px(5.0),
+                                y: item.bounds.origin.y + item.bounds.size.height - px(5.0),
+                            },
+                            Size {
+                                width: px(10.0),
+                                height: px(10.0),
+                            },
+                        );
+
+                        let drag_bar_bounds = Bounds::new(
+                            item.bounds.origin.clone(),
+                            Size {
+                                width: item.bounds.size.width,
+                                height: px(DRAG_BAR_HEIGHT),
+                            },
+                        );
+
+                        v_flex()
+                            .border_1()
+                            .rounded_md()
+                            .border_color(border)
                             .absolute()
-                            .left(px(0.0))
-                            .bottom(px(-5.0))
+                            .left(item.bounds.origin.x)
+                            .top(item.bounds.origin.y)
                             .w(item.bounds.size.width)
-                            .h(px(10.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                    let initial_mouse_position = event.position;
-                                    let panel_bounds = item.bounds;
-                                    let drag_data = ResizeDragData {
-                                        axis: ResizeAxis::Vertical,
-                                        initial_mouse_position,
-                                        initial_panel_bounds: panel_bounds,
-                                    };
-                                    this.update_resizing_drag(drag_data, cx);
-                                    this.bring_panel_to_front(this.resizing_panel_index);
-                                }),
+                            .h(item.bounds.size.height)
+                            .child(
+                                h_flex()
+                                    .w_full()
+                                    .h_full()
+                                    .overflow_hidden()
+                                    .child(panel_view),
                             )
-                            .on_drag(DragResizing(entity_id), |drag, _, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
-                            })
-                            .on_drag_move(cx.listener(
-                                move |this, e: &DragMoveEvent<DragResizing>, cx| match e.drag(cx) {
-                                    DragResizing(id) => {
-                                        if *id != entity_id {
-                                            return;
-                                        }
+                            .child(if !is_occluded(&right_handle_bounds) {
+                                div()
+                                    .id("right-resize-handle")
+                                    .cursor_col_resize()
+                                    .absolute()
+                                    .top(px(0.0))
+                                    .right(px(-5.0))
+                                    .w(px(10.0))
+                                    .h(item.bounds.size.height)
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
+                                            let initial_mouse_position = event.position;
+                                            let panel_bounds = item.bounds;
+                                            let drag_data = ResizeDragData {
+                                                axis: ResizeAxis::Horizontal,
+                                                initial_mouse_position,
+                                                initial_panel_bounds: panel_bounds,
+                                            };
+                                            this.update_resizing_drag(drag_data, cx);
+                                            this.bring_panel_to_front(this.resizing_panel_index);
+                                        }),
+                                    )
+                                    .on_drag(DragResizing(entity_id), |drag, _, cx| {
+                                        cx.stop_propagation();
+                                        cx.new_view(|_| drag.clone())
+                                    })
+                                    .on_drag_move(cx.listener(
+                                        move |this, e: &DragMoveEvent<DragResizing>, cx| {
+                                            match e.drag(cx) {
+                                                DragResizing(id) => {
+                                                    if *id != entity_id {
+                                                        return;
+                                                    }
 
-                                        if let Some(ref drag_data) = this.resizing_drag_data {
-                                            let current_mouse_position = e.event.position;
-                                            let delta = current_mouse_position.y
-                                                - drag_data.initial_mouse_position.y;
-                                            let new_height =
-                                                (drag_data.initial_panel_bounds.size.height
-                                                    + delta)
-                                                    .max(px(MINIMUM_HEIGHT));
-                                            this.resize_panel_height(new_height, cx);
-                                        }
-                                    }
-                                },
-                            )),
-                    )
-                    .child(
-                        // Corner resize handle
-                        div()
-                            .id("corner-resize-handle")
-                            .cursor_crosshair()
-                            .absolute()
-                            .right(px(-5.0))
-                            .bottom(px(-5.0))
-                            .w(px(10.0))
-                            .h(px(10.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                    let initial_mouse_position = event.position;
-                                    let panel_bounds = item.bounds;
-                                    let drag_data = ResizeDragData {
-                                        axis: ResizeAxis::Both,
-                                        initial_mouse_position,
-                                        initial_panel_bounds: panel_bounds,
-                                    };
-                                    this.update_resizing_drag(drag_data, cx);
-                                    this.bring_panel_to_front(this.resizing_panel_index);
-                                }),
-                            )
-                            .on_drag(DragResizing(entity_id), |drag, _, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
-                            })
-                            .on_drag_move(cx.listener(
-                                move |this, e: &DragMoveEvent<DragResizing>, cx| match e.drag(cx) {
-                                    DragResizing(id) => {
-                                        if *id != entity_id {
-                                            return;
-                                        }
-
-                                        if let Some(ref drag_data) = this.resizing_drag_data {
-                                            if drag_data.axis != ResizeAxis::Both {
-                                                return;
+                                                    if let Some(ref drag_data) =
+                                                        this.resizing_drag_data
+                                                    {
+                                                        if drag_data.axis != ResizeAxis::Horizontal
+                                                        {
+                                                            return;
+                                                        }
+                                                        let current_mouse_position =
+                                                            e.event.position;
+                                                        let delta = current_mouse_position.x
+                                                            - drag_data.initial_mouse_position.x;
+                                                        let new_width = (drag_data
+                                                            .initial_panel_bounds
+                                                            .size
+                                                            .width
+                                                            + delta)
+                                                            .max(px(MINIMUM_WIDTH));
+                                                        this.resize_panel_width(new_width, cx);
+                                                    }
+                                                }
                                             }
-                                            let current_mouse_position = e.event.position;
-                                            let delta_x = current_mouse_position.x
-                                                - drag_data.initial_mouse_position.x;
-                                            let delta_y = current_mouse_position.y
-                                                - drag_data.initial_mouse_position.y;
-                                            let new_width =
-                                                (drag_data.initial_panel_bounds.size.width
-                                                    + delta_x)
-                                                    .max(px(MINIMUM_WIDTH));
-                                            let new_height =
-                                                (drag_data.initial_panel_bounds.size.height
-                                                    + delta_y)
-                                                    .max(px(MINIMUM_HEIGHT));
-                                            this.resize_panel_height(new_height, cx);
-                                            this.resize_panel_width(new_width, cx);
-                                        }
-                                    }
-                                },
-                            )),
-                    )
-                    // Drag bar
-                    .child(
-                        h_flex()
-                            .id("drag-bar")
-                            .cursor_grab()
-                            .absolute()
-                            .w_full()
-                            .h(px(DRAG_BAR_HEIGHT))
-                            .bg(cx.theme().transparent)
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                    let initial_mouse_position = event.position;
-                                    this.update_initial_position(initial_mouse_position, cx);
-                                    this.bring_panel_to_front(this.dragging_panel_index);
-                                }),
-                            )
-                            .on_drag(DragMoving(entity_id), |drag, _, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
+                                        },
+                                    ))
+                                    .into_any_element()
+                            } else {
+                                div().into_any_element()
                             })
-                            .on_drag_move(cx.listener(
-                                move |this, e: &DragMoveEvent<DragMoving>, cx| match e.drag(cx) {
-                                    DragMoving(id) => {
-                                        if *id != entity_id {
-                                            return;
-                                        }
+                            .child(if !is_occluded(&bottom_handle_bounds) {
+                                div()
+                                    .id("bottom-resize-handle")
+                                    .cursor_row_resize()
+                                    .absolute()
+                                    .left(px(0.0))
+                                    .bottom(px(-5.0))
+                                    .w(item.bounds.size.width)
+                                    .h(px(10.0))
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
+                                            let initial_mouse_position = event.position;
+                                            let panel_bounds = item.bounds;
+                                            let drag_data = ResizeDragData {
+                                                axis: ResizeAxis::Vertical,
+                                                initial_mouse_position,
+                                                initial_panel_bounds: panel_bounds,
+                                            };
+                                            this.update_resizing_drag(drag_data, cx);
+                                            this.bring_panel_to_front(this.resizing_panel_index);
+                                        }),
+                                    )
+                                    .on_drag(DragResizing(entity_id), |drag, _, cx| {
+                                        cx.stop_propagation();
+                                        cx.new_view(|_| drag.clone())
+                                    })
+                                    .on_drag_move(cx.listener(
+                                        move |this, e: &DragMoveEvent<DragResizing>, cx| {
+                                            match e.drag(cx) {
+                                                DragResizing(id) => {
+                                                    if *id != entity_id {
+                                                        return;
+                                                    }
 
-                                        this.update_position(e.event.position, cx);
-                                    }
-                                },
-                            )),
-                    )
-            }))
+                                                    if let Some(ref drag_data) =
+                                                        this.resizing_drag_data
+                                                    {
+                                                        let current_mouse_position =
+                                                            e.event.position;
+                                                        let delta = current_mouse_position.y
+                                                            - drag_data.initial_mouse_position.y;
+                                                        let new_height = (drag_data
+                                                            .initial_panel_bounds
+                                                            .size
+                                                            .height
+                                                            + delta)
+                                                            .max(px(MINIMUM_HEIGHT));
+                                                        this.resize_panel_height(new_height, cx);
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    ))
+                                    .into_any_element()
+                            } else {
+                                div().into_any_element()
+                            })
+                            .child(if !is_occluded(&corner_handle_bounds) {
+                                div()
+                                    .id("corner-resize-handle")
+                                    .cursor_crosshair()
+                                    .absolute()
+                                    .right(px(-5.0))
+                                    .bottom(px(-5.0))
+                                    .w(px(10.0))
+                                    .h(px(10.0))
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
+                                            let initial_mouse_position = event.position;
+                                            let panel_bounds = item.bounds;
+                                            let drag_data = ResizeDragData {
+                                                axis: ResizeAxis::Both,
+                                                initial_mouse_position,
+                                                initial_panel_bounds: panel_bounds,
+                                            };
+                                            this.update_resizing_drag(drag_data, cx);
+                                            this.bring_panel_to_front(this.resizing_panel_index);
+                                        }),
+                                    )
+                                    .on_drag(DragResizing(entity_id), |drag, _, cx| {
+                                        cx.stop_propagation();
+                                        cx.new_view(|_| drag.clone())
+                                    })
+                                    .on_drag_move(cx.listener(
+                                        move |this, e: &DragMoveEvent<DragResizing>, cx| {
+                                            match e.drag(cx) {
+                                                DragResizing(id) => {
+                                                    if *id != entity_id {
+                                                        return;
+                                                    }
+
+                                                    if let Some(ref drag_data) =
+                                                        this.resizing_drag_data
+                                                    {
+                                                        if drag_data.axis != ResizeAxis::Both {
+                                                            return;
+                                                        }
+                                                        let current_mouse_position =
+                                                            e.event.position;
+                                                        let delta_x = current_mouse_position.x
+                                                            - drag_data.initial_mouse_position.x;
+                                                        let delta_y = current_mouse_position.y
+                                                            - drag_data.initial_mouse_position.y;
+                                                        let new_width = (drag_data
+                                                            .initial_panel_bounds
+                                                            .size
+                                                            .width
+                                                            + delta_x)
+                                                            .max(px(MINIMUM_WIDTH));
+                                                        let new_height = (drag_data
+                                                            .initial_panel_bounds
+                                                            .size
+                                                            .height
+                                                            + delta_y)
+                                                            .max(px(MINIMUM_HEIGHT));
+                                                        this.resize_panel_height(new_height, cx);
+                                                        this.resize_panel_width(new_width, cx);
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    ))
+                                    .into_any_element()
+                            } else {
+                                div().into_any_element()
+                            })
+                            .child(if !is_occluded(&drag_bar_bounds) {
+                                h_flex()
+                                    .id("drag-bar")
+                                    .cursor_grab()
+                                    .absolute()
+                                    .w_full()
+                                    .h(px(DRAG_BAR_HEIGHT))
+                                    .bg(cx.theme().transparent)
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
+                                            let initial_mouse_position = event.position;
+                                            this.update_initial_position(
+                                                initial_mouse_position,
+                                                cx,
+                                            );
+                                            this.bring_panel_to_front(this.dragging_panel_index);
+                                        }),
+                                    )
+                                    .on_drag(DragMoving(entity_id), |drag, _, cx| {
+                                        cx.stop_propagation();
+                                        cx.new_view(|_| drag.clone())
+                                    })
+                                    .on_drag_move(cx.listener(
+                                        move |this, e: &DragMoveEvent<DragMoving>, cx| {
+                                            match e.drag(cx) {
+                                                DragMoving(id) => {
+                                                    if *id != entity_id {
+                                                        return;
+                                                    }
+
+                                                    this.update_position(e.event.position, cx);
+                                                }
+                                            }
+                                        },
+                                    ))
+                                    .into_any_element()
+                            } else {
+                                div().into_any_element()
+                            })
+                    }),
+            )
             .child({
-                let view = cx.view().clone();
                 canvas(
                     move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
                     |_, _, _| {},
@@ -597,9 +683,6 @@ impl Render for TilePanel {
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                    for item in this.panels.iter() {
-                        eprintln!("Panel bounds: {:?}", item.bounds);
-                    }
                     if this.dragging_panel_index.is_some()
                         || this.resizing_panel_index.is_some()
                         || this.resizing_drag_data.is_some()
