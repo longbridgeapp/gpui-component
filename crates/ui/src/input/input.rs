@@ -426,7 +426,7 @@ impl TextInput {
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
         if self.multi_line {
-            self.replace_text_in_range(Some(self.selected_range.clone()), "\n", cx);
+            self.replace_text_in_range(None, "\n", cx);
             // Move cursor to the start of the next line
             // TODO: To be test this line is valid
             self.move_to(self.next_boundary(self.cursor_offset()), cx);
