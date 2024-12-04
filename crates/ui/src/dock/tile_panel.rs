@@ -218,15 +218,13 @@ impl TilePanel {
         position: Point<Pixels>,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        let adjusted_position = position - self.bounds.origin;
-        for (index, item) in self.panels.iter().enumerate() {
-            if item.bounds.contains(&adjusted_position) {
-                self.dragging_panel_index = Some(index);
-                self.dragging_initial_mouse = adjusted_position;
-                self.dragging_initial_bounds = item.bounds;
-                cx.notify();
-                return;
-            }
+        if let Some((index, item)) = self.find_panel_at_position(position) {
+            let adjusted_position = position - self.bounds.origin;
+            let bounds = item.bounds;
+            self.dragging_panel_index = Some(index);
+            self.dragging_initial_mouse = adjusted_position;
+            self.dragging_initial_bounds = bounds;
+            cx.notify();
         }
     }
 
@@ -257,13 +255,11 @@ impl TilePanel {
         drag_data: ResizeDragData,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        for (index, item) in self.panels.iter().enumerate() {
-            if item.bounds == drag_data.initial_panel_bounds {
-                self.resizing_panel_index = Some(index);
-                self.resizing_drag_data = Some(drag_data);
-                cx.notify();
-                return;
-            }
+        if let Some((index, _item)) = self.find_panel_at_position(drag_data.initial_mouse_position)
+        {
+            self.resizing_panel_index = Some(index);
+            self.resizing_drag_data = Some(drag_data);
+            cx.notify();
         }
     }
 
@@ -300,6 +296,20 @@ impl TilePanel {
 
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
+    }
+
+    /// Helper function to find the panel at a given position, considering z-index
+    fn find_panel_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
+        let adjusted_position = position - self.bounds.origin;
+        let mut panels_with_indices: Vec<(usize, &TilesItem)> =
+            self.panels.iter().enumerate().collect();
+        panels_with_indices.sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index));
+        for (index, item) in panels_with_indices {
+            if item.bounds.contains(&adjusted_position) {
+                return Some((index, item));
+            }
+        }
+        None
     }
 
     /// Bring the panel of target_index to front by updating its z_index
