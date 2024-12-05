@@ -147,9 +147,34 @@ impl Element for TextElement {
             .shape_text(display_text, font_size, &runs, wrap_width)
             .unwrap();
 
-        if multi_line {
-            dbg!(lines.len());
-        }
+        // `position_for_index` for example
+        //
+        // #### text
+        //
+        // Hello 世界，this is GPUI component.
+        // The GPUI Component is a collection of UI components for
+        // GPUI framework, including Button, Input, Checkbox, Radio,
+        // Dropdown, Tab, and more...
+        //
+        // wrap_width: 444px, line_height: 20px
+        //
+        // #### lines[0]
+        //
+        // | index | pos              | line |
+        // |-------|------------------|------|
+        // | 5     | (37 px, 0.0)     | 0    |
+        // | 38    | (261.7 px, 20.0) | 0    |
+        // | 40    | None             | -    |
+        //
+        // #### lines[1]
+        //
+        // | index | position              | line |
+        // |-------|-----------------------|------|
+        // | 5     | (43.578125 px, 0.0)   | 0    |
+        // | 56    | (422.21094 px, 0.0)   | 0    |
+        // | 57    | (11.6328125 px, 20.0) | 1    |
+        // | 114   | (429.85938 px, 20.0)  | 1    |
+        // | 115   | (11.3125 px, 40.0)    | 2    |
 
         // Calculate the scroll offset to keep the cursor in view
         let mut scroll_offset = input.scroll_offset;
@@ -160,29 +185,41 @@ impl Element for TextElement {
         const INSET: Pixels = px(0.5);
 
         // layout_visible_cursors
+        // The cursor corresponds to the current cursor position in the text no only the line.
         let mut cursor_pos = None;
         let mut cursor_start = None;
         let mut cursor_end = None;
         let has_selection = !selected_range.is_empty();
 
+        let mut prev_lines_offset = 0;
         for (ix, line) in lines.iter().enumerate() {
             // break loop if all cursor positions are found
             if cursor_pos.is_some() && cursor_start.is_some() && cursor_end.is_some() {
                 break;
             }
 
+            let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
             if cursor_pos.is_none() {
-                cursor_pos = line.position_for_index(cursor_offset, line_height);
+                let offset = cursor_offset.saturating_sub(prev_lines_offset);
+                if let Some(pos) = line.position_for_index(offset, line_height) {
+                    cursor_pos = Some(line_origin + pos);
+                }
+            }
+            if cursor_start.is_none() {
+                let offset = selected_range.start.saturating_sub(prev_lines_offset);
+                if let Some(pos) = line.position_for_index(offset, line_height) {
+                    cursor_start = Some(line_origin + pos);
+                }
+            }
+            if cursor_end.is_none() {
+                let offset = selected_range.end.saturating_sub(prev_lines_offset);
+                if let Some(pos) = line.position_for_index(offset, line_height) {
+                    cursor_end = Some(line_origin + pos);
+                }
             }
 
-            let line_cursor_start = line.position_for_index(selected_range.start, line_height);
-            if cursor_start.is_none() {
-                cursor_start = line_cursor_start;
-            }
-            let line_cursor_end = line.position_for_index(selected_range.end, line_height);
-            if cursor_end.is_none() {
-                cursor_end = line_cursor_end;
-            }
+            // +1 for skip the last `\n`
+            prev_lines_offset += line.len() + 1;
         }
 
         if let (Some(cursor_pos), Some(cursor_start), Some(cursor_end)) =
@@ -252,16 +289,27 @@ impl Element for TextElement {
 
         // layout selections
         if has_selection {
+            let mut prev_lines_offset = 0;
             for (ix, line) in lines.iter().enumerate() {
+                let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
+
                 // selections background for each lines
-                let line_cursor_start = line.position_for_index(selected_range.start, line_height);
-                let line_cursor_end = line.position_for_index(selected_range.end, line_height);
+                let line_cursor_start = line.position_for_index(
+                    selected_range.start.saturating_sub(prev_lines_offset),
+                    line_height,
+                );
+                let line_cursor_end = line.position_for_index(
+                    selected_range.end.saturating_sub(prev_lines_offset),
+                    line_height,
+                );
                 if line_cursor_start.is_some() || line_cursor_end.is_some() {
-                    let start = line_cursor_start
-                        .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
-                    let end = line_cursor_end.unwrap_or_else(|| {
-                        line.position_for_index(line.len(), line_height).unwrap()
-                    });
+                    let start = line_origin
+                        + line_cursor_start
+                            .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
+                    let end = line_origin
+                        + line_cursor_end.unwrap_or_else(|| {
+                            line.position_for_index(line.len(), line_height).unwrap()
+                        });
 
                     let selection = fill(
                         Bounds::from_corners(
@@ -272,6 +320,9 @@ impl Element for TextElement {
                     );
                     selections.push(selection);
                 }
+
+                // +1 for skip the last `\n`
+                prev_lines_offset += line.len() + 1;
             }
         }
 
