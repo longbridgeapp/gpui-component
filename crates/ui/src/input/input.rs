@@ -577,6 +577,7 @@ impl TextInput {
             let line_origin = self.line_origin_with_y_offset(ix, line_height);
             let pos = inner_position - line_origin;
             let index_result = line.index_for_position(pos, line_height);
+
             if let Ok(v) = index_result {
                 index += v + 1;
                 break;
@@ -585,6 +586,15 @@ impl TextInput {
                 // The fallback index is saved in Err from `index_for_position` method.
                 index += index_result.unwrap_err();
                 break;
+            } else if line.len() == 0 {
+                // empty line
+                let line_bounds = Bounds {
+                    origin: line_origin,
+                    size: gpui::size(bounds.size.width, line_height),
+                };
+                if line_bounds.contains(&inner_position) {
+                    break;
+                }
             } else {
                 index += line.len() + 1;
             }
