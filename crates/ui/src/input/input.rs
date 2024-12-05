@@ -478,7 +478,8 @@ impl TextInput {
             return;
         }
 
-        let selected_text = self.text[self.selected_range.clone()].to_string();
+        let range = self.range_from_utf16(&self.selected_range);
+        let selected_text = self.text[range].to_string();
         cx.write_to_clipboard(ClipboardItem::new_string(selected_text));
         self.replace_text_in_range(None, "", cx);
     }
