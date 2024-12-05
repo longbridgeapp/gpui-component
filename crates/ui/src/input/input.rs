@@ -762,37 +762,8 @@ impl TextInput {
             return;
         }
 
-        let offset = self.offset_of_position(event.position, cx);
+        let offset = self.index_for_mouse_position(event.position, cx);
         self.select_to(offset, cx);
-    }
-
-    fn offset_of_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
-        let line_height = cx.line_height();
-        let bounds = self.last_bounds.unwrap_or_default();
-        let inner_position = position - bounds.origin;
-
-        let Some(lines) = self.last_layout.as_ref() else {
-            return 0;
-        };
-
-        for (ix, line) in lines.iter().enumerate() {
-            let line_origin = self.line_origin_with_y_offset(ix, line_height);
-            if let Ok(index) = line.index_for_position(inner_position - line_origin, line_height) {
-                return index;
-            }
-        }
-
-        // If the mouse is on the right side of the last character, move to the end
-        // Otherwise, move to the start of the line
-        let last_line = lines.last().unwrap();
-        let last_index = last_line.len();
-        if let Some(last_x) = last_line.position_for_index(last_index, line_height) {
-            if inner_position.x > last_x.x {
-                return last_index;
-            }
-        }
-
-        0
     }
 
     fn is_valid_input(&self, new_text: &str) -> bool {

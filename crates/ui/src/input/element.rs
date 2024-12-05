@@ -291,10 +291,11 @@ impl Element for TextElement {
         // layout selections
         if has_selection {
             let mut prev_lines_offset = 0;
+
+            // selections background for each lines
             for (ix, line) in lines.iter().enumerate() {
                 let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
 
-                // selections background for each lines
                 let line_cursor_start = line.position_for_index(
                     selected_range.start.saturating_sub(prev_lines_offset),
                     line_height,
@@ -303,6 +304,7 @@ impl Element for TextElement {
                     selected_range.end.saturating_sub(prev_lines_offset),
                     line_height,
                 );
+
                 if line_cursor_start.is_some() || line_cursor_end.is_some() {
                     let start = line_origin
                         + line_cursor_start
@@ -320,6 +322,10 @@ impl Element for TextElement {
                         cx.theme().selection,
                     );
                     selections.push(selection);
+                }
+
+                if line_cursor_start.is_some() && line_cursor_end.is_some() {
+                    break;
                 }
 
                 // +1 for skip the last `\n`
