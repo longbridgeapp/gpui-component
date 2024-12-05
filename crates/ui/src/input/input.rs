@@ -442,7 +442,6 @@ impl TextInput {
     fn on_mouse_down(&mut self, event: &MouseDownEvent, cx: &mut ViewContext<Self>) {
         self.is_selecting = true;
         let offset = self.index_for_mouse_position(event.position, cx);
-
         // Double click to select word
         if event.button == MouseButton::Left && event.click_count == 2 {
             self.select_word(offset, cx);
@@ -591,7 +590,11 @@ impl TextInput {
             }
         }
 
-        index
+        if index > self.text.len() {
+            self.text.len()
+        } else {
+            index
+        }
     }
 
     /// Returns a y offseted point for the line origin.
