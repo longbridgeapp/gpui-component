@@ -10,10 +10,10 @@ use unicode_segmentation::*;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, point, px, AnyElement, AppContext, Bounds, ClickEvent, ClipboardItem,
-    Context as _, EventEmitter, FocusHandle, FocusableView, InteractiveElement as _, IntoElement,
-    KeyBinding, KeyDownEvent, Model, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    ParentElement as _, Pixels, Point, Rems, Render, SharedString, Styled as _, UTF16Selection,
-    ViewContext, ViewInputHandler, WindowContext, WrappedLine,
+    Context as _, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement as _,
+    IntoElement, KeyBinding, KeyDownEvent, Model, MouseButton, MouseDownEvent, MouseMoveEvent,
+    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, SharedString, Styled as _,
+    UTF16Selection, ViewContext, ViewInputHandler, WindowContext, WrappedLine,
 };
 
 // TODO:
@@ -569,17 +569,41 @@ impl TextInput {
             return self.text.len();
         }
 
-        let mut ix = 0;
-        for line in lines {
-            if let Ok(index) = line.index_for_position(position - bounds.origin, line_height) {
-                ix += index;
+        // The position is relative to the bounds of the text input
+        let inner_position = position - bounds.origin;
+
+        let mut index = 0;
+        for (ix, line) in lines.iter().enumerate() {
+            let line_origin = self.line_origin_with_y_offset(ix, line_height);
+            let pos = inner_position - line_origin;
+            let index_result = line.index_for_position(pos, line_height);
+            if let Ok(v) = index_result {
+                index += v + 1;
+                break;
+            } else if let Ok(_) = line.index_for_position(point(px(0.), pos.y), line_height) {
+                // Click in the this line but not in the text, move cursor to the end of the line.
+                // The fallback index is saved in Err from `index_for_position` method.
+                index += index_result.unwrap_err();
                 break;
             } else {
-                ix += line.len()
+                index += line.len() + 1;
             }
         }
 
-        ix
+        index
+    }
+
+    /// Returns a y offseted point for the line origin.
+    fn line_origin_with_y_offset(&self, ix: usize, line_height: Pixels) -> Point<Pixels> {
+        if self.multi_line {
+            // - line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
+            point(
+                px(0.),
+                px(0.) + ix as f32 * line_height - line_height.half(),
+            )
+        } else {
+            point(px(0.), px(0.))
+        }
     }
 
     fn select_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
@@ -745,14 +769,15 @@ impl TextInput {
     fn offset_of_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
         let line_height = cx.line_height();
         let bounds = self.last_bounds.unwrap_or_default();
-        let position = position - bounds.origin;
+        let inner_position = position - bounds.origin;
 
         let Some(lines) = self.last_layout.as_ref() else {
             return 0;
         };
 
-        for line in lines {
-            if let Ok(index) = line.index_for_position(position, line_height) {
+        for (ix, line) in lines.iter().enumerate() {
+            let line_origin = self.line_origin_with_y_offset(ix, line_height);
+            if let Ok(index) = line.index_for_position(inner_position - line_origin, line_height) {
                 return index;
             }
         }
@@ -762,7 +787,7 @@ impl TextInput {
         let last_line = lines.last().unwrap();
         let last_index = last_line.len();
         if let Some(last_x) = last_line.position_for_index(last_index, line_height) {
-            if position.x > last_x.x {
+            if inner_position.x > last_x.x {
                 return last_index;
             }
         }
@@ -904,12 +929,14 @@ impl ViewInputHandler for TextInput {
 
         let mut start_origin = None;
         let mut end_origin = None;
-        for line in lines {
+        for (ix, line) in lines.iter().enumerate() {
+            let line_origin = self.line_origin_with_y_offset(ix, line_height);
+
             if let Some(p) = line.position_for_index(range.start, line_height) {
-                start_origin = Some(p);
+                start_origin = Some(p + line_origin);
             }
             if let Some(p) = line.position_for_index(range.end, line_height) {
-                end_origin = Some(p);
+                end_origin = Some(p + line_origin);
             }
 
             if start_origin.is_some() && end_origin.is_some() {

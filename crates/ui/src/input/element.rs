@@ -9,6 +9,9 @@ use crate::theme::ActiveTheme as _;
 
 use super::TextInput;
 
+const RIGHT_MARGIN: Pixels = px(5.);
+const INSET: Pixels = px(0.5);
+
 pub(super) struct TextElement {
     input: View<TextInput>,
 }
@@ -181,8 +184,6 @@ impl Element for TextElement {
         let mut bounds = bounds;
         let mut selections = SmallVec::new();
         let mut cursor = None;
-        const RIGHT_MARGIN: Pixels = px(5.);
-        const INSET: Pixels = px(0.5);
 
         // layout_visible_cursors
         // The cursor corresponds to the current cursor position in the text no only the line.
