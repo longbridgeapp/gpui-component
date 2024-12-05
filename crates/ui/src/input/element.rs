@@ -294,6 +294,7 @@ impl Element for TextElement {
 
             // selections background for each lines
             for (ix, line) in lines.iter().enumerate() {
+                // TODO: The wrapped line need to split multiple selection item.
                 let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
 
                 let line_cursor_start = line.position_for_index(
@@ -314,14 +315,42 @@ impl Element for TextElement {
                             line.position_for_index(line.len(), line_height).unwrap()
                         });
 
-                    let selection = fill(
-                        Bounds::from_corners(
-                            point(bounds.left() + start.x, bounds.top() + start.y),
-                            point(bounds.left() + end.x, bounds.top() + end.y + line_height),
-                        ),
-                        cx.theme().selection,
-                    );
-                    selections.push(selection);
+                    // Split the selection into multiple items
+                    let wrapped_lines = (end.y / line_height).ceil() as usize
+                        - (start.y / line_height).ceil() as usize;
+
+                    if wrapped_lines == 0 {
+                        // no wrapped line
+                        let selection = fill(
+                            Bounds::from_corners(
+                                point(bounds.left() + start.x, bounds.top() + start.y),
+                                point(bounds.left() + end.x, bounds.top() + end.y + line_height),
+                            ),
+                            cx.theme().selection,
+                        );
+                        selections.push(selection);
+                    } else {
+                        // wrapped lines
+                        for i in 0..=wrapped_lines {
+                            let mut start = point(start.x, start.y + i as f32 * line_height);
+                            if i != 0 && wrapped_lines > 0 {
+                                start.x = px(0.);
+                            }
+                            let mut end = point(end.x, end.y + i as f32 * line_height);
+                            if i != wrapped_lines {
+                                end.x = bounds.size.width;
+                            }
+
+                            let selection = fill(
+                                Bounds::from_corners(
+                                    point(bounds.left() + start.x, bounds.top() + start.y),
+                                    point(bounds.left() + end.x, bounds.top() + end.y),
+                                ),
+                                cx.theme().selection,
+                            );
+                            selections.push(selection);
+                        }
+                    }
                 }
 
                 if line_cursor_start.is_some() && line_cursor_end.is_some() {
