@@ -256,16 +256,7 @@ impl StoryWorkspace {
             cx,
         );
 
-        let right_panels = DockItem::split_with_sizes(
-            Axis::Vertical,
-            vec![
-                DockItem::tab(StoryContainer::panel::<ImageStory>(cx), &dock_area, cx),
-                DockItem::tab(StoryContainer::panel::<IconStory>(cx), &dock_area, cx),
-            ],
-            vec![None],
-            &dock_area,
-            cx,
-        );
+        let right_panels = DockItem::panel(Arc::new(StoryContainer::panel::<IconStory>(cx)));
 
         _ = dock_area.update(cx, |view, cx| {
             view.set_version(MAIN_DOCK_AREA.version, cx);
