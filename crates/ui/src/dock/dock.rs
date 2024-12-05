@@ -188,6 +188,9 @@ impl Dock {
                     }
                 });
             }
+            DockItem::Plain { .. } => {
+                // Not supported
+            }
         }
     }
 
@@ -367,6 +370,7 @@ impl Render for Dock {
             .map(|this| match &self.panel {
                 DockItem::Split { view, .. } => this.child(view.clone()),
                 DockItem::Tabs { view, .. } => this.child(view.clone()),
+                DockItem::Plain { view, .. } => this.child(view.clone().view()),
             })
             .child(self.render_resize_handle(cx))
             .child(DockElement {
