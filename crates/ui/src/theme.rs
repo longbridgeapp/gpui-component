@@ -19,19 +19,19 @@ impl ActiveTheme for AppContext {
     }
 }
 
-impl<'a, V> ActiveTheme for ViewContext<'a, V> {
+impl<V> ActiveTheme for ViewContext<'_, V> {
     fn theme(&self) -> &Theme {
         self.deref().theme()
     }
 }
 
-impl<'a, V> ActiveTheme for ModelContext<'a, V> {
+impl<V> ActiveTheme for ModelContext<'_, V> {
     fn theme(&self) -> &Theme {
         self.deref().theme()
     }
 }
 
-impl<'a> ActiveTheme for WindowContext<'a> {
+impl ActiveTheme for WindowContext<'_> {
     fn theme(&self) -> &Theme {
         self.deref().theme()
     }
