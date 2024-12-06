@@ -10,10 +10,11 @@ use unicode_segmentation::*;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, point, px, AnyElement, AppContext, Bounds, ClickEvent, ClipboardItem,
-    Context as _, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement as _,
+    Context as _, Entity, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement as _,
     IntoElement, KeyBinding, KeyDownEvent, Model, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, SharedString, Styled as _,
-    UTF16Selection, ViewContext, ViewInputHandler, WindowContext, WrappedLine,
+    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, ScrollHandle, SharedString,
+    StatefulInteractiveElement, Styled as _, UTF16Selection, ViewContext, ViewInputHandler,
+    WindowContext, WrappedLine,
 };
 
 // TODO:
@@ -139,6 +140,7 @@ pub fn init(cx: &mut AppContext) {
 
 pub struct TextInput {
     pub(super) focus_handle: FocusHandle,
+    scroll_handle: ScrollHandle,
     pub(super) text: SharedString,
     pub(super) multi_line: bool,
     pub(super) history: History<Change>,
@@ -174,6 +176,7 @@ impl TextInput {
         let history = History::new().group_interval(std::time::Duration::from_secs(1));
         let input = Self {
             focus_handle: focus_handle.clone(),
+            scroll_handle: ScrollHandle::default(),
             text: "".into(),
             multi_line: false,
             blink_cursor,
@@ -673,6 +676,8 @@ impl TextInput {
             return 0;
         };
 
+        let position = position;
+
         if position.y < bounds.top() {
             return 0;
         }
@@ -1077,6 +1082,7 @@ impl Render for TextInput {
         div()
             .flex()
             .key_context(CONTEXT)
+            .id("input")
             .track_focus(&self.focus_handle)
             .when(!self.disabled, |this| {
                 this.on_action(cx.listener(Self::backspace))
@@ -1134,7 +1140,7 @@ impl Render for TextInput {
                 .when(prefix.is_none(), |this| this.input_pl(self.size))
                 .when(suffix.is_none(), |this| this.input_pr(self.size))
             })
-            .children(prefix)
+            .when(!self.multi_line, |this| this.children(prefix))
             .gap_1()
             .items_center()
             .child(
@@ -1145,13 +1151,18 @@ impl Render for TextInput {
                     .cursor_text()
                     .child(TextElement::new(cx.view().clone())),
             )
-            .when(self.loading, |this| {
-                this.child(Indicator::new().color(cx.theme().muted_foreground))
+            .when(!self.multi_line, |this| {
+                this.when(
+                    self.cleanable && !self.loading && !self.text.is_empty(),
+                    |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
+                )
+                .when(self.loading, |this| {
+                    this.child(Indicator::new().color(cx.theme().muted_foreground))
+                })
+                .children(suffix)
             })
-            .when(
-                self.cleanable && !self.loading && !self.text.is_empty() && !self.multi_line,
-                |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
-            )
-            .children(suffix)
+            .when(self.multi_line, |this| {
+                this.track_scroll(&self.scroll_handle)
+            })
     }
 }
