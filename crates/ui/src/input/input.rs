@@ -1020,6 +1020,8 @@ impl ViewInputHandler for TextInput {
         cx.notify();
     }
 
+    /// Used to position IME candidates.
+    /// TODO: Fix position of IME candidates in multi-line text input.
     fn bounds_for_range(
         &mut self,
         range_utf16: Range<usize>,
@@ -1034,15 +1036,14 @@ impl ViewInputHandler for TextInput {
         let mut end_origin = None;
         let mut y_offset = px(0.);
         for line in lines.iter() {
-            let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
-
             if let Some(p) = line.position_for_index(range.start, line_height) {
-                start_origin = Some(p + line_origin);
+                start_origin = Some(p + point(px(0.), y_offset));
             }
             if let Some(p) = line.position_for_index(range.end, line_height) {
-                end_origin = Some(p + line_origin);
+                end_origin = Some(p + point(px(0.), y_offset));
             }
 
+            y_offset += line.size(line_height).height;
             if start_origin.is_some() && end_origin.is_some() {
                 break;
             }
