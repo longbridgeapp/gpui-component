@@ -2,8 +2,9 @@ use std::usize;
 
 use gpui::{
     fill, point, px, relative, size, Bounds, Corners, Element, ElementId, ElementInputHandler,
-    GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad, Path, Pixels,
-    Point, Style, TextRun, UnderlineStyle, View, WindowContext, WrappedLine,
+    Font, FontId, GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad,
+    Path, Pixels, Point, SharedString, Style, TextRun, UnderlineStyle, View, WindowContext,
+    WrappedLine,
 };
 use smallvec::SmallVec;
 
@@ -460,12 +461,6 @@ impl Element for TextElement {
         if let Some(path) = prepaint.selection_path.take() {
             cx.paint_path(path, cx.theme().selection);
         }
-
-        // // Paint single line text
-        // if let Some(line) = prepaint.line.take() {
-        //     line.paint(bounds.origin, cx.line_height(), cx).unwrap();
-        //     last_layout = Some(line);
-        // }
 
         // Paint multi line text
         let line_height = cx.line_height();
