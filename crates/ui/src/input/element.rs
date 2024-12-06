@@ -176,11 +176,12 @@ impl TextElement {
         let mut prev_lines_offset = 0;
         let mut line_corners = vec![];
 
+        let mut offset_y = px(0.);
         for (ix, line) in lines.iter().enumerate() {
             let line_size = line.size(line_height);
             let line_wrap_width = line_size.width;
 
-            let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
+            let line_origin = point(px(0.), offset_y);
 
             let line_cursor_start =
                 line.position_for_index(start_ix.saturating_sub(prev_lines_offset), line_height);
@@ -231,6 +232,7 @@ impl TextElement {
                 break;
             }
 
+            offset_y += line_size.height;
             // +1 for skip the last `\n`
             prev_lines_offset += line.len() + 1;
         }
@@ -264,7 +266,7 @@ impl TextElement {
             }
         }
 
-        print_points_as_svg_path(&line_corners, &points);
+        // print_points_as_svg_path(&line_corners, &points);
 
         let first_p = *points.get(0).unwrap();
         let mut path = gpui::Path::new(bounds.origin + first_p);
