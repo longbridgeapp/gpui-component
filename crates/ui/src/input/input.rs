@@ -684,8 +684,9 @@ impl TextInput {
         let inner_position = position - bounds.origin;
 
         let mut index = 0;
-        for (ix, line) in lines.iter().enumerate() {
-            let line_origin = self.line_origin_with_y_offset(ix, line_height);
+        let mut y_offset = px(0.);
+        for line in lines.iter() {
+            let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
             let pos = inner_position - line_origin;
             let index_result = line.index_for_position(pos, line_height);
 
@@ -719,13 +720,19 @@ impl TextInput {
     }
 
     /// Returns a y offsetted point for the line origin.
-    fn line_origin_with_y_offset(&self, ix: usize, line_height: Pixels) -> Point<Pixels> {
+    fn line_origin_with_y_offset(
+        &self,
+        y_offset: &mut Pixels,
+        line: &WrappedLine,
+        line_height: Pixels,
+    ) -> Point<Pixels> {
         if self.multi_line {
-            // - line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
-            point(
-                px(0.),
-                px(0.) + ix as f32 * line_height - line_height.half(),
-            )
+            let height = (line.wrap_boundaries.len() as f32 * line_height).max(line_height);
+            // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
+            let p = point(px(0.), *y_offset - line_height.half());
+
+            *y_offset = *y_offset + height;
+            p
         } else {
             point(px(0.), px(0.))
         }
@@ -1025,8 +1032,9 @@ impl ViewInputHandler for TextInput {
 
         let mut start_origin = None;
         let mut end_origin = None;
-        for (ix, line) in lines.iter().enumerate() {
-            let line_origin = self.line_origin_with_y_offset(ix, line_height);
+        let mut y_offset = px(0.);
+        for line in lines.iter() {
+            let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
 
             if let Some(p) = line.position_for_index(range.start, line_height) {
                 start_origin = Some(p + line_origin);
