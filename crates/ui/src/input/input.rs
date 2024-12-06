@@ -1136,7 +1136,7 @@ impl Render for TextInput {
                 this.child(Indicator::new().color(cx.theme().muted_foreground))
             })
             .when(
-                self.cleanable && !self.loading && !self.text.is_empty(),
+                self.cleanable && !self.loading && !self.text.is_empty() && !self.multi_line,
                 |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
             )
             .children(suffix)
