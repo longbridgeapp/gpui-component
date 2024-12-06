@@ -718,7 +718,7 @@ impl TextInput {
         }
     }
 
-    /// Returns a y offseted point for the line origin.
+    /// Returns a y offsetted point for the line origin.
     fn line_origin_with_y_offset(&self, ix: usize, line_height: Pixels) -> Point<Pixels> {
         if self.multi_line {
             // - line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
