@@ -392,7 +392,28 @@ impl TextInput {
 
     fn home(&mut self, _: &Home, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx);
+        let offset = self.start_of_line(cx);
+        self.move_to(offset, cx);
+    }
 
+    fn end(&mut self, _: &End, cx: &mut ViewContext<Self>) {
+        self.pause_blink_cursor(cx);
+        let offset = self.end_of_line(cx);
+        self.move_to(offset, cx);
+    }
+
+    fn select_to_home(&mut self, _: &SelectToHome, cx: &mut ViewContext<Self>) {
+        let offset = self.start_of_line(cx);
+        self.select_to(offset, cx);
+    }
+
+    fn select_to_end(&mut self, _: &SelectToEnd, cx: &mut ViewContext<Self>) {
+        let offset = self.end_of_line(cx);
+        self.select_to(offset, cx);
+    }
+
+    /// Get start of line
+    fn start_of_line(&mut self, cx: &mut ViewContext<Self>) -> usize {
         if self.multi_line {
             let offset = self.previous_boundary(self.cursor_offset());
             let line = self
@@ -401,14 +422,14 @@ impl TextInput {
                 .rfind('\n')
                 .map(|i| i + 1)
                 .unwrap_or(0);
-            self.move_to(line, cx);
+            line
         } else {
-            self.move_to(0, cx);
+            0
         }
     }
 
-    fn end(&mut self, _: &End, cx: &mut ViewContext<Self>) {
-        self.pause_blink_cursor(cx);
+    /// Get end of line
+    fn end_of_line(&mut self, cx: &mut ViewContext<Self>) -> usize {
         if self.multi_line {
             let offset = self.next_boundary(self.cursor_offset());
             // ignore if offset is "\n"
@@ -417,7 +438,7 @@ impl TextInput {
                 .unwrap_or_default()
                 .eq("\n")
             {
-                return;
+                return offset;
             }
 
             let line = self
@@ -430,18 +451,10 @@ impl TextInput {
                 .find('\n')
                 .map(|i| i + offset)
                 .unwrap_or(self.text.len());
-            self.move_to(line, cx);
+            line
         } else {
-            self.move_to(self.text.len(), cx);
+            self.text.len()
         }
-    }
-
-    fn select_to_home(&mut self, _: &SelectToHome, cx: &mut ViewContext<Self>) {
-        self.select_to(0, cx);
-    }
-
-    fn select_to_end(&mut self, _: &SelectToEnd, cx: &mut ViewContext<Self>) {
-        self.select_to(self.text.len(), cx);
     }
 
     fn backspace(&mut self, _: &Backspace, cx: &mut ViewContext<Self>) {
