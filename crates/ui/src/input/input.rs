@@ -392,12 +392,48 @@ impl TextInput {
 
     fn home(&mut self, _: &Home, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx);
-        self.move_to(0, cx);
+
+        if self.multi_line {
+            let offset = self.previous_boundary(self.cursor_offset());
+            let line = self
+                .text_for_range(self.range_to_utf16(&(0..offset + 1)), &mut None, cx)
+                .unwrap_or_default()
+                .rfind('\n')
+                .map(|i| i + 1)
+                .unwrap_or(0);
+            self.move_to(line, cx);
+        } else {
+            self.move_to(0, cx);
+        }
     }
 
     fn end(&mut self, _: &End, cx: &mut ViewContext<Self>) {
         self.pause_blink_cursor(cx);
-        self.move_to(self.text.len(), cx);
+        if self.multi_line {
+            let offset = self.next_boundary(self.cursor_offset());
+            // ignore if offset is "\n"
+            if self
+                .text_for_range(self.range_to_utf16(&(offset - 1..offset)), &mut None, cx)
+                .unwrap_or_default()
+                .eq("\n")
+            {
+                return;
+            }
+
+            let line = self
+                .text_for_range(
+                    self.range_to_utf16(&(offset..self.text.len())),
+                    &mut None,
+                    cx,
+                )
+                .unwrap_or_default()
+                .find('\n')
+                .map(|i| i + offset)
+                .unwrap_or(self.text.len());
+            self.move_to(line, cx);
+        } else {
+            self.move_to(self.text.len(), cx);
+        }
     }
 
     fn select_to_home(&mut self, _: &SelectToHome, cx: &mut ViewContext<Self>) {
