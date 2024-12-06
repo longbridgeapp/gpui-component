@@ -1,5 +1,3 @@
-use std::{ops::Range, usize};
-
 use gpui::{
     fill, point, px, relative, size, Bounds, Corners, Element, ElementId, ElementInputHandler,
     GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad, Path, Pixels,
@@ -40,13 +38,13 @@ impl TextElement {
     fn layout_cursor(
         &self,
         lines: &[WrappedLine],
-        selected_range: &Range<usize>,
-        cursor_offset: usize,
         line_height: Pixels,
         bounds: &mut Bounds<Pixels>,
         cx: &mut WindowContext,
     ) -> (Option<PaintQuad>, Point<Pixels>) {
         let input = self.input.read(cx);
+        let selected_range = &input.selected_range;
+        let cursor_offset = input.cursor_offset();
         let mut scroll_offset = input.scroll_offset;
         let mut cursor = None;
 
@@ -56,13 +54,14 @@ impl TextElement {
         let mut cursor_end = None;
 
         let mut prev_lines_offset = 0;
-        for (ix, line) in lines.iter().enumerate() {
+        let mut offset_y = px(0.);
+        for line in lines.iter() {
             // break loop if all cursor positions are found
             if cursor_pos.is_some() && cursor_start.is_some() && cursor_end.is_some() {
                 break;
             }
 
-            let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
+            let line_origin = point(px(0.), offset_y);
             if cursor_pos.is_none() {
                 let offset = cursor_offset.saturating_sub(prev_lines_offset);
                 if let Some(pos) = line.position_for_index(offset, line_height) {
@@ -82,6 +81,7 @@ impl TextElement {
                 }
             }
 
+            offset_y += line.size(line_height).height;
             // +1 for skip the last `\n`
             prev_lines_offset += line.len() + 1;
         }
@@ -157,12 +157,12 @@ impl TextElement {
     fn layout_selections(
         &self,
         lines: &[WrappedLine],
-        selected_range: &Range<usize>,
-        wrap_width: Option<Pixels>,
         line_height: Pixels,
         bounds: &mut Bounds<Pixels>,
-        _: &mut WindowContext,
+        cx: &mut WindowContext,
     ) -> Option<Path<Pixels>> {
+        let input = self.input.read(cx);
+        let selected_range = &input.selected_range;
         if selected_range.is_empty() {
             return None;
         }
@@ -176,8 +176,10 @@ impl TextElement {
         let mut prev_lines_offset = 0;
         let mut line_corners = vec![];
 
-        // selections background for each lines
         for (ix, line) in lines.iter().enumerate() {
+            let line_size = line.size(line_height);
+            let line_wrap_width = line_size.width;
+
             let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
 
             let line_cursor_start =
@@ -188,13 +190,12 @@ impl TextElement {
             if line_cursor_start.is_some() || line_cursor_end.is_some() {
                 let start = line_cursor_start
                     .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
-                let line_wrap_width = wrap_width.unwrap_or(bounds.size.width);
+
                 let end = line_cursor_end
                     .unwrap_or_else(|| line.position_for_index(line.len(), line_height).unwrap());
 
                 // Split the selection into multiple items
-                let wrapped_lines =
-                    (end.y / line_height).ceil() as usize - (start.y / line_height).ceil() as usize;
+                let wrapped_lines = line.wrap_boundaries.len();
 
                 let mut end_x = end.x;
                 if wrapped_lines > 0 {
@@ -211,10 +212,9 @@ impl TextElement {
                 // wrapped lines
                 for i in 1..=wrapped_lines {
                     let start = point(px(0.), start.y + i as f32 * line_height);
-
                     let mut end = point(end.x, end.y + i as f32 * line_height);
                     if i < wrapped_lines {
-                        end.x = line_wrap_width;
+                        end.x = line_size.width;
                     }
 
                     line_corners.push(Corners {
@@ -234,47 +234,43 @@ impl TextElement {
             prev_lines_offset += line.len() + 1;
         }
 
+        let mut points = vec![];
+        if line_corners.is_empty() {
+            return None;
+        }
+
         // Fix corners to make sure the left to right direction
-        for line_corners in &mut line_corners {
-            if line_corners.top_left.x > line_corners.top_right.x {
-                std::mem::swap(&mut line_corners.top_left, &mut line_corners.top_right);
-                std::mem::swap(
-                    &mut line_corners.bottom_left,
-                    &mut line_corners.bottom_right,
-                );
+        for corners in &mut line_corners {
+            if corners.top_left.x > corners.top_right.x {
+                std::mem::swap(&mut corners.top_left, &mut corners.top_right);
+                std::mem::swap(&mut corners.bottom_left, &mut corners.bottom_right);
             }
         }
 
-        let mut selection_path = None;
-        let mut points = vec![];
-        if !line_corners.is_empty() {
-            for corners in &line_corners {
-                points.push(corners.top_right);
-                points.push(corners.bottom_right);
-                points.push(corners.bottom_left);
-            }
+        for corners in &line_corners {
+            points.push(corners.top_right);
+            points.push(corners.bottom_right);
+            points.push(corners.bottom_left);
+        }
 
-            let mut rev_line_corners = line_corners.iter().rev().peekable();
-            while let Some(corners) = rev_line_corners.next() {
-                points.push(corners.top_left);
-                if let Some(next) = rev_line_corners.peek() {
-                    if next.top_left.x > corners.top_left.x {
-                        points.push(point(next.top_left.x, corners.top_left.y));
-                    }
+        let mut rev_line_corners = line_corners.iter().rev().peekable();
+        while let Some(corners) = rev_line_corners.next() {
+            points.push(corners.top_left);
+            if let Some(next) = rev_line_corners.peek() {
+                if next.top_left.x > corners.top_left.x {
+                    points.push(point(next.top_left.x, corners.top_left.y));
                 }
             }
-
-            // print_points_as_svg_path(&line_corners, &points);
-
-            let first_p = *points.get(0).unwrap();
-            let mut path = gpui::Path::new(bounds.origin + first_p);
-            for p in points.iter().skip(1) {
-                path.line_to(bounds.origin + *p);
-            }
-            selection_path = Some(path);
         }
 
-        selection_path
+        // print_points_as_svg_path(&line_corners, &points);
+
+        let first_p = *points.get(0).unwrap();
+        let mut path = gpui::Path::new(bounds.origin + first_p);
+        for p in points.iter().skip(1) {
+            path.line_to(bounds.origin + *p);
+        }
+        Some(path)
     }
 }
 
@@ -357,8 +353,6 @@ impl Element for TextElement {
         let input = self.input.read(cx);
         let text = input.text.clone();
         let placeholder = input.placeholder.clone();
-        let selected_range = input.selected_range.clone();
-        let cursor_offset = input.cursor_offset();
         let style = cx.text_style();
 
         let (display_text, text_color) = if text.is_empty() {
@@ -453,23 +447,9 @@ impl Element for TextElement {
 
         let mut bounds = bounds;
 
-        let (cursor, scroll_offset) = self.layout_cursor(
-            &lines,
-            &selected_range,
-            cursor_offset,
-            line_height,
-            &mut bounds,
-            cx,
-        );
+        let (cursor, scroll_offset) = self.layout_cursor(&lines, line_height, &mut bounds, cx);
 
-        let selection_path = self.layout_selections(
-            &lines,
-            &selected_range,
-            wrap_width,
-            line_height,
-            &mut bounds,
-            cx,
-        );
+        let selection_path = self.layout_selections(&lines, line_height, &mut bounds, cx);
 
         PrepaintState {
             scroll_offset,
