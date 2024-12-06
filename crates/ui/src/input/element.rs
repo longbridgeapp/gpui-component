@@ -91,6 +91,7 @@ impl TextElement {
         {
             let cursor_moved = input.last_cursor_offset != Some(cursor_offset);
             let selection_changed = input.last_selected_range != Some(selected_range.clone());
+            let bottom_margin = (line_height * 2).min(bounds.size.height);
 
             if cursor_moved || selection_changed {
                 scroll_offset.x =
@@ -103,15 +104,16 @@ impl TextElement {
                     } else {
                         scroll_offset.x
                     };
-                scroll_offset.y = if scroll_offset.y + cursor_pos.y > (bounds.size.height) {
-                    // cursor is out of bottom
-                    bounds.size.height - cursor_pos.y
-                } else if scroll_offset.y + cursor_pos.y < px(0.) {
-                    // cursor is out of top
-                    scroll_offset.y - cursor_pos.y
-                } else {
-                    scroll_offset.y
-                };
+                scroll_offset.y =
+                    if scroll_offset.y + cursor_pos.y > (bounds.size.height - bottom_margin) {
+                        // cursor is out of bottom
+                        bounds.size.height - bottom_margin - cursor_pos.y
+                    } else if scroll_offset.y + cursor_pos.y < px(0.) {
+                        // cursor is out of top
+                        scroll_offset.y - cursor_pos.y
+                    } else {
+                        scroll_offset.y
+                    };
 
                 if input.selection_reversed {
                     if scroll_offset.x + cursor_start.x < px(0.) {
