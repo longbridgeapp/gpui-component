@@ -31,6 +31,7 @@ pub fn init(cx: &mut AppContext) {
 pub struct InputStory {
     input1: View<TextInput>,
     input2: View<TextInput>,
+    textarea: View<TextInput>,
     number_input1_value: i64,
     number_input1: View<NumberInput>,
     number_input2: View<NumberInput>,
@@ -82,6 +83,18 @@ impl InputStory {
 
         let input2 = cx.new_view(|cx| TextInput::new(cx).placeholder("Enter text here..."));
         cx.subscribe(&input2, Self::on_input_event).detach();
+
+        let textarea = cx.new_view(|cx| {
+            let mut input = TextInput::new(cx)
+                .multi_line()
+                .placeholder("Enter text here...");
+            input.set_text(
+                "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including.\n\nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",
+                cx,
+            );
+            input
+        });
+        cx.subscribe(&textarea, Self::on_input_event).detach();
 
         let number_input1_value = 1;
         let number_input1 = cx.new_view(|cx| {
@@ -143,6 +156,7 @@ impl InputStory {
         Self {
             input1,
             input2,
+            textarea,
             number_input1,
             number_input1_value,
             number_input2,
@@ -342,6 +356,7 @@ impl Render for InputStory {
                                     .child(self.number_input2.clone()),
                             ),
                     )
+                    .child(section("Textarea", cx).child(self.textarea.clone()))
                     .child(
                         section("Input State", cx)
                             .child(self.disabled_input.clone())
