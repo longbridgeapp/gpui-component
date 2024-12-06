@@ -78,12 +78,12 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("backspace", Backspace, Some(CONTEXT)),
         KeyBinding::new("delete", Delete, Some(CONTEXT)),
         KeyBinding::new("enter", Enter, Some(CONTEXT)),
+        KeyBinding::new("up", Up, Some(CONTEXT)),
+        KeyBinding::new("down", Down, Some(CONTEXT)),
         KeyBinding::new("left", Left, Some(CONTEXT)),
         KeyBinding::new("right", Right, Some(CONTEXT)),
         KeyBinding::new("shift-left", SelectLeft, Some(CONTEXT)),
         KeyBinding::new("shift-right", SelectRight, Some(CONTEXT)),
-        KeyBinding::new("up", Up, Some(CONTEXT)),
-        KeyBinding::new("right", Down, Some(CONTEXT)),
         KeyBinding::new("shift-up", SelectUp, Some(CONTEXT)),
         KeyBinding::new("shift-down", SelectDown, Some(CONTEXT)),
         KeyBinding::new("home", Home, Some(CONTEXT)),
@@ -373,8 +373,24 @@ impl TextInput {
         }
     }
 
-    fn select_up(&mut self, _: &SelectLeft, cx: &mut ViewContext<Self>) {
-        self.select_to(self.previous_boundary(self.cursor_offset()), cx);
+    fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
+        if !self.multi_line {
+            return;
+        }
+        self.pause_blink_cursor(cx);
+
+        let offset = self.start_of_line(cx).saturating_sub(1);
+        self.move_to(offset, cx);
+    }
+
+    fn down(&mut self, _: &Down, cx: &mut ViewContext<Self>) {
+        if !self.multi_line {
+            return;
+        }
+        self.pause_blink_cursor(cx);
+
+        let offset = (self.end_of_line(cx) + 1).min(self.text.len());
+        self.move_to(offset, cx);
     }
 
     fn select_left(&mut self, _: &SelectLeft, cx: &mut ViewContext<Self>) {
@@ -383,6 +399,22 @@ impl TextInput {
 
     fn select_right(&mut self, _: &SelectRight, cx: &mut ViewContext<Self>) {
         self.select_to(self.next_boundary(self.cursor_offset()), cx);
+    }
+
+    fn select_up(&mut self, _: &SelectUp, cx: &mut ViewContext<Self>) {
+        if !self.multi_line {
+            return;
+        }
+        let offset = self.start_of_line(cx).saturating_sub(1);
+        self.select_to(offset, cx);
+    }
+
+    fn select_down(&mut self, _: &SelectDown, cx: &mut ViewContext<Self>) {
+        if !self.multi_line {
+            return;
+        }
+        let offset = (self.end_of_line(cx) + 1).min(self.text.len());
+        self.select_to(offset, cx);
     }
 
     fn select_all(&mut self, _: &SelectAll, cx: &mut ViewContext<Self>) {
@@ -1008,8 +1040,12 @@ impl Render for TextInput {
                     .on_action(cx.listener(Self::delete))
                     .on_action(cx.listener(Self::enter))
             })
+            .on_action(cx.listener(Self::up))
+            .on_action(cx.listener(Self::down))
             .on_action(cx.listener(Self::left))
             .on_action(cx.listener(Self::right))
+            .on_action(cx.listener(Self::select_up))
+            .on_action(cx.listener(Self::select_down))
             .on_action(cx.listener(Self::select_left))
             .on_action(cx.listener(Self::select_right))
             .on_action(cx.listener(Self::select_all))
