@@ -508,9 +508,11 @@ impl Element for TextElement {
         let line_height = cx.line_height();
         let origin = bounds.origin;
 
-        for (i, line) in prepaint.lines.iter().enumerate() {
-            let p = point(origin.x, origin.y + i as f32 * line_height);
+        let mut offset_y = px(0.);
+        for line in prepaint.lines.iter() {
+            let p = point(origin.x, origin.y + offset_y);
             _ = line.paint(p, line_height, cx);
+            offset_y += line.size(line_height).height;
         }
 
         if focused {
