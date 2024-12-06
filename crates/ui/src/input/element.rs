@@ -177,7 +177,7 @@ impl TextElement {
         let mut line_corners = vec![];
 
         let mut offset_y = px(0.);
-        for (ix, line) in lines.iter().enumerate() {
+        for line in lines.iter() {
             let line_size = line.size(line_height);
             let line_wrap_width = line_size.width;
 
