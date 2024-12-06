@@ -2,9 +2,8 @@ use std::usize;
 
 use gpui::{
     fill, point, px, relative, size, Bounds, Corners, Element, ElementId, ElementInputHandler,
-    Font, FontId, GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad,
-    Path, Pixels, Point, SharedString, Style, TextRun, UnderlineStyle, View, WindowContext,
-    WrappedLine,
+    GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad, Path, Pixels,
+    Point, Style, TextRun, UnderlineStyle, View, WindowContext, WrappedLine,
 };
 use smallvec::SmallVec;
 
