@@ -195,7 +195,8 @@ impl TextElement {
                     .unwrap_or_else(|| line.position_for_index(line.len(), line_height).unwrap());
 
                 // Split the selection into multiple items
-                let wrapped_lines = line.wrap_boundaries.len();
+                let wrapped_lines =
+                    (end.y / line_height).ceil() as usize - (start.y / line_height).ceil() as usize;
 
                 let mut end_x = end.x;
                 if wrapped_lines > 0 {
@@ -263,7 +264,7 @@ impl TextElement {
             }
         }
 
-        // print_points_as_svg_path(&line_corners, &points);
+        print_points_as_svg_path(&line_corners, &points);
 
         let first_p = *points.get(0).unwrap();
         let mut path = gpui::Path::new(bounds.origin + first_p);

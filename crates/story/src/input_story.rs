@@ -89,7 +89,7 @@ impl InputStory {
                 .multi_line()
                 .placeholder("Enter text here...");
             input.set_text(
-                "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including \nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",
+                "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including. \n\nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",
                 cx,
             );
             input
@@ -356,12 +356,12 @@ impl Render for InputStory {
                                     .child(self.number_input2.clone()),
                             ),
                     )
+                    .child(section("Textarea", cx).child(self.textarea.clone()))
                     .child(
                         section("Input State", cx)
                             .child(self.disabled_input.clone())
                             .child(self.mash_input.clone()),
-                    )
-                    .child(section("Textarea", cx).child(self.textarea.clone())),
+                    ),
             )
             .child(
                 h_flex()
