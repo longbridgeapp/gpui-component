@@ -691,7 +691,7 @@ impl TextInput {
             let index_result = line.index_for_position(pos, line_height);
 
             if let Ok(v) = index_result {
-                index += v + 1;
+                index += v;
                 break;
             } else if let Ok(_) = line.index_for_position(point(px(0.), pos.y), line_height) {
                 // Click in the this line but not in the text, move cursor to the end of the line.
@@ -704,12 +704,16 @@ impl TextInput {
                     origin: line_origin,
                     size: gpui::size(bounds.size.width, line_height),
                 };
+
                 if line_bounds.contains(&inner_position) {
                     break;
                 }
             } else {
-                index += line.len() + 1;
+                index += line.len();
             }
+
+            // add 1 for \n
+            index += 1;
         }
 
         if index > self.text.len() {
