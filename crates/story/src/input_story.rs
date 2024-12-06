@@ -89,7 +89,7 @@ impl InputStory {
                 .multi_line()
                 .placeholder("Enter text here...");
             input.set_text(
-                "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including. \n\nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",
+                "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including.\n\nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",
                 cx,
             );
             input
