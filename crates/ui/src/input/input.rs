@@ -37,6 +37,8 @@ actions!(
     [
         Backspace,
         Delete,
+        DeleteToBeginningOfLine,
+        DeleteToEndOfLine,
         Enter,
         Up,
         Down,
@@ -77,6 +79,10 @@ pub fn init(cx: &mut AppContext) {
     cx.bind_keys([
         KeyBinding::new("backspace", Backspace, Some(CONTEXT)),
         KeyBinding::new("delete", Delete, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-backspace", DeleteToBeginningOfLine, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-delete", DeleteToEndOfLine, Some(CONTEXT)),
         KeyBinding::new("enter", Enter, Some(CONTEXT)),
         KeyBinding::new("up", Up, Some(CONTEXT)),
         KeyBinding::new("down", Down, Some(CONTEXT)),
@@ -502,6 +508,30 @@ impl TextInput {
             self.select_to(self.next_boundary(self.cursor_offset()), cx)
         }
         self.replace_text_in_range(None, "", cx);
+        self.pause_blink_cursor(cx);
+    }
+
+    fn delete_to_beginning_of_line(
+        &mut self,
+        _: &DeleteToBeginningOfLine,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let offset = self.start_of_line(cx);
+        self.replace_text_in_range(
+            Some(self.range_to_utf16(&(offset..self.cursor_offset()))),
+            "",
+            cx,
+        );
+        self.pause_blink_cursor(cx);
+    }
+
+    fn delete_to_end_of_line(&mut self, _: &DeleteToEndOfLine, cx: &mut ViewContext<Self>) {
+        let offset = self.end_of_line(cx);
+        self.replace_text_in_range(
+            Some(self.range_to_utf16(&(self.cursor_offset()..offset))),
+            "",
+            cx,
+        );
         self.pause_blink_cursor(cx);
     }
 
@@ -1038,6 +1068,8 @@ impl Render for TextInput {
             .when(!self.disabled, |this| {
                 this.on_action(cx.listener(Self::backspace))
                     .on_action(cx.listener(Self::delete))
+                    .on_action(cx.listener(Self::delete_to_beginning_of_line))
+                    .on_action(cx.listener(Self::delete_to_end_of_line))
                     .on_action(cx.listener(Self::enter))
             })
             .on_action(cx.listener(Self::up))
