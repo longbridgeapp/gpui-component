@@ -1,7 +1,9 @@
+use std::usize;
+
 use gpui::{
-    fill, point, px, relative, size, Bounds, Element, ElementId, ElementInputHandler,
-    GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad, Pixels, Point,
-    Style, TextRun, UnderlineStyle, View, WindowContext, WrappedLine,
+    fill, point, px, relative, size, Bounds, Corners, Element, ElementId, ElementInputHandler,
+    GlobalElementId, IntoElement, LayoutId, MouseButton, MouseMoveEvent, PaintQuad, Path, Pixels,
+    Point, Style, TextRun, UnderlineStyle, View, WindowContext, WrappedLine,
 };
 use smallvec::SmallVec;
 
@@ -40,7 +42,7 @@ pub(super) struct PrepaintState {
     scroll_offset: Point<Pixels>,
     lines: SmallVec<[WrappedLine; 1]>,
     cursor: Option<PaintQuad>,
-    selections: SmallVec<[PaintQuad; 1]>,
+    selection_path: Option<Path<Pixels>>,
     bounds: Bounds<Pixels>,
 }
 
@@ -49,6 +51,34 @@ impl IntoElement for TextElement {
 
     fn into_element(self) -> Self::Element {
         self
+    }
+}
+
+/// A debug function to print points as SVG path.
+#[allow(unused)]
+fn print_points_as_svg_path(
+    line_corners: &Vec<Corners<Point<Pixels>>>,
+    points: &Vec<Point<Pixels>>,
+) {
+    for corners in line_corners {
+        println!(
+            "tl: ({}, {}), tr: ({}, {}), bl: ({}, {}), br: ({}, {})",
+            corners.top_left.x.0 as i32,
+            corners.top_left.y.0 as i32,
+            corners.top_right.x.0 as i32,
+            corners.top_right.y.0 as i32,
+            corners.bottom_left.x.0 as i32,
+            corners.bottom_left.y.0 as i32,
+            corners.bottom_right.x.0 as i32,
+            corners.bottom_right.y.0 as i32,
+        );
+    }
+
+    if points.len() > 0 {
+        println!("M{},{}", points[0].x.0 as i32, points[0].y.0 as i32);
+        for p in points.iter().skip(1) {
+            println!("L{},{}", p.x.0 as i32, p.y.0 as i32);
+        }
     }
 }
 
@@ -182,7 +212,6 @@ impl Element for TextElement {
         // Calculate the scroll offset to keep the cursor in view
         let mut scroll_offset = input.scroll_offset;
         let mut bounds = bounds;
-        let mut selections = SmallVec::new();
         let mut cursor = None;
 
         // layout_visible_cursors
@@ -289,67 +318,65 @@ impl Element for TextElement {
         }
 
         // layout selections
+        let mut selection_path = None;
+        let (start_ix, end_ix) = if selected_range.start < selected_range.end {
+            (selected_range.start, selected_range.end)
+        } else {
+            (selected_range.end, selected_range.start)
+        };
+
         if has_selection {
             let mut prev_lines_offset = 0;
+            let mut line_corners = vec![];
 
             // selections background for each lines
             for (ix, line) in lines.iter().enumerate() {
-                // TODO: The wrapped line need to split multiple selection item.
                 let line_origin = point(px(0.), px(0.) + ix as f32 * line_height);
 
-                let line_cursor_start = line.position_for_index(
-                    selected_range.start.saturating_sub(prev_lines_offset),
-                    line_height,
-                );
-                let line_cursor_end = line.position_for_index(
-                    selected_range.end.saturating_sub(prev_lines_offset),
-                    line_height,
-                );
+                let line_cursor_start = line
+                    .position_for_index(start_ix.saturating_sub(prev_lines_offset), line_height);
+                let line_cursor_end =
+                    line.position_for_index(end_ix.saturating_sub(prev_lines_offset), line_height);
 
                 if line_cursor_start.is_some() || line_cursor_end.is_some() {
-                    let start = line_origin
-                        + line_cursor_start
-                            .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
-                    let end = line_origin
-                        + line_cursor_end.unwrap_or_else(|| {
-                            line.position_for_index(line.len(), line_height).unwrap()
-                        });
+                    let start = line_cursor_start
+                        .unwrap_or_else(|| line.position_for_index(0, line_height).unwrap());
+                    let line_wrap_width = wrap_width.unwrap_or(bounds.size.width);
+                    let end = line_cursor_end.unwrap_or_else(|| {
+                        line.position_for_index(line.len(), line_height).unwrap()
+                    });
 
                     // Split the selection into multiple items
                     let wrapped_lines = (end.y / line_height).ceil() as usize
                         - (start.y / line_height).ceil() as usize;
 
-                    if wrapped_lines == 0 {
-                        // no wrapped line
-                        let selection = fill(
-                            Bounds::from_corners(
-                                point(bounds.left() + start.x, bounds.top() + start.y),
-                                point(bounds.left() + end.x, bounds.top() + end.y + line_height),
-                            ),
-                            cx.theme().selection,
-                        );
-                        selections.push(selection);
-                    } else {
-                        // wrapped lines
-                        for i in 0..=wrapped_lines {
-                            let mut start = point(start.x, start.y + i as f32 * line_height);
-                            if i != 0 && wrapped_lines > 0 {
-                                start.x = px(0.);
-                            }
-                            let mut end = point(end.x, end.y + i as f32 * line_height);
-                            if i != wrapped_lines {
-                                end.x = bounds.size.width;
-                            }
+                    let mut end_x = end.x;
+                    if wrapped_lines > 0 {
+                        end_x = line_wrap_width;
+                    }
 
-                            let selection = fill(
-                                Bounds::from_corners(
-                                    point(bounds.left() + start.x, bounds.top() + start.y),
-                                    point(bounds.left() + end.x, bounds.top() + end.y),
-                                ),
-                                cx.theme().selection,
-                            );
-                            selections.push(selection);
+                    line_corners.push(Corners {
+                        top_left: line_origin + point(start.x, start.y),
+                        top_right: line_origin + point(end_x, start.y),
+                        bottom_left: line_origin + point(start.x, start.y + line_height),
+                        bottom_right: line_origin + point(end_x, start.y + line_height),
+                    });
+
+                    // wrapped lines
+                    for i in 1..=wrapped_lines {
+                        let start = point(px(0.), start.y + i as f32 * line_height);
+
+                        let mut end = point(end.x, end.y + i as f32 * line_height);
+                        if i < wrapped_lines {
+                            end.x = line_wrap_width;
                         }
+
+                        line_corners.push(Corners {
+                            top_left: line_origin + point(start.x, start.y),
+                            top_right: line_origin + point(end.x, start.y),
+                            bottom_left: line_origin + point(start.x, start.y + line_height),
+                            bottom_right: line_origin + point(end.x, start.y + line_height),
+                        });
                     }
                 }
 
@@ -360,6 +387,45 @@ impl Element for TextElement {
                 // +1 for skip the last `\n`
                 prev_lines_offset += line.len() + 1;
             }
+
+            // Fix corners to make sure the left to right direction
+            for line_corners in &mut line_corners {
+                if line_corners.top_left.x > line_corners.top_right.x {
+                    std::mem::swap(&mut line_corners.top_left, &mut line_corners.top_right);
+                    std::mem::swap(
+                        &mut line_corners.bottom_left,
+                        &mut line_corners.bottom_right,
+                    );
+                }
+            }
+
+            let mut points = vec![];
+            if !line_corners.is_empty() {
+                for corners in &line_corners {
+                    points.push(corners.top_right);
+                    points.push(corners.bottom_right);
+                    points.push(corners.bottom_left);
+                }
+
+                let mut rev_line_corners = line_corners.iter().rev().peekable();
+                while let Some(corners) = rev_line_corners.next() {
+                    points.push(corners.top_left);
+                    if let Some(next) = rev_line_corners.peek() {
+                        if next.top_left.x > corners.top_left.x {
+                            points.push(point(next.top_left.x, corners.top_left.y));
+                        }
+                    }
+                }
+
+                // print_points_as_svg_path(&line_corners, &points);
+
+                let first_p = *points.get(0).unwrap();
+                let mut path = gpui::Path::new(bounds.origin + first_p);
+                for p in points.iter().skip(1) {
+                    path.line_to(bounds.origin + *p);
+                }
+                selection_path = Some(path);
+            }
         }
 
         PrepaintState {
@@ -367,7 +433,7 @@ impl Element for TextElement {
             bounds,
             lines,
             cursor,
-            selections,
+            selection_path,
         }
     }
 
@@ -391,8 +457,8 @@ impl Element for TextElement {
         );
 
         // Paint selections
-        for selection in prepaint.selections.iter() {
-            cx.paint_quad(selection.clone());
+        if let Some(path) = prepaint.selection_path.take() {
+            cx.paint_path(path, cx.theme().selection);
         }
 
         // // Paint single line text
