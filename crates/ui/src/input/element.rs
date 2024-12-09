@@ -10,7 +10,7 @@ use crate::theme::ActiveTheme as _;
 use super::TextInput;
 
 const RIGHT_MARGIN: Pixels = px(5.);
-const INSET: Pixels = px(0.5);
+const CURSOR_INSET: Pixels = px(0.5);
 
 pub(super) struct TextElement {
     input: View<TextInput>,
@@ -142,9 +142,9 @@ impl TextElement {
                     Bounds::new(
                         point(
                             bounds.left() + cursor_pos.x,
-                            bounds.top() + cursor_pos.y + INSET,
+                            bounds.top() + cursor_pos.y + CURSOR_INSET,
                         ),
-                        size(px(2.), line_height),
+                        size(px(1.5), line_height),
                     ),
                     crate::blue_500(),
                 ))
