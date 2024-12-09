@@ -274,10 +274,14 @@ impl TextInput {
     }
 
     /// Set the text of the input field.
+    ///
+    /// And the selection_range will be reset to 0..0.
     pub fn set_text(&mut self, text: impl Into<SharedString>, cx: &mut ViewContext<Self>) {
         self.history.ignore = true;
         self.replace_text(text, cx);
         self.history.ignore = false;
+        // Ensure cursor to start when set text
+        self.selected_range = 0..0;
 
         cx.notify();
     }
@@ -1122,11 +1126,13 @@ impl ViewInputHandler for TextInput {
         let mut start_origin = None;
         let mut end_origin = None;
         let mut y_offset = px(0.);
+        let mut index_offset = 0;
+
         for line in lines.iter() {
-            if let Some(p) = line.position_for_index(range.start, line_height) {
+            if let Some(p) = line.position_for_index(range.start - index_offset, line_height) {
                 start_origin = Some(p + point(px(0.), y_offset));
             }
-            if let Some(p) = line.position_for_index(range.end, line_height) {
+            if let Some(p) = line.position_for_index(range.end - index_offset, line_height) {
                 end_origin = Some(p + point(px(0.), y_offset));
             }
 
@@ -1134,6 +1140,8 @@ impl ViewInputHandler for TextInput {
             if start_origin.is_some() && end_origin.is_some() {
                 break;
             }
+
+            index_offset += line.len();
         }
 
         Some(Bounds::from_corners(
