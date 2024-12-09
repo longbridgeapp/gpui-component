@@ -582,6 +582,7 @@ impl TextInput {
         // Double click to select word
         if event.button == MouseButton::Left && event.click_count == 2 {
             self.select_word(offset, cx);
+            self.is_selecting = false;
             return;
         }
 
@@ -687,8 +688,6 @@ impl TextInput {
     }
 
     fn index_for_mouse_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
-        let line_height = cx.line_height();
-
         // If the text is empty, always return 0
         if self.text.is_empty() {
             return 0;
@@ -699,24 +698,18 @@ impl TextInput {
             return 0;
         };
 
-        // if position.y < self.input_bounds.top() - px(10.) {
-        //     return 0;
-        // }
-        // if position.y > self.input_bounds.bottom() + px(10.) {
-        //     return self.text.len();
-        // }
+        let line_height = cx.line_height();
+        let vcenter_offset = line_height.half();
 
         // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
-        let position = position + point(px(0.), line_height.half());
-
         // The position is relative to the bounds of the text input
-        let inner_position = position - bounds.origin + self.scroll_offset;
+        let inner_position = position - bounds.origin + point(px(0.), vcenter_offset);
 
         let mut index = 0;
         let mut y_offset = px(0.);
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
-            let mut pos = inner_position - line_origin - self.scroll_offset;
+            let mut pos = inner_position - line_origin;
             // Ignore the y positon in single line mode, only check x position.
             if self.is_single_line() {
                 pos.y = line_height.half();
@@ -724,9 +717,11 @@ impl TextInput {
             let index_result = line.index_for_position(pos, line_height);
 
             if let Ok(v) = index_result {
+                println!("---- 1");
                 index += v;
                 break;
             } else if let Ok(_) = line.index_for_position(point(px(0.), pos.y), line_height) {
+                println!("---- 2");
                 // Click in the this line but not in the text, move cursor to the end of the line.
                 // The fallback index is saved in Err from `index_for_position` method.
                 index += index_result.unwrap_err();
@@ -734,14 +729,18 @@ impl TextInput {
             } else if line.len() == 0 {
                 // empty line
                 let line_bounds = Bounds {
-                    origin: line_origin - self.scroll_offset,
+                    origin: line_origin + point(px(0.), vcenter_offset),
                     size: gpui::size(bounds.size.width, line_height),
                 };
 
+                println!("---- 3: {:?}. {:?}", line_bounds, inner_position);
+
                 if line_bounds.contains(&inner_position) {
+                    println!("---- 3.1");
                     break;
                 }
             } else {
+                println!("---- 4");
                 index += line.len();
             }
 
