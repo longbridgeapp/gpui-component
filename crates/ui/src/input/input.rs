@@ -755,7 +755,7 @@ impl TextInput {
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
             let mut pos = inner_position - line_origin;
-            // Ignore the y positon in single line mode, only check x position.
+            // Ignore the y position in single line mode, only check x position.
             if self.is_single_line() {
                 pos.y = line_height.half();
             }
