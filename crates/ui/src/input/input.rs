@@ -148,6 +148,8 @@ pub struct TextInput {
     pub(super) loading: bool,
     pub(super) placeholder: SharedString,
     pub(super) selected_range: Range<usize>,
+    /// Range for save the selected word, use to keep word range when drag move.
+    pub(super) selected_word_range: Option<Range<usize>>,
     pub(super) selection_reversed: bool,
     pub(super) marked_range: Option<Range<usize>>,
     pub(super) last_layout: Option<SmallVec<[WrappedLine; 1]>>,
@@ -186,6 +188,7 @@ impl TextInput {
             history,
             placeholder: "".into(),
             selected_range: 0..0,
+            selected_word_range: None,
             selection_reversed: false,
             marked_range: None,
             input_bounds: Bounds::default(),
@@ -585,7 +588,6 @@ impl TextInput {
         // Double click to select word
         if event.button == MouseButton::Left && event.click_count == 2 {
             self.select_word(offset, cx);
-            self.is_selecting = false;
             return;
         }
 
@@ -598,6 +600,7 @@ impl TextInput {
 
     fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut ViewContext<Self>) {
         self.is_selecting = false;
+        self.selected_word_range = None;
     }
 
     fn show_character_palette(&mut self, _: &ShowCharacterPalette, cx: &mut ViewContext<Self>) {
@@ -785,10 +788,22 @@ impl TextInput {
         } else {
             self.selected_range.end = offset
         };
+
         if self.selected_range.end < self.selected_range.start {
             self.selection_reversed = !self.selection_reversed;
             self.selected_range = self.selected_range.end..self.selected_range.start;
         }
+
+        // Ensure keep word selected range
+        if let Some(word_range) = self.selected_word_range.as_ref() {
+            if self.selected_range.start > word_range.start {
+                self.selected_range.start = word_range.start;
+            }
+            if self.selected_range.end < word_range.end {
+                self.selected_range.end = word_range.end;
+            }
+        }
+
         cx.notify()
     }
 
@@ -827,6 +842,7 @@ impl TextInput {
         }
 
         self.selected_range = self.range_from_utf16(&(start..end));
+        self.selected_word_range = Some(self.selected_range.clone());
         cx.notify()
     }
 
