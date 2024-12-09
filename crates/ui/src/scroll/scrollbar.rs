@@ -49,7 +49,7 @@ pub struct ScrollbarState {
     hovered_on_thumb: Option<ScrollbarAxis>,
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
-    pub(crate) last_scroll_offset: Point<Pixels>,
+    last_scroll_offset: Point<Pixels>,
     last_scroll_time: Option<Instant>,
 }
 
