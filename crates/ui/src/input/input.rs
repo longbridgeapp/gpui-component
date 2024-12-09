@@ -14,8 +14,9 @@ use gpui::{
     actions, div, point, px, AnyElement, AppContext, Bounds, ClickEvent, ClipboardItem,
     Context as _, Entity, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement as _,
     IntoElement, KeyBinding, KeyDownEvent, Model, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, ScrollHandle, SharedString,
-    Styled as _, UTF16Selection, ViewContext, ViewInputHandler, WindowContext, WrappedLine,
+    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, ScrollHandle, ScrollWheelEvent,
+    SharedString, Styled as _, UTF16Selection, ViewContext, ViewInputHandler, WindowContext,
+    WrappedLine,
 };
 
 // TODO:
@@ -31,8 +32,8 @@ use crate::history::History;
 use crate::indicator::Indicator;
 use crate::scroll::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use crate::theme::ActiveTheme;
+use crate::Size;
 use crate::StyledExt;
-use crate::{event::InteractiveElementExt as _, Size};
 use crate::{Sizable, StyleSized};
 
 actions!(
@@ -156,13 +157,13 @@ pub struct TextInput {
     pub(super) selection_reversed: bool,
     pub(super) marked_range: Option<Range<usize>>,
     pub(super) last_layout: Option<SmallVec<[WrappedLine; 1]>>,
+    pub(super) last_cursor_offset: Option<usize>,
     /// The line_height of text layout, this will change will InputElement painted.
     pub(super) last_line_height: Pixels,
     /// The input container bounds
     pub(super) input_bounds: Bounds<Pixels>,
     /// The text bounds
     pub(super) last_bounds: Option<Bounds<Pixels>>,
-    pub(super) last_cursor_offset: Option<usize>,
     pub(super) last_selected_range: Option<Range<usize>>,
     pub(super) is_selecting: bool,
     pub(super) disabled: bool,
@@ -175,6 +176,8 @@ pub struct TextInput {
     validate: Option<Box<dyn Fn(&str) -> bool + 'static>>,
     pub(crate) scroll_handle: ScrollHandle,
     scrollbar_state: Rc<Cell<ScrollbarState>>,
+    /// The size of the scrollable content.
+    pub(crate) scroll_size: gpui::Size<Pixels>,
 }
 
 impl EventEmitter<InputEvent> for TextInput {}
@@ -196,10 +199,6 @@ impl TextInput {
             selection_reversed: false,
             marked_range: None,
             input_bounds: Bounds::default(),
-            last_layout: None,
-            last_bounds: None,
-            last_cursor_offset: None,
-            last_selected_range: None,
             is_selecting: false,
             disabled: false,
             masked: false,
@@ -212,9 +211,14 @@ impl TextInput {
             pattern: None,
             validate: None,
             rows: 2,
+            last_layout: None,
+            last_bounds: None,
+            last_selected_range: None,
             last_line_height: px(20.),
+            last_cursor_offset: None,
             scroll_handle: ScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::default())),
+            scroll_size: gpui::size(px(0.), px(0.)),
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -606,6 +610,20 @@ impl TextInput {
     fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut ViewContext<Self>) {
         self.is_selecting = false;
         self.selected_word_range = None;
+    }
+
+    fn on_scroll_wheel(&mut self, event: &ScrollWheelEvent, _: &mut ViewContext<Self>) {
+        let delta = event.delta.pixel_delta(self.last_line_height);
+        let safe_y_range =
+            (-self.scroll_size.height + self.input_bounds.size.height).min(px(0.0))..px(0.);
+        let safe_x_range =
+            (-self.scroll_size.width + self.input_bounds.size.width).min(px(0.0))..px(0.);
+
+        let mut offset = self.scroll_handle.offset() + delta;
+        offset.y = offset.y.clamp(safe_y_range.start, safe_y_range.end);
+        offset.x = offset.x.clamp(safe_x_range.start, safe_x_range.end);
+
+        self.scroll_handle.set_offset(offset);
     }
 
     fn show_character_palette(&mut self, _: &ShowCharacterPalette, cx: &mut ViewContext<Self>) {
@@ -1137,6 +1155,7 @@ impl Render for TextInput {
 
         div()
             .flex()
+            .id("input")
             .key_context(CONTEXT)
             .track_focus(&self.focus_handle)
             .when(!self.disabled, |this| {
@@ -1169,6 +1188,7 @@ impl Render for TextInput {
             .on_key_down(cx.listener(Self::on_key_down_for_blink_cursor))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
+            .on_scroll_wheel(cx.listener(Self::on_scroll_wheel))
             .size_full()
             .line_height(LINE_HEIGHT)
             .input_py(self.size)
@@ -1209,13 +1229,8 @@ impl Render for TextInput {
             .children(suffix)
             .when(self.is_multi_line(), |this| {
                 let entity_id = cx.view().entity_id();
-                if let Some(layout) = self.last_layout.as_ref() {
-                    let width = layout.iter().map(|l| l.width()).max().unwrap_or_default();
-                    let height = layout
-                        .iter()
-                        .map(|l| l.size(self.last_line_height).height.0)
-                        .sum::<f32>();
-                    let scroll_size = gpui::size(width, px(height));
+                if self.last_layout.is_some() {
+                    let scroll_size = self.scroll_size;
 
                     this.relative().child(
                         div()

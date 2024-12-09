@@ -41,7 +41,7 @@ impl TextElement {
         line_height: Pixels,
         bounds: &mut Bounds<Pixels>,
         cx: &mut WindowContext,
-    ) -> Option<PaintQuad> {
+    ) -> (Option<PaintQuad>, Point<Pixels>) {
         let input = self.input.read(cx);
         let selected_range = &input.selected_range;
         let cursor_offset = input.cursor_offset();
@@ -151,7 +151,7 @@ impl TextElement {
             };
         }
 
-        cursor
+        (cursor, scroll_offset)
     }
 
     fn layout_selections(
@@ -280,6 +280,7 @@ impl TextElement {
 pub(super) struct PrepaintState {
     lines: SmallVec<[WrappedLine; 1]>,
     cursor: Option<PaintQuad>,
+    cursor_scroll_offset: Point<Pixels>,
     selection_path: Option<Path<Pixels>>,
     bounds: Bounds<Pixels>,
 }
@@ -450,7 +451,8 @@ impl Element for TextElement {
 
         // Calculate the scroll offset to keep the cursor in view
 
-        let cursor = self.layout_cursor(&lines, line_height, &mut bounds, cx);
+        let (cursor, cursor_scroll_offset) =
+            self.layout_cursor(&lines, line_height, &mut bounds, cx);
 
         let selection_path = self.layout_selections(&lines, line_height, &mut bounds, cx);
 
@@ -458,6 +460,7 @@ impl Element for TextElement {
             bounds,
             lines,
             cursor,
+            cursor_scroll_offset,
             selection_path,
         }
     }
@@ -474,7 +477,6 @@ impl Element for TextElement {
         let focused = focus_handle.is_focused(cx);
         let bounds = prepaint.bounds;
         let selected_range = self.input.read(cx).selected_range.clone();
-        let cursor = self.input.read(cx).cursor_offset();
 
         cx.handle_input(
             &focus_handle,
@@ -502,13 +504,32 @@ impl Element for TextElement {
                 cx.paint_quad(cursor);
             }
         }
+
+        let width = prepaint
+            .lines
+            .iter()
+            .map(|l| l.width())
+            .max()
+            .unwrap_or_default();
+        let height = prepaint
+            .lines
+            .iter()
+            .map(|l| l.size(line_height).height.0)
+            .sum::<f32>();
+
+        let scroll_size = size(width, px(height));
+
         self.input.update(cx, |input, _cx| {
             input.last_layout = Some(prepaint.lines.clone());
             input.last_bounds = Some(bounds);
+            input.last_cursor_offset = Some(input.cursor_offset());
             input.last_line_height = line_height;
             input.input_bounds = input_bounds;
-            input.last_cursor_offset = Some(cursor);
             input.last_selected_range = Some(selected_range);
+            input
+                .scroll_handle
+                .set_offset(prepaint.cursor_scroll_offset);
+            input.scroll_size = scroll_size;
         });
 
         self.paint_mouse_listeners(cx);
