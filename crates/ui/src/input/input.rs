@@ -4,7 +4,6 @@
 //! https://github.com/zed-industries/zed/blob/main/crates/gpui/examples/input.rs
 
 use smallvec::SmallVec;
-use std::cmp;
 use std::ops::Range;
 use unicode_segmentation::*;
 
@@ -141,7 +140,7 @@ pub fn init(cx: &mut AppContext) {
 pub struct TextInput {
     pub(super) focus_handle: FocusHandle,
     pub(super) text: SharedString,
-    pub(super) multi_line: bool,
+    multi_line: bool,
     pub(super) history: History<Change>,
     pub(super) blink_cursor: Model<BlinkCursor>,
     pub(super) prefix: Option<Box<dyn Fn(&mut ViewContext<Self>) -> AnyElement + 'static>>,
@@ -233,6 +232,16 @@ impl TextInput {
     pub fn multi_line(mut self) -> Self {
         self.multi_line = true;
         self
+    }
+
+    #[inline]
+    pub(super) fn is_multi_line(&self) -> bool {
+        self.multi_line
+    }
+
+    #[inline]
+    pub(super) fn is_single_line(&self) -> bool {
+        !self.multi_line
     }
 
     /// Set the number of rows for the multi-line Textarea.
@@ -397,7 +406,7 @@ impl TextInput {
     }
 
     fn up(&mut self, _: &Up, cx: &mut ViewContext<Self>) {
-        if !self.multi_line {
+        if self.is_single_line() {
             return;
         }
         self.pause_blink_cursor(cx);
@@ -407,7 +416,7 @@ impl TextInput {
     }
 
     fn down(&mut self, _: &Down, cx: &mut ViewContext<Self>) {
-        if !self.multi_line {
+        if self.is_single_line() {
             return;
         }
         self.pause_blink_cursor(cx);
@@ -425,7 +434,7 @@ impl TextInput {
     }
 
     fn select_up(&mut self, _: &SelectUp, cx: &mut ViewContext<Self>) {
-        if !self.multi_line {
+        if self.is_single_line() {
             return;
         }
         let offset = self.start_of_line(cx).saturating_sub(1);
@@ -433,7 +442,7 @@ impl TextInput {
     }
 
     fn select_down(&mut self, _: &SelectDown, cx: &mut ViewContext<Self>) {
-        if !self.multi_line {
+        if self.is_single_line() {
             return;
         }
         let offset = (self.end_of_line(cx) + 1).min(self.text.len());
@@ -469,47 +478,47 @@ impl TextInput {
 
     /// Get start of line
     fn start_of_line(&mut self, cx: &mut ViewContext<Self>) -> usize {
-        if self.multi_line {
-            let offset = self.previous_boundary(self.cursor_offset());
-            let line = self
-                .text_for_range(self.range_to_utf16(&(0..offset + 1)), &mut None, cx)
-                .unwrap_or_default()
-                .rfind('\n')
-                .map(|i| i + 1)
-                .unwrap_or(0);
-            line
-        } else {
-            0
+        if self.is_single_line() {
+            return 0;
         }
+
+        let offset = self.previous_boundary(self.cursor_offset());
+        let line = self
+            .text_for_range(self.range_to_utf16(&(0..offset + 1)), &mut None, cx)
+            .unwrap_or_default()
+            .rfind('\n')
+            .map(|i| i + 1)
+            .unwrap_or(0);
+        line
     }
 
     /// Get end of line
     fn end_of_line(&mut self, cx: &mut ViewContext<Self>) -> usize {
-        if self.multi_line {
-            let offset = self.next_boundary(self.cursor_offset());
-            // ignore if offset is "\n"
-            if self
-                .text_for_range(self.range_to_utf16(&(offset - 1..offset)), &mut None, cx)
-                .unwrap_or_default()
-                .eq("\n")
-            {
-                return offset;
-            }
-
-            let line = self
-                .text_for_range(
-                    self.range_to_utf16(&(offset..self.text.len())),
-                    &mut None,
-                    cx,
-                )
-                .unwrap_or_default()
-                .find('\n')
-                .map(|i| i + offset)
-                .unwrap_or(self.text.len());
-            line
-        } else {
-            self.text.len()
+        if self.is_single_line() {
+            return self.text.len();
         }
+
+        let offset = self.next_boundary(self.cursor_offset());
+        // ignore if offset is "\n"
+        if self
+            .text_for_range(self.range_to_utf16(&(offset - 1..offset)), &mut None, cx)
+            .unwrap_or_default()
+            .eq("\n")
+        {
+            return offset;
+        }
+
+        let line = self
+            .text_for_range(
+                self.range_to_utf16(&(offset..self.text.len())),
+                &mut None,
+                cx,
+            )
+            .unwrap_or_default()
+            .find('\n')
+            .map(|i| i + offset)
+            .unwrap_or(self.text.len());
+        line
     }
 
     fn backspace(&mut self, _: &Backspace, cx: &mut ViewContext<Self>) {
@@ -553,7 +562,7 @@ impl TextInput {
     }
 
     fn enter(&mut self, _: &Enter, cx: &mut ViewContext<Self>) {
-        if self.multi_line {
+        if self.is_multi_line() {
             self.replace_text_in_range(None, "\n", cx);
             // Move cursor to the start of the next line
             // TODO: To be test this line is valid
@@ -685,30 +694,33 @@ impl TextInput {
             return 0;
         }
 
-        // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
-        let position = position + point(px(0.), line_height);
-
         let (Some(bounds), Some(lines)) = (self.last_bounds.as_ref(), self.last_layout.as_ref())
         else {
             return 0;
         };
 
-        if position.y < self.input_bounds.top() {
-            return 0;
-        }
-        if position.y > self.input_bounds.bottom() {
-            return self.text.len();
-        }
+        // if position.y < self.input_bounds.top() - px(10.) {
+        //     return 0;
+        // }
+        // if position.y > self.input_bounds.bottom() + px(10.) {
+        //     return self.text.len();
+        // }
+
+        // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
+        let position = position + point(px(0.), line_height.half());
 
         // The position is relative to the bounds of the text input
-
         let inner_position = position - bounds.origin + self.scroll_offset;
 
         let mut index = 0;
         let mut y_offset = px(0.);
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
-            let pos = inner_position - line_origin - self.scroll_offset;
+            let mut pos = inner_position - line_origin - self.scroll_offset;
+            // Ignore the y positon in single line mode, only check x position.
+            if self.is_single_line() {
+                pos.y = line_height.half();
+            }
             let index_result = line.index_for_position(pos, line_height);
 
             if let Ok(v) = index_result {
@@ -751,7 +763,7 @@ impl TextInput {
         line: &WrappedLine,
         line_height: Pixels,
     ) -> Point<Pixels> {
-        if self.multi_line {
+        if self.is_multi_line() {
             let height = (line.wrap_boundaries.len() as f32 * line_height).max(line_height);
             let p = point(px(0.), *y_offset);
             *y_offset = *y_offset + height;
@@ -1168,7 +1180,7 @@ impl Render for TextInput {
                 this.child(Indicator::new().color(cx.theme().muted_foreground))
             })
             .when(
-                self.cleanable && !self.loading && !self.text.is_empty() && !self.multi_line,
+                self.cleanable && !self.loading && !self.text.is_empty() && self.is_single_line(),
                 |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
             )
             .children(suffix)

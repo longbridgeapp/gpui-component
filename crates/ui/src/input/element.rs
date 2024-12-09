@@ -337,7 +337,7 @@ impl Element for TextElement {
         let input = self.input.read(cx);
         let mut style = Style::default();
         style.size.width = relative(1.).into();
-        if self.input.read(cx).multi_line {
+        if self.input.read(cx).is_multi_line() {
             style.size.height = relative(1.).into();
             style.min_size.height = (input.rows.max(1) as f32 * cx.line_height()).into();
         } else {
@@ -353,7 +353,7 @@ impl Element for TextElement {
         _request_layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
-        let multi_line = self.input.read(cx).multi_line;
+        let multi_line = self.input.read(cx).is_multi_line();
         let line_height = cx.line_height();
         let input = self.input.read(cx);
         let text = input.text.clone();
