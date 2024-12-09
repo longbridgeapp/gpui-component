@@ -44,7 +44,7 @@ pub struct TilesItem {
     z_index: usize,
 }
 
-pub struct TilePanel {
+pub struct TilesPanel {
     focus_handle: FocusHandle,
     pub(crate) panels: Vec<TilesItem>,
     dragging_panel_index: Option<usize>,
@@ -55,13 +55,13 @@ pub struct TilePanel {
     bounds: Bounds<Pixels>,
 }
 
-impl Panel for TilePanel {
+impl Panel for TilesPanel {
     fn panel_name(&self) -> &'static str {
-        "CanvasPanel"
+        "TilesPanel"
     }
 
     fn title(&self, _cx: &gpui::WindowContext) -> gpui::AnyElement {
-        "CanvasPanel".into_any_element()
+        "TilesPanel".into_any_element()
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
@@ -89,7 +89,7 @@ impl Panel for TilePanel {
     }
 }
 
-impl TilePanel {
+impl TilesPanel {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
@@ -112,7 +112,7 @@ impl TilePanel {
         self.panels.iter().position(|p| &p.panel == &panel)
     }
 
-    /// Add a panel at the end of the canvas.
+    /// Add a panel at the end of children panels.
     pub fn add_panel(
         &mut self,
         panel: Arc<dyn PanelView>,
@@ -175,7 +175,6 @@ impl TilePanel {
         bounds: Bounds<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        // If the panel is already in the canvas, return.
         if let Some(_) = self.index_of_panel(panel.clone()) {
             return;
         }
@@ -205,21 +204,21 @@ impl TilePanel {
         cx.notify();
     }
 
-    /// Remove panel from the canvas.
+    /// Remove panel from the children.
     pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
         if let Some(ix) = self.index_of_panel(panel.clone()) {
             self.panels.remove(ix);
 
             cx.emit(PanelEvent::LayoutChanged);
         } else {
-            println!("Panel not found in canvas panel.");
+            println!("Panel not found.");
         }
     }
 
     fn update_initial_position(
         &mut self,
         position: Point<Pixels>,
-        cx: &mut ViewContext<'_, TilePanel>,
+        cx: &mut ViewContext<'_, TilesPanel>,
     ) {
         if let Some((index, item)) = self.find_panel_at_position(position) {
             let adjusted_position = position - self.bounds.origin;
@@ -234,7 +233,7 @@ impl TilePanel {
     fn update_position(
         &mut self,
         current_mouse_position: Point<Pixels>,
-        cx: &mut ViewContext<'_, TilePanel>,
+        cx: &mut ViewContext<'_, TilesPanel>,
     ) {
         if let Some(index) = self.dragging_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
@@ -256,7 +255,7 @@ impl TilePanel {
     fn update_resizing_drag(
         &mut self,
         drag_data: ResizeDragData,
-        cx: &mut ViewContext<'_, TilePanel>,
+        cx: &mut ViewContext<'_, TilesPanel>,
     ) {
         if let Some((index, _item)) = self.find_panel_at_position(drag_data.initial_mouse_position)
         {
@@ -266,7 +265,7 @@ impl TilePanel {
         }
     }
 
-    fn resize_panel_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
+    fn resize_panel_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilesPanel>) {
         if let Some(index) = self.resizing_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.width = round_to_nearest_ten(new_width);
@@ -275,7 +274,7 @@ impl TilePanel {
         }
     }
 
-    fn resize_panel_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
+    fn resize_panel_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilesPanel>) {
         if let Some(index) = self.resizing_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.height = round_to_nearest_ten(new_height);
@@ -363,15 +362,15 @@ fn round_point_to_nearest_ten(point: Point<Pixels>) -> Point<Pixels> {
     Point::new(round_to_nearest_ten(point.x), round_to_nearest_ten(point.y))
 }
 
-impl FocusableView for TilePanel {
+impl FocusableView for TilesPanel {
     fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
-impl EventEmitter<PanelEvent> for TilePanel {}
-impl EventEmitter<DismissEvent> for TilePanel {}
+impl EventEmitter<PanelEvent> for TilesPanel {}
+impl EventEmitter<DismissEvent> for TilesPanel {}
 
-impl Render for TilePanel {
+impl Render for TilesPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let view = cx.view().clone();

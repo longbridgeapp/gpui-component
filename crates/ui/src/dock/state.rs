@@ -102,16 +102,16 @@ impl DockItemInfo {
         }
     }
 
-    pub fn canvas(panels: Vec<TilePanelState>) -> Self {
-        Self::Tiles { panels }
-    }
-
     pub fn tabs(active_index: usize) -> Self {
         Self::Tabs { active_index }
     }
 
     pub fn panel(value: serde_json::Value) -> Self {
         Self::Panel(value)
+    }
+
+    pub fn tiles(panels: Vec<TilePanelState>) -> Self {
+        Self::Tiles { panels }
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -181,23 +181,6 @@ impl DockItemState {
                 let sizes = sizes.iter().map(|s| Some(*s)).collect_vec();
                 DockItem::split_with_sizes(axis, items, sizes, &dock_area, cx)
             }
-            DockItemInfo::Tiles { panels } => {
-                let tiles_items = panels
-                    .iter()
-                    .map(|panel_state| {
-                        let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
-                        (
-                            item,
-                            Bounds::new(
-                                point(panel_state.x, panel_state.y),
-                                size(panel_state.w, panel_state.h),
-                            ),
-                            panel_state.z_index,
-                        )
-                    })
-                    .collect();
-                DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
-            }
             DockItemInfo::Tabs { active_index } => {
                 if items.len() == 1 {
                     return items[0].clone();
@@ -231,6 +214,23 @@ impl DockItemState {
                 };
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
+            }
+            DockItemInfo::Tiles { panels } => {
+                let tiles_items = panels
+                    .iter()
+                    .map(|panel_state| {
+                        let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
+                        (
+                            item,
+                            Bounds::new(
+                                point(panel_state.x, panel_state.y),
+                                size(panel_state.w, panel_state.h),
+                            ),
+                            panel_state.z_index,
+                        )
+                    })
+                    .collect();
+                DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
             }
         }
     }

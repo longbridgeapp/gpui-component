@@ -4,7 +4,7 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
-mod tile_panel;
+mod tiles_panel;
 
 use anyhow::Result;
 pub use dock::*;
@@ -15,7 +15,7 @@ use gpui::{
     VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
-pub use tile_panel::*;
+pub use tiles_panel::*;
 
 pub use panel::*;
 pub use stack_panel::*;
@@ -88,7 +88,7 @@ pub enum DockItem {
     /// Tiles layout
     Tiles {
         items: Vec<TilesItem>,
-        view: View<TilePanel>,
+        view: View<TilesPanel>,
     },
 }
 
@@ -163,7 +163,7 @@ impl DockItem {
         cx: &mut WindowContext,
     ) -> Self {
         let tile_panel = cx.new_view(|cx| {
-            let mut tile_panel = TilePanel::new(cx);
+            let mut tile_panel = TilesPanel::new(cx);
             for (dock_item, bounds, z_index) in items.into_iter() {
                 tile_panel.add_panel_with_z_index(dock_item.view(), bounds, z_index, cx);
             }
@@ -234,12 +234,12 @@ impl DockItem {
     }
 
     /// Returns the views of the dock item.
-    fn view(&self) -> Arc<dyn PanelView> {
+    pub fn view(&self) -> Arc<dyn PanelView> {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
-            Self::Tiles { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
             Self::Panel { view, .. } => view.clone(),
+            Self::Tiles { view, .. } => Arc::new(view.clone()),
         }
     }
 
@@ -249,6 +249,8 @@ impl DockItem {
             Self::Split { items, .. } => {
                 items.iter().find_map(|item| item.find_panel(panel.clone()))
             }
+            Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
+            Self::Panel { view } => Some(view.clone()),
             Self::Tiles { items, .. } => items.iter().find_map(|item| {
                 if &item.panel == &panel {
                     Some(item.panel.clone())
@@ -256,8 +258,6 @@ impl DockItem {
                     None
                 }
             }),
-            Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
-            Self::Panel { view } => Some(view.clone()),
         }
     }
 
@@ -321,8 +321,8 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
-            DockItem::Tiles { .. } => None,
             DockItem::Panel { .. } => None,
+            DockItem::Tiles { .. } => None,
         }
     }
 
@@ -331,8 +331,8 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
-            DockItem::Tiles { .. } => None,
             DockItem::Panel { .. } => None,
+            DockItem::Tiles { .. } => None,
         }
     }
 }
@@ -701,13 +701,13 @@ impl DockArea {
                         _ => {}
                     }));
             }
-            DockItem::Tiles { .. } => {
-                // We subscribe the tab panel event is in CanvasPanel insert_panel
-            }
             DockItem::Tabs { .. } => {
                 // We subscribe to the tab panel event in StackPanel's insert_panel
             }
             DockItem::Panel { .. } => {
+                // Not supported
+            }
+            DockItem::Tiles { .. } => {
                 // Not supported
             }
         }
@@ -776,9 +776,9 @@ impl DockArea {
     fn render_items(&self, _cx: &mut ViewContext<Self>) -> AnyElement {
         match &self.items {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
-            DockItem::Tiles { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
             DockItem::Panel { view, .. } => view.clone().view().into_any_element(),
+            DockItem::Tiles { view, .. } => view.clone().into_any_element(),
         }
     }
 
