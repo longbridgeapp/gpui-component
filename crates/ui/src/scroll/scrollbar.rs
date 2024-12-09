@@ -49,7 +49,7 @@ pub struct ScrollbarState {
     hovered_on_thumb: Option<ScrollbarAxis>,
     dragged_axis: Option<ScrollbarAxis>,
     drag_pos: Point<Pixels>,
-    last_scroll_offset: Point<Pixels>,
+    pub(crate) last_scroll_offset: Point<Pixels>,
     last_scroll_time: Option<Instant>,
 }
 
@@ -496,6 +496,8 @@ impl Element for Scrollbar {
                 }
             });
 
+            let safe_range = (-scroll_area_size + container_size)..px(0.);
+
             cx.on_mouse_event({
                 let state = self.state.clone();
                 let view_id = self.view_id;
@@ -526,11 +528,17 @@ impl Element for Scrollbar {
                             .min(1.);
 
                             if is_vertical {
-                                scroll_handle
-                                    .set_offset(point(offset.x, -scroll_area_size * percentage));
+                                scroll_handle.set_offset(point(
+                                    offset.x,
+                                    (-scroll_area_size * percentage)
+                                        .clamp(safe_range.start, safe_range.end),
+                                ));
                             } else {
-                                scroll_handle
-                                    .set_offset(point(-scroll_area_size * percentage, offset.y));
+                                scroll_handle.set_offset(point(
+                                    (-scroll_area_size * percentage)
+                                        .clamp(safe_range.start, safe_range.end),
+                                    offset.y,
+                                ));
                             }
                         }
                     }
@@ -589,11 +597,13 @@ impl Element for Scrollbar {
                         let offset = if is_vertical {
                             point(
                                 scroll_handle.offset().x,
-                                -(scroll_area_size - container_size) * percentage,
+                                (-(scroll_area_size - container_size) * percentage)
+                                    .clamp(safe_range.start, safe_range.end),
                             )
                         } else {
                             point(
-                                -(scroll_area_size - container_size) * percentage,
+                                (-(scroll_area_size - container_size) * percentage)
+                                    .clamp(safe_range.start, safe_range.end),
                                 scroll_handle.offset().y,
                             )
                         };
