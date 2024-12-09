@@ -87,6 +87,7 @@ impl InputStory {
         let textarea = cx.new_view(|cx| {
             let mut input = TextInput::new(cx)
                 .multi_line()
+                .rows(10)
                 .placeholder("Enter text here...");
             input.set_text(
                 "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including.\n\nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",

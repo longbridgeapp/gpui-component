@@ -334,12 +334,14 @@ impl Element for TextElement {
         _id: Option<&GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (LayoutId, Self::RequestLayoutState) {
+        let input = self.input.read(cx);
         let mut style = Style::default();
         style.size.width = relative(1.).into();
-        style.size.height = if self.input.read(cx).multi_line {
-            (10. * cx.line_height()).into()
+        if self.input.read(cx).multi_line {
+            style.size.height = relative(1.).into();
+            style.min_size.height = (input.rows.max(1) as f32 * cx.line_height()).into();
         } else {
-            cx.line_height().into()
+            style.size.height = cx.line_height().into();
         };
         (cx.request_layout(style, []), ())
     }
@@ -357,6 +359,7 @@ impl Element for TextElement {
         let text = input.text.clone();
         let placeholder = input.placeholder.clone();
         let style = cx.text_style();
+        let mut bounds = bounds;
 
         let (display_text, text_color) = if text.is_empty() {
             (placeholder, cx.theme().muted_foreground)
@@ -447,8 +450,6 @@ impl Element for TextElement {
         // | 115   | (11.3125 px, 40.0)    | 2    |
 
         // Calculate the scroll offset to keep the cursor in view
-
-        let mut bounds = bounds;
 
         let (cursor, scroll_offset) = self.layout_cursor(&lines, line_height, &mut bounds, cx);
 

@@ -4,6 +4,7 @@
 //! https://github.com/zed-industries/zed/blob/main/crates/gpui/examples/input.rs
 
 use smallvec::SmallVec;
+use std::cmp;
 use std::ops::Range;
 use unicode_segmentation::*;
 
@@ -161,6 +162,7 @@ pub struct TextInput {
     pub(super) appearance: bool,
     pub(super) cleanable: bool,
     pub(super) size: Size,
+    pub(super) rows: usize,
     pattern: Option<regex::Regex>,
     validate: Option<Box<dyn Fn(&str) -> bool + 'static>>,
 }
@@ -198,6 +200,7 @@ impl TextInput {
             size: Size::Medium,
             pattern: None,
             validate: None,
+            rows: 2,
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -225,6 +228,16 @@ impl TextInput {
     /// Use the text input field as a multi-line Textarea.
     pub fn multi_line(mut self) -> Self {
         self.multi_line = true;
+        self
+    }
+
+    /// Set the number of rows for the multi-line Textarea.
+    ///
+    /// This is only used when `multi_line` is set to true.
+    ///
+    /// default: 2
+    pub fn rows(mut self, rows: usize) -> Self {
+        self.rows = rows;
         self
     }
 
