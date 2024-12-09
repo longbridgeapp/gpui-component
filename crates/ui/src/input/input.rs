@@ -4,16 +4,18 @@
 //! https://github.com/zed-industries/zed/blob/main/crates/gpui/examples/input.rs
 
 use smallvec::SmallVec;
+use std::cell::Cell;
 use std::ops::Range;
+use std::rc::Rc;
 use unicode_segmentation::*;
 
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     actions, div, point, px, AnyElement, AppContext, Bounds, ClickEvent, ClipboardItem,
-    Context as _, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement as _,
+    Context as _, Entity, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement as _,
     IntoElement, KeyBinding, KeyDownEvent, Model, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, SharedString, Styled as _,
-    UTF16Selection, ViewContext, ViewInputHandler, WindowContext, WrappedLine,
+    MouseUpEvent, ParentElement as _, Pixels, Point, Rems, Render, ScrollHandle, SharedString,
+    Styled as _, UTF16Selection, ViewContext, ViewInputHandler, WindowContext, WrappedLine,
 };
 
 // TODO:
@@ -27,8 +29,9 @@ use super::ClearButton;
 
 use crate::history::History;
 use crate::indicator::Indicator;
+use crate::scroll::{Scrollbar, ScrollbarAxis, ScrollbarState};
 use crate::theme::ActiveTheme;
-use crate::StyledExt as _;
+use crate::StyledExt;
 use crate::{event::InteractiveElementExt as _, Size};
 use crate::{Sizable, StyleSized};
 
@@ -161,7 +164,6 @@ pub struct TextInput {
     pub(super) last_bounds: Option<Bounds<Pixels>>,
     pub(super) last_cursor_offset: Option<usize>,
     pub(super) last_selected_range: Option<Range<usize>>,
-    pub(super) scroll_offset: Point<Pixels>,
     pub(super) is_selecting: bool,
     pub(super) disabled: bool,
     pub(super) masked: bool,
@@ -171,6 +173,8 @@ pub struct TextInput {
     pub(super) rows: usize,
     pattern: Option<regex::Regex>,
     validate: Option<Box<dyn Fn(&str) -> bool + 'static>>,
+    pub(crate) scroll_handle: ScrollHandle,
+    scrollbar_state: Rc<Cell<ScrollbarState>>,
 }
 
 impl EventEmitter<InputEvent> for TextInput {}
@@ -196,7 +200,6 @@ impl TextInput {
             last_bounds: None,
             last_cursor_offset: None,
             last_selected_range: None,
-            scroll_offset: point(px(0.), px(0.)),
             is_selecting: false,
             disabled: false,
             masked: false,
@@ -210,6 +213,8 @@ impl TextInput {
             validate: None,
             rows: 2,
             last_line_height: px(20.),
+            scroll_handle: ScrollHandle::new(),
+            scrollbar_state: Rc::new(Cell::new(ScrollbarState::default())),
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -1161,18 +1166,11 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::undo))
             .on_action(cx.listener(Self::redo))
             .on_action(cx.listener(Self::redo))
-            // Double click to select all
-            .on_double_click(cx.listener(|view, _, cx| {
-                view.select_all(&SelectAll, cx);
-            }))
             .on_key_down(cx.listener(Self::on_key_down_for_blink_cursor))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
-            // .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
-            // .on_mouse_move(cx.listener(Self::on_mouse_move))
             .size_full()
             .line_height(LINE_HEIGHT)
-            // .text_size(rems(0.875))
             .input_py(self.size)
             .input_h(self.size)
             .cursor_text()
@@ -1209,5 +1207,36 @@ impl Render for TextInput {
                 |this| this.child(ClearButton::new(cx).on_click(cx.listener(Self::clean))),
             )
             .children(suffix)
+            .when(self.is_multi_line(), |this| {
+                let entity_id = cx.view().entity_id();
+                if let Some(layout) = self.last_layout.as_ref() {
+                    let width = layout.iter().map(|l| l.width()).max().unwrap_or_default();
+                    let height = layout
+                        .iter()
+                        .map(|l| l.size(self.last_line_height).height.0)
+                        .sum::<f32>();
+                    let scroll_size = gpui::size(width, px(height));
+
+                    this.relative().child(
+                        div()
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .right_0()
+                            .bottom_0()
+                            .child(
+                                Scrollbar::vertical(
+                                    entity_id,
+                                    self.scrollbar_state.clone(),
+                                    self.scroll_handle.clone(),
+                                    scroll_size,
+                                )
+                                .axis(ScrollbarAxis::Vertical),
+                            ),
+                    )
+                } else {
+                    this
+                }
+            })
     }
 }

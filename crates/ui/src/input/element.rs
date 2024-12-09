@@ -41,11 +41,11 @@ impl TextElement {
         line_height: Pixels,
         bounds: &mut Bounds<Pixels>,
         cx: &mut WindowContext,
-    ) -> (Option<PaintQuad>, Point<Pixels>) {
+    ) -> Option<PaintQuad> {
         let input = self.input.read(cx);
         let selected_range = &input.selected_range;
         let cursor_offset = input.cursor_offset();
-        let mut scroll_offset = input.scroll_offset;
+        let mut scroll_offset = input.scroll_handle.offset();
         let mut cursor = None;
 
         // The cursor corresponds to the current cursor position in the text no only the line.
@@ -151,7 +151,7 @@ impl TextElement {
             };
         }
 
-        (cursor, scroll_offset)
+        cursor
     }
 
     fn layout_selections(
@@ -278,7 +278,6 @@ impl TextElement {
 }
 
 pub(super) struct PrepaintState {
-    scroll_offset: Point<Pixels>,
     lines: SmallVec<[WrappedLine; 1]>,
     cursor: Option<PaintQuad>,
     selection_path: Option<Path<Pixels>>,
@@ -451,12 +450,11 @@ impl Element for TextElement {
 
         // Calculate the scroll offset to keep the cursor in view
 
-        let (cursor, scroll_offset) = self.layout_cursor(&lines, line_height, &mut bounds, cx);
+        let cursor = self.layout_cursor(&lines, line_height, &mut bounds, cx);
 
         let selection_path = self.layout_selections(&lines, line_height, &mut bounds, cx);
 
         PrepaintState {
-            scroll_offset,
             bounds,
             lines,
             cursor,
@@ -505,7 +503,6 @@ impl Element for TextElement {
             }
         }
         self.input.update(cx, |input, _cx| {
-            input.scroll_offset = prepaint.scroll_offset;
             input.last_layout = Some(prepaint.lines.clone());
             input.last_bounds = Some(bounds);
             input.last_line_height = line_height;
