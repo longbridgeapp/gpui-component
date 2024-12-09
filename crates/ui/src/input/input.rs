@@ -693,7 +693,7 @@ impl TextInput {
         }
     }
 
-    fn index_for_mouse_position(&self, position: Point<Pixels>, cx: &WindowContext) -> usize {
+    fn index_for_mouse_position(&self, position: Point<Pixels>, _: &WindowContext) -> usize {
         // If the text is empty, always return 0
         if self.text.is_empty() {
             return 0;
@@ -720,7 +720,7 @@ impl TextInput {
 
         let mut index = 0;
         let mut y_offset = px(0.);
-        dbg!(inner_position);
+
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
             let mut pos = inner_position - line_origin;
@@ -746,7 +746,6 @@ impl TextInput {
                     size: gpui::size(bounds.size.width, line_height),
                 };
                 let pos = inner_position;
-                println!("------3 {:?} || {:?}", line_bounds, pos);
                 if line_bounds.contains(&pos) {
                     break;
                 }
@@ -772,9 +771,13 @@ impl TextInput {
         line: &WrappedLine,
         line_height: Pixels,
     ) -> Point<Pixels> {
+        // NOTE: About line.wrap_boundaries.len()
+        //
+        // If only 1 line, the value is 0
+        // If have 2 line, the value is 1
         if self.is_multi_line() {
-            let height = (line.wrap_boundaries.len() as f32 * line_height).max(line_height);
             let p = point(px(0.), *y_offset);
+            let height = line_height + line.wrap_boundaries.len() as f32 * line_height;
             *y_offset = *y_offset + height;
             p
         } else {
