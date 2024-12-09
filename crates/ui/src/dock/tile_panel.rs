@@ -434,7 +434,7 @@ impl Render for TilePanel {
                         );
 
                         let drag_bar_bounds = Bounds::new(
-                            item.bounds.origin.clone(),
+                            item.bounds.origin,
                             Size {
                                 width: item.bounds.size.width,
                                 height: px(DRAG_BAR_HEIGHT),
