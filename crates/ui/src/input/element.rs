@@ -508,6 +508,7 @@ impl Element for TextElement {
             input.scroll_offset = prepaint.scroll_offset;
             input.last_layout = Some(prepaint.lines.clone());
             input.last_bounds = Some(bounds);
+            input.last_line_height = line_height;
             input.input_bounds = input_bounds;
             input.last_cursor_offset = Some(cursor);
             input.last_selected_range = Some(selected_range);

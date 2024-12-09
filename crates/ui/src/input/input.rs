@@ -151,6 +151,8 @@ pub struct TextInput {
     pub(super) selection_reversed: bool,
     pub(super) marked_range: Option<Range<usize>>,
     pub(super) last_layout: Option<SmallVec<[WrappedLine; 1]>>,
+    /// The line_height of text layout, this will change will InputElement painted.
+    pub(super) last_line_height: Pixels,
     /// The input container bounds
     pub(super) input_bounds: Bounds<Pixels>,
     /// The text bounds
@@ -204,6 +206,7 @@ impl TextInput {
             pattern: None,
             validate: None,
             rows: 2,
+            last_line_height: px(20.),
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -698,15 +701,23 @@ impl TextInput {
             return 0;
         };
 
-        let line_height = cx.line_height();
-        let vcenter_offset = line_height.half();
+        let line_height = self.last_line_height;
 
-        // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
+        // TIP: About the IBeam cursor
+        //
+        // If cursor style is IBeam, the mouse mouse position is in the middle of the cursor (This is special in OS)
+
         // The position is relative to the bounds of the text input
-        let inner_position = position - bounds.origin + point(px(0.), vcenter_offset);
+        //
+        // bounds.origin:
+        //
+        // - included the input padding.
+        // - included the scroll offset.
+        let inner_position = position - bounds.origin;
 
         let mut index = 0;
         let mut y_offset = px(0.);
+        dbg!(inner_position);
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
             let mut pos = inner_position - line_origin;
@@ -714,14 +725,13 @@ impl TextInput {
             if self.is_single_line() {
                 pos.y = line_height.half();
             }
-            let index_result = line.index_for_position(pos, line_height);
 
+            let index_result = line.index_for_position(pos, line_height);
             if let Ok(v) = index_result {
-                println!("---- 1");
-                index += v;
+                // Add 1 for place cursor after the character.
+                index += v + 1;
                 break;
             } else if let Ok(_) = line.index_for_position(point(px(0.), pos.y), line_height) {
-                println!("---- 2");
                 // Click in the this line but not in the text, move cursor to the end of the line.
                 // The fallback index is saved in Err from `index_for_position` method.
                 index += index_result.unwrap_err();
@@ -729,18 +739,15 @@ impl TextInput {
             } else if line.len() == 0 {
                 // empty line
                 let line_bounds = Bounds {
-                    origin: line_origin + point(px(0.), vcenter_offset),
+                    origin: line_origin,
                     size: gpui::size(bounds.size.width, line_height),
                 };
-
-                println!("---- 3: {:?}. {:?}", line_bounds, inner_position);
-
-                if line_bounds.contains(&inner_position) {
-                    println!("---- 3.1");
+                let pos = inner_position;
+                println!("------3 {:?} || {:?}", line_bounds, pos);
+                if line_bounds.contains(&pos) {
                     break;
                 }
             } else {
-                println!("---- 4");
                 index += line.len();
             }
 
@@ -1060,9 +1067,9 @@ impl ViewInputHandler for TextInput {
         &mut self,
         range_utf16: Range<usize>,
         bounds: Bounds<Pixels>,
-        cx: &mut ViewContext<Self>,
+        _: &mut ViewContext<Self>,
     ) -> Option<Bounds<Pixels>> {
-        let line_height = cx.line_height();
+        let line_height = self.last_line_height;
         let lines = self.last_layout.as_ref()?;
         let range = self.range_from_utf16(&range_utf16);
 
@@ -1149,6 +1156,7 @@ impl Render for TextInput {
             // .text_size(rems(0.875))
             .input_py(self.size)
             .input_h(self.size)
+            .cursor_text()
             .when(self.multi_line, |this| this.h_auto())
             .when(self.appearance, |this| {
                 this.bg(if self.disabled {
@@ -1172,7 +1180,6 @@ impl Render for TextInput {
                     .id("TextElement")
                     .flex_grow()
                     .overflow_x_hidden()
-                    .cursor_text()
                     .child(TextElement::new(cx.view().clone())),
             )
             .when(self.loading, |this| {
