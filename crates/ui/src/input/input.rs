@@ -101,6 +101,10 @@ pub fn init(cx: &mut AppContext) {
         KeyBinding::new("shift-home", SelectToHome, Some(CONTEXT)),
         KeyBinding::new("shift-end", SelectToEnd, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
+        KeyBinding::new("ctrl-shift-a", SelectToHome, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("ctrl-shift-e", SelectToEnd, Some(CONTEXT)),
+        #[cfg(target_os = "macos")]
         KeyBinding::new("shift-cmd-left", SelectToHome, Some(CONTEXT)),
         #[cfg(target_os = "macos")]
         KeyBinding::new("shift-cmd-right", SelectToEnd, Some(CONTEXT)),
