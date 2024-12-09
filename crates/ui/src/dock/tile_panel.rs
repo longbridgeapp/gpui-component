@@ -14,6 +14,9 @@ const MINIMUM_WIDTH: f32 = 100.;
 const MINIMUM_HEIGHT: f32 = 100.;
 const DRAG_BAR_HEIGHT: f32 = 30.;
 
+const HANDLE_SIZE: f32 = 20.0;
+const HALF_HANDLE_SIZE: f32 = HANDLE_SIZE / 2.0;
+
 #[derive(Clone, Render)]
 pub struct DragMoving(EntityId);
 
@@ -385,11 +388,12 @@ impl Render for TilePanel {
 
                         let right_handle_bounds = Bounds::new(
                             Point {
-                                x: item.bounds.origin.x + item.bounds.size.width - px(5.0),
+                                x: item.bounds.origin.x + item.bounds.size.width
+                                    - px(HALF_HANDLE_SIZE),
                                 y: item.bounds.origin.y,
                             },
                             Size {
-                                width: px(10.0),
+                                width: px(HANDLE_SIZE),
                                 height: item.bounds.size.height,
                             },
                         );
@@ -397,22 +401,25 @@ impl Render for TilePanel {
                         let bottom_handle_bounds = Bounds::new(
                             Point {
                                 x: item.bounds.origin.x,
-                                y: item.bounds.origin.y + item.bounds.size.height - px(5.0),
+                                y: item.bounds.origin.y + item.bounds.size.height
+                                    - px(HALF_HANDLE_SIZE),
                             },
                             Size {
                                 width: item.bounds.size.width,
-                                height: px(10.0),
+                                height: px(HANDLE_SIZE),
                             },
                         );
 
                         let corner_handle_bounds = Bounds::new(
                             Point {
-                                x: item.bounds.origin.x + item.bounds.size.width - px(5.0),
-                                y: item.bounds.origin.y + item.bounds.size.height - px(5.0),
+                                x: item.bounds.origin.x + item.bounds.size.width
+                                    - px(HALF_HANDLE_SIZE),
+                                y: item.bounds.origin.y + item.bounds.size.height
+                                    - px(HALF_HANDLE_SIZE),
                             },
                             Size {
-                                width: px(10.0),
-                                height: px(10.0),
+                                width: px(HANDLE_SIZE),
+                                height: px(HANDLE_SIZE),
                             },
                         );
 
@@ -446,8 +453,9 @@ impl Render for TilePanel {
                                     .cursor_col_resize()
                                     .absolute()
                                     .top(px(0.0))
-                                    .right(px(-5.0))
-                                    .w(px(10.0))
+                                    // Offset is -HALF_HANDLE_SIZE
+                                    .right(px(-HALF_HANDLE_SIZE))
+                                    .w(px(HANDLE_SIZE))
                                     .h(item.bounds.size.height)
                                     .on_mouse_down(
                                         MouseButton::Left,
@@ -508,9 +516,9 @@ impl Render for TilePanel {
                                     .cursor_row_resize()
                                     .absolute()
                                     .left(px(0.0))
-                                    .bottom(px(-5.0))
+                                    .bottom(px(-HALF_HANDLE_SIZE))
                                     .w(item.bounds.size.width)
-                                    .h(px(10.0))
+                                    .h(px(HANDLE_SIZE))
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
@@ -565,10 +573,10 @@ impl Render for TilePanel {
                                     .id("corner-resize-handle")
                                     .cursor_crosshair()
                                     .absolute()
-                                    .right(px(-5.0))
-                                    .bottom(px(-5.0))
-                                    .w(px(10.0))
-                                    .h(px(10.0))
+                                    .right(px(-HALF_HANDLE_SIZE))
+                                    .bottom(px(-HALF_HANDLE_SIZE))
+                                    .w(px(HANDLE_SIZE))
+                                    .h(px(HANDLE_SIZE))
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
