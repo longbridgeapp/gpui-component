@@ -77,6 +77,8 @@ impl Render for DragCol {
             .px_4()
             .py_1()
             .bg(cx.theme().table_head)
+            .text_color(cx.theme().muted_foreground)
+            .opacity(0.9)
             .border_1()
             .border_color(cx.theme().border)
             .shadow_md()
@@ -101,6 +103,7 @@ pub enum TableEvent {
     SelectRow(usize),
     SelectCol(usize),
     ColWidthsChanged(Vec<Option<Pixels>>),
+    MoveCol(usize, usize),
 }
 
 #[derive(Clone, Copy, Default)]
@@ -567,6 +570,7 @@ where
         let col_group = self.col_groups.remove(col_ix);
         self.col_groups.insert(to_ix, col_group);
 
+        cx.emit(TableEvent::MoveCol(col_ix, to_ix));
         cx.notify();
     }
 

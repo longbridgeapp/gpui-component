@@ -673,6 +673,9 @@ impl TableStory {
             }
             TableEvent::SelectCol(ix) => println!("Select col: {}", ix),
             TableEvent::SelectRow(ix) => println!("Select row: {}", ix),
+            TableEvent::MoveCol(origin_idx, target_idx) => {
+                println!("Move col index: {} -> {}", origin_idx, target_idx);
+            }
         }
     }
 }

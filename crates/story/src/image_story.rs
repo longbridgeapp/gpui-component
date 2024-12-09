@@ -60,6 +60,6 @@ impl Render for ImageStory {
                     .child(self.google_logo.clone().w(px(300.)).h(px(300.))),
             )
             .child(self.inbox_img.clone().w(px(24.)).h(px(24.)))
-            .child(self.pie_chart.clone().size_full())
+            .child(self.pie_chart.clone().w_full().h(px(400.)))
     }
 }

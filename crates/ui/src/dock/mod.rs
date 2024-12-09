@@ -70,20 +70,25 @@ pub struct DockArea {
 /// DockItem is a tree structure that represents the layout of the dock.
 #[derive(Clone)]
 pub enum DockItem {
+    /// Split layout
     Split {
         axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
         view: View<StackPanel>,
     },
-    Tiles {
-        items: Vec<TilesItem>,
-        view: View<TilePanel>,
-    },
+    /// Tab layout
     Tabs {
         items: Vec<Arc<dyn PanelView>>,
         active_ix: usize,
         view: View<TabPanel>,
+    },
+    /// Panel layout
+    Panel { view: Arc<dyn PanelView> },
+    /// Tiles layout
+    Tiles {
+        items: Vec<TilesItem>,
+        view: View<TilePanel>,
     },
 }
 
@@ -146,6 +151,12 @@ impl DockItem {
         }
     }
 
+    /// Create DockItem with panel layout
+    pub fn panel(panel: Arc<dyn PanelView>) -> Self {
+        Self::Panel { view: panel }
+    }
+
+    /// Create DockItem with tiles layout
     pub fn tiles_with_sizes(
         items: Vec<(DockItem, Bounds<Pixels>, usize)>,
         dock_area: &WeakView<DockArea>,
@@ -228,6 +239,7 @@ impl DockItem {
             Self::Split { view, .. } => Arc::new(view.clone()),
             Self::Tiles { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
+            Self::Panel { view, .. } => view.clone(),
         }
     }
 
@@ -245,6 +257,7 @@ impl DockItem {
                 }
             }),
             Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
+            Self::Panel { view } => Some(view.clone()),
         }
     }
 
@@ -280,7 +293,8 @@ impl DockItem {
                     stack_panel.add_panel(new_item.view(), None, dock_area.clone(), cx);
                 });
             }
-            DockItem::Tiles { .. } => {}
+            Self::Panel { .. } => {}
+            Self::Tiles { .. } => {}
         }
     }
 
@@ -297,6 +311,7 @@ impl DockItem {
                     item.set_collapsed(collapsed, cx);
                 }
             }
+            DockItem::Panel { .. } => {}
             DockItem::Tiles { .. } => {}
         }
     }
@@ -307,6 +322,7 @@ impl DockItem {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
             DockItem::Tiles { .. } => None,
+            DockItem::Panel { .. } => None,
         }
     }
 
@@ -316,6 +332,7 @@ impl DockItem {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
             DockItem::Tiles { .. } => None,
+            DockItem::Panel { .. } => None,
         }
     }
 }
@@ -690,6 +707,9 @@ impl DockArea {
             DockItem::Tabs { .. } => {
                 // We subscribe to the tab panel event in StackPanel's insert_panel
             }
+            DockItem::Panel { .. } => {
+                // Not supported
+            }
         }
     }
 
@@ -758,6 +778,7 @@ impl DockArea {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
             DockItem::Tiles { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
+            DockItem::Panel { view, .. } => view.clone().view().into_any_element(),
         }
     }
 

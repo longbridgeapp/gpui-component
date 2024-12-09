@@ -47,7 +47,7 @@ pub trait ContextModal: Sized {
     fn notifications(&self) -> Rc<Vec<View<Notification>>>;
 }
 
-impl<'a> ContextModal for WindowContext<'a> {
+impl ContextModal for WindowContext<'_> {
     fn open_drawer<F>(&mut self, build: F)
     where
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
@@ -148,7 +148,7 @@ impl<'a> ContextModal for WindowContext<'a> {
         Rc::new(Root::read(&self).notification.read(&self).notifications())
     }
 }
-impl<'a, V> ContextModal for ViewContext<'a, V> {
+impl<V> ContextModal for ViewContext<'_, V> {
     fn open_drawer<F>(&mut self, build: F)
     where
         F: Fn(Drawer, &mut WindowContext) -> Drawer + 'static,
