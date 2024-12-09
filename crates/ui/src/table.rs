@@ -77,6 +77,8 @@ impl Render for DragCol {
             .px_4()
             .py_1()
             .bg(cx.theme().table_head)
+            .text_color(cx.theme().muted_foreground)
+            .opacity(0.9)
             .border_1()
             .border_color(cx.theme().border)
             .shadow_md()
