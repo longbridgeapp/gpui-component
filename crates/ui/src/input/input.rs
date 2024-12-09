@@ -704,20 +704,11 @@ impl TextInput {
 
         let inner_position = position - bounds.origin + self.scroll_offset;
 
-        if self.multi_line {
-            println!(
-                "AAAAA1 {:?}, {:?}, {:?}",
-                bounds, inner_position, self.scroll_offset
-            );
-        }
-
         let mut index = 0;
         let mut y_offset = px(0.);
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
-
             let pos = inner_position - line_origin - self.scroll_offset;
-            println!("line_origin: {:?}", pos);
             let index_result = line.index_for_position(pos, line_height);
 
             if let Ok(v) = index_result {
