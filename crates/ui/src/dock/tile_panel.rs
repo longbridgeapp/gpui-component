@@ -14,7 +14,7 @@ const MINIMUM_WIDTH: f32 = 100.;
 const MINIMUM_HEIGHT: f32 = 100.;
 const DRAG_BAR_HEIGHT: f32 = 30.;
 
-const HANDLE_SIZE: f32 = 20.0;
+const HANDLE_SIZE: f32 = 10.0;
 const HALF_HANDLE_SIZE: f32 = HANDLE_SIZE / 2.0;
 
 #[derive(Clone, Render)]
@@ -317,11 +317,21 @@ impl TilePanel {
         let mut panels_with_indices: Vec<(usize, &TilesItem)> =
             self.panels.iter().enumerate().collect();
         panels_with_indices.sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index));
+
         for (index, item) in panels_with_indices {
-            if item.bounds.contains(&adjusted_position) {
+            let extended_bounds = Bounds::new(
+                item.bounds.origin,
+                Size {
+                    width: item.bounds.size.width + px(HALF_HANDLE_SIZE),
+                    height: item.bounds.size.height + px(HALF_HANDLE_SIZE),
+                },
+            );
+
+            if extended_bounds.contains(&adjusted_position) {
                 return Some((index, item));
             }
         }
+
         None
     }
 
