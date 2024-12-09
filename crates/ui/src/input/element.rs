@@ -410,7 +410,7 @@ impl Element for TextElement {
 
         let font_size = style.font_size.to_pixels(cx.rem_size());
         let wrap_width = if multi_line {
-            Some(bounds.size.width)
+            Some(bounds.size.width - RIGHT_MARGIN)
         } else {
             None
         };
