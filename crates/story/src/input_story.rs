@@ -90,7 +90,26 @@ impl InputStory {
                 .rows(10)
                 .placeholder("Enter text here...");
             input.set_text(
-                "Hello 世界，this is GPUI component.\n\nThe GPUI Component is a collection of UI components for GPUI framework, including.\n\nButton, Input, Checkbox, Radio, Dropdown, Tab, and more...",
+                unindent::unindent(
+                    r#"Hello 世界，this is GPUI component.
+
+                The GPUI Component is a collection of UI components for GPUI framework, including.
+
+                Button, Input, Checkbox, Radio, Dropdown, Tab, and more...
+
+                Here is an application that is built by using GPUI Component.
+
+                > This application is still under development, not published yet.
+
+                ![image](https://github.com/user-attachments/assets/559a648d-19df-4b5a-b563-b78cc79c8894)
+
+                ![image](https://github.com/user-attachments/assets/5e06ad5d-7ea0-43db-8d13-86a240da4c8d)
+
+                ## Demo
+
+                If you want to see the demo, here is a some demo applications.
+                "#,
+                ),
                 cx,
             );
             input

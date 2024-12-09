@@ -152,6 +152,9 @@ pub struct TextInput {
     pub(super) selection_reversed: bool,
     pub(super) marked_range: Option<Range<usize>>,
     pub(super) last_layout: Option<SmallVec<[WrappedLine; 1]>>,
+    /// The input container bounds
+    pub(super) input_bounds: Bounds<Pixels>,
+    /// The text bounds
     pub(super) last_bounds: Option<Bounds<Pixels>>,
     pub(super) last_cursor_offset: Option<usize>,
     pub(super) last_selected_range: Option<Range<usize>>,
@@ -184,6 +187,7 @@ impl TextInput {
             selected_range: 0..0,
             selection_reversed: false,
             marked_range: None,
+            input_bounds: Bounds::default(),
             last_layout: None,
             last_bounds: None,
             last_cursor_offset: None,
@@ -681,26 +685,39 @@ impl TextInput {
             return 0;
         }
 
+        // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
+        let position = position + point(px(0.), line_height);
+
         let (Some(bounds), Some(lines)) = (self.last_bounds.as_ref(), self.last_layout.as_ref())
         else {
             return 0;
         };
 
-        if position.y < bounds.top() {
+        if position.y < self.input_bounds.top() {
             return 0;
         }
-        if position.y > bounds.bottom() {
+        if position.y > self.input_bounds.bottom() {
             return self.text.len();
         }
 
         // The position is relative to the bounds of the text input
-        let inner_position = position - bounds.origin;
+
+        let inner_position = position - bounds.origin + self.scroll_offset;
+
+        if self.multi_line {
+            println!(
+                "AAAAA1 {:?}, {:?}, {:?}",
+                bounds, inner_position, self.scroll_offset
+            );
+        }
 
         let mut index = 0;
         let mut y_offset = px(0.);
         for line in lines.iter() {
             let line_origin = self.line_origin_with_y_offset(&mut y_offset, &line, line_height);
-            let pos = inner_position - line_origin;
+
+            let pos = inner_position - line_origin - self.scroll_offset;
+            println!("line_origin: {:?}", pos);
             let index_result = line.index_for_position(pos, line_height);
 
             if let Ok(v) = index_result {
@@ -714,7 +731,7 @@ impl TextInput {
             } else if line.len() == 0 {
                 // empty line
                 let line_bounds = Bounds {
-                    origin: line_origin,
+                    origin: line_origin - self.scroll_offset,
                     size: gpui::size(bounds.size.width, line_height),
                 };
 
@@ -745,9 +762,7 @@ impl TextInput {
     ) -> Point<Pixels> {
         if self.multi_line {
             let height = (line.wrap_boundaries.len() as f32 * line_height).max(line_height);
-            // line_height.half() for vertical centering of the mouse position, because the cursor style is IBeam
-            let p = point(px(0.), *y_offset - line_height.half());
-
+            let p = point(px(0.), *y_offset);
             *y_offset = *y_offset + height;
             p
         } else {

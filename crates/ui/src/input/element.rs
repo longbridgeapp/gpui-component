@@ -467,7 +467,7 @@ impl Element for TextElement {
     fn paint(
         &mut self,
         _id: Option<&GlobalElementId>,
-        _: Bounds<Pixels>,
+        input_bounds: Bounds<Pixels>,
         _request_layout: &mut Self::RequestLayoutState,
         prepaint: &mut Self::PrepaintState,
         cx: &mut WindowContext,
@@ -508,6 +508,7 @@ impl Element for TextElement {
             input.scroll_offset = prepaint.scroll_offset;
             input.last_layout = Some(prepaint.lines.clone());
             input.last_bounds = Some(bounds);
+            input.input_bounds = input_bounds;
             input.last_cursor_offset = Some(cursor);
             input.last_selected_range = Some(selected_range);
         });
