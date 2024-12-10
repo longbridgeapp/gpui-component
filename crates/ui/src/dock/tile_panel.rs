@@ -72,10 +72,7 @@ impl Panel for TilePanel {
                 let panel_state = item.panel.dump(cx);
                 TilePanelState {
                     panel_state,
-                    x: item.bounds.origin.x,
-                    y: item.bounds.origin.y,
-                    w: item.bounds.size.width,
-                    h: item.bounds.size.height,
+                    bounds: item.bounds,
                     z_index: item.z_index,
                 }
             })

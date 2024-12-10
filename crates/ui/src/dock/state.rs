@@ -1,7 +1,4 @@
-use gpui::{
-    point, size, AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView,
-    WindowContext,
-};
+use gpui::{AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView, WindowContext};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
@@ -71,10 +68,7 @@ pub struct DockItemState {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TilePanelState {
     pub(crate) panel_state: DockItemState,
-    pub(crate) x: Pixels,
-    pub(crate) y: Pixels,
-    pub(crate) w: Pixels,
-    pub(crate) h: Pixels,
+    pub(crate) bounds: Bounds<Pixels>,
     pub(crate) z_index: usize,
 }
 
@@ -220,14 +214,7 @@ impl DockItemState {
                     .iter()
                     .map(|panel_state| {
                         let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
-                        (
-                            item,
-                            Bounds::new(
-                                point(panel_state.x, panel_state.y),
-                                size(panel_state.w, panel_state.h),
-                            ),
-                            panel_state.z_index,
-                        )
+                        (item, panel_state.bounds, panel_state.z_index)
                     })
                     .collect();
                 DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)

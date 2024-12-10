@@ -8,12 +8,14 @@ use ui::input::{Copy, Cut, Paste, Redo, Undo};
 
 mod app_state;
 mod assets;
+mod story_tiles;
 mod story_workspace;
 
 actions!(main_menu, [Quit]);
 
 fn init(app_state: Arc<AppState>, cx: &mut AppContext) -> Result<()> {
     story_workspace::init(app_state.clone(), cx);
+    story_tiles::init(app_state.clone(), cx);
 
     cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
 
@@ -55,6 +57,11 @@ fn main() {
         cx.activate(true);
 
         story_workspace::open_new(app_state.clone(), cx, |_workspace, _cx| {
+            // do something
+        })
+        .detach();
+
+        story_tiles::open_new(app_state.clone(), cx, |_workspace, _cx| {
             // do something
         })
         .detach();

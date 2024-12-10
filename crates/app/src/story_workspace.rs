@@ -286,38 +286,10 @@ impl StoryWorkspace {
     }
 
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
-        let tile_panel = DockItem::tiles_with_sizes(
-            vec![
-                (
-                    DockItem::tabs(
-                        vec![Arc::new(StoryContainer::panel::<ButtonStory>(cx))],
-                        None,
-                        dock_area,
-                        cx,
-                    ),
-                    Bounds::new(point(px(20.), px(20.)), size(px(610.), px(190.))),
-                    1,
-                ),
-                (
-                    DockItem::tabs(
-                        vec![Arc::new(StoryContainer::panel::<InputStory>(cx))],
-                        None,
-                        dock_area,
-                        cx,
-                    ),
-                    Bounds::new(point(px(120.), px(230.)), size(px(650.), px(300.))),
-                    2,
-                ),
-            ],
-            dock_area,
-            cx,
-        );
-
         DockItem::split_with_sizes(
             Axis::Vertical,
             vec![DockItem::tabs(
                 vec![
-                    tile_panel.view(),
                     Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
                     Arc::new(StoryContainer::panel::<InputStory>(cx)),
                     Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
