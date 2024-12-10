@@ -41,8 +41,8 @@ pub use webview_story::WebViewStory;
 
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
-    Entity as _, EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Render, SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
+    SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -53,9 +53,8 @@ use ui::{
     label::Label,
     notification::Notification,
     popup_menu::PopupMenu,
-    scroll::ScrollbarAxis,
     theme::ActiveTheme,
-    v_flex, ContextModal, IconName, StyledExt as _,
+    v_flex, ContextModal, IconName,
 };
 
 const PANEL_NAME: &str = "StoryContainer";
@@ -335,7 +334,6 @@ impl Render for StoryContainer {
         v_flex()
             .id("story-container")
             .size_full()
-            .scrollable(cx.view().entity_id(), ScrollbarAxis::Both)
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_panel_info))
             .when(self.description.len() > 0, |this| {

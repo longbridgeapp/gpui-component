@@ -5,6 +5,8 @@ use gpui::{
     ViewContext, WindowAppearance, WindowContext,
 };
 
+use crate::scroll::ScrollbarShow;
+
 pub fn init(cx: &mut AppContext) {
     Theme::sync_system_appearance(cx)
 }
@@ -117,15 +119,19 @@ impl Colorize for Hsla {
     }
 
     /// Return a new color with the lightness increased by the given factor.
+    ///
+    /// factor range: 0.0 .. 1.0
     fn lighten(&self, factor: f32) -> Hsla {
-        let l = self.l + (1.0 - self.l) * factor.clamp(0.0, 1.0).min(1.0);
+        let l = self.l * (1.0 + factor.clamp(0.0, 1.0));
 
         Hsla { l, ..*self }
     }
 
     /// Return a new color with the darkness increased by the given factor.
+    ///
+    /// factor range: 0.0 .. 1.0
     fn darken(&self, factor: f32) -> Hsla {
-        let l = self.l * (1.0 - factor.clamp(0.0, 1.0).min(1.0));
+        let l = self.l * (1.0 - factor.clamp(0.0, 1.0));
 
         Hsla { l, ..*self }
     }
@@ -181,6 +187,7 @@ pub struct ThemeColor {
     pub ring: Hsla,
     pub scrollbar: Hsla,
     pub scrollbar_thumb: Hsla,
+    pub scrollbar_thumb_hover: Hsla,
     pub secondary: Hsla,
     pub secondary_active: Hsla,
     pub secondary_foreground: Hsla,
@@ -253,8 +260,9 @@ impl ThemeColor {
             primary_hover: hsl(223.0, 5.9, 15.0),
             progress_bar: hsl(223.0, 5.9, 10.0),
             ring: hsl(240.0, 5.9, 65.0),
-            scrollbar: hsl(0., 0., 97.).opacity(0.3),
-            scrollbar_thumb: hsl(0., 0., 69.),
+            scrollbar: hsl(0., 0., 97.).opacity(0.75),
+            scrollbar_thumb: hsl(0., 0., 69.).opacity(0.9),
+            scrollbar_thumb_hover: hsl(0., 0., 59.),
             secondary: hsl(240.0, 5.9, 96.9),
             secondary_active: hsl(240.0, 5.9, 93.),
             secondary_foreground: hsl(240.0, 59.0, 10.),
@@ -327,8 +335,9 @@ impl ThemeColor {
             primary_hover: hsl(223.0, 0.0, 90.0),
             progress_bar: hsl(223.0, 0.0, 98.0),
             ring: hsl(240.0, 4.9, 83.9),
-            scrollbar: hsl(240., 1., 15.).opacity(0.3),
-            scrollbar_thumb: hsl(0., 0., 68.),
+            scrollbar: hsl(240., 1., 15.).opacity(0.75),
+            scrollbar_thumb: hsl(0., 0., 48.).opacity(0.9),
+            scrollbar_thumb_hover: hsl(0., 0., 68.),
             secondary: hsl(240.0, 0., 13.0),
             secondary_active: hsl(240.0, 0., 10.),
             secondary_foreground: hsl(0.0, 0.0, 78.0),
@@ -373,6 +382,8 @@ pub struct Theme {
     pub radius: f32,
     pub shadow: bool,
     pub transparent: Hsla,
+    /// Show the scrollbar mode, default: Scrolling
+    pub scrollbar_show: ScrollbarShow,
 }
 
 impl Deref for Theme {
@@ -434,6 +445,7 @@ impl Theme {
         // self.selection = self.selection.apply(mask_color);
         self.scrollbar = self.scrollbar.apply(mask_color);
         self.scrollbar_thumb = self.scrollbar_thumb.apply(mask_color);
+        self.scrollbar_thumb_hover = self.scrollbar_thumb_hover.apply(mask_color);
         self.panel = self.panel.apply(mask_color);
         self.drag_border = self.drag_border.apply(mask_color);
         self.drop_target = self.drop_target.apply(mask_color);
@@ -518,6 +530,7 @@ impl From<ThemeColor> for Theme {
             },
             radius: 4.0,
             shadow: true,
+            scrollbar_show: ScrollbarShow::default(),
             colors,
         }
     }
@@ -533,5 +546,30 @@ pub enum ThemeMode {
 impl ThemeMode {
     pub fn is_dark(&self) -> bool {
         matches!(self, Self::Dark)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::Colorize as _;
+
+    #[test]
+    fn test_lighten() {
+        let color = super::hsl(240.0, 5.0, 30.0);
+        let color = color.lighten(0.5);
+        assert_eq!(color.l, 0.45000002);
+        let color = color.lighten(0.5);
+        assert_eq!(color.l, 0.675);
+        let color = color.lighten(0.1);
+        assert_eq!(color.l, 0.7425);
+    }
+
+    #[test]
+    fn test_darken() {
+        let color = super::hsl(240.0, 5.0, 96.0);
+        let color = color.darken(0.5);
+        assert_eq!(color.l, 0.48);
+        let color = color.darken(0.5);
+        assert_eq!(color.l, 0.24);
     }
 }
