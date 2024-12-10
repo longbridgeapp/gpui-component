@@ -207,8 +207,6 @@ impl TilePanel {
             self.panels.remove(ix);
 
             cx.emit(PanelEvent::LayoutChanged);
-        } else {
-            println!("Panel not found.");
         }
     }
 
