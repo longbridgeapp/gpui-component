@@ -44,7 +44,7 @@ pub struct TilesItem {
     z_index: usize,
 }
 
-pub struct TilesPanel {
+pub struct TilePanel {
     focus_handle: FocusHandle,
     pub(crate) panels: Vec<TilesItem>,
     dragging_panel_index: Option<usize>,
@@ -55,13 +55,13 @@ pub struct TilesPanel {
     bounds: Bounds<Pixels>,
 }
 
-impl Panel for TilesPanel {
+impl Panel for TilePanel {
     fn panel_name(&self) -> &'static str {
-        "TilesPanel"
+        "TilePanel"
     }
 
     fn title(&self, _cx: &gpui::WindowContext) -> gpui::AnyElement {
-        "TilesPanel".into_any_element()
+        "TilePanel".into_any_element()
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
@@ -89,7 +89,7 @@ impl Panel for TilesPanel {
     }
 }
 
-impl TilesPanel {
+impl TilePanel {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
@@ -218,7 +218,7 @@ impl TilesPanel {
     fn update_initial_position(
         &mut self,
         position: Point<Pixels>,
-        cx: &mut ViewContext<'_, TilesPanel>,
+        cx: &mut ViewContext<'_, TilePanel>,
     ) {
         if let Some((index, item)) = self.find_panel_at_position(position) {
             let adjusted_position = position - self.bounds.origin;
@@ -233,7 +233,7 @@ impl TilesPanel {
     fn update_position(
         &mut self,
         current_mouse_position: Point<Pixels>,
-        cx: &mut ViewContext<'_, TilesPanel>,
+        cx: &mut ViewContext<'_, TilePanel>,
     ) {
         if let Some(index) = self.dragging_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
@@ -255,7 +255,7 @@ impl TilesPanel {
     fn update_resizing_drag(
         &mut self,
         drag_data: ResizeDragData,
-        cx: &mut ViewContext<'_, TilesPanel>,
+        cx: &mut ViewContext<'_, TilePanel>,
     ) {
         if let Some((index, _item)) = self.find_panel_at_position(drag_data.initial_mouse_position)
         {
@@ -265,7 +265,7 @@ impl TilesPanel {
         }
     }
 
-    fn resize_panel_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilesPanel>) {
+    fn resize_panel_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
         if let Some(index) = self.resizing_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.width = round_to_nearest_ten(new_width);
@@ -274,7 +274,7 @@ impl TilesPanel {
         }
     }
 
-    fn resize_panel_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilesPanel>) {
+    fn resize_panel_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
         if let Some(index) = self.resizing_panel_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.height = round_to_nearest_ten(new_height);
@@ -362,15 +362,15 @@ fn round_point_to_nearest_ten(point: Point<Pixels>) -> Point<Pixels> {
     Point::new(round_to_nearest_ten(point.x), round_to_nearest_ten(point.y))
 }
 
-impl FocusableView for TilesPanel {
+impl FocusableView for TilePanel {
     fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
-impl EventEmitter<PanelEvent> for TilesPanel {}
-impl EventEmitter<DismissEvent> for TilesPanel {}
+impl EventEmitter<PanelEvent> for TilePanel {}
+impl EventEmitter<DismissEvent> for TilePanel {}
 
-impl Render for TilesPanel {
+impl Render for TilePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let view = cx.view().clone();

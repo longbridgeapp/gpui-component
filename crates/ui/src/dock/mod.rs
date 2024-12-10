@@ -4,7 +4,7 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
-mod tiles_panel;
+mod tile_panel;
 
 use anyhow::Result;
 pub use dock::*;
@@ -15,7 +15,7 @@ use gpui::{
     VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
-pub use tiles_panel::*;
+pub use tile_panel::*;
 
 pub use panel::*;
 pub use stack_panel::*;
@@ -88,7 +88,7 @@ pub enum DockItem {
     /// Tiles layout
     Tiles {
         items: Vec<TilesItem>,
-        view: View<TilesPanel>,
+        view: View<TilePanel>,
     },
 }
 
@@ -163,7 +163,7 @@ impl DockItem {
         cx: &mut WindowContext,
     ) -> Self {
         let tile_panel = cx.new_view(|cx| {
-            let mut tile_panel = TilesPanel::new(cx);
+            let mut tile_panel = TilePanel::new(cx);
             for (dock_item, bounds, z_index) in items.into_iter() {
                 tile_panel.add_panel_with_z_index(dock_item.view(), bounds, z_index, cx);
             }
