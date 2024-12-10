@@ -227,11 +227,7 @@ impl TilePanel {
         cx.notify();
     }
 
-    fn update_position(
-        &mut self,
-        current_mouse_position: Point<Pixels>,
-        cx: &mut ViewContext<'_, TilePanel>,
-    ) {
+    fn update_position(&mut self, pos: Point<Pixels>, cx: &mut ViewContext<'_, TilePanel>) {
         let Some(index) = self.dragging_index else {
             return;
         };
@@ -240,7 +236,7 @@ impl TilePanel {
             return;
         };
 
-        let adjusted_position = current_mouse_position - self.bounds.origin;
+        let adjusted_position = pos - self.bounds.origin;
         let delta = adjusted_position - self.dragging_initial_mouse;
         let mut new_origin = self.dragging_initial_bounds.origin + delta;
 
@@ -484,10 +480,9 @@ impl Render for TilePanel {
                                                         {
                                                             return;
                                                         }
-                                                        let current_mouse_position =
-                                                            e.event.position;
-                                                        let delta = current_mouse_position.x
-                                                            - drag_data.last_position.x;
+                                                        let pos = e.event.position;
+                                                        let delta =
+                                                            pos.x - drag_data.last_position.x;
                                                         let new_width =
                                                             (drag_data.last_bounds.size.width
                                                                 + delta)
@@ -540,10 +535,9 @@ impl Render for TilePanel {
                                                     if let Some(ref drag_data) =
                                                         this.resizing_drag_data
                                                     {
-                                                        let current_mouse_position =
-                                                            e.event.position;
-                                                        let delta = current_mouse_position.y
-                                                            - drag_data.last_position.y;
+                                                        let pos = e.event.position;
+                                                        let delta =
+                                                            pos.y - drag_data.last_position.y;
                                                         let new_height =
                                                             (drag_data.last_bounds.size.height
                                                                 + delta)
@@ -599,12 +593,11 @@ impl Render for TilePanel {
                                                         if drag_data.axis != ResizeAxis::Both {
                                                             return;
                                                         }
-                                                        let current_mouse_position =
-                                                            e.event.position;
-                                                        let delta_x = current_mouse_position.x
-                                                            - drag_data.last_position.x;
-                                                        let delta_y = current_mouse_position.y
-                                                            - drag_data.last_position.y;
+                                                        let pos = e.event.position;
+                                                        let delta_x =
+                                                            pos.x - drag_data.last_position.x;
+                                                        let delta_y =
+                                                            pos.y - drag_data.last_position.y;
                                                         let new_width =
                                                             (drag_data.last_bounds.size.width
                                                                 + delta_x)
