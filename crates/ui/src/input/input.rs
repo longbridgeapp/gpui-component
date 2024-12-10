@@ -1249,7 +1249,7 @@ impl Render for TextInput {
                             .absolute()
                             .top_0()
                             .left_0()
-                            .right_0()
+                            .right(px(1.))
                             .bottom_0()
                             .child(
                                 Scrollbar::vertical(
