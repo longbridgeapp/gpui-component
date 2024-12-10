@@ -2,9 +2,9 @@ use std::{cell::Cell, rc::Rc, time::Instant};
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    fill, point, px, relative, Bounds, ContentMask, Edges, Element, EntityId, Hitbox, IntoElement,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position, ScrollHandle,
-    ScrollWheelEvent, Style, UniformListScrollHandle,
+    fill, point, px, relative, Bounds, ContentMask, Edges, Element, EntityId, Hitbox, Hsla,
+    IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position,
+    ScrollHandle, ScrollWheelEvent, Style, UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
@@ -267,10 +267,30 @@ impl IntoElement for Scrollbar {
     }
 }
 
+pub struct PrepaintState {
+    hitbox: Hitbox,
+    states: Vec<AxisPrepaintState>,
+}
+
+pub struct AxisPrepaintState {
+    axis: ScrollbarAxis,
+    bounds: Bounds<Pixels>,
+    border_width: Pixels,
+    radius: Pixels,
+    bg: Hsla,
+    border: Hsla,
+    thumb_bounds: Bounds<Pixels>,
+    thumb_bg: Hsla,
+    scroll_size: Pixels,
+    container_size: Pixels,
+    thumb_size: Pixels,
+    margin_end: Pixels,
+}
+
 impl Element for Scrollbar {
     type RequestLayoutState = ();
 
-    type PrepaintState = Hitbox;
+    type PrepaintState = PrepaintState;
 
     fn id(&self) -> Option<gpui::ElementId> {
         None
@@ -298,36 +318,27 @@ impl Element for Scrollbar {
         _: &mut Self::RequestLayoutState,
         cx: &mut gpui::WindowContext,
     ) -> Self::PrepaintState {
-        cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+        let hitbox = cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
             cx.insert_hitbox(bounds, false)
-        })
-    }
+        });
 
-    fn paint(
-        &mut self,
-        _: Option<&gpui::GlobalElementId>,
-        _: Bounds<Pixels>,
-        _: &mut Self::RequestLayoutState,
-        hitbox: &mut Self::PrepaintState,
-        cx: &mut gpui::WindowContext,
-    ) {
-        let hitbox_bounds = hitbox.bounds;
+        let mut states = vec![];
+
         let mut has_both = self.axis.is_both();
+        const NORMAL_OPACITY: f32 = 0.6;
 
         for axis in self.axis.all().into_iter() {
-            const NORMAL_OPACITY: f32 = 0.6;
-
             let is_vertical = axis.is_vertical();
             let (scroll_area_size, container_size, scroll_position) = if is_vertical {
                 (
                     self.scroll_size.height,
-                    hitbox_bounds.size.height,
+                    hitbox.size.height,
                     self.scroll_handle.offset().y,
                 )
             } else {
                 (
                     self.scroll_size.width,
-                    hitbox_bounds.size.width,
+                    hitbox.size.width,
                     self.scroll_handle.offset().x,
                 )
             };
@@ -354,23 +365,23 @@ impl Element for Scrollbar {
             let bounds = Bounds {
                 origin: if is_vertical {
                     point(
-                        hitbox_bounds.origin.x + hitbox_bounds.size.width - self.width,
-                        hitbox_bounds.origin.y,
+                        hitbox.origin.x + hitbox.size.width - self.width,
+                        hitbox.origin.y,
                     )
                 } else {
                     point(
-                        hitbox_bounds.origin.x,
-                        hitbox_bounds.origin.y + hitbox_bounds.size.height - self.width,
+                        hitbox.origin.x,
+                        hitbox.origin.y + hitbox.size.height - self.width,
                     )
                 },
                 size: gpui::Size {
                     width: if is_vertical {
                         self.width
                     } else {
-                        hitbox_bounds.size.width
+                        hitbox.size.width
                     },
                     height: if is_vertical {
-                        hitbox_bounds.size.height
+                        hitbox.size.height
                     } else {
                         self.width
                     },
@@ -449,8 +460,48 @@ impl Element for Scrollbar {
                 )
             };
 
+            states.push(AxisPrepaintState {
+                axis,
+                bounds,
+                border_width,
+                radius,
+                bg: bar_bg,
+                border: bar_border,
+                thumb_bounds,
+                thumb_bg,
+                scroll_size: scroll_area_size,
+                container_size,
+                thumb_size: thumb_length,
+                margin_end,
+            })
+        }
+
+        PrepaintState { hitbox, states }
+    }
+
+    fn paint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: Bounds<Pixels>,
+        _: &mut Self::RequestLayoutState,
+        prepaint: &mut Self::PrepaintState,
+        cx: &mut gpui::WindowContext,
+    ) {
+        let hitbox_bounds = prepaint.hitbox.bounds;
+
+        for state in prepaint.states.iter() {
+            let axis = state.axis;
+            let radius = state.radius;
+            let bounds = state.bounds;
+            let thumb_bounds = state.thumb_bounds;
+            let scroll_area_size = state.scroll_size;
+            let container_size = state.container_size;
+            let thumb_size = state.thumb_size;
+            let margin_end = state.margin_end;
+            let is_vertical = axis.is_vertical();
+
             cx.paint_layer(hitbox_bounds, |cx| {
-                cx.paint_quad(fill(bounds, bar_bg));
+                cx.paint_quad(fill(state.bounds, state.bg));
 
                 cx.paint_quad(PaintQuad {
                     bounds,
@@ -461,20 +512,20 @@ impl Element for Scrollbar {
                             top: px(0.),
                             right: px(0.),
                             bottom: px(0.),
-                            left: border_width,
+                            left: state.border_width,
                         }
                     } else {
                         Edges {
-                            top: border_width,
+                            top: state.border_width,
                             right: px(0.),
                             bottom: px(0.),
                             left: px(0.),
                         }
                     },
-                    border_color: bar_border,
+                    border_color: state.border,
                 });
 
-                cx.paint_quad(fill(thumb_bounds, thumb_bg).corner_radii(radius));
+                cx.paint_quad(fill(thumb_bounds, state.thumb_bg).corner_radii(radius));
             });
 
             cx.on_mouse_event({
@@ -519,11 +570,11 @@ impl Element for Scrollbar {
                             // Set the thumb bar center to the click position
                             let offset = scroll_handle.offset();
                             let percentage = if is_vertical {
-                                (event.position.y - thumb_length / 2. - bounds.origin.y)
-                                    / (bounds.size.height - thumb_length)
+                                (event.position.y - thumb_size / 2. - bounds.origin.y)
+                                    / (bounds.size.height - thumb_size)
                             } else {
-                                (event.position.x - thumb_length / 2. - bounds.origin.x)
-                                    / (bounds.size.width - thumb_length)
+                                (event.position.x - thumb_size / 2. - bounds.origin.x)
+                                    / (bounds.size.width - thumb_size)
                             }
                             .min(1.);
 
@@ -587,10 +638,10 @@ impl Element for Scrollbar {
 
                         let percentage = (if is_vertical {
                             (event.position.y - drag_pos.y - bounds.origin.y)
-                                / (bounds.size.height - thumb_length)
+                                / (bounds.size.height - thumb_size)
                         } else {
                             (event.position.x - drag_pos.x - bounds.origin.x)
-                                / (bounds.size.width - thumb_length - margin_end)
+                                / (bounds.size.width - thumb_size - margin_end)
                         })
                         .clamp(0., 1.);
 
