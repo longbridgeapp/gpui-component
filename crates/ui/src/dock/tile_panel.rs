@@ -26,8 +26,8 @@ pub struct DragResizing(EntityId);
 #[derive(Clone)]
 struct ResizeDragData {
     axis: ResizeAxis,
-    initial_mouse_position: Point<Pixels>,
-    initial_panel_bounds: Bounds<Pixels>,
+    last_position: Point<Pixels>,
+    last_bounds: Bounds<Pixels>,
 }
 
 #[derive(Clone, PartialEq)]
@@ -256,8 +256,7 @@ impl TilePanel {
         drag_data: ResizeDragData,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        if let Some((index, _item)) = self.find_panel_at_position(drag_data.initial_mouse_position)
-        {
+        if let Some((index, _item)) = self.find_panel_at_position(drag_data.last_position) {
             self.resizing_panel_index = Some(index);
             self.resizing_drag_data = Some(drag_data);
             cx.notify();
@@ -455,12 +454,12 @@ impl Render for TilePanel {
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let initial_mouse_position = event.position;
+                                            let last_position = event.position;
                                             let panel_bounds = item.bounds;
                                             let drag_data = ResizeDragData {
                                                 axis: ResizeAxis::Horizontal,
-                                                initial_mouse_position,
-                                                initial_panel_bounds: panel_bounds,
+                                                last_position,
+                                                last_bounds: panel_bounds,
                                             };
                                             this.update_resizing_drag(drag_data, cx);
                                             this.bring_panel_to_front(this.resizing_panel_index);
@@ -488,13 +487,11 @@ impl Render for TilePanel {
                                                         let current_mouse_position =
                                                             e.event.position;
                                                         let delta = current_mouse_position.x
-                                                            - drag_data.initial_mouse_position.x;
-                                                        let new_width = (drag_data
-                                                            .initial_panel_bounds
-                                                            .size
-                                                            .width
-                                                            + delta)
-                                                            .max(px(MINIMUM_WIDTH));
+                                                            - drag_data.last_position.x;
+                                                        let new_width =
+                                                            (drag_data.last_bounds.size.width
+                                                                + delta)
+                                                                .max(px(MINIMUM_WIDTH));
                                                         this.resize_panel_width(new_width, cx);
                                                     }
                                                 }
@@ -517,12 +514,12 @@ impl Render for TilePanel {
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let initial_mouse_position = event.position;
+                                            let last_position = event.position;
                                             let panel_bounds = item.bounds;
                                             let drag_data = ResizeDragData {
                                                 axis: ResizeAxis::Vertical,
-                                                initial_mouse_position,
-                                                initial_panel_bounds: panel_bounds,
+                                                last_position,
+                                                last_bounds: panel_bounds,
                                             };
                                             this.update_resizing_drag(drag_data, cx);
                                             this.bring_panel_to_front(this.resizing_panel_index);
@@ -546,13 +543,11 @@ impl Render for TilePanel {
                                                         let current_mouse_position =
                                                             e.event.position;
                                                         let delta = current_mouse_position.y
-                                                            - drag_data.initial_mouse_position.y;
-                                                        let new_height = (drag_data
-                                                            .initial_panel_bounds
-                                                            .size
-                                                            .height
-                                                            + delta)
-                                                            .max(px(MINIMUM_HEIGHT));
+                                                            - drag_data.last_position.y;
+                                                        let new_height =
+                                                            (drag_data.last_bounds.size.height
+                                                                + delta)
+                                                                .max(px(MINIMUM_HEIGHT));
                                                         this.resize_panel_height(new_height, cx);
                                                     }
                                                 }
@@ -575,12 +570,12 @@ impl Render for TilePanel {
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let initial_mouse_position = event.position;
+                                            let last_position = event.position;
                                             let panel_bounds = item.bounds;
                                             let drag_data = ResizeDragData {
                                                 axis: ResizeAxis::Both,
-                                                initial_mouse_position,
-                                                initial_panel_bounds: panel_bounds,
+                                                last_position,
+                                                last_bounds: panel_bounds,
                                             };
                                             this.update_resizing_drag(drag_data, cx);
                                             this.bring_panel_to_front(this.resizing_panel_index);
@@ -607,21 +602,17 @@ impl Render for TilePanel {
                                                         let current_mouse_position =
                                                             e.event.position;
                                                         let delta_x = current_mouse_position.x
-                                                            - drag_data.initial_mouse_position.x;
+                                                            - drag_data.last_position.x;
                                                         let delta_y = current_mouse_position.y
-                                                            - drag_data.initial_mouse_position.y;
-                                                        let new_width = (drag_data
-                                                            .initial_panel_bounds
-                                                            .size
-                                                            .width
-                                                            + delta_x)
-                                                            .max(px(MINIMUM_WIDTH));
-                                                        let new_height = (drag_data
-                                                            .initial_panel_bounds
-                                                            .size
-                                                            .height
-                                                            + delta_y)
-                                                            .max(px(MINIMUM_HEIGHT));
+                                                            - drag_data.last_position.y;
+                                                        let new_width =
+                                                            (drag_data.last_bounds.size.width
+                                                                + delta_x)
+                                                                .max(px(MINIMUM_WIDTH));
+                                                        let new_height =
+                                                            (drag_data.last_bounds.size.height
+                                                                + delta_y)
+                                                                .max(px(MINIMUM_HEIGHT));
                                                         this.resize_panel_height(new_height, cx);
                                                         this.resize_panel_width(new_width, cx);
                                                     }
@@ -644,11 +635,8 @@ impl Render for TilePanel {
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let initial_mouse_position = event.position;
-                                            this.update_initial_position(
-                                                initial_mouse_position,
-                                                cx,
-                                            );
+                                            let last_position = event.position;
+                                            this.update_initial_position(last_position, cx);
                                             this.bring_panel_to_front(this.dragging_panel_index);
                                         }),
                                     )
