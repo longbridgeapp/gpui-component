@@ -376,7 +376,6 @@ impl TilePanel {
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
-                        let panel_bounds = panel_bounds;
                         move |this, event: &MouseDownEvent, cx| {
                             let last_position = event.position;
                             let drag_data = ResizeDragData {
@@ -433,7 +432,6 @@ impl TilePanel {
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
-                        let panel_bounds = panel_bounds;
                         move |this, event: &MouseDownEvent, cx| {
                             let last_position = event.position;
                             let drag_data = ResizeDragData {
@@ -487,7 +485,6 @@ impl TilePanel {
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
-                        let panel_bounds = panel_bounds;
                         move |this, event: &MouseDownEvent, cx| {
                             let last_position = event.position;
                             let drag_data = ResizeDragData {
