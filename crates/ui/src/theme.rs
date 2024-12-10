@@ -5,6 +5,8 @@ use gpui::{
     ViewContext, WindowAppearance, WindowContext,
 };
 
+use crate::scroll::ScrollbarShow;
+
 pub fn init(cx: &mut AppContext) {
     Theme::sync_system_appearance(cx)
 }
@@ -373,6 +375,8 @@ pub struct Theme {
     pub radius: f32,
     pub shadow: bool,
     pub transparent: Hsla,
+    /// Show the scrollbar mode, default: Scrolling
+    pub scrollbar_show: ScrollbarShow,
 }
 
 impl Deref for Theme {
@@ -518,6 +522,7 @@ impl From<ThemeColor> for Theme {
             },
             radius: 4.0,
             shadow: true,
+            scrollbar_show: ScrollbarShow::default(),
             colors,
         }
     }

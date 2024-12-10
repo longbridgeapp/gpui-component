@@ -14,6 +14,7 @@ use ui::{
     dock::{DockArea, DockAreaState, DockEvent, DockItem, DockPlacement},
     h_flex,
     popup_menu::PopupMenuExt,
+    scroll::ScrollbarShow,
     theme::{ActiveTheme, Theme},
     ContextModal, IconName, Root, Sizable, TitleBar,
 };
@@ -26,6 +27,9 @@ const MAIN_DOCK_AREA: DockAreaTab = DockAreaTab {
 };
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
+struct SelectScrollbarShow(ScrollbarShow);
+
+#[derive(Clone, PartialEq, Eq, Deserialize)]
 struct SelectLocale(SharedString);
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
@@ -34,7 +38,10 @@ struct SelectFont(usize);
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 struct AddPanel(DockPlacement);
 
-impl_actions!(story, [SelectLocale, SelectFont, AddPanel]);
+impl_actions!(
+    story,
+    [SelectLocale, SelectFont, AddPanel, SelectScrollbarShow]
+);
 
 actions!(workspace, [Open, CloseWindow]);
 
@@ -573,8 +580,13 @@ impl FontSizeSelector {
         }
     }
 
-    fn on_select(&mut self, font_size: &SelectFont, cx: &mut ViewContext<Self>) {
+    fn on_select_font(&mut self, font_size: &SelectFont, cx: &mut ViewContext<Self>) {
         Theme::global_mut(cx).font_size = font_size.0 as f32;
+        cx.refresh();
+    }
+
+    fn on_select_scrollbar_show(&mut self, show: &SelectScrollbarShow, cx: &mut ViewContext<Self>) {
+        Theme::global_mut(cx).scrollbar_show = show.0;
         cx.refresh();
     }
 }
@@ -583,20 +595,37 @@ impl Render for FontSizeSelector {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let focus_handle = self.focus_handle.clone();
         let font_size = cx.theme().font_size as i32;
+        let scroll_show = cx.theme().scrollbar_show;
 
         div()
             .id("font-size-selector")
             .track_focus(&focus_handle)
-            .on_action(cx.listener(Self::on_select))
+            .on_action(cx.listener(Self::on_select_font))
+            .on_action(cx.listener(Self::on_select_scrollbar_show))
             .child(
                 Button::new("btn")
                     .small()
                     .ghost()
-                    .icon(IconName::ALargeSmall)
+                    .icon(IconName::Settings2)
                     .popup_menu(move |this, _| {
-                        this.menu_with_check("Large", font_size == 18, Box::new(SelectFont(18)))
-                            .menu_with_check("Default", font_size == 16, Box::new(SelectFont(16)))
-                            .menu_with_check("Small", font_size == 14, Box::new(SelectFont(14)))
+                        this.menu_with_check(
+                            "Font Large",
+                            font_size == 18,
+                            Box::new(SelectFont(18)),
+                        )
+                        .menu_with_check("Font Default", font_size == 16, Box::new(SelectFont(16)))
+                        .menu_with_check("Font Small", font_size == 14, Box::new(SelectFont(14)))
+                        .separator()
+                        .menu_with_check(
+                            "Scrolling to show Scrollbar",
+                            scroll_show == ScrollbarShow::Scrolling,
+                            Box::new(SelectScrollbarShow(ScrollbarShow::Scrolling)),
+                        )
+                        .menu_with_check(
+                            "Hover to show Scrollbar",
+                            scroll_show == ScrollbarShow::Hover,
+                            Box::new(SelectScrollbarShow(ScrollbarShow::Hover)),
+                        )
                     })
                     .anchor(AnchorCorner::TopRight),
             )
