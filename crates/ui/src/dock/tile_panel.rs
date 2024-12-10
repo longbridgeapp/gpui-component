@@ -243,12 +243,10 @@ impl TilePanel {
         let adjusted_position = current_mouse_position - self.bounds.origin;
         let delta = adjusted_position - self.dragging_initial_mouse;
         let mut new_origin = self.dragging_initial_bounds.origin + delta;
-        if new_origin.x < px(0.0) {
-            new_origin.x = px(0.0);
-        }
-        if new_origin.y < px(0.0) {
-            new_origin.y = px(0.0);
-        }
+
+        new_origin.x = new_origin.x.max(px(0.0));
+        new_origin.y = new_origin.y.max(px(0.0));
+
         item.bounds.origin = round_point_to_nearest_ten(new_origin);
         cx.notify();
     }
