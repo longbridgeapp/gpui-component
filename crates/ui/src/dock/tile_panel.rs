@@ -309,20 +309,18 @@ impl TilePanel {
         })
     }
 
-    // Find the panel at a given position, considering z-index
+    /// Find the panel at a given position, considering z-index
     fn find_panel_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
         let adjusted_position = position - self.bounds.origin;
         let mut panels_with_indices: Vec<(usize, &TilesItem)> =
             self.panels.iter().enumerate().collect();
+
         panels_with_indices.sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index));
 
         for (index, item) in panels_with_indices {
             let extended_bounds = Bounds::new(
                 item.bounds.origin,
-                Size {
-                    width: item.bounds.size.width + px(HALF_HANDLE_SIZE),
-                    height: item.bounds.size.height + px(HALF_HANDLE_SIZE),
-                },
+                item.bounds.size + gpui::size(Pixels(HALF_HANDLE_SIZE), Pixels(HALF_HANDLE_SIZE)),
             );
 
             if extended_bounds.contains(&adjusted_position) {
