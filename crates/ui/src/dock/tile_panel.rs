@@ -215,14 +215,16 @@ impl TilePanel {
         position: Point<Pixels>,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        if let Some((index, item)) = self.find_panel_at_position(position) {
-            let adjusted_position = position - self.bounds.origin;
-            let bounds = item.bounds;
-            self.dragging_panel_index = Some(index);
-            self.dragging_initial_mouse = adjusted_position;
-            self.dragging_initial_bounds = bounds;
-            cx.notify();
-        }
+        let Some((index, item)) = self.find_panel_at_position(position) else {
+            return;
+        };
+
+        let adjusted_position = position - self.bounds.origin;
+        let bounds = item.bounds;
+        self.dragging_panel_index = Some(index);
+        self.dragging_initial_mouse = adjusted_position;
+        self.dragging_initial_bounds = bounds;
+        cx.notify();
     }
 
     fn update_position(
