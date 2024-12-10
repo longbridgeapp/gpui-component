@@ -539,6 +539,58 @@ impl TilePanel {
 
         elements
     }
+
+    /// Produce the drag-bar element for the given panel item
+    fn render_drag_bar(
+        &mut self,
+        cx: &mut ViewContext<Self>,
+        entity_id: EntityId,
+        item: &TilesItem,
+        is_occluded: &impl Fn(&Bounds<Pixels>) -> bool,
+    ) -> AnyElement {
+        let drag_bar_bounds = Bounds::new(
+            item.bounds.origin,
+            Size {
+                width: item.bounds.size.width,
+                height: px(DRAG_BAR_HEIGHT),
+            },
+        );
+
+        if !is_occluded(&drag_bar_bounds) {
+            h_flex()
+                .id("drag-bar")
+                .cursor_grab()
+                .absolute()
+                .w_full()
+                .h(px(DRAG_BAR_HEIGHT))
+                .bg(cx.theme().transparent)
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |this, event: &MouseDownEvent, cx| {
+                        let last_position = event.position;
+                        this.update_initial_position(last_position, cx);
+                        this.bring_to_front(this.dragging_index);
+                    }),
+                )
+                .on_drag(DragMoving(entity_id), |drag, _, cx| {
+                    cx.stop_propagation();
+                    cx.new_view(|_| drag.clone())
+                })
+                .on_drag_move(cx.listener(move |this, e: &DragMoveEvent<DragMoving>, cx| {
+                    match e.drag(cx) {
+                        DragMoving(id) => {
+                            if *id != entity_id {
+                                return;
+                            }
+                            this.update_position(e.event.position, cx);
+                        }
+                    }
+                }))
+                .into_any_element()
+        } else {
+            div().into_any_element()
+        }
+    }
 }
 
 fn round_to_nearest_ten(value: Pixels) -> Pixels {
@@ -579,21 +631,13 @@ impl Render for TilePanel {
                         let is_occluded = {
                             let panels = self.panels.clone();
                             move |bounds: &Bounds<Pixels>| {
-                                panels.iter().enumerate().any(|(index, item)| {
+                                panels.iter().enumerate().any(|(index, other_item)| {
                                     index != current_index
-                                        && item.z_index > panels[current_index].z_index
-                                        && item.bounds.intersects(bounds)
+                                        && other_item.z_index > panels[current_index].z_index
+                                        && other_item.bounds.intersects(bounds)
                                 })
                             }
                         };
-
-                        let drag_bar_bounds = Bounds::new(
-                            item.bounds.origin,
-                            Size {
-                                width: item.bounds.size.width,
-                                height: px(DRAG_BAR_HEIGHT),
-                            },
-                        );
 
                         v_flex()
                             .border_1()
@@ -617,43 +661,7 @@ impl Render for TilePanel {
                                 &item,
                                 &is_occluded,
                             ))
-                            .child(if !is_occluded(&drag_bar_bounds) {
-                                h_flex()
-                                    .id("drag-bar")
-                                    .cursor_grab()
-                                    .absolute()
-                                    .w_full()
-                                    .h(px(DRAG_BAR_HEIGHT))
-                                    .bg(cx.theme().transparent)
-                                    .on_mouse_down(
-                                        MouseButton::Left,
-                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let last_position = event.position;
-                                            this.update_initial_position(last_position, cx);
-                                            this.bring_to_front(this.dragging_index);
-                                        }),
-                                    )
-                                    .on_drag(DragMoving(entity_id), |drag, _, cx| {
-                                        cx.stop_propagation();
-                                        cx.new_view(|_| drag.clone())
-                                    })
-                                    .on_drag_move(cx.listener(
-                                        move |this, e: &DragMoveEvent<DragMoving>, cx| {
-                                            match e.drag(cx) {
-                                                DragMoving(id) => {
-                                                    if *id != entity_id {
-                                                        return;
-                                                    }
-
-                                                    this.update_position(e.event.position, cx);
-                                                }
-                                            }
-                                        },
-                                    ))
-                                    .into_any_element()
-                            } else {
-                                div().into_any_element()
-                            })
+                            .child(self.render_drag_bar(cx, entity_id, &item, &is_occluded))
                     }),
             )
             .child({
