@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
-use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TilePanelState};
+use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TileState};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
     EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
@@ -65,13 +65,13 @@ impl Panel for TilePanel {
     }
 
     fn dump(&self, cx: &AppContext) -> DockItemState {
-        let panels_state = self
+        let panels_with_layout = self
             .panels
             .iter()
             .map(|item: &TilesItem| {
-                let state = item.panel.dump(cx);
-                TilePanelState {
-                    state,
+                let panel_state = item.panel.dump(cx);
+                TileState {
+                    state: panel_state,
                     bounds: item.bounds,
                     z_index: item.z_index,
                 }
@@ -79,9 +79,7 @@ impl Panel for TilePanel {
             .collect();
 
         let mut state = DockItemState::new(self);
-        state.info = DockItemInfo::Tiles {
-            panels: panels_state,
-        };
+        state.info = DockItemInfo::Tiles(panels_with_layout);
         state
     }
 }

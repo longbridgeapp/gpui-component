@@ -66,10 +66,10 @@ pub struct DockItemState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct TilePanelState {
-    pub(crate) state: DockItemState,
-    pub(crate) bounds: Bounds<Pixels>,
-    pub(crate) z_index: usize,
+pub struct TileState {
+    pub state: DockItemState,
+    pub bounds: Bounds<Pixels>,
+    pub z_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -77,15 +77,14 @@ pub enum DockItemInfo {
     #[serde(rename = "stack")]
     Stack {
         sizes: Vec<Pixels>,
-        /// The axis of the stack, 0 is horizontal, 1 is vertical
-        axis: usize,
+        axis: usize, // 0 for horizontal, 1 for vertical
     },
-    #[serde(rename = "tiles")]
-    Tiles { panels: Vec<TilePanelState> },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
     Panel(serde_json::Value),
+    #[serde(rename = "tiles")]
+    Tiles(Vec<TileState>),
 }
 
 impl DockItemInfo {
@@ -104,8 +103,8 @@ impl DockItemInfo {
         Self::Panel(value)
     }
 
-    pub fn tiles(panels: Vec<TilePanelState>) -> Self {
-        Self::Tiles { panels }
+    pub fn tiles(panels: Vec<TileState>) -> Self {
+        Self::Tiles(panels)
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -209,12 +208,12 @@ impl DockItemState {
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
             }
-            DockItemInfo::Tiles { panels } => {
-                let tiles_items = panels
+            DockItemInfo::Tiles(state) => {
+                let tiles_items = state
                     .iter()
-                    .map(|panel_state| {
-                        let item = panel_state.state.to_item(dock_area.clone(), cx);
-                        (item, panel_state.bounds, panel_state.z_index)
+                    .map(|panel_layout| {
+                        let item = panel_layout.state.to_item(dock_area.clone(), cx);
+                        (item, panel_layout.bounds, panel_layout.z_index)
                     })
                     .collect();
                 DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
