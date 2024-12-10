@@ -232,21 +232,25 @@ impl TilePanel {
         current_mouse_position: Point<Pixels>,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        if let Some(index) = self.dragging_panel_index {
-            if let Some(item) = self.panels.get_mut(index) {
-                let adjusted_position = current_mouse_position - self.bounds.origin;
-                let delta = adjusted_position - self.dragging_initial_mouse;
-                let mut new_origin = self.dragging_initial_bounds.origin + delta;
-                if new_origin.x < px(0.0) {
-                    new_origin.x = px(0.0);
-                }
-                if new_origin.y < px(0.0) {
-                    new_origin.y = px(0.0);
-                }
-                item.bounds.origin = round_point_to_nearest_ten(new_origin);
-                cx.notify();
-            }
+        let Some(index) = self.dragging_panel_index else {
+            return;
+        };
+
+        let Some(item) = self.panels.get_mut(index) else {
+            return;
+        };
+
+        let adjusted_position = current_mouse_position - self.bounds.origin;
+        let delta = adjusted_position - self.dragging_initial_mouse;
+        let mut new_origin = self.dragging_initial_bounds.origin + delta;
+        if new_origin.x < px(0.0) {
+            new_origin.x = px(0.0);
         }
+        if new_origin.y < px(0.0) {
+            new_origin.y = px(0.0);
+        }
+        item.bounds.origin = round_point_to_nearest_ten(new_origin);
+        cx.notify();
     }
 
     fn update_resizing_drag(
