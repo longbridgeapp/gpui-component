@@ -41,8 +41,8 @@ pub use webview_story::WebViewStory;
 
 use gpui::{
     actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
-    Entity as _, EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Render, SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
+    SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
 };
 
 use ui::{
@@ -53,9 +53,8 @@ use ui::{
     label::Label,
     notification::Notification,
     popup_menu::PopupMenu,
-    scroll::ScrollbarAxis,
     theme::ActiveTheme,
-    v_flex, ContextModal, IconName, StyledExt as _,
+    v_flex, ContextModal, IconName,
 };
 
 const PANEL_NAME: &str = "StoryContainer";
