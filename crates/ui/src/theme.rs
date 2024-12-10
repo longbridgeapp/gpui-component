@@ -183,6 +183,7 @@ pub struct ThemeColor {
     pub ring: Hsla,
     pub scrollbar: Hsla,
     pub scrollbar_thumb: Hsla,
+    pub scrollbar_thumb_hover: Hsla,
     pub secondary: Hsla,
     pub secondary_active: Hsla,
     pub secondary_foreground: Hsla,
@@ -255,8 +256,9 @@ impl ThemeColor {
             primary_hover: hsl(223.0, 5.9, 15.0),
             progress_bar: hsl(223.0, 5.9, 10.0),
             ring: hsl(240.0, 5.9, 65.0),
-            scrollbar: hsl(0., 0., 97.).opacity(0.3),
-            scrollbar_thumb: hsl(0., 0., 69.),
+            scrollbar: hsl(0., 0., 97.).opacity(0.75),
+            scrollbar_thumb: hsl(0., 0., 69.).opacity(0.9),
+            scrollbar_thumb_hover: hsl(0., 0., 59.),
             secondary: hsl(240.0, 5.9, 96.9),
             secondary_active: hsl(240.0, 5.9, 93.),
             secondary_foreground: hsl(240.0, 59.0, 10.),
@@ -329,8 +331,9 @@ impl ThemeColor {
             primary_hover: hsl(223.0, 0.0, 90.0),
             progress_bar: hsl(223.0, 0.0, 98.0),
             ring: hsl(240.0, 4.9, 83.9),
-            scrollbar: hsl(240., 1., 15.).opacity(0.3),
-            scrollbar_thumb: hsl(0., 0., 68.),
+            scrollbar: hsl(240., 1., 15.).opacity(0.75),
+            scrollbar_thumb: hsl(0., 0., 48.).opacity(0.9),
+            scrollbar_thumb_hover: hsl(0., 0., 68.),
             secondary: hsl(240.0, 0., 13.0),
             secondary_active: hsl(240.0, 0., 10.),
             secondary_foreground: hsl(0.0, 0.0, 78.0),
@@ -438,6 +441,7 @@ impl Theme {
         // self.selection = self.selection.apply(mask_color);
         self.scrollbar = self.scrollbar.apply(mask_color);
         self.scrollbar_thumb = self.scrollbar_thumb.apply(mask_color);
+        self.scrollbar_thumb_hover = self.scrollbar_thumb_hover.apply(mask_color);
         self.panel = self.panel.apply(mask_color);
         self.drag_border = self.drag_border.apply(mask_color);
         self.drop_target = self.drop_target.apply(mask_color);
