@@ -2,9 +2,9 @@ use std::{cell::Cell, rc::Rc, time::Instant};
 
 use crate::theme::ActiveTheme;
 use gpui::{
-    fill, point, px, relative, Bounds, ContentMask, Edges, Element, EntityId, Hitbox, Hsla,
-    IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Position,
-    ScrollHandle, ScrollWheelEvent, Style, UniformListScrollHandle,
+    fill, point, px, relative, Bounds, ContentMask, CursorStyle, Edges, Element, EntityId, Hitbox,
+    Hsla, IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point,
+    Position, ScrollHandle, ScrollWheelEvent, Style, UniformListScrollHandle,
 };
 
 const MIN_THUMB_SIZE: f32 = 80.;
@@ -274,6 +274,7 @@ pub struct PrepaintState {
 
 pub struct AxisPrepaintState {
     axis: ScrollbarAxis,
+    bar_hitbox: Hitbox,
     bounds: Bounds<Pixels>,
     border_width: Pixels,
     radius: Pixels,
@@ -460,8 +461,13 @@ impl Element for Scrollbar {
                 )
             };
 
+            let bar_hitbox = cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+                cx.insert_hitbox(bounds, false)
+            });
+
             states.push(AxisPrepaintState {
                 axis,
+                bar_hitbox,
                 bounds,
                 border_width,
                 radius,
@@ -499,6 +505,8 @@ impl Element for Scrollbar {
             let thumb_size = state.thumb_size;
             let margin_end = state.margin_end;
             let is_vertical = axis.is_vertical();
+
+            cx.set_cursor_style(CursorStyle::default(), &state.bar_hitbox);
 
             cx.paint_layer(hitbox_bounds, |cx| {
                 cx.paint_quad(fill(state.bounds, state.bg));
