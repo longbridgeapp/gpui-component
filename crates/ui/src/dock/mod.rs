@@ -4,6 +4,7 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
+mod tiles_panel;
 
 use anyhow::Result;
 pub use dock::*;
@@ -14,6 +15,7 @@ use gpui::{
     VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
+pub use tiles_panel::*;
 
 pub use panel::*;
 pub use stack_panel::*;
@@ -70,7 +72,7 @@ pub struct DockArea {
 pub enum DockItem {
     /// Split layout
     Split {
-        axis: gpui::Axis,
+        axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
         view: View<StackPanel>,
@@ -83,6 +85,11 @@ pub enum DockItem {
     },
     /// Panel layout
     Panel { view: Arc<dyn PanelView> },
+    /// Tiles layout
+    Tiles {
+        items: Vec<TilesItem>,
+        view: View<TilesPanel>,
+    },
 }
 
 impl DockItem {
@@ -149,6 +156,36 @@ impl DockItem {
         Self::Panel { view: panel }
     }
 
+    /// Create DockItem with tiles layout
+    pub fn tiles_with_sizes(
+        items: Vec<(DockItem, Bounds<Pixels>, usize)>,
+        dock_area: &WeakView<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        let tile_panel = cx.new_view(|cx| {
+            let mut tile_panel = TilesPanel::new(cx);
+            for (dock_item, bounds, z_index) in items.into_iter() {
+                tile_panel.add_panel_with_z_index(dock_item.view(), bounds, z_index, cx);
+            }
+            tile_panel
+        });
+
+        cx.defer({
+            let tile_panel = tile_panel.clone();
+            let dock_area = dock_area.clone();
+            move |cx| {
+                _ = dock_area.update(cx, |this, cx| {
+                    this.subscribe_panel(&tile_panel, cx);
+                });
+            }
+        });
+
+        Self::Tiles {
+            items: tile_panel.read(cx).panels.clone(),
+            view: tile_panel,
+        }
+    }
+
     /// Create DockItem with tabs layout, items are displayed as tabs.
     ///
     /// The `active_ix` is the index of the active tab, if `None` the first tab is active.
@@ -197,11 +234,12 @@ impl DockItem {
     }
 
     /// Returns the views of the dock item.
-    fn view(&self) -> Arc<dyn PanelView> {
+    pub fn view(&self) -> Arc<dyn PanelView> {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
             Self::Panel { view, .. } => view.clone(),
+            Self::Tiles { view, .. } => Arc::new(view.clone()),
         }
     }
 
@@ -213,6 +251,13 @@ impl DockItem {
             }
             Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
             Self::Panel { view } => Some(view.clone()),
+            Self::Tiles { items, .. } => items.iter().find_map(|item| {
+                if &item.panel == &panel {
+                    Some(item.panel.clone())
+                } else {
+                    None
+                }
+            }),
         }
     }
 
@@ -249,6 +294,7 @@ impl DockItem {
                 });
             }
             Self::Panel { .. } => {}
+            Self::Tiles { .. } => {}
         }
     }
 
@@ -266,6 +312,7 @@ impl DockItem {
                 }
             }
             DockItem::Panel { .. } => {}
+            DockItem::Tiles { .. } => {}
         }
     }
 
@@ -275,6 +322,7 @@ impl DockItem {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
             DockItem::Panel { .. } => None,
+            DockItem::Tiles { .. } => None,
         }
     }
 
@@ -284,6 +332,7 @@ impl DockItem {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
             DockItem::Panel { .. } => None,
+            DockItem::Tiles { .. } => None,
         }
     }
 }
@@ -658,6 +707,9 @@ impl DockArea {
             DockItem::Panel { .. } => {
                 // Not supported
             }
+            DockItem::Tiles { .. } => {
+                // Not supported
+            }
         }
     }
 
@@ -726,6 +778,7 @@ impl DockArea {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
             DockItem::Panel { view, .. } => view.clone().view().into_any_element(),
+            DockItem::Tiles { view, .. } => view.clone().into_any_element(),
         }
     }
 

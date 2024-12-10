@@ -1,4 +1,7 @@
-use gpui::{AppContext, Axis, Pixels, View, VisualContext as _, WeakView, WindowContext};
+use gpui::{
+    point, size, AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView,
+    WindowContext,
+};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +68,16 @@ pub struct DockItemState {
     pub info: DockItemInfo,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TilePanelState {
+    pub(crate) panel_state: DockItemState,
+    pub(crate) x: Pixels,
+    pub(crate) y: Pixels,
+    pub(crate) w: Pixels,
+    pub(crate) h: Pixels,
+    pub(crate) z_index: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DockItemInfo {
     #[serde(rename = "stack")]
@@ -73,6 +86,8 @@ pub enum DockItemInfo {
         /// The axis of the stack, 0 is horizontal, 1 is vertical
         axis: usize,
     },
+    #[serde(rename = "tiles")]
+    Tiles { panels: Vec<TilePanelState> },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
@@ -93,6 +108,10 @@ impl DockItemInfo {
 
     pub fn panel(value: serde_json::Value) -> Self {
         Self::Panel(value)
+    }
+
+    pub fn tiles(panels: Vec<TilePanelState>) -> Self {
+        Self::Tiles { panels }
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -195,6 +214,23 @@ impl DockItemState {
                 };
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
+            }
+            DockItemInfo::Tiles { panels } => {
+                let tiles_items = panels
+                    .iter()
+                    .map(|panel_state| {
+                        let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
+                        (
+                            item,
+                            Bounds::new(
+                                point(panel_state.x, panel_state.y),
+                                size(panel_state.w, panel_state.h),
+                            ),
+                            panel_state.z_index,
+                        )
+                    })
+                    .collect();
+                DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
             }
         }
     }
