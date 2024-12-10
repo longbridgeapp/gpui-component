@@ -119,15 +119,19 @@ impl Colorize for Hsla {
     }
 
     /// Return a new color with the lightness increased by the given factor.
+    ///
+    /// factor range: 0.0 .. 1.0
     fn lighten(&self, factor: f32) -> Hsla {
-        let l = self.l + (1.0 - self.l) * factor.clamp(0.0, 1.0).min(1.0);
+        let l = self.l * (1.0 + factor.clamp(0.0, 1.0));
 
         Hsla { l, ..*self }
     }
 
     /// Return a new color with the darkness increased by the given factor.
+    ///
+    /// factor range: 0.0 .. 1.0
     fn darken(&self, factor: f32) -> Hsla {
-        let l = self.l * (1.0 - factor.clamp(0.0, 1.0).min(1.0));
+        let l = self.l * (1.0 - factor.clamp(0.0, 1.0));
 
         Hsla { l, ..*self }
     }
@@ -542,5 +546,30 @@ pub enum ThemeMode {
 impl ThemeMode {
     pub fn is_dark(&self) -> bool {
         matches!(self, Self::Dark)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::Colorize as _;
+
+    #[test]
+    fn test_lighten() {
+        let color = super::hsl(240.0, 5.0, 30.0);
+        let color = color.lighten(0.5);
+        assert_eq!(color.l, 0.45000002);
+        let color = color.lighten(0.5);
+        assert_eq!(color.l, 0.675);
+        let color = color.lighten(0.1);
+        assert_eq!(color.l, 0.7425);
+    }
+
+    #[test]
+    fn test_darken() {
+        let color = super::hsl(240.0, 5.0, 96.0);
+        let color = color.darken(0.5);
+        assert_eq!(color.l, 0.48);
+        let color = color.darken(0.5);
+        assert_eq!(color.l, 0.24);
     }
 }
