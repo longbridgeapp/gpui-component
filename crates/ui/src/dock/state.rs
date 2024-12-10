@@ -1,4 +1,4 @@
-use gpui::{AppContext, Axis, Pixels, View, VisualContext as _, WeakView, WindowContext};
+use gpui::{AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView, WindowContext};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
@@ -65,18 +65,26 @@ pub struct DockItemState {
     pub info: DockItemInfo,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TileState {
+    pub state: DockItemState,
+    pub bounds: Bounds<Pixels>,
+    pub z_index: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DockItemInfo {
     #[serde(rename = "stack")]
     Stack {
         sizes: Vec<Pixels>,
-        /// The axis of the stack, 0 is horizontal, 1 is vertical
-        axis: usize,
+        axis: usize, // 0 for horizontal, 1 for vertical
     },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
     Panel(serde_json::Value),
+    #[serde(rename = "tiles")]
+    Tiles(Vec<TileState>),
 }
 
 impl DockItemInfo {
@@ -93,6 +101,10 @@ impl DockItemInfo {
 
     pub fn panel(value: serde_json::Value) -> Self {
         Self::Panel(value)
+    }
+
+    pub fn tiles(panels: Vec<TileState>) -> Self {
+        Self::Tiles(panels)
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -195,6 +207,16 @@ impl DockItemState {
                 };
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
+            }
+            DockItemInfo::Tiles(state) => {
+                let tiles_items = state
+                    .iter()
+                    .map(|panel_layout| {
+                        let item = panel_layout.state.to_item(dock_area.clone(), cx);
+                        (item, panel_layout.bounds, panel_layout.z_index)
+                    })
+                    .collect();
+                DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
             }
         }
     }
