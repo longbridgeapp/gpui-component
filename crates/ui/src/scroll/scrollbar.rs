@@ -94,7 +94,7 @@ impl ScrollbarState {
     fn with_hovered(&self, axis: Option<ScrollbarAxis>) -> Self {
         let mut state = *self;
         state.hovered_axis = axis;
-        if self.is_scrollbar_visiable() {
+        if self.is_scrollbar_visible() {
             state.last_scroll_time = Some(Instant::now());
         }
         state
@@ -123,7 +123,7 @@ impl ScrollbarState {
         state
     }
 
-    fn is_scrollbar_visiable(&self) -> bool {
+    fn is_scrollbar_visible(&self) -> bool {
         if let Some(last_time) = self.last_scroll_time {
             let elapsed = Instant::now().duration_since(last_time).as_secs_f32();
             elapsed < FADE_OUT_DURATION
@@ -519,7 +519,7 @@ impl Element for Scrollbar {
         cx: &mut gpui::WindowContext,
     ) {
         let hitbox_bounds = prepaint.hitbox.bounds;
-        let is_visiable = self.state.get().is_scrollbar_visiable();
+        let is_visible = self.state.get().is_scrollbar_visible();
 
         for state in prepaint.states.iter() {
             let axis = state.axis;
@@ -583,7 +583,7 @@ impl Element for Scrollbar {
 
             let safe_range = (-scroll_area_size + container_size)..px(0.);
 
-            if is_visiable {
+            if is_visible {
                 cx.on_mouse_event({
                     let state = self.state.clone();
                     let view_id = self.view_id;
