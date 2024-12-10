@@ -67,7 +67,7 @@ pub struct DockItemState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TilePanelState {
-    pub(crate) panel_state: DockItemState,
+    pub(crate) state: DockItemState,
     pub(crate) bounds: Bounds<Pixels>,
     pub(crate) z_index: usize,
 }
@@ -213,7 +213,7 @@ impl DockItemState {
                 let tiles_items = panels
                     .iter()
                     .map(|panel_state| {
-                        let item = panel_state.panel_state.to_item(dock_area.clone(), cx);
+                        let item = panel_state.state.to_item(dock_area.clone(), cx);
                         (item, panel_state.bounds, panel_state.z_index)
                     })
                     .collect();

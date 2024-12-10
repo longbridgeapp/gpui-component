@@ -4,10 +4,10 @@ use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
 use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TilePanelState};
 use gpui::{
-    canvas, div, point, px, AppContext, Bounds, DismissEvent, DragMoveEvent, EntityId,
-    EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton,
-    MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Point, Render, Size,
-    StatefulInteractiveElement, Styled, ViewContext, VisualContext,
+    canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
+    EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
+    MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Point, Render, Size,
+    StatefulInteractiveElement, Styled, ViewContext, VisualContext, WindowContext,
 };
 
 const MINIMUM_WIDTH: f32 = 100.;
@@ -60,7 +60,7 @@ impl Panel for TilePanel {
         "TilePanel"
     }
 
-    fn title(&self, _cx: &gpui::WindowContext) -> gpui::AnyElement {
+    fn title(&self, _cx: &WindowContext) -> AnyElement {
         "TilePanel".into_any_element()
     }
 
@@ -69,9 +69,9 @@ impl Panel for TilePanel {
             .panels
             .iter()
             .map(|item: &TilesItem| {
-                let panel_state = item.panel.dump(cx);
+                let state = item.panel.dump(cx);
                 TilePanelState {
-                    panel_state,
+                    state,
                     bounds: item.bounds,
                     z_index: item.z_index,
                 }
@@ -105,18 +105,18 @@ impl TilePanel {
     }
 
     /// Return the index of the panel.
-    pub(crate) fn index_of_panel(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
+    pub(crate) fn index_of(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
         self.panels.iter().position(|p| &p.panel == &panel)
     }
 
     /// Add a panel at the end of children panels.
-    pub fn add_panel(
+    pub fn add(
         &mut self,
         panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert_panel(panel, self.panels.len(), bounds, cx);
+        self.insert(panel, self.panels.len(), bounds, cx);
     }
 
     pub fn add_at(
@@ -151,7 +151,7 @@ impl TilePanel {
         ix: usize,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert_panel(panel, ix, bounds, cx);
+        self.insert(panel, ix, bounds, cx);
     }
 
     /// Insert a panel after the index.
@@ -162,17 +162,17 @@ impl TilePanel {
         ix: usize,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert_panel(panel, ix + 1, bounds, cx);
+        self.insert(panel, ix + 1, bounds, cx);
     }
 
-    fn insert_panel(
+    fn insert(
         &mut self,
         panel: Arc<dyn PanelView>,
         ix: usize,
         bounds: Bounds<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        if let Some(_) = self.index_of_panel(panel.clone()) {
+        if let Some(_) = self.index_of(panel.clone()) {
             return;
         }
 
@@ -202,8 +202,8 @@ impl TilePanel {
     }
 
     /// Remove panel from the children.
-    pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
-        if let Some(ix) = self.index_of_panel(panel.clone()) {
+    pub fn remove(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        if let Some(ix) = self.index_of(panel.clone()) {
             self.panels.remove(ix);
 
             cx.emit(PanelEvent::LayoutChanged);
@@ -294,16 +294,6 @@ impl TilePanel {
         cx.notify();
     }
 
-    // Check if a bounds is occluded by higher z-index panels
-    fn is_bounds_occluded(&self, current_index: usize, bounds: &Bounds<Pixels>) -> bool {
-        let current_z_index = self.panels[current_index].z_index;
-        self.panels.iter().enumerate().any(|(index, item)| {
-            index != current_index
-                && item.z_index > current_z_index
-                && item.bounds.intersects(bounds)
-        })
-    }
-
     /// Find the panel at a given position, considering z-index
     fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
         let adjusted_position = position - self.bounds.origin;
@@ -315,7 +305,7 @@ impl TilePanel {
         for (index, item) in panels_with_indices {
             let extended_bounds = Bounds::new(
                 item.bounds.origin,
-                item.bounds.size + gpui::size(Pixels(HALF_HANDLE_SIZE), Pixels(HALF_HANDLE_SIZE)),
+                item.bounds.size + size(Pixels(HALF_HANDLE_SIZE), Pixels(HALF_HANDLE_SIZE)),
             );
 
             if extended_bounds.contains(&adjusted_position) {
@@ -343,6 +333,211 @@ impl TilePanel {
                 item.z_index = (max_z_index + 1) % usize::MAX;
             }
         }
+    }
+
+    /// Produce a vector of AnyElement representing the three possible resize handles
+    fn render_resize_handles(
+        &mut self,
+        cx: &mut ViewContext<Self>,
+        entity_id: EntityId,
+        item: &TilesItem,
+        is_occluded: impl Fn(&Bounds<Pixels>) -> bool,
+    ) -> Vec<AnyElement> {
+        let panel_bounds = item.bounds;
+        let right_handle_bounds = Bounds::new(
+            panel_bounds.origin + point(panel_bounds.size.width - px(HALF_HANDLE_SIZE), px(0.0)),
+            size(px(HANDLE_SIZE), panel_bounds.size.height),
+        );
+
+        let bottom_handle_bounds = Bounds::new(
+            panel_bounds.origin + point(px(0.0), panel_bounds.size.height - px(HALF_HANDLE_SIZE)),
+            size(panel_bounds.size.width, px(HANDLE_SIZE)),
+        );
+
+        let corner_handle_bounds = Bounds::new(
+            panel_bounds.origin
+                + point(
+                    panel_bounds.size.width - px(HALF_HANDLE_SIZE),
+                    panel_bounds.size.height - px(HALF_HANDLE_SIZE),
+                ),
+            size(px(HANDLE_SIZE), px(HANDLE_SIZE)),
+        );
+
+        let mut elements = Vec::new();
+
+        // Right resize handle
+        elements.push(if !is_occluded(&right_handle_bounds) {
+            div()
+                .id("right-resize-handle")
+                .cursor_col_resize()
+                .absolute()
+                .top(px(0.0))
+                .right(px(-HALF_HANDLE_SIZE))
+                .w(px(HANDLE_SIZE))
+                .h(panel_bounds.size.height)
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener({
+                        let panel_bounds = panel_bounds;
+                        move |this, event: &MouseDownEvent, cx| {
+                            let last_position = event.position;
+                            let drag_data = ResizeDragData {
+                                axis: ResizeAxis::Horizontal,
+                                last_position,
+                                last_bounds: panel_bounds,
+                            };
+                            this.update_resizing_drag(drag_data, cx);
+                            this.bring_to_front(this.resizing_index);
+                        }
+                    }),
+                )
+                .on_drag(DragResizing(entity_id), |drag, _, cx| {
+                    cx.stop_propagation();
+                    cx.new_view(|_| drag.clone())
+                })
+                .on_drag_move(
+                    cx.listener(move |this, e: &DragMoveEvent<DragResizing>, cx| {
+                        match e.drag(cx) {
+                            DragResizing(id) => {
+                                if *id != entity_id {
+                                    return;
+                                }
+
+                                if let Some(ref drag_data) = this.resizing_drag_data {
+                                    if drag_data.axis != ResizeAxis::Horizontal {
+                                        return;
+                                    }
+                                    let pos = e.event.position;
+                                    let delta = pos.x - drag_data.last_position.x;
+                                    let new_width = (drag_data.last_bounds.size.width + delta)
+                                        .max(px(MINIMUM_WIDTH));
+                                    this.resize_width(new_width, cx);
+                                }
+                            }
+                        }
+                    }),
+                )
+                .into_any_element()
+        } else {
+            div().into_any_element()
+        });
+
+        // Bottom resize handle
+        elements.push(if !is_occluded(&bottom_handle_bounds) {
+            div()
+                .id("bottom-resize-handle")
+                .cursor_row_resize()
+                .absolute()
+                .left(px(0.0))
+                .bottom(px(-HALF_HANDLE_SIZE))
+                .w(panel_bounds.size.width)
+                .h(px(HANDLE_SIZE))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener({
+                        let panel_bounds = panel_bounds;
+                        move |this, event: &MouseDownEvent, cx| {
+                            let last_position = event.position;
+                            let drag_data = ResizeDragData {
+                                axis: ResizeAxis::Vertical,
+                                last_position,
+                                last_bounds: panel_bounds,
+                            };
+                            this.update_resizing_drag(drag_data, cx);
+                            this.bring_to_front(this.resizing_index);
+                        }
+                    }),
+                )
+                .on_drag(DragResizing(entity_id), |drag, _, cx| {
+                    cx.stop_propagation();
+                    cx.new_view(|_| drag.clone())
+                })
+                .on_drag_move(
+                    cx.listener(move |this, e: &DragMoveEvent<DragResizing>, cx| {
+                        match e.drag(cx) {
+                            DragResizing(id) => {
+                                if *id != entity_id {
+                                    return;
+                                }
+
+                                if let Some(ref drag_data) = this.resizing_drag_data {
+                                    let pos = e.event.position;
+                                    let delta = pos.y - drag_data.last_position.y;
+                                    let new_height = (drag_data.last_bounds.size.height + delta)
+                                        .max(px(MINIMUM_HEIGHT));
+                                    this.resize_height(new_height, cx);
+                                }
+                            }
+                        }
+                    }),
+                )
+                .into_any_element()
+        } else {
+            div().into_any_element()
+        });
+
+        // Corner resize handle
+        elements.push(if !is_occluded(&corner_handle_bounds) {
+            div()
+                .id("corner-resize-handle")
+                .cursor_crosshair()
+                .absolute()
+                .right(px(-HALF_HANDLE_SIZE))
+                .bottom(px(-HALF_HANDLE_SIZE))
+                .w(px(HANDLE_SIZE))
+                .h(px(HANDLE_SIZE))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener({
+                        let panel_bounds = panel_bounds;
+                        move |this, event: &MouseDownEvent, cx| {
+                            let last_position = event.position;
+                            let drag_data = ResizeDragData {
+                                axis: ResizeAxis::Both,
+                                last_position,
+                                last_bounds: panel_bounds,
+                            };
+                            this.update_resizing_drag(drag_data, cx);
+                            this.bring_to_front(this.resizing_index);
+                        }
+                    }),
+                )
+                .on_drag(DragResizing(entity_id), |drag, _, cx| {
+                    cx.stop_propagation();
+                    cx.new_view(|_| drag.clone())
+                })
+                .on_drag_move(
+                    cx.listener(move |this, e: &DragMoveEvent<DragResizing>, cx| {
+                        match e.drag(cx) {
+                            DragResizing(id) => {
+                                if *id != entity_id {
+                                    return;
+                                }
+
+                                if let Some(ref drag_data) = this.resizing_drag_data {
+                                    if drag_data.axis != ResizeAxis::Both {
+                                        return;
+                                    }
+                                    let pos = e.event.position;
+                                    let delta_x = pos.x - drag_data.last_position.x;
+                                    let delta_y = pos.y - drag_data.last_position.y;
+                                    let new_width = (drag_data.last_bounds.size.width + delta_x)
+                                        .max(px(MINIMUM_WIDTH));
+                                    let new_height = (drag_data.last_bounds.size.height + delta_y)
+                                        .max(px(MINIMUM_HEIGHT));
+                                    this.resize_height(new_height, cx);
+                                    this.resize_width(new_width, cx);
+                                }
+                            }
+                        }
+                    }),
+                )
+                .into_any_element()
+        } else {
+            div().into_any_element()
+        });
+
+        elements
     }
 }
 
@@ -381,38 +576,16 @@ impl Render for TilePanel {
                         let panel = item.panel.clone();
                         let panel_view = panel.view();
 
-                        let is_occluded = |bounds: &Bounds<Pixels>| {
-                            self.is_bounds_occluded(current_index, bounds)
+                        let is_occluded = {
+                            let panels = self.panels.clone();
+                            move |bounds: &Bounds<Pixels>| {
+                                panels.iter().enumerate().any(|(index, item)| {
+                                    index != current_index
+                                        && item.z_index > panels[current_index].z_index
+                                        && item.bounds.intersects(bounds)
+                                })
+                            }
                         };
-                        let right_handle_bounds = Bounds::new(
-                            item.bounds.origin
-                                + point(item.bounds.size.width - px(HALF_HANDLE_SIZE), px(0.0)),
-                            Size {
-                                width: px(HANDLE_SIZE),
-                                height: item.bounds.size.height,
-                            },
-                        );
-
-                        let bottom_handle_bounds = Bounds::new(
-                            item.bounds.origin
-                                + point(px(0.0), item.bounds.size.height - px(HALF_HANDLE_SIZE)),
-                            Size {
-                                width: item.bounds.size.width,
-                                height: px(HANDLE_SIZE),
-                            },
-                        );
-
-                        let corner_handle_bounds = Bounds::new(
-                            item.bounds.origin
-                                + point(
-                                    item.bounds.size.width - px(HALF_HANDLE_SIZE),
-                                    item.bounds.size.height - px(HALF_HANDLE_SIZE),
-                                ),
-                            Size {
-                                width: px(HANDLE_SIZE),
-                                height: px(HANDLE_SIZE),
-                            },
-                        );
 
                         let drag_bar_bounds = Bounds::new(
                             item.bounds.origin,
@@ -438,185 +611,12 @@ impl Render for TilePanel {
                                     .overflow_hidden()
                                     .child(panel_view),
                             )
-                            .child(if !is_occluded(&right_handle_bounds) {
-                                div()
-                                    .id("right-resize-handle")
-                                    .cursor_col_resize()
-                                    .absolute()
-                                    .top(px(0.0))
-                                    .right(px(-HALF_HANDLE_SIZE))
-                                    .w(px(HANDLE_SIZE))
-                                    .h(item.bounds.size.height)
-                                    .on_mouse_down(
-                                        MouseButton::Left,
-                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let last_position = event.position;
-                                            let panel_bounds = item.bounds;
-                                            let drag_data = ResizeDragData {
-                                                axis: ResizeAxis::Horizontal,
-                                                last_position,
-                                                last_bounds: panel_bounds,
-                                            };
-                                            this.update_resizing_drag(drag_data, cx);
-                                            this.bring_to_front(this.resizing_index);
-                                        }),
-                                    )
-                                    .on_drag(DragResizing(entity_id), |drag, _, cx| {
-                                        cx.stop_propagation();
-                                        cx.new_view(|_| drag.clone())
-                                    })
-                                    .on_drag_move(cx.listener(
-                                        move |this, e: &DragMoveEvent<DragResizing>, cx| {
-                                            match e.drag(cx) {
-                                                DragResizing(id) => {
-                                                    if *id != entity_id {
-                                                        return;
-                                                    }
-
-                                                    if let Some(ref drag_data) =
-                                                        this.resizing_drag_data
-                                                    {
-                                                        if drag_data.axis != ResizeAxis::Horizontal
-                                                        {
-                                                            return;
-                                                        }
-                                                        let pos = e.event.position;
-                                                        let delta =
-                                                            pos.x - drag_data.last_position.x;
-                                                        let new_width =
-                                                            (drag_data.last_bounds.size.width
-                                                                + delta)
-                                                                .max(px(MINIMUM_WIDTH));
-                                                        this.resize_width(new_width, cx);
-                                                    }
-                                                }
-                                            }
-                                        },
-                                    ))
-                                    .into_any_element()
-                            } else {
-                                div().into_any_element()
-                            })
-                            .child(if !is_occluded(&bottom_handle_bounds) {
-                                div()
-                                    .id("bottom-resize-handle")
-                                    .cursor_row_resize()
-                                    .absolute()
-                                    .left(px(0.0))
-                                    .bottom(px(-HALF_HANDLE_SIZE))
-                                    .w(item.bounds.size.width)
-                                    .h(px(HANDLE_SIZE))
-                                    .on_mouse_down(
-                                        MouseButton::Left,
-                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let last_position = event.position;
-                                            let panel_bounds = item.bounds;
-                                            let drag_data = ResizeDragData {
-                                                axis: ResizeAxis::Vertical,
-                                                last_position,
-                                                last_bounds: panel_bounds,
-                                            };
-                                            this.update_resizing_drag(drag_data, cx);
-                                            this.bring_to_front(this.resizing_index);
-                                        }),
-                                    )
-                                    .on_drag(DragResizing(entity_id), |drag, _, cx| {
-                                        cx.stop_propagation();
-                                        cx.new_view(|_| drag.clone())
-                                    })
-                                    .on_drag_move(cx.listener(
-                                        move |this, e: &DragMoveEvent<DragResizing>, cx| {
-                                            match e.drag(cx) {
-                                                DragResizing(id) => {
-                                                    if *id != entity_id {
-                                                        return;
-                                                    }
-
-                                                    if let Some(ref drag_data) =
-                                                        this.resizing_drag_data
-                                                    {
-                                                        let pos = e.event.position;
-                                                        let delta =
-                                                            pos.y - drag_data.last_position.y;
-                                                        let new_height =
-                                                            (drag_data.last_bounds.size.height
-                                                                + delta)
-                                                                .max(px(MINIMUM_HEIGHT));
-                                                        this.resize_height(new_height, cx);
-                                                    }
-                                                }
-                                            }
-                                        },
-                                    ))
-                                    .into_any_element()
-                            } else {
-                                div().into_any_element()
-                            })
-                            .child(if !is_occluded(&corner_handle_bounds) {
-                                div()
-                                    .id("corner-resize-handle")
-                                    .cursor_crosshair()
-                                    .absolute()
-                                    .right(px(-HALF_HANDLE_SIZE))
-                                    .bottom(px(-HALF_HANDLE_SIZE))
-                                    .w(px(HANDLE_SIZE))
-                                    .h(px(HANDLE_SIZE))
-                                    .on_mouse_down(
-                                        MouseButton::Left,
-                                        cx.listener(move |this, event: &MouseDownEvent, cx| {
-                                            let last_position = event.position;
-                                            let panel_bounds = item.bounds;
-                                            let drag_data = ResizeDragData {
-                                                axis: ResizeAxis::Both,
-                                                last_position,
-                                                last_bounds: panel_bounds,
-                                            };
-                                            this.update_resizing_drag(drag_data, cx);
-                                            this.bring_to_front(this.resizing_index);
-                                        }),
-                                    )
-                                    .on_drag(DragResizing(entity_id), |drag, _, cx| {
-                                        cx.stop_propagation();
-                                        cx.new_view(|_| drag.clone())
-                                    })
-                                    .on_drag_move(cx.listener(
-                                        move |this, e: &DragMoveEvent<DragResizing>, cx| {
-                                            match e.drag(cx) {
-                                                DragResizing(id) => {
-                                                    if *id != entity_id {
-                                                        return;
-                                                    }
-
-                                                    if let Some(ref drag_data) =
-                                                        this.resizing_drag_data
-                                                    {
-                                                        if drag_data.axis != ResizeAxis::Both {
-                                                            return;
-                                                        }
-                                                        let pos = e.event.position;
-                                                        let delta_x =
-                                                            pos.x - drag_data.last_position.x;
-                                                        let delta_y =
-                                                            pos.y - drag_data.last_position.y;
-                                                        let new_width =
-                                                            (drag_data.last_bounds.size.width
-                                                                + delta_x)
-                                                                .max(px(MINIMUM_WIDTH));
-                                                        let new_height =
-                                                            (drag_data.last_bounds.size.height
-                                                                + delta_y)
-                                                                .max(px(MINIMUM_HEIGHT));
-                                                        this.resize_height(new_height, cx);
-                                                        this.resize_width(new_width, cx);
-                                                    }
-                                                }
-                                            }
-                                        },
-                                    ))
-                                    .into_any_element()
-                            } else {
-                                div().into_any_element()
-                            })
+                            .children(self.render_resize_handles(
+                                cx,
+                                entity_id,
+                                &item,
+                                &is_occluded,
+                            ))
                             .child(if !is_occluded(&drag_bar_bounds) {
                                 h_flex()
                                     .id("drag-bar")
