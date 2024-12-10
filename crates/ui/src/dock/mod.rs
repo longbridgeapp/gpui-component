@@ -165,7 +165,7 @@ impl DockItem {
         let tile_panel = cx.new_view(|cx| {
             let mut tile_panel = TilePanel::new(cx);
             for (dock_item, bounds, z_index) in items.into_iter() {
-                tile_panel.add_panel_with_z_index(dock_item.view(), bounds, z_index, cx);
+                tile_panel.add_with_z_index(dock_item.view(), bounds, z_index, cx);
             }
             tile_panel
         });

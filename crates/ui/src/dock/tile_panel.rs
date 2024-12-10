@@ -47,10 +47,10 @@ pub struct TilesItem {
 pub struct TilePanel {
     focus_handle: FocusHandle,
     pub(crate) panels: Vec<TilesItem>,
-    dragging_panel_index: Option<usize>,
+    dragging_index: Option<usize>,
     dragging_initial_mouse: Point<Pixels>,
     dragging_initial_bounds: Bounds<Pixels>,
-    resizing_panel_index: Option<usize>,
+    resizing_index: Option<usize>,
     resizing_drag_data: Option<ResizeDragData>,
     bounds: Bounds<Pixels>,
 }
@@ -91,10 +91,10 @@ impl TilePanel {
         Self {
             focus_handle: cx.focus_handle(),
             panels: vec![],
-            dragging_panel_index: None,
+            dragging_index: None,
             dragging_initial_mouse: Point::default(),
             dragging_initial_bounds: Bounds::default(),
-            resizing_panel_index: None,
+            resizing_index: None,
             resizing_drag_data: None,
             bounds: Bounds::default(),
         }
@@ -119,17 +119,17 @@ impl TilePanel {
         self.insert_panel(panel, self.panels.len(), bounds, cx);
     }
 
-    pub fn add_panel_at(
+    pub fn add_at(
         &mut self,
         panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         placement: Placement,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert_panel_at(panel, bounds, self.panels_len(), placement, cx);
+        self.insert_at(panel, bounds, self.panels_len(), placement, cx);
     }
 
-    pub fn insert_panel_at(
+    pub fn insert_at(
         &mut self,
         panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
@@ -138,13 +138,13 @@ impl TilePanel {
         cx: &mut ViewContext<Self>,
     ) {
         match placement {
-            Placement::Top | Placement::Left => self.insert_panel_before(panel, bounds, ix, cx),
-            Placement::Right | Placement::Bottom => self.insert_panel_after(panel, bounds, ix, cx),
+            Placement::Top | Placement::Left => self.insert_before(panel, bounds, ix, cx),
+            Placement::Right | Placement::Bottom => self.insert_after(panel, bounds, ix, cx),
         }
     }
 
     /// Insert a panel at the index.
-    pub fn insert_panel_before(
+    pub fn insert_before(
         &mut self,
         panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
@@ -155,7 +155,7 @@ impl TilePanel {
     }
 
     /// Insert a panel after the index.
-    pub fn insert_panel_after(
+    pub fn insert_after(
         &mut self,
         panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
@@ -215,13 +215,13 @@ impl TilePanel {
         position: Point<Pixels>,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        let Some((index, item)) = self.find_panel_at_position(position) else {
+        let Some((index, item)) = self.find_at_position(position) else {
             return;
         };
 
         let adjusted_position = position - self.bounds.origin;
         let bounds = item.bounds;
-        self.dragging_panel_index = Some(index);
+        self.dragging_index = Some(index);
         self.dragging_initial_mouse = adjusted_position;
         self.dragging_initial_bounds = bounds;
         cx.notify();
@@ -232,7 +232,7 @@ impl TilePanel {
         current_mouse_position: Point<Pixels>,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        let Some(index) = self.dragging_panel_index else {
+        let Some(index) = self.dragging_index else {
             return;
         };
 
@@ -256,15 +256,15 @@ impl TilePanel {
         drag_data: ResizeDragData,
         cx: &mut ViewContext<'_, TilePanel>,
     ) {
-        if let Some((index, _item)) = self.find_panel_at_position(drag_data.last_position) {
-            self.resizing_panel_index = Some(index);
+        if let Some((index, _item)) = self.find_at_position(drag_data.last_position) {
+            self.resizing_index = Some(index);
             self.resizing_drag_data = Some(drag_data);
             cx.notify();
         }
     }
 
-    fn resize_panel_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
-        if let Some(index) = self.resizing_panel_index {
+    fn resize_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
+        if let Some(index) = self.resizing_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.width = round_to_nearest_ten(new_width);
                 cx.notify();
@@ -272,8 +272,8 @@ impl TilePanel {
         }
     }
 
-    fn resize_panel_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
-        if let Some(index) = self.resizing_panel_index {
+    fn resize_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
+        if let Some(index) = self.resizing_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.height = round_to_nearest_ten(new_height);
                 cx.notify();
@@ -281,7 +281,7 @@ impl TilePanel {
         }
     }
 
-    pub fn add_panel_with_z_index(
+    pub fn add_with_z_index(
         &mut self,
         panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
@@ -309,7 +309,7 @@ impl TilePanel {
     }
 
     /// Find the panel at a given position, considering z-index
-    fn find_panel_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
+    fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
         let adjusted_position = position - self.bounds.origin;
         let mut panels_with_indices: Vec<(usize, &TilesItem)> =
             self.panels.iter().enumerate().collect();
@@ -331,7 +331,7 @@ impl TilePanel {
     }
 
     /// Bring the panel of target_index to front by updating its z_index
-    fn bring_panel_to_front(&mut self, target_index: Option<usize>) {
+    fn bring_to_front(&mut self, target_index: Option<usize>) {
         if let Some(index) = target_index {
             let max_z_index = self
                 .panels
@@ -462,7 +462,7 @@ impl Render for TilePanel {
                                                 last_bounds: panel_bounds,
                                             };
                                             this.update_resizing_drag(drag_data, cx);
-                                            this.bring_panel_to_front(this.resizing_panel_index);
+                                            this.bring_to_front(this.resizing_index);
                                         }),
                                     )
                                     .on_drag(DragResizing(entity_id), |drag, _, cx| {
@@ -492,7 +492,7 @@ impl Render for TilePanel {
                                                             (drag_data.last_bounds.size.width
                                                                 + delta)
                                                                 .max(px(MINIMUM_WIDTH));
-                                                        this.resize_panel_width(new_width, cx);
+                                                        this.resize_width(new_width, cx);
                                                     }
                                                 }
                                             }
@@ -522,7 +522,7 @@ impl Render for TilePanel {
                                                 last_bounds: panel_bounds,
                                             };
                                             this.update_resizing_drag(drag_data, cx);
-                                            this.bring_panel_to_front(this.resizing_panel_index);
+                                            this.bring_to_front(this.resizing_index);
                                         }),
                                     )
                                     .on_drag(DragResizing(entity_id), |drag, _, cx| {
@@ -548,7 +548,7 @@ impl Render for TilePanel {
                                                             (drag_data.last_bounds.size.height
                                                                 + delta)
                                                                 .max(px(MINIMUM_HEIGHT));
-                                                        this.resize_panel_height(new_height, cx);
+                                                        this.resize_height(new_height, cx);
                                                     }
                                                 }
                                             }
@@ -578,7 +578,7 @@ impl Render for TilePanel {
                                                 last_bounds: panel_bounds,
                                             };
                                             this.update_resizing_drag(drag_data, cx);
-                                            this.bring_panel_to_front(this.resizing_panel_index);
+                                            this.bring_to_front(this.resizing_index);
                                         }),
                                     )
                                     .on_drag(DragResizing(entity_id), |drag, _, cx| {
@@ -613,8 +613,8 @@ impl Render for TilePanel {
                                                             (drag_data.last_bounds.size.height
                                                                 + delta_y)
                                                                 .max(px(MINIMUM_HEIGHT));
-                                                        this.resize_panel_height(new_height, cx);
-                                                        this.resize_panel_width(new_width, cx);
+                                                        this.resize_height(new_height, cx);
+                                                        this.resize_width(new_width, cx);
                                                     }
                                                 }
                                             }
@@ -637,7 +637,7 @@ impl Render for TilePanel {
                                         cx.listener(move |this, event: &MouseDownEvent, cx| {
                                             let last_position = event.position;
                                             this.update_initial_position(last_position, cx);
-                                            this.bring_panel_to_front(this.dragging_panel_index);
+                                            this.bring_to_front(this.dragging_index);
                                         }),
                                     )
                                     .on_drag(DragMoving(entity_id), |drag, _, cx| {
@@ -674,12 +674,12 @@ impl Render for TilePanel {
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(move |this, _event: &MouseUpEvent, cx| {
-                    if this.dragging_panel_index.is_some()
-                        || this.resizing_panel_index.is_some()
+                    if this.dragging_index.is_some()
+                        || this.resizing_index.is_some()
                         || this.resizing_drag_data.is_some()
                     {
-                        this.dragging_panel_index = None;
-                        this.resizing_panel_index = None;
+                        this.dragging_index = None;
+                        this.resizing_index = None;
                         this.resizing_drag_data = None;
                         cx.emit(PanelEvent::LayoutChanged);
                         cx.notify();
@@ -689,10 +689,10 @@ impl Render for TilePanel {
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(move |this, event: &MouseDownEvent, cx| {
-                    if this.resizing_panel_index.is_none() && this.dragging_panel_index.is_none() {
+                    if this.resizing_index.is_none() && this.dragging_index.is_none() {
                         let position = event.position;
-                        if let Some((index, _)) = this.find_panel_at_position(position) {
-                            this.bring_panel_to_front(Some(index));
+                        if let Some((index, _)) = this.find_at_position(position) {
+                            this.bring_to_front(Some(index));
                             cx.notify();
                         }
                     }
