@@ -335,7 +335,6 @@ impl Render for StoryContainer {
         v_flex()
             .id("story-container")
             .size_full()
-            .scrollable(cx.view().entity_id(), ScrollbarAxis::Both)
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(Self::on_action_panel_info))
             .when(self.description.len() > 0, |this| {
