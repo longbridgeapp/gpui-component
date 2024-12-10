@@ -366,12 +366,10 @@ impl FocusableView for TilePanel {
 }
 impl EventEmitter<PanelEvent> for TilePanel {}
 impl EventEmitter<DismissEvent> for TilePanel {}
-
 impl Render for TilePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let view = cx.view().clone();
-        let border = cx.theme().border;
         let mut panels_with_indices: Vec<(usize, TilesItem)> =
             self.panels.iter().cloned().enumerate().collect();
         panels_with_indices.sort_by_key(|(_, item)| item.z_index);
@@ -440,7 +438,7 @@ impl Render for TilePanel {
                         v_flex()
                             .border_1()
                             .rounded_md()
-                            .border_color(border)
+                            .border_color(cx.theme().border)
                             .absolute()
                             .left(item.bounds.origin.x)
                             .top(item.bounds.origin.y)
@@ -459,7 +457,6 @@ impl Render for TilePanel {
                                     .cursor_col_resize()
                                     .absolute()
                                     .top(px(0.0))
-                                    // Offset is -HALF_HANDLE_SIZE
                                     .right(px(-HALF_HANDLE_SIZE))
                                     .w(px(HANDLE_SIZE))
                                     .h(item.bounds.size.height)
