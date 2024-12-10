@@ -4,10 +4,10 @@ use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
 use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TilePanelState};
 use gpui::{
-    canvas, div, px, AppContext, Bounds, DismissEvent, DragMoveEvent, EntityId, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, ParentElement, Pixels, Point, Render, Size, StatefulInteractiveElement, Styled,
-    ViewContext, VisualContext,
+    canvas, div, point, px, AppContext, Bounds, DismissEvent, DragMoveEvent, EntityId,
+    EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement, MouseButton,
+    MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Point, Render, Size,
+    StatefulInteractiveElement, Styled, ViewContext, VisualContext,
 };
 
 const MINIMUM_WIDTH: f32 = 100.;
@@ -389,13 +389,9 @@ impl Render for TilePanel {
                         let is_occluded = |bounds: &Bounds<Pixels>| {
                             self.is_bounds_occluded(current_index, bounds)
                         };
-
                         let right_handle_bounds = Bounds::new(
-                            Point {
-                                x: item.bounds.origin.x + item.bounds.size.width
-                                    - px(HALF_HANDLE_SIZE),
-                                y: item.bounds.origin.y,
-                            },
+                            item.bounds.origin
+                                + point(item.bounds.size.width - px(HALF_HANDLE_SIZE), px(0.0)),
                             Size {
                                 width: px(HANDLE_SIZE),
                                 height: item.bounds.size.height,
@@ -403,11 +399,8 @@ impl Render for TilePanel {
                         );
 
                         let bottom_handle_bounds = Bounds::new(
-                            Point {
-                                x: item.bounds.origin.x,
-                                y: item.bounds.origin.y + item.bounds.size.height
-                                    - px(HALF_HANDLE_SIZE),
-                            },
+                            item.bounds.origin
+                                + point(px(0.0), item.bounds.size.height - px(HALF_HANDLE_SIZE)),
                             Size {
                                 width: item.bounds.size.width,
                                 height: px(HANDLE_SIZE),
@@ -415,12 +408,11 @@ impl Render for TilePanel {
                         );
 
                         let corner_handle_bounds = Bounds::new(
-                            Point {
-                                x: item.bounds.origin.x + item.bounds.size.width
-                                    - px(HALF_HANDLE_SIZE),
-                                y: item.bounds.origin.y + item.bounds.size.height
-                                    - px(HALF_HANDLE_SIZE),
-                            },
+                            item.bounds.origin
+                                + point(
+                                    item.bounds.size.width - px(HALF_HANDLE_SIZE),
+                                    item.bounds.size.height - px(HALF_HANDLE_SIZE),
+                                ),
                             Size {
                                 width: px(HANDLE_SIZE),
                                 height: px(HANDLE_SIZE),
