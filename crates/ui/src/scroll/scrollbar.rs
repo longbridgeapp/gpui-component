@@ -27,7 +27,6 @@ const THUMB_RADIUS: Pixels = Pixels(3.0);
 const THUMB_INSET: Pixels = Pixels(4.);
 const FADE_OUT_DURATION: f32 = 3.0;
 const FADE_OUT_DELAY: f32 = 2.0;
-const NORMAL_OPACITY: f32 = 0.6;
 
 pub trait ScrollHandleOffsetable {
     fn offset(&self) -> Point<Pixels>;
@@ -294,9 +293,9 @@ impl Scrollbar {
         self
     }
 
-    fn style_for_default(cx: &AppContext) -> (Hsla, Hsla, Hsla, Pixels, Pixels) {
+    fn style_for_active(cx: &AppContext) -> (Hsla, Hsla, Hsla, Pixels, Pixels) {
         (
-            cx.theme().scrollbar_thumb,
+            cx.theme().scrollbar_thumb_hover,
             cx.theme().scrollbar,
             cx.theme().border,
             THUMB_INSET - px(1.),
@@ -306,7 +305,7 @@ impl Scrollbar {
 
     fn style_for_hovered_thumb(cx: &AppContext) -> (Hsla, Hsla, Hsla, Pixels, Pixels) {
         (
-            cx.theme().scrollbar_thumb,
+            cx.theme().scrollbar_thumb_hover,
             cx.theme().scrollbar,
             cx.theme().border,
             THUMB_INSET - px(1.),
@@ -322,8 +321,8 @@ impl Scrollbar {
         };
 
         (
-            cx.theme().scrollbar_thumb.opacity(NORMAL_OPACITY),
-            gpui::transparent_black(),
+            cx.theme().scrollbar_thumb,
+            cx.theme().scrollbar,
             gpui::transparent_black(),
             inset,
             radius,
@@ -477,7 +476,7 @@ impl Element for Scrollbar {
 
             let (thumb_bg, bar_bg, bar_border, inset, radius) =
                 if state.get().dragged_axis == Some(axis) {
-                    Self::style_for_default(cx)
+                    Self::style_for_active(cx)
                 } else if is_hover_to_show && is_hovered_on_bar {
                     if is_hovered_on_thumb {
                         Self::style_for_hovered_thumb(cx)
@@ -498,13 +497,14 @@ impl Element for Scrollbar {
                                     Self::style_for_hovered_bar(cx)
                                 };
                             } else {
-                                let y_value = if elapsed < FADE_OUT_DELAY {
-                                    NORMAL_OPACITY
+                                if elapsed < FADE_OUT_DELAY {
+                                    idle_state.0 = cx.theme().scrollbar_thumb;
                                 } else {
-                                    // y = 1 - (x - 2)^10
-                                    NORMAL_OPACITY - (elapsed - FADE_OUT_DELAY).powi(10)
+                                    // opacity = 1 - (x - 2)^10
+                                    let opacity = 1.0 - (elapsed - FADE_OUT_DELAY).powi(10);
+                                    idle_state.0 = cx.theme().scrollbar_thumb.opacity(opacity);
                                 };
-                                idle_state.0 = cx.theme().scrollbar_thumb.opacity(y_value);
+
                                 cx.request_animation_frame();
                             }
                         }
