@@ -63,7 +63,7 @@ struct DockAreaTab {
 impl StoryWorkspace {
     pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
         // There will crash on Linux.
-        // https://github.com/longbridgeapp/gpui-component/issues/104
+        // https://github.com/longbridge/gpui-component/issues/104
         #[cfg(not(target_os = "linux"))]
         cx.observe_window_appearance(|_, cx| {
             Theme::sync_system_appearance(cx);
@@ -474,9 +474,7 @@ impl Render for StoryWorkspace {
                                     .small()
                                     .ghost()
                                     .on_click(|_, cx| {
-                                        cx.open_url(
-                                            "https://github.com/longbridgeapp/gpui-component",
-                                        )
+                                        cx.open_url("https://github.com/longbridge/gpui-component")
                                     }),
                             )
                             .child(

@@ -106,7 +106,7 @@ impl Render for TextStory {
                         .child(Link::new("link3").child(h_flex().gap_1().child(IconName::GitHub).child("GitHub")).on_click(cx.listener(|_, _, cx| {
                             cx.open_url("https://google.com")
                         })))
-                        .child(div().w(px(250.)).child(Link::new("link4").child("https://github.com/longbridgeapp/gpui-component").href("https://github.com/longbridgeapp/gpui-component")))
+                        .child(div().w(px(250.)).child(Link::new("link4").child("https://github.com/longbridge/gpui-component").href("https://github.com/longbridge/gpui-component")))
                 )
             )
             .child(

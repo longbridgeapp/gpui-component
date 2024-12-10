@@ -291,7 +291,7 @@ impl Render for PopupStory {
                                         menu.link_with_icon(
                                             "GitHub Repository",
                                             IconName::GitHub,
-                                            "https://github.com/longbridgeapp/gpui-component",
+                                            "https://github.com/longbridge/gpui-component",
                                         )
                                         .separator()
                                         .link("GPUI", "https://gpui.rs")
