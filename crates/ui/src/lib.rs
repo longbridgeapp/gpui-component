@@ -5,6 +5,7 @@ mod icon;
 mod root;
 mod styled;
 mod svg_img;
+mod table_row;
 mod time;
 mod title_bar;
 

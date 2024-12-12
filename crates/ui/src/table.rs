@@ -5,6 +5,7 @@ use crate::{
     h_flex,
     popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
+    table_row::table_row,
     theme::ActiveTheme,
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
@@ -45,12 +46,12 @@ pub enum ColFixed {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct ColGroup {
-    width: Option<Pixels>,
-    bounds: Bounds<Pixels>,
-    sort: Option<ColSort>,
-    fixed: Option<ColFixed>,
-    padding: Option<Edges<Pixels>>,
+pub(crate) struct ColGroup {
+    pub(crate) width: Option<Pixels>,
+    pub(crate) bounds: Bounds<Pixels>,
+    pub(crate) sort: Option<ColSort>,
+    pub(crate) fixed: Option<ColFixed>,
+    pub(crate) padding: Option<Edges<Pixels>>,
 }
 
 #[derive(Clone)]
@@ -970,12 +971,22 @@ where
         let is_stripe_row = self.stripe && row_ix % 2 != 0;
         let is_selected = self.selected_row == Some(row_ix);
         let view = cx.view().clone();
+        let col_groups: Rc<Vec<ColGroup>> = Rc::new(
+            self.col_groups
+                .iter()
+                .skip(left_cols_count)
+                .cloned()
+                .collect(),
+        );
 
         if row_ix < rows_count {
             self.delegate
                 .render_tr(row_ix, cx)
-                .context_menu(move |this, cx: &mut ViewContext<PopupMenu>| {
-                    view.read(cx).delegate.context_menu(row_ix, this, cx)
+                .context_menu({
+                    let view = view.clone();
+                    move |this, cx: &mut ViewContext<PopupMenu>| {
+                        view.read(cx).delegate.context_menu(row_ix, this, cx)
+                    }
                 })
                 .w_full()
                 .h(self.size.table_row_height())
@@ -1013,18 +1024,26 @@ where
                     h_flex()
                         .flex_1()
                         .h_full()
-                        .overflow_hidden()
-                        .children((left_cols_count..cols_count).map(|col_ix| {
-                            self
-                                // Make the row scroll sync with the
-                                // horizontal_scroll_handle to support horizontal scrolling.
-                                .render_col_wrap(col_ix, cx)
-                                .left(horizontal_scroll_handle.offset().x)
-                                .child(
-                                    self.render_cell(col_ix, cx)
-                                        .child(self.delegate.render_td(row_ix, col_ix, cx)),
-                                )
-                        }))
+                        .relative()
+                        .child(table_row(
+                            view,
+                            SharedString::from(format!("table-row-{}", row_ix)),
+                            col_groups,
+                            self.horizontal_scroll_handle.clone(),
+                            {
+                                move |table, visible_range: Range<usize>, cx| {
+                                    visible_range
+                                        .map(|col_ix| {
+                                            table.render_col_wrap(col_ix, cx).child(
+                                                table.render_cell(col_ix, cx).child(
+                                                    table.delegate.render_td(row_ix, col_ix, cx),
+                                                ),
+                                            )
+                                        })
+                                        .collect::<Vec<_>>()
+                                }
+                            },
+                        ))
                         .child(self.delegate.render_last_empty_col(cx)),
                 )
                 // Row selected style

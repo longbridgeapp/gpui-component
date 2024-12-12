@@ -303,7 +303,13 @@ impl TableDelegate for StockTableDelegate {
 
     fn col_width(&self, col_ix: usize, _: &AppContext) -> Option<Pixels> {
         if let Some(_) = self.columns.get(col_ix) {
-            Some(120.0.into())
+            if col_ix < 10 {
+                Some(120.0.into())
+            } else if col_ix < 20 {
+                Some(80.0.into())
+            } else {
+                Some(130.0.into())
+            }
         } else {
             None
         }
