@@ -1039,6 +1039,7 @@ where
                                 move |table, visible_range: Range<usize>, cx| {
                                     visible_range
                                         .map(|col_ix| {
+                                            let col_ix = col_ix + left_cols_count;
                                             table.render_col_wrap(col_ix, cx).child(
                                                 table.render_cell(col_ix, cx).child(
                                                     table.delegate.render_td(row_ix, col_ix, cx),
