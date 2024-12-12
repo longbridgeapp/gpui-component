@@ -137,7 +137,7 @@ impl Element for TableRow {
                 - point(border.right + padding.right, border.bottom + padding.bottom),
         );
 
-        // This is important to get the width of each column to meansure the visible columns.
+        // This is important to get the width of each column to measure the visible columns.
         //
         // So the col must have a width.
         let col_widths = self
