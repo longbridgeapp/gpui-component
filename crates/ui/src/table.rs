@@ -5,6 +5,7 @@ use crate::{
     h_flex,
     popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
+    table_row::table_row,
     theme::ActiveTheme,
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
@@ -45,19 +46,19 @@ pub enum ColFixed {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct ColGroup {
-    width: Option<Pixels>,
-    bounds: Bounds<Pixels>,
-    sort: Option<ColSort>,
-    fixed: Option<ColFixed>,
-    padding: Option<Edges<Pixels>>,
+pub(crate) struct ColGroup {
+    pub(crate) width: Pixels,
+    pub(crate) bounds: Bounds<Pixels>,
+    pub(crate) sort: Option<ColSort>,
+    pub(crate) fixed: Option<ColFixed>,
+    pub(crate) padding: Option<Edges<Pixels>>,
 }
 
 #[derive(Clone)]
 pub(crate) struct DragCol {
     pub(crate) entity_id: EntityId,
     pub(crate) name: SharedString,
-    pub(crate) width: Option<Pixels>,
+    pub(crate) width: Pixels,
     pub(crate) col_ix: usize,
 }
 
@@ -82,7 +83,7 @@ impl Render for DragCol {
             .border_1()
             .border_color(cx.theme().border)
             .shadow_md()
-            .when_some(self.width, |this, width| this.w(width))
+            .w(self.width)
             .min_w(px(100.))
             .max_w(px(450.))
             .child(self.name.clone())
@@ -102,7 +103,7 @@ enum SelectionState {
 pub enum TableEvent {
     SelectRow(usize),
     SelectCol(usize),
-    ColWidthsChanged(Vec<Option<Pixels>>),
+    ColWidthsChanged(Vec<Pixels>),
     MoveCol(usize, usize),
 }
 
@@ -169,7 +170,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Return None, use auto width.
     ///
     /// This is only called when the table initializes.
-    fn col_width(&self, col_ix: usize, cx: &AppContext) -> Option<Pixels>;
+    ///
+    /// Default: 100px
+    fn col_width(&self, col_ix: usize, cx: &AppContext) -> Pixels {
+        px(100.)
+    }
 
     /// Return the sort state of the column at the given index.
     ///
@@ -513,7 +518,7 @@ where
         }
         let size = size.floor();
 
-        let old_width = self.col_groups[ix].width.unwrap_or_default();
+        let old_width = self.col_groups[ix].width;
         let new_width = size;
         if new_width < MIN_WIDTH {
             return;
@@ -523,7 +528,7 @@ where
         if changed_width > px(-1.0) && changed_width < px(1.0) {
             return;
         }
-        self.col_groups[ix].width = Some(new_width.min(MAX_WIDTH));
+        self.col_groups[ix].width = new_width.min(MAX_WIDTH);
 
         // Resize next col, table not need to resize the right cols.
         // let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
@@ -619,7 +624,7 @@ where
         let col_padding = self.col_groups[col_ix].padding;
 
         div()
-            .when_some(col_width, |this, width| this.w(width))
+            .w(col_width)
             .h_full()
             .flex_shrink_0()
             .overflow_hidden()
@@ -721,7 +726,7 @@ where
 
                         // sync col widths into real widths
                         for (_, col_group) in view.col_groups.iter_mut().enumerate() {
-                            col_group.width = Some(col_group.bounds.size.width);
+                            col_group.width = col_group.bounds.size.width;
                         }
 
                         let ix = *ix;
@@ -970,12 +975,22 @@ where
         let is_stripe_row = self.stripe && row_ix % 2 != 0;
         let is_selected = self.selected_row == Some(row_ix);
         let view = cx.view().clone();
+        let col_groups: Rc<Vec<ColGroup>> = Rc::new(
+            self.col_groups
+                .iter()
+                .skip(left_cols_count)
+                .cloned()
+                .collect(),
+        );
 
         if row_ix < rows_count {
             self.delegate
                 .render_tr(row_ix, cx)
-                .context_menu(move |this, cx: &mut ViewContext<PopupMenu>| {
-                    view.read(cx).delegate.context_menu(row_ix, this, cx)
+                .context_menu({
+                    let view = view.clone();
+                    move |this, cx: &mut ViewContext<PopupMenu>| {
+                        view.read(cx).delegate.context_menu(row_ix, this, cx)
+                    }
                 })
                 .w_full()
                 .h(self.size.table_row_height())
@@ -1014,17 +1029,27 @@ where
                         .flex_1()
                         .h_full()
                         .overflow_hidden()
-                        .children((left_cols_count..cols_count).map(|col_ix| {
-                            self
-                                // Make the row scroll sync with the
-                                // horizontal_scroll_handle to support horizontal scrolling.
-                                .render_col_wrap(col_ix, cx)
-                                .left(horizontal_scroll_handle.offset().x)
-                                .child(
-                                    self.render_cell(col_ix, cx)
-                                        .child(self.delegate.render_td(row_ix, col_ix, cx)),
-                                )
-                        }))
+                        .relative()
+                        .child(table_row(
+                            view,
+                            row_ix,
+                            col_groups,
+                            self.horizontal_scroll_handle.clone(),
+                            {
+                                move |table, visible_range: Range<usize>, cx| {
+                                    visible_range
+                                        .map(|col_ix| {
+                                            let col_ix = col_ix + left_cols_count;
+                                            table.render_col_wrap(col_ix, cx).child(
+                                                table.render_cell(col_ix, cx).child(
+                                                    table.delegate.render_td(row_ix, col_ix, cx),
+                                                ),
+                                            )
+                                        })
+                                        .collect::<Vec<_>>()
+                                }
+                            },
+                        ))
                         .child(self.delegate.render_last_empty_col(cx)),
                 )
                 // Row selected style

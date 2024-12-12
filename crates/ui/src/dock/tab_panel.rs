@@ -174,6 +174,15 @@ impl TabPanel {
 
     /// Add a panel to the end of the tabs
     pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        self.add_panel_with_active(panel, true, cx);
+    }
+
+    fn add_panel_with_active(
+        &mut self,
+        panel: Arc<dyn PanelView>,
+        active: bool,
+        cx: &mut ViewContext<Self>,
+    ) {
         assert_ne!(
             panel.panel_name(cx),
             "StackPanel",
@@ -190,7 +199,9 @@ impl TabPanel {
 
         self.panels.push(panel);
         // set the active panel to the new panel
-        self.set_active_ix(self.panels.len() - 1, cx);
+        if active {
+            self.set_active_ix(self.panels.len() - 1, cx);
+        }
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
@@ -580,7 +591,7 @@ impl TabPanel {
                         .on_drop(cx.listener(
                             move |this, drag: &DragPanel, cx| {
                                 this.will_split_placement = None;
-                                this.on_drop(drag, Some(ix), cx)
+                                this.on_drop(drag, Some(ix), true, cx)
                             },
                         ))
                     })
@@ -603,7 +614,7 @@ impl TabPanel {
                                     None
                                 };
 
-                                this.on_drop(drag, ix, cx)
+                                this.on_drop(drag, ix, false, cx)
                             }))
                     }),
             )
@@ -664,7 +675,7 @@ impl TabPanel {
                                     })
                                     .group_drag_over::<DragPanel>("", |this| this.visible())
                                     .on_drop(cx.listener(|this, drag: &DragPanel, cx| {
-                                        this.on_drop(drag, None, cx)
+                                        this.on_drop(drag, None, true, cx)
                                     })),
                             )
                     })
@@ -694,7 +705,16 @@ impl TabPanel {
         cx.notify()
     }
 
-    fn on_drop(&mut self, drag: &DragPanel, ix: Option<usize>, cx: &mut ViewContext<Self>) {
+    /// Handle the drop event when dragging a panel
+    ///
+    /// - `active` - When true, the panel will be active after the drop
+    fn on_drop(
+        &mut self,
+        drag: &DragPanel,
+        ix: Option<usize>,
+        active: bool,
+        cx: &mut ViewContext<Self>,
+    ) {
         let panel = drag.panel.clone();
         let is_same_tab = drag.tab_panel == *cx.view();
 
@@ -729,7 +749,7 @@ impl TabPanel {
             if let Some(ix) = ix {
                 self.insert_panel_at(panel, ix, cx)
             } else {
-                self.add_panel(panel, cx)
+                self.add_panel_with_active(panel, active, cx)
             }
         }
 
