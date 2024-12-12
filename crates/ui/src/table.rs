@@ -47,7 +47,7 @@ pub enum ColFixed {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ColGroup {
-    pub(crate) width: Option<Pixels>,
+    pub(crate) width: Pixels,
     pub(crate) bounds: Bounds<Pixels>,
     pub(crate) sort: Option<ColSort>,
     pub(crate) fixed: Option<ColFixed>,
@@ -58,7 +58,7 @@ pub(crate) struct ColGroup {
 pub(crate) struct DragCol {
     pub(crate) entity_id: EntityId,
     pub(crate) name: SharedString,
-    pub(crate) width: Option<Pixels>,
+    pub(crate) width: Pixels,
     pub(crate) col_ix: usize,
 }
 
@@ -83,7 +83,7 @@ impl Render for DragCol {
             .border_1()
             .border_color(cx.theme().border)
             .shadow_md()
-            .when_some(self.width, |this, width| this.w(width))
+            .w(self.width)
             .min_w(px(100.))
             .max_w(px(450.))
             .child(self.name.clone())
@@ -103,7 +103,7 @@ enum SelectionState {
 pub enum TableEvent {
     SelectRow(usize),
     SelectCol(usize),
-    ColWidthsChanged(Vec<Option<Pixels>>),
+    ColWidthsChanged(Vec<Pixels>),
     MoveCol(usize, usize),
 }
 
@@ -170,7 +170,11 @@ pub trait TableDelegate: Sized + 'static {
     /// Return None, use auto width.
     ///
     /// This is only called when the table initializes.
-    fn col_width(&self, col_ix: usize, cx: &AppContext) -> Option<Pixels>;
+    ///
+    /// Default: 100px
+    fn col_width(&self, col_ix: usize, cx: &AppContext) -> Pixels {
+        px(100.)
+    }
 
     /// Return the sort state of the column at the given index.
     ///
@@ -514,7 +518,7 @@ where
         }
         let size = size.floor();
 
-        let old_width = self.col_groups[ix].width.unwrap_or_default();
+        let old_width = self.col_groups[ix].width;
         let new_width = size;
         if new_width < MIN_WIDTH {
             return;
@@ -524,7 +528,7 @@ where
         if changed_width > px(-1.0) && changed_width < px(1.0) {
             return;
         }
-        self.col_groups[ix].width = Some(new_width.min(MAX_WIDTH));
+        self.col_groups[ix].width = new_width.min(MAX_WIDTH);
 
         // Resize next col, table not need to resize the right cols.
         // let next_width = self.col_groups[ix + 1].width.unwrap_or_default();
@@ -620,7 +624,7 @@ where
         let col_padding = self.col_groups[col_ix].padding;
 
         div()
-            .when_some(col_width, |this, width| this.w(width))
+            .w(col_width)
             .h_full()
             .flex_shrink_0()
             .overflow_hidden()
@@ -722,7 +726,7 @@ where
 
                         // sync col widths into real widths
                         for (_, col_group) in view.col_groups.iter_mut().enumerate() {
-                            col_group.width = Some(col_group.bounds.size.width);
+                            col_group.width = col_group.bounds.size.width;
                         }
 
                         let ix = *ix;
@@ -1024,10 +1028,11 @@ where
                     h_flex()
                         .flex_1()
                         .h_full()
+                        .overflow_hidden()
                         .relative()
                         .child(table_row(
                             view,
-                            SharedString::from(format!("table-row-{}", row_ix)),
+                            row_ix,
                             col_groups,
                             self.horizontal_scroll_handle.clone(),
                             {

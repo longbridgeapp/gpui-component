@@ -9,8 +9,8 @@ use std::{cmp, ops::Range, rc::Rc};
 
 use gpui::{
     div, point, px, size, AnyElement, AvailableSpace, Bounds, ContentMask, Div, Element, ElementId,
-    Hitbox, InteractiveElement, IntoElement, IsZero as _, Pixels, Render, ScrollHandle, Size,
-    Stateful, StyleRefinement, Styled, View, ViewContext, WindowContext,
+    Hitbox, InteractiveElement, IntoElement, IsZero as _, Pixels, Render, ScrollHandle,
+    SharedString, Size, Stateful, StyleRefinement, Styled, View, ViewContext, WindowContext,
 };
 use smallvec::SmallVec;
 
@@ -18,7 +18,7 @@ use crate::table::ColGroup;
 
 pub(crate) fn table_row<R, V>(
     view: View<V>,
-    id: impl Into<ElementId>,
+    row_ix: usize,
     col_groups: Rc<Vec<ColGroup>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
@@ -27,7 +27,7 @@ where
     R: IntoElement,
     V: Render,
 {
-    let id = id.into();
+    let id = ElementId::NamedInteger(SharedString::from("table-row"), row_ix);
 
     let render_range = move |range, cx: &mut WindowContext| {
         view.update(cx, |this, cx| {
@@ -143,7 +143,7 @@ impl Element for TableRow {
         let col_widths = self
             .col_groups
             .iter()
-            .map(|col| col.width.unwrap_or(px(100.)).0)
+            .map(|col| col.width.0)
             .collect::<Vec<_>>();
 
         let content_height = padded_bounds.size.height;
