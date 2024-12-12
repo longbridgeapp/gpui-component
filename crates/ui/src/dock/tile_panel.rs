@@ -476,7 +476,7 @@ impl TilePanel {
         elements.push(if !is_occluded(&corner_handle_bounds) {
             div()
                 .id("corner-resize-handle")
-                .cursor_crosshair()
+                .cursor_nwse_resize()
                 .absolute()
                 .right(px(-HALF_HANDLE_SIZE))
                 .bottom(px(-HALF_HANDLE_SIZE))
