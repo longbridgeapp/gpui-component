@@ -144,6 +144,11 @@ impl Dock {
                         panel.set_collapsed(true, cx);
                     });
                 }
+                DockItem::Split { items, .. } => {
+                    for item in items {
+                        item.set_collapsed(true, cx);
+                    }
+                }
                 _ => {}
             }
         }

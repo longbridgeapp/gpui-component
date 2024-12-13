@@ -183,12 +183,12 @@ impl StoryWorkspace {
     fn save_state(state: &DockAreaState) -> Result<()> {
         println!("Save layout...");
         let json = serde_json::to_string_pretty(state)?;
-        std::fs::write("layout.json", json)?;
+        std::fs::write("target/layout.json", json)?;
         Ok(())
     }
 
     fn load_layout(dock_area: View<DockArea>, cx: &mut WindowContext) -> Result<()> {
-        let fname = "layout.json";
+        let fname = "target/layout.json";
         let json = std::fs::read_to_string(fname)?;
         let state = serde_json::from_str::<DockAreaState>(&json)?;
 

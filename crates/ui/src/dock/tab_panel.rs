@@ -560,6 +560,7 @@ impl TabPanel {
             )
             .children(self.panels.iter().enumerate().map(|(ix, panel)| {
                 let mut active = ix == self.active_ix;
+                let disabled = self.is_collapsed;
 
                 // Always not show active tab style, if the panel is collapsed
                 if self.is_collapsed {
@@ -569,31 +570,34 @@ impl TabPanel {
                 Tab::new(("tab", ix), panel.title(cx))
                     .py_2()
                     .selected(active)
-                    .on_click(cx.listener(move |view, _, cx| {
-                        view.set_active_ix(ix, cx);
-                    }))
-                    .when(state.draggable, |this| {
-                        this.on_drag(
-                            DragPanel::new(panel.clone(), view.clone()),
-                            |drag, _, cx| {
-                                cx.stop_propagation();
-                                cx.new_view(|_| drag.clone())
-                            },
-                        )
-                    })
-                    .when(state.droppable, |this| {
-                        this.drag_over::<DragPanel>(|this, _, cx| {
-                            this.rounded_l_none()
-                                .border_l_2()
-                                .border_r_0()
-                                .border_color(cx.theme().drag_border)
+                    .disabled(disabled)
+                    .when(!disabled, |this| {
+                        this.on_click(cx.listener(move |view, _, cx| {
+                            view.set_active_ix(ix, cx);
+                        }))
+                        .when(state.draggable, |this| {
+                            this.on_drag(
+                                DragPanel::new(panel.clone(), view.clone()),
+                                |drag, _, cx| {
+                                    cx.stop_propagation();
+                                    cx.new_view(|_| drag.clone())
+                                },
+                            )
                         })
-                        .on_drop(cx.listener(
-                            move |this, drag: &DragPanel, cx| {
-                                this.will_split_placement = None;
-                                this.on_drop(drag, Some(ix), true, cx)
-                            },
-                        ))
+                        .when(state.droppable, |this| {
+                            this.drag_over::<DragPanel>(|this, _, cx| {
+                                this.rounded_l_none()
+                                    .border_l_2()
+                                    .border_r_0()
+                                    .border_color(cx.theme().drag_border)
+                            })
+                            .on_drop(cx.listener(
+                                move |this, drag: &DragPanel, cx| {
+                                    this.will_split_placement = None;
+                                    this.on_drop(drag, Some(ix), true, cx)
+                                },
+                            ))
+                        })
                     })
             }))
             .child(
@@ -637,6 +641,10 @@ impl TabPanel {
     }
 
     fn render_active_panel(&self, state: TabState, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        if self.is_collapsed {
+            return Empty {}.into_any_element();
+        }
+
         self.active_panel()
             .map(|panel| {
                 div()
