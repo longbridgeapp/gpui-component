@@ -83,8 +83,6 @@ pub enum DockItemInfo {
     Tabs { active_index: usize },
     #[serde(rename = "panel")]
     Panel(serde_json::Value),
-    #[serde(rename = "tiles")]
-    Tiles(Vec<TileState>),
 }
 
 impl DockItemInfo {
@@ -101,10 +99,6 @@ impl DockItemInfo {
 
     pub fn panel(value: serde_json::Value) -> Self {
         Self::Panel(value)
-    }
-
-    pub fn tiles(panels: Vec<TileState>) -> Self {
-        Self::Tiles(panels)
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -207,16 +201,6 @@ impl DockItemState {
                 };
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
-            }
-            DockItemInfo::Tiles(state) => {
-                let tiles_items = state
-                    .iter()
-                    .map(|panel_layout| {
-                        let item = panel_layout.state.to_item(dock_area.clone(), cx);
-                        (item, panel_layout.bounds, panel_layout.z_index)
-                    })
-                    .collect();
-                DockItem::tiles_with_sizes(tiles_items, &dock_area, cx)
             }
         }
     }
