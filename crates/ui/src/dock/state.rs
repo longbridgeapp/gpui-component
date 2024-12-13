@@ -1,4 +1,4 @@
-use gpui::{AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView, WindowContext};
+use gpui::{AppContext, Axis, Pixels, View, VisualContext as _, WeakView, WindowContext};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
@@ -65,19 +65,13 @@ pub struct DockItemState {
     pub info: DockItemInfo,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct TileState {
-    pub state: DockItemState,
-    pub bounds: Bounds<Pixels>,
-    pub z_index: usize,
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DockItemInfo {
     #[serde(rename = "stack")]
     Stack {
         sizes: Vec<Pixels>,
-        axis: usize, // 0 for horizontal, 1 for vertical
+        /// The axis of the stack, 0 is horizontal, 1 is vertical
+        axis: usize,
     },
     #[serde(rename = "tabs")]
     Tabs { active_index: usize },

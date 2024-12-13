@@ -70,7 +70,7 @@ pub struct DockArea {
 pub enum DockItem {
     /// Split layout
     Split {
-        axis: Axis,
+        axis: gpui::Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
         view: View<StackPanel>,
@@ -220,7 +220,7 @@ impl DockItem {
     }
 
     /// Returns the views of the dock item.
-    pub fn view(&self) -> Arc<dyn PanelView> {
+    fn view(&self) -> Arc<dyn PanelView> {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
