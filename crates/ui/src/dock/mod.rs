@@ -111,6 +111,7 @@ impl std::fmt::Debug for DockItem {
                 .field("active_ix", active_ix)
                 .finish(),
             DockItem::Panel { .. } => f.debug_struct("Panel").finish(),
+            DockItem::Tiles { .. } => f.debug_struct("Tiles").finish(),
         }
     }
 }

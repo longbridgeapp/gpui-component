@@ -99,12 +99,12 @@ impl StoryTiles {
     fn save_tiles(state: &DockAreaState) -> Result<()> {
         println!("Save tiles...");
         let json = serde_json::to_string_pretty(state)?;
-        std::fs::write("tiles.json", json)?;
+        std::fs::write("target/tiles.json", json)?;
         Ok(())
     }
 
     fn load_tiles(dock_area: View<DockArea>, cx: &mut WindowContext) -> Result<()> {
-        let fname = "tiles.json";
+        let fname = "target/tiles.json";
         let json = std::fs::read_to_string(fname)?;
         let state = serde_json::from_str::<DockAreaState>(&json)?;
 
