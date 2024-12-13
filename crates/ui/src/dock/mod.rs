@@ -85,6 +85,29 @@ pub enum DockItem {
     Panel { view: Arc<dyn PanelView> },
 }
 
+impl std::fmt::Debug for DockItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DockItem::Split {
+                axis, items, sizes, ..
+            } => f
+                .debug_struct("Split")
+                .field("axis", axis)
+                .field("items", &items.len())
+                .field("sizes", sizes)
+                .finish(),
+            DockItem::Tabs {
+                items, active_ix, ..
+            } => f
+                .debug_struct("Tabs")
+                .field("items", &items.len())
+                .field("active_ix", active_ix)
+                .finish(),
+            DockItem::Panel { .. } => f.debug_struct("Panel").finish(),
+        }
+    }
+}
+
 impl DockItem {
     /// Create DockItem with split layout, each item of panel have equal size.
     pub fn split(
