@@ -46,6 +46,7 @@ pub mod switch;
 pub mod tab;
 pub mod table;
 pub mod theme;
+pub mod tiles;
 pub mod tooltip;
 pub mod webview;
 
@@ -84,6 +85,7 @@ pub fn init(cx: &mut gpui::AppContext) {
     theme::init(cx);
     date_picker::init(cx);
     dock::init(cx);
+    tiles::init(cx);
     drawer::init(cx);
     dropdown::init(cx);
     input::init(cx);

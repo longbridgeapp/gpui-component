@@ -54,6 +54,7 @@ use ui::{
     notification::Notification,
     popup_menu::PopupMenu,
     theme::ActiveTheme,
+    tiles::{register_tile, CanvasItemInfo, CanvasItemState, Tile, TileEvent},
     v_flex, ContextModal, IconName,
 };
 
@@ -69,6 +70,26 @@ pub fn init(cx: &mut AppContext) {
             DockItemInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
                 unreachable!("Invalid DockItemInfo: {:?}", info)
+            }
+        };
+
+        let view = cx.new_view(|cx| {
+            let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
+            let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
+            container.name = title.into();
+            container.description = description.into();
+            container.closeable = closeable;
+            container.zoomable = zoomable;
+            container
+        });
+        Box::new(view)
+    });
+
+    register_tile(cx, PANEL_NAME, |_, _, info, cx| {
+        let story_state = match info {
+            CanvasItemInfo::Tile(value) => StoryState::from_value(value.clone()),
+            _ => {
+                unreachable!("Invalid CanvasItemInfo: {:?}", info)
             }
         };
 
@@ -329,6 +350,64 @@ impl FocusableView for StoryContainer {
         self.focus_handle.clone()
     }
 }
+
+impl Tile for StoryContainer {
+    fn tile_name(&self) -> &'static str {
+        "StoryContainer"
+    }
+
+    fn title(&self, _cx: &WindowContext) -> AnyElement {
+        self.name.clone().into_any_element()
+    }
+
+    fn title_style(&self, cx: &WindowContext) -> Option<ui::tiles::TitleStyle> {
+        if let Some(bg) = self.title_bg {
+            Some(ui::tiles::TitleStyle {
+                background: bg,
+                foreground: cx.theme().foreground,
+            })
+        } else {
+            None
+        }
+    }
+
+    fn closeable(&self, _cx: &WindowContext) -> bool {
+        self.closeable
+    }
+
+    fn zoomable(&self, _cx: &WindowContext) -> bool {
+        self.zoomable
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
+        menu.track_focus(&self.focus_handle)
+            .menu("Info", Box::new(PanelInfo))
+    }
+
+    fn toolbar_buttons(&self, _cx: &WindowContext) -> Vec<Button> {
+        vec![
+            Button::new("info").icon(IconName::Info).on_click(|_, cx| {
+                cx.push_notification("You have clicked info button");
+            }),
+            Button::new("search")
+                .icon(IconName::Search)
+                .on_click(|_, cx| {
+                    cx.push_notification("You have clicked search button");
+                }),
+        ]
+    }
+
+    fn dump(&self, _cx: &AppContext) -> CanvasItemState {
+        let mut state = CanvasItemState::new(self);
+        let story_state = StoryState {
+            story_klass: self.story_klass.clone().unwrap(),
+        };
+        state.info = CanvasItemInfo::tile(story_state.to_value());
+        state
+    }
+}
+impl EventEmitter<TileEvent> for StoryContainer {}
+
 impl Render for StoryContainer {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         v_flex()
