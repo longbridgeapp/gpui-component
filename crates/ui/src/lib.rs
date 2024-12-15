@@ -85,7 +85,6 @@ pub fn init(cx: &mut gpui::AppContext) {
     theme::init(cx);
     date_picker::init(cx);
     dock::init(cx);
-    tiles::init(cx);
     drawer::init(cx);
     dropdown::init(cx);
     input::init(cx);

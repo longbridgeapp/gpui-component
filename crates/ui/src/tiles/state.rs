@@ -2,7 +2,9 @@ use gpui::{AppContext, Bounds, Pixels, View, VisualContext as _, WeakView, Windo
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
-use super::{invalid_tile::InvalidTile, Canvas, CanvasArea, CanvasItem, Tile, TileRegistry};
+use crate::dock::PanelRegistry;
+
+use super::{invalid_tile::InvalidTile, Canvas, CanvasArea, CanvasItem, Tile};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CanvasAreaState {
@@ -135,14 +137,18 @@ impl CanvasItemState {
             }
             CanvasItemInfo::Tile(_) => {
                 let view = if let Some(f) = cx
-                    .global::<TileRegistry>()
+                    .global::<PanelRegistry>()
                     .items
                     .get(&self.tile_name)
                     .cloned()
                 {
-                    f(&info, cx)
+                    f(&canvas_item_info_to_dock_item_info(&info), cx)
                 } else {
-                    Box::new(cx.new_view(|cx| InvalidTile::new(&self.tile_name, self.clone(), cx)))
+                    let invalid_tile_view =
+                        cx.new_view(|cx| InvalidTile::new(&self.tile_name, self.clone(), cx));
+                    let panel_view_box: Box<dyn crate::dock::PanelView> =
+                        Box::new(invalid_tile_view);
+                    panel_view_box
                 };
 
                 CanvasItem::tabs(vec![view.into()], None, &canvas_area, cx)
@@ -158,5 +164,15 @@ impl CanvasItemState {
                 CanvasItem::tiles_with_sizes(tiles_items, &canvas_area, cx)
             }
         }
+    }
+}
+
+fn canvas_item_info_to_dock_item_info(info: &CanvasItemInfo) -> crate::dock::DockItemInfo {
+    match info {
+        CanvasItemInfo::Tabs { active_index } => crate::dock::DockItemInfo::Tabs {
+            active_index: *active_index,
+        },
+        CanvasItemInfo::Tile(value) => crate::dock::DockItemInfo::Panel(value.clone()),
+        CanvasItemInfo::Tiles(_) => crate::dock::DockItemInfo::Panel(serde_json::Value::Null),
     }
 }

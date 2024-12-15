@@ -54,7 +54,7 @@ use ui::{
     notification::Notification,
     popup_menu::PopupMenu,
     theme::ActiveTheme,
-    tiles::{register_tile, CanvasItemInfo, CanvasItemState, Tile, TileEvent},
+    tiles::{CanvasItemInfo, CanvasItemState, Tile, TileEvent},
     v_flex, ContextModal, IconName,
 };
 
@@ -70,26 +70,6 @@ pub fn init(cx: &mut AppContext) {
             DockItemInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
                 unreachable!("Invalid DockItemInfo: {:?}", info)
-            }
-        };
-
-        let view = cx.new_view(|cx| {
-            let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
-            let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
-            container.name = title.into();
-            container.description = description.into();
-            container.closeable = closeable;
-            container.zoomable = zoomable;
-            container
-        });
-        Box::new(view)
-    });
-
-    register_tile(cx, PANEL_NAME, |info, cx| {
-        let story_state = match info {
-            CanvasItemInfo::Tile(value) => StoryState::from_value(value.clone()),
-            _ => {
-                unreachable!("Invalid CanvasItemInfo: {:?}", info)
             }
         };
 

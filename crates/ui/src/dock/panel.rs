@@ -147,7 +147,7 @@ impl PartialEq for dyn PanelView {
 }
 
 pub struct PanelRegistry {
-    pub(super) items:
+    pub(crate) items:
         HashMap<String, Arc<dyn Fn(&DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>>,
 }
 impl PanelRegistry {

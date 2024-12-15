@@ -1,9 +1,9 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use crate::{button::Button, popup_menu::PopupMenu};
 use gpui::{
-    AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
-    IntoElement, SharedString, View, WindowContext,
+    AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Hsla, IntoElement,
+    SharedString, View, WindowContext,
 };
 
 use rust_i18n::t;
@@ -126,28 +126,91 @@ impl PartialEq for dyn TileView {
     }
 }
 
-pub struct TileRegistry {
-    pub(super) items:
-        HashMap<String, Arc<dyn Fn(&CanvasItemInfo, &mut WindowContext) -> Box<dyn TileView>>>,
+/// A shim that implements TileView by delegating to a PanelView
+struct PanelViewAsTileView {
+    inner: Box<dyn crate::dock::PanelView>,
 }
-impl TileRegistry {
-    pub fn new() -> Self {
-        Self {
-            items: HashMap::new(),
+
+impl TileView for PanelViewAsTileView {
+    fn tile_name(&self, cx: &WindowContext) -> &'static str {
+        self.inner.panel_name(cx)
+    }
+
+    fn title(&self, cx: &WindowContext) -> AnyElement {
+        self.inner.title(cx)
+    }
+
+    fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle> {
+        self.inner.title_style(cx).map(|ts| TitleStyle {
+            background: ts.background,
+            foreground: ts.foreground,
+        })
+    }
+
+    fn closeable(&self, cx: &WindowContext) -> bool {
+        self.inner.closeable(cx)
+    }
+
+    fn zoomable(&self, cx: &WindowContext) -> bool {
+        self.inner.zoomable(cx)
+    }
+
+    fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
+        self.inner.popup_menu(menu, cx)
+    }
+
+    fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button> {
+        self.inner.toolbar_buttons(cx)
+    }
+
+    fn view(&self) -> AnyView {
+        self.inner.view()
+    }
+
+    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
+        self.inner.focus_handle(cx)
+    }
+
+    fn dump(&self, cx: &AppContext) -> CanvasItemState {
+        let dock_state = self.inner.dump(cx);
+        let children = dock_state
+            .children
+            .iter()
+            .map(|child| CanvasItemState {
+                tile_name: child.panel_name.clone(),
+                children: vec![],
+                info: match &child.info {
+                    crate::dock::DockItemInfo::Panel(value) => CanvasItemInfo::Tile(value.clone()),
+                    crate::dock::DockItemInfo::Tabs { active_index } => CanvasItemInfo::Tabs {
+                        active_index: *active_index,
+                    },
+                    crate::dock::DockItemInfo::Stack { .. } => {
+                        CanvasItemInfo::Tile(serde_json::Value::Null)
+                    }
+                },
+            })
+            .collect();
+
+        let info = match &dock_state.info {
+            crate::dock::DockItemInfo::Panel(value) => CanvasItemInfo::Tile(value.clone()),
+            crate::dock::DockItemInfo::Tabs { active_index } => CanvasItemInfo::Tabs {
+                active_index: *active_index,
+            },
+            crate::dock::DockItemInfo::Stack { .. } => {
+                CanvasItemInfo::Tile(serde_json::Value::Null)
+            }
+        };
+
+        CanvasItemState {
+            tile_name: dock_state.panel_name.clone(),
+            children,
+            info,
         }
     }
 }
-impl Global for TileRegistry {}
 
-pub fn register_tile<F>(cx: &mut AppContext, tile_name: &str, deserialize: F)
-where
-    F: Fn(&CanvasItemInfo, &mut WindowContext) -> Box<dyn TileView> + 'static,
-{
-    if let None = cx.try_global::<TileRegistry>() {
-        cx.set_global(TileRegistry::new());
+impl From<Box<dyn crate::dock::PanelView>> for Arc<dyn TileView> {
+    fn from(p: Box<dyn crate::dock::PanelView>) -> Self {
+        Arc::new(PanelViewAsTileView { inner: p })
     }
-
-    cx.global_mut::<TileRegistry>()
-        .items
-        .insert(tile_name.to_string(), Arc::new(deserialize));
 }

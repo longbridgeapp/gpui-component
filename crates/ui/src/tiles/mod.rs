@@ -19,10 +19,6 @@ pub use state::*;
 pub use tab_tile::*;
 pub use tile::*;
 
-pub fn init(cx: &mut AppContext) {
-    cx.set_global(TileRegistry::new());
-}
-
 actions!(canvas, [ToggleZoom, CloseTile]);
 
 pub enum CanvasEvent {
