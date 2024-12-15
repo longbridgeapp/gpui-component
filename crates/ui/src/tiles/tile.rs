@@ -3,12 +3,12 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{button::Button, popup_menu::PopupMenu};
 use gpui::{
     AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
-    IntoElement, SharedString, View, WeakView, WindowContext,
+    IntoElement, SharedString, View, WindowContext,
 };
 
 use rust_i18n::t;
 
-use super::{CanvasArea, CanvasItemInfo, CanvasItemState};
+use super::{CanvasItemInfo, CanvasItemState};
 
 pub enum TileEvent {
     ZoomIn,
@@ -127,17 +127,8 @@ impl PartialEq for dyn TileView {
 }
 
 pub struct TileRegistry {
-    pub(super) items: HashMap<
-        String,
-        Arc<
-            dyn Fn(
-                WeakView<CanvasArea>,
-                &CanvasItemState,
-                &CanvasItemInfo,
-                &mut WindowContext,
-            ) -> Box<dyn TileView>,
-        >,
-    >,
+    pub(super) items:
+        HashMap<String, Arc<dyn Fn(&CanvasItemInfo, &mut WindowContext) -> Box<dyn TileView>>>,
 }
 impl TileRegistry {
     pub fn new() -> Self {
@@ -150,13 +141,7 @@ impl Global for TileRegistry {}
 
 pub fn register_tile<F>(cx: &mut AppContext, tile_name: &str, deserialize: F)
 where
-    F: Fn(
-            WeakView<CanvasArea>,
-            &CanvasItemState,
-            &CanvasItemInfo,
-            &mut WindowContext,
-        ) -> Box<dyn TileView>
-        + 'static,
+    F: Fn(&CanvasItemInfo, &mut WindowContext) -> Box<dyn TileView> + 'static,
 {
     if let None = cx.try_global::<TileRegistry>() {
         cx.set_global(TileRegistry::new());

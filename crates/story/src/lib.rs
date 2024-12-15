@@ -65,7 +65,7 @@ pub fn init(cx: &mut AppContext) {
     dropdown_story::init(cx);
     popup_story::init(cx);
 
-    register_panel(cx, PANEL_NAME, |_, _, info, cx| {
+    register_panel(cx, PANEL_NAME, |info, cx| {
         let story_state = match info {
             DockItemInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
@@ -85,7 +85,7 @@ pub fn init(cx: &mut AppContext) {
         Box::new(view)
     });
 
-    register_tile(cx, PANEL_NAME, |_, _, info, cx| {
+    register_tile(cx, PANEL_NAME, |info, cx| {
         let story_state = match info {
             CanvasItemInfo::Tile(value) => StoryState::from_value(value.clone()),
             _ => {

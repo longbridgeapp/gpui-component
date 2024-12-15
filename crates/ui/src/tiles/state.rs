@@ -140,7 +140,7 @@ impl CanvasItemState {
                     .get(&self.tile_name)
                     .cloned()
                 {
-                    f(canvas_area.clone(), self, &info, cx)
+                    f(&info, cx)
                 } else {
                     Box::new(cx.new_view(|cx| InvalidTile::new(&self.tile_name, self.clone(), cx)))
                 };

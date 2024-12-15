@@ -186,7 +186,7 @@ impl DockItemState {
                     .get(&self.panel_name)
                     .cloned()
                 {
-                    f(dock_area.clone(), self, &info, cx)
+                    f(&info, cx)
                 } else {
                     // Show an invalid panel if the panel is not registered.
                     Box::new(

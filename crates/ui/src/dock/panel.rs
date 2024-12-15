@@ -3,12 +3,12 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{button::Button, popup_menu::PopupMenu};
 use gpui::{
     AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
-    IntoElement, SharedString, View, WeakView, WindowContext,
+    IntoElement, SharedString, View, WindowContext,
 };
 
 use rust_i18n::t;
 
-use super::{DockArea, DockItemInfo, DockItemState};
+use super::{DockItemInfo, DockItemState};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -147,17 +147,8 @@ impl PartialEq for dyn PanelView {
 }
 
 pub struct PanelRegistry {
-    pub(super) items: HashMap<
-        String,
-        Arc<
-            dyn Fn(
-                WeakView<DockArea>,
-                &DockItemState,
-                &DockItemInfo,
-                &mut WindowContext,
-            ) -> Box<dyn PanelView>,
-        >,
-    >,
+    pub(super) items:
+        HashMap<String, Arc<dyn Fn(&DockItemInfo, &mut WindowContext) -> Box<dyn PanelView>>>,
 }
 impl PanelRegistry {
     pub fn new() -> Self {
@@ -171,13 +162,7 @@ impl Global for PanelRegistry {}
 /// Register the Panel init by panel_name to global registry.
 pub fn register_panel<F>(cx: &mut AppContext, panel_name: &str, deserialize: F)
 where
-    F: Fn(
-            WeakView<DockArea>,
-            &DockItemState,
-            &DockItemInfo,
-            &mut WindowContext,
-        ) -> Box<dyn PanelView>
-        + 'static,
+    F: Fn(&DockItemInfo, &mut WindowContext) -> Box<dyn PanelView> + 'static,
 {
     if let None = cx.try_global::<PanelRegistry>() {
         cx.set_global(PanelRegistry::new());
