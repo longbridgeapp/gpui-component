@@ -75,7 +75,7 @@ impl Render for InvalidTile {
             .justify_center()
             .text_color(cx.theme().muted_foreground)
             .child(format!(
-                "The `{}` tile type is not registered in TileRegistry.",
+                "The `{}` tile type is not registered in PanelRegistry.",
                 self.name.clone()
             ))
     }
