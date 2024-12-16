@@ -2349,21 +2349,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-app"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui",
- "log",
- "rand 0.8.5",
- "rust-embed",
- "serde",
- "serde_json",
- "story",
- "ui",
-]
-
-[[package]]
 name = "gpui_macros"
 version = "0.1.0"
 source = "git+https://github.com/huacnlee/zed.git?branch=export-platform-window#0ae1603610ab6b265bdfbee7b8dbc23c5ab06edc"
@@ -5006,11 +4991,14 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "story"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "charts-rs",
  "chrono",
  "fake",
  "gpui",
+ "rand 0.8.5",
  "regex",
+ "rust-embed",
  "serde",
  "serde_json",
  "ui",

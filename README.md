@@ -15,7 +15,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Selection by mouse, drag to select text
   - [x] Cursor blinking
   - [x] Input icon
-  - [ ] Textarea
+  - [x] Textarea
   - [ ] ContextMenu to let user copy, cut, paste
 - [x] OtpInput
 - [x] Button
@@ -84,11 +84,15 @@ If you want to see the demo, here is a some demo applications.
 
 - [gpui-app-windows.zip](https://github.com/user-attachments/files/17396296/gpui-app-windows.zip) - Updated at 2024/10/16
 
-## How to build
+## Development
 
 ```bash
 cargo run
 ```
+
+More examples can be found in `examples` directory.
+
+Checkout [DEVELOPMENT](DEVELOPMENT) to see more details.
 
 ## License
 

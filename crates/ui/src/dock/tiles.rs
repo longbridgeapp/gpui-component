@@ -9,7 +9,7 @@ use crate::{
     h_flex,
     scroll::{Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Placement, StyledExt,
+    v_flex, Placement,
 };
 
 use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileMeta};
@@ -90,7 +90,6 @@ pub struct Tiles {
 
     scroll_state: Rc<Cell<ScrollbarState>>,
     scroll_handle: ScrollHandle,
-    scroll_size: Size<Pixels>,
 }
 
 impl Panel for Tiles {
@@ -138,7 +137,6 @@ impl Tiles {
             resizing_drag_data: None,
             bounds: Bounds::default(),
             scroll_state: Rc::new(Cell::new(ScrollbarState::default())),
-            scroll_size: Size::default(),
             scroll_handle: ScrollHandle::default(),
         }
     }

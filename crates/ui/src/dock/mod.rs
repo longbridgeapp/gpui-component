@@ -22,8 +22,6 @@ pub use state::*;
 pub use tab_panel::*;
 pub use tiles::*;
 
-use crate::StyledExt;
-
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
 }

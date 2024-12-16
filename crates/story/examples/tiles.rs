@@ -1,14 +1,14 @@
 use anyhow::{Context, Result};
 use gpui::*;
 use std::{sync::Arc, time::Duration};
-use story::{ButtonStory, InputStory, StoryContainer};
+use story::{Assets, ButtonStory, InputStory, StoryContainer};
 use ui::{
     dock::{DockArea, DockAreaState, DockEvent, DockItem, TileItem},
     theme::ActiveTheme,
     Root, TitleBar,
 };
 
-use crate::app_state::AppState;
+actions!(main_menu, [Quit]);
 
 const TILES_DOCK_AREA: DockAreaTab = DockAreaTab {
     id: "story-tiles",
@@ -17,7 +17,7 @@ const TILES_DOCK_AREA: DockAreaTab = DockAreaTab {
 
 actions!(workspace, [Open, CloseWindow]);
 
-pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
+pub fn init(cx: &mut AppContext) {
     cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
 
     ui::init(cx);
@@ -36,7 +36,7 @@ struct DockAreaTab {
 }
 
 impl StoryTiles {
-    pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(cx: &mut ViewContext<Self>) -> Self {
         let dock_area =
             cx.new_view(|cx| DockArea::new(TILES_DOCK_AREA.id, Some(TILES_DOCK_AREA.version), cx));
         let weak_dock_area = dock_area.downgrade();
@@ -159,10 +159,7 @@ impl StoryTiles {
         )
     }
 
-    pub fn new_local(
-        app_state: Arc<AppState>,
-        cx: &mut AppContext,
-    ) -> Task<anyhow::Result<WindowHandle<Root>>> {
+    pub fn new_local(cx: &mut AppContext) -> Task<anyhow::Result<WindowHandle<Root>>> {
         let window_bounds = Bounds::centered(None, size(px(1200.0), px(1000.0)), cx);
 
         cx.spawn(|mut cx| async move {
@@ -182,7 +179,7 @@ impl StoryTiles {
             };
 
             let window = cx.open_window(options, |cx| {
-                let tiles_view = cx.new_view(|cx| Self::new(app_state.clone(), cx));
+                let tiles_view = cx.new_view(|cx| Self::new(cx));
                 cx.new_view(|cx| Root::new(tiles_view.into(), cx))
             })?;
 
@@ -199,12 +196,11 @@ impl StoryTiles {
 }
 
 pub fn open_new(
-    app_state: Arc<AppState>,
     cx: &mut AppContext,
     init: impl FnOnce(&mut Root, &mut ViewContext<Root>) + 'static + Send,
 ) -> Task<()> {
     let task: Task<std::result::Result<WindowHandle<Root>, anyhow::Error>> =
-        StoryTiles::new_local(app_state, cx);
+        StoryTiles::new_local(cx);
     cx.spawn(|mut cx| async move {
         if let Some(root) = task.await.ok() {
             root.update(&mut cx, |workspace, cx| init(workspace, cx))
@@ -233,4 +229,30 @@ impl Render for StoryTiles {
             .children(modal_layer)
             .child(div().absolute().top_8().children(notification_layer))
     }
+}
+
+fn main() {
+    let app = App::new().with_assets(Assets);
+
+    app.run(move |cx| {
+        ui::init(cx);
+        story::init(cx);
+
+        cx.on_action(quit);
+
+        cx.set_menus(vec![Menu {
+            name: "GPUI App".into(),
+            items: vec![MenuItem::action("Quit", Quit)],
+        }]);
+        cx.activate(true);
+
+        open_new(cx, |_workspace, _cx| {
+            // do something
+        })
+        .detach();
+    });
+}
+
+fn quit(_: &Quit, cx: &mut AppContext) {
+    cx.quit();
 }

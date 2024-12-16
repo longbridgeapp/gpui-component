@@ -4,8 +4,8 @@ use prelude::FluentBuilder as _;
 use serde::Deserialize;
 use std::{sync::Arc, time::Duration};
 use story::{
-    AccordionStory, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory, InputStory,
-    ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
+    AccordionStory, Assets, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory,
+    InputStory, ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
     SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
 };
 use ui::{
@@ -18,8 +18,6 @@ use ui::{
     theme::{ActiveTheme, Theme},
     ContextModal, IconName, Root, Sizable, TitleBar,
 };
-
-use crate::app_state::AppState;
 
 const MAIN_DOCK_AREA: DockAreaTab = DockAreaTab {
     id: "main-dock",
@@ -43,9 +41,12 @@ impl_actions!(
     [SelectLocale, SelectFont, AddPanel, SelectScrollbarShow]
 );
 
+actions!(main_menu, [Quit]);
 actions!(workspace, [Open, CloseWindow]);
 
-pub fn init(_app_state: Arc<AppState>, cx: &mut AppContext) {
+pub fn init(cx: &mut AppContext) {
+    cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+
     cx.on_action(|_action: &Open, _cx: &mut AppContext| {});
 
     ui::init(cx);
@@ -68,7 +69,7 @@ struct DockAreaTab {
 }
 
 impl StoryWorkspace {
-    pub fn new(_app_state: Arc<AppState>, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(cx: &mut ViewContext<Self>) -> Self {
         // There will crash on Linux.
         // https://github.com/longbridge/gpui-component/issues/104
         #[cfg(not(target_os = "linux"))]
@@ -320,10 +321,7 @@ impl StoryWorkspace {
         )
     }
 
-    pub fn new_local(
-        app_state: Arc<AppState>,
-        cx: &mut AppContext,
-    ) -> Task<anyhow::Result<WindowHandle<Root>>> {
+    pub fn new_local(cx: &mut AppContext) -> Task<anyhow::Result<WindowHandle<Root>>> {
         let window_bounds = Bounds::centered(None, size(px(1600.0), px(1200.0)), cx);
 
         cx.spawn(|mut cx| async move {
@@ -343,7 +341,7 @@ impl StoryWorkspace {
             };
 
             let window = cx.open_window(options, |cx| {
-                let story_view = cx.new_view(|cx| Self::new(app_state.clone(), cx));
+                let story_view = cx.new_view(|cx| Self::new(cx));
                 cx.new_view(|cx| Root::new(story_view.into(), cx))
             })?;
 
@@ -394,12 +392,11 @@ impl StoryWorkspace {
 }
 
 pub fn open_new(
-    app_state: Arc<AppState>,
     cx: &mut AppContext,
     init: impl FnOnce(&mut Root, &mut ViewContext<Root>) + 'static + Send,
 ) -> Task<()> {
     let task: Task<std::result::Result<WindowHandle<Root>, anyhow::Error>> =
-        StoryWorkspace::new_local(app_state, cx);
+        StoryWorkspace::new_local(cx);
     cx.spawn(|mut cx| async move {
         if let Some(root) = task.await.ok() {
             root.update(&mut cx, |workspace, cx| init(workspace, cx))
@@ -630,4 +627,47 @@ impl Render for FontSizeSelector {
                     .anchor(AnchorCorner::TopRight),
             )
     }
+}
+
+fn main() {
+    use ui::input::{Copy, Cut, Paste, Redo, Undo};
+
+    let app = App::new().with_assets(Assets);
+
+    app.run(move |cx| {
+        init(cx);
+
+        cx.on_action(quit);
+        cx.set_menus(vec![
+            Menu {
+                name: "GPUI App".into(),
+                items: vec![MenuItem::action("Quit", Quit)],
+            },
+            Menu {
+                name: "Edit".into(),
+                items: vec![
+                    MenuItem::os_action("Undo", Undo, gpui::OsAction::Undo),
+                    MenuItem::os_action("Redo", Redo, gpui::OsAction::Redo),
+                    MenuItem::separator(),
+                    MenuItem::os_action("Cut", Cut, gpui::OsAction::Cut),
+                    MenuItem::os_action("Copy", Copy, gpui::OsAction::Copy),
+                    MenuItem::os_action("Paste", Paste, gpui::OsAction::Paste),
+                ],
+            },
+            Menu {
+                name: "Window".into(),
+                items: vec![],
+            },
+        ]);
+        cx.activate(true);
+
+        open_new(cx, |_workspace, _cx| {
+            // do something
+        })
+        .detach();
+    });
+}
+
+fn quit(_: &Quit, cx: &mut AppContext) {
+    cx.quit();
 }

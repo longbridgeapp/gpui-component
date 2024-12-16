@@ -1,4 +1,5 @@
 mod accordion_story;
+mod assets;
 mod button_story;
 mod calendar_story;
 mod dropdown_story;
@@ -17,6 +18,8 @@ mod table_story;
 mod text_story;
 mod tooltip_story;
 mod webview_story;
+
+pub use assets::Assets;
 
 pub use accordion_story::AccordionStory;
 pub use button_story::ButtonStory;
