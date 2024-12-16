@@ -142,9 +142,9 @@ impl Tiles {
     }
 
     fn sorted_panels(&self) -> Vec<TileItem> {
-        let mut items: Vec<TileItem> = self.panels.iter().cloned().collect();
-        items.sort_by_key(|item| item.z_index);
-        items
+        let mut items: Vec<(usize, TileItem)> = self.panels.iter().cloned().enumerate().collect();
+        items.sort_by(|a, b| a.1.z_index.cmp(&b.1.z_index).then_with(|| a.0.cmp(&b.0)));
+        items.into_iter().map(|(_, item)| item).collect()
     }
 
     /// Return the index of the panel.
