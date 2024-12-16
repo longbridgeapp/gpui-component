@@ -281,9 +281,6 @@ impl Tiles {
                 .unwrap_or(0);
 
             if let Some(item) = self.panels.get_mut(index) {
-                if item.z_index == max_z_index {
-                    return;
-                }
                 item.z_index = max_z_index.saturating_add(1);
             }
         }
