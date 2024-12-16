@@ -253,7 +253,8 @@ impl Tiles {
         let mut panels_with_indices: Vec<(usize, &TileItem)> =
             self.panels.iter().enumerate().collect();
 
-        panels_with_indices.sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index));
+        panels_with_indices
+            .sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index).then_with(|| b.0.cmp(&a.0)));
 
         for (index, item) in panels_with_indices {
             let extended_bounds = Bounds::new(
