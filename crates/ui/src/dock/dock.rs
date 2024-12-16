@@ -193,6 +193,16 @@ impl Dock {
                     }
                 });
             }
+            DockItem::Tiles { view, .. } => {
+                cx.defer({
+                    let view = view.clone();
+                    move |cx| {
+                        _ = dock_area.update(cx, |this, cx| {
+                            this.subscribe_panel(&view, cx);
+                        });
+                    }
+                });
+            }
             DockItem::Panel { .. } => {
                 // Not supported
             }
@@ -376,6 +386,8 @@ impl Render for Dock {
                 DockItem::Split { view, .. } => this.child(view.clone()),
                 DockItem::Tabs { view, .. } => this.child(view.clone()),
                 DockItem::Panel { view, .. } => this.child(view.clone().view()),
+                // Not support to render Tiles and Tile into Dock
+                DockItem::Tiles { .. } => this,
             })
             .child(self.render_resize_handle(cx))
             .child(DockElement {

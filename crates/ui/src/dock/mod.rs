@@ -4,9 +4,9 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
+mod tiles;
 
 use anyhow::Result;
-pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
     Edges, Entity as _, EntityId, EventEmitter, InteractiveElement as _, IntoElement,
@@ -15,10 +15,12 @@ use gpui::{
 };
 use std::sync::Arc;
 
+pub use dock::*;
 pub use panel::*;
 pub use stack_panel::*;
 pub use state::*;
 pub use tab_panel::*;
+pub use tiles::*;
 
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
@@ -70,7 +72,7 @@ pub struct DockArea {
 pub enum DockItem {
     /// Split layout
     Split {
-        axis: gpui::Axis,
+        axis: Axis,
         items: Vec<DockItem>,
         sizes: Vec<Option<Pixels>>,
         view: View<StackPanel>,
@@ -83,6 +85,11 @@ pub enum DockItem {
     },
     /// Panel layout
     Panel { view: Arc<dyn PanelView> },
+    /// Tiles layout
+    Tiles {
+        items: Vec<TileItem>,
+        view: View<Tiles>,
+    },
 }
 
 impl std::fmt::Debug for DockItem {
@@ -104,6 +111,7 @@ impl std::fmt::Debug for DockItem {
                 .field("active_ix", active_ix)
                 .finish(),
             DockItem::Panel { .. } => f.debug_struct("Panel").finish(),
+            DockItem::Tiles { .. } => f.debug_struct("Tiles").finish(),
         }
     }
 }
@@ -172,6 +180,51 @@ impl DockItem {
         Self::Panel { view: panel }
     }
 
+    /// Create DockItem with tiles layout
+    ///
+    /// This items and metas should have the same length.
+    pub fn tiles(
+        items: Vec<DockItem>,
+        metas: Vec<impl Into<TileMeta> + Copy>,
+        dock_area: &WeakView<DockArea>,
+        cx: &mut WindowContext,
+    ) -> Self {
+        assert!(items.len() == metas.len());
+
+        let tile_panel = cx.new_view(|cx| {
+            let mut tiles = Tiles::new(cx);
+            for (ix, item) in items.clone().into_iter().enumerate() {
+                match item {
+                    DockItem::Tabs { view, .. } => {
+                        let meta: TileMeta = metas[ix].into();
+                        let tile_item =
+                            TileItem::new(Arc::new(view), meta.bounds).z_index(meta.z_index);
+                        tiles.add_item(tile_item, dock_area, cx);
+                    }
+                    _ => {
+                        // Ignore non-tabs items
+                    }
+                }
+            }
+            tiles
+        });
+
+        cx.defer({
+            let tile_panel = tile_panel.clone();
+            let dock_area = dock_area.clone();
+            move |cx| {
+                _ = dock_area.update(cx, |this, cx| {
+                    this.subscribe_panel(&tile_panel, cx);
+                });
+            }
+        });
+
+        Self::Tiles {
+            items: tile_panel.read(cx).panels.clone(),
+            view: tile_panel,
+        }
+    }
+
     /// Create DockItem with tabs layout, items are displayed as tabs.
     ///
     /// The `active_ix` is the index of the active tab, if `None` the first tab is active.
@@ -220,10 +273,11 @@ impl DockItem {
     }
 
     /// Returns the views of the dock item.
-    fn view(&self) -> Arc<dyn PanelView> {
+    pub fn view(&self) -> Arc<dyn PanelView> {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
+            Self::Tiles { view, .. } => Arc::new(view.clone()),
             Self::Panel { view, .. } => view.clone(),
         }
     }
@@ -236,6 +290,13 @@ impl DockItem {
             }
             Self::Tabs { items, .. } => items.iter().find(|item| *item == &panel).cloned(),
             Self::Panel { view } => Some(view.clone()),
+            Self::Tiles { items, .. } => items.iter().find_map(|item| {
+                if &item.panel == &panel {
+                    Some(item.panel.clone())
+                } else {
+                    None
+                }
+            }),
         }
     }
 
@@ -271,6 +332,7 @@ impl DockItem {
                     stack_panel.add_panel(new_item.view(), None, dock_area.clone(), cx);
                 });
             }
+            Self::Tiles { .. } => {}
             Self::Panel { .. } => {}
         }
     }
@@ -288,6 +350,7 @@ impl DockItem {
                     item.set_collapsed(collapsed, cx);
                 }
             }
+            DockItem::Tiles { .. } => {}
             DockItem::Panel { .. } => {}
         }
     }
@@ -297,6 +360,7 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
+            DockItem::Tiles { .. } => None,
             DockItem::Panel { .. } => None,
         }
     }
@@ -306,6 +370,7 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
+            DockItem::Tiles { .. } => None,
             DockItem::Panel { .. } => None,
         }
     }
@@ -620,7 +685,7 @@ impl DockArea {
         Ok(())
     }
 
-    /// Dump the dock panels layout to DockItemState.
+    /// Dump the dock panels layout to PanelState.
     ///
     /// See also [DockArea::load].
     pub fn dump(&self, cx: &AppContext) -> DockAreaState {
@@ -677,6 +742,9 @@ impl DockArea {
             }
             DockItem::Tabs { .. } => {
                 // We subscribe to the tab panel event in StackPanel's insert_panel
+            }
+            DockItem::Tiles { .. } => {
+                // We subscribe to the tab panel event in Tiles's [`add_item`](Tiles::add_item)
             }
             DockItem::Panel { .. } => {
                 // Not supported
@@ -748,6 +816,7 @@ impl DockArea {
         match &self.items {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
+            DockItem::Tiles { view, .. } => view.clone().into_any_element(),
             DockItem::Panel { view, .. } => view.clone().view().into_any_element(),
         }
     }
@@ -795,39 +864,48 @@ impl Render for DockArea {
                 if let Some(zoom_view) = self.zoom_view.clone() {
                     this.child(zoom_view)
                 } else {
-                    this.child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .h_full()
-                            // Left dock
-                            .when_some(self.left_dock.clone(), |this, dock| {
-                                this.child(div().flex().flex_none().child(dock))
-                            })
-                            // Center
-                            .child(
+                    match &self.items {
+                        DockItem::Tiles { view, .. } => {
+                            // render tiles
+                            this.child(view.clone())
+                        }
+                        _ => {
+                            // render dock
+                            this.child(
                                 div()
                                     .flex()
-                                    .flex_1()
-                                    .flex_col()
-                                    .overflow_hidden()
-                                    // Top center
+                                    .flex_row()
+                                    .h_full()
+                                    // Left dock
+                                    .when_some(self.left_dock.clone(), |this, dock| {
+                                        this.child(div().flex().flex_none().child(dock))
+                                    })
+                                    // Center
                                     .child(
                                         div()
+                                            .flex()
                                             .flex_1()
+                                            .flex_col()
                                             .overflow_hidden()
-                                            .child(self.render_items(cx)),
+                                            // Top center
+                                            .child(
+                                                div()
+                                                    .flex_1()
+                                                    .overflow_hidden()
+                                                    .child(self.render_items(cx)),
+                                            )
+                                            // Bottom Dock
+                                            .when_some(self.bottom_dock.clone(), |this, dock| {
+                                                this.child(dock)
+                                            }),
                                     )
-                                    // Bottom Dock
-                                    .when_some(self.bottom_dock.clone(), |this, dock| {
-                                        this.child(dock)
+                                    // Right Dock
+                                    .when_some(self.right_dock.clone(), |this, dock| {
+                                        this.child(div().flex().flex_none().child(dock))
                                     }),
                             )
-                            // Right Dock
-                            .when_some(self.right_dock.clone(), |this, dock| {
-                                this.child(div().flex().flex_none().child(dock))
-                            }),
-                    )
+                        }
+                    }
                 }
             })
     }

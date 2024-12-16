@@ -15,8 +15,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
   - [x] Selection by mouse, drag to select text
   - [x] Cursor blinking
   - [x] Input icon
-  - [ ] Textarea
-  - [ ] ContextMenu to let user copy, cut, paste
+  - [x] Textarea
 - [x] OtpInput
 - [x] Button
   - [x] Button with Icon
@@ -35,7 +34,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Notification
 - [x] Tooltip
 - [x] Popover
-- [x] Dockpanel
+- [x] Dock & Tiles
 - [x] Resizable
 - [x] Progress & Indicator
 - [x] Slider
@@ -49,7 +48,8 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] List
   - [x] A complex List example.
 - [x] Table
-  - [x] row, column selection
+  - [x] Virtual Rows and Columns for only render visible area for high performance.
+  - [x] Row, Column selection
   - [x] Left, Right / Up, Down to selection column or row.
   - [x] Horizontal scroll
   - [x] Vertical scroll
@@ -84,11 +84,15 @@ If you want to see the demo, here is a some demo applications.
 
 - [gpui-app-windows.zip](https://github.com/user-attachments/files/17396296/gpui-app-windows.zip) - Updated at 2024/10/16
 
-## How to build
+## Development
 
 ```bash
 cargo run
 ```
+
+More examples can be found in `examples` directory.
+
+Checkout [DEVELOPMENT](DEVELOPMENT) to see more details.
 
 ## License
 
