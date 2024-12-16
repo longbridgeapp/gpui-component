@@ -11,7 +11,7 @@ use rust_i18n::t;
 
 use crate::{
     button::{Button, ButtonVariants as _},
-    dock::DockItemInfo,
+    dock::PanelItemInfo,
     h_flex,
     popup_menu::{PopupMenu, PopupMenuExt},
     tab::{Tab, TabBar},
@@ -20,7 +20,7 @@ use crate::{
 };
 
 use super::{
-    ClosePanel, DockArea, DockItemState, DockPlacement, Panel, PanelEvent, PanelStyle, PanelView,
+    ClosePanel, DockArea, DockPlacement, Panel, PanelEvent, PanelItemState, PanelStyle, PanelView,
     StackPanel, ToggleZoom,
 };
 
@@ -125,11 +125,11 @@ impl Panel for TabPanel {
         }
     }
 
-    fn dump(&self, cx: &AppContext) -> DockItemState {
-        let mut state = DockItemState::new(self);
+    fn dump(&self, cx: &AppContext) -> PanelItemState {
+        let mut state = PanelItemState::new(self);
         for panel in self.panels.iter() {
             state.add_child(panel.dump(cx));
-            state.info = DockItemInfo::tabs(self.active_ix);
+            state.info = PanelItemInfo::tabs(self.active_ix);
         }
         state
     }

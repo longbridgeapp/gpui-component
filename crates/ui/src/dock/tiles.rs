@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
-use super::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView, TileState};
+use super::{Panel, PanelEvent, PanelItemInfo, PanelItemState, PanelView, TileState};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
     EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
@@ -38,15 +38,30 @@ enum ResizeAxis {
 }
 
 #[derive(Clone)]
-pub struct TilesItem {
+pub struct TileItem {
     pub(crate) panel: Arc<dyn PanelView>,
     bounds: Bounds<Pixels>,
     z_index: usize,
 }
 
-pub struct TilePanel {
+impl TileItem {
+    pub fn new(panel: Arc<dyn PanelView>, bounds: Bounds<Pixels>) -> Self {
+        Self {
+            panel,
+            bounds,
+            z_index: 0,
+        }
+    }
+
+    pub fn z_index(mut self, z_index: usize) -> Self {
+        self.z_index = z_index;
+        self
+    }
+}
+
+pub struct Tiles {
     focus_handle: FocusHandle,
-    pub(crate) panels: Vec<TilesItem>,
+    pub(crate) panels: Vec<TileItem>,
     dragging_index: Option<usize>,
     dragging_initial_mouse: Point<Pixels>,
     dragging_initial_bounds: Bounds<Pixels>,
@@ -55,36 +70,33 @@ pub struct TilePanel {
     bounds: Bounds<Pixels>,
 }
 
-impl Panel for TilePanel {
+impl Panel for Tiles {
     fn panel_name(&self) -> &'static str {
-        "TilePanel"
+        "Tiles"
     }
 
     fn title(&self, _cx: &WindowContext) -> AnyElement {
-        "TilePanel".into_any_element()
+        "Tiles".into_any_element()
     }
 
-    fn dump(&self, cx: &AppContext) -> DockItemState {
+    fn dump(&self, cx: &AppContext) -> PanelItemState {
         let panels_with_layout = self
             .panels
             .iter()
-            .map(|item: &TilesItem| {
-                let panel_state = item.panel.dump(cx);
-                TileState {
-                    state: panel_state,
-                    bounds: item.bounds,
-                    z_index: item.z_index,
-                }
+            .map(|item: &TileItem| TileState {
+                panel: item.panel.dump(cx),
+                bounds: item.bounds,
+                z_index: item.z_index,
             })
             .collect();
 
-        let mut state = DockItemState::new(self);
-        state.info = DockItemInfo::Tiles(panels_with_layout);
+        let mut state = PanelItemState::new(self);
+        state.info = PanelItemInfo::Tiles(panels_with_layout);
         state
     }
 }
 
-impl TilePanel {
+impl Tiles {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
@@ -182,9 +194,9 @@ impl TilePanel {
 
         self.panels.insert(
             ix,
-            TilesItem {
+            TileItem {
                 panel: panel.clone(),
-                bounds: bounds,
+                bounds,
                 z_index: self
                     .panels
                     .iter()
@@ -208,11 +220,7 @@ impl TilePanel {
         }
     }
 
-    fn update_initial_position(
-        &mut self,
-        position: Point<Pixels>,
-        cx: &mut ViewContext<'_, TilePanel>,
-    ) {
+    fn update_initial_position(&mut self, position: Point<Pixels>, cx: &mut ViewContext<'_, Self>) {
         let Some((index, item)) = self.find_at_position(position) else {
             return;
         };
@@ -225,7 +233,7 @@ impl TilePanel {
         cx.notify();
     }
 
-    fn update_position(&mut self, pos: Point<Pixels>, cx: &mut ViewContext<'_, TilePanel>) {
+    fn update_position(&mut self, pos: Point<Pixels>, cx: &mut ViewContext<'_, Self>) {
         let Some(index) = self.dragging_index else {
             return;
         };
@@ -245,11 +253,7 @@ impl TilePanel {
         cx.notify();
     }
 
-    fn update_resizing_drag(
-        &mut self,
-        drag_data: ResizeDragData,
-        cx: &mut ViewContext<'_, TilePanel>,
-    ) {
+    fn update_resizing_drag(&mut self, drag_data: ResizeDragData, cx: &mut ViewContext<'_, Self>) {
         if let Some((index, _item)) = self.find_at_position(drag_data.last_position) {
             self.resizing_index = Some(index);
             self.resizing_drag_data = Some(drag_data);
@@ -257,7 +261,7 @@ impl TilePanel {
         }
     }
 
-    fn resize_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
+    fn resize_width(&mut self, new_width: Pixels, cx: &mut ViewContext<'_, Self>) {
         if let Some(index) = self.resizing_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.width = round_to_nearest_ten(new_width);
@@ -266,7 +270,7 @@ impl TilePanel {
         }
     }
 
-    fn resize_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, TilePanel>) {
+    fn resize_height(&mut self, new_height: Pixels, cx: &mut ViewContext<'_, Self>) {
         if let Some(index) = self.resizing_index {
             if let Some(item) = self.panels.get_mut(index) {
                 item.bounds.size.height = round_to_nearest_ten(new_height);
@@ -275,27 +279,17 @@ impl TilePanel {
         }
     }
 
-    pub fn add_with_z_index(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        bounds: Bounds<Pixels>,
-        z_index: usize,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.panels.push(TilesItem {
-            panel: panel.clone(),
-            bounds,
-            z_index,
-        });
+    pub fn add_item(&mut self, item: &TileItem, cx: &mut ViewContext<Self>) {
+        self.panels.push(item.clone());
 
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
     /// Find the panel at a given position, considering z-index
-    fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
+    fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TileItem)> {
         let adjusted_position = position - self.bounds.origin;
-        let mut panels_with_indices: Vec<(usize, &TilesItem)> =
+        let mut panels_with_indices: Vec<(usize, &TileItem)> =
             self.panels.iter().enumerate().collect();
 
         panels_with_indices.sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index));
@@ -338,7 +332,7 @@ impl TilePanel {
         &mut self,
         cx: &mut ViewContext<Self>,
         entity_id: EntityId,
-        item: &TilesItem,
+        item: &TileItem,
         is_occluded: impl Fn(&Bounds<Pixels>) -> bool,
     ) -> Vec<AnyElement> {
         let panel_bounds = item.bounds;
@@ -540,7 +534,7 @@ impl TilePanel {
         &mut self,
         cx: &mut ViewContext<Self>,
         entity_id: EntityId,
-        item: &TilesItem,
+        item: &TileItem,
         is_occluded: &impl Fn(&Bounds<Pixels>) -> bool,
     ) -> AnyElement {
         let drag_bar_bounds = Bounds::new(
@@ -596,18 +590,18 @@ fn round_point_to_nearest_ten(point: Point<Pixels>) -> Point<Pixels> {
     Point::new(round_to_nearest_ten(point.x), round_to_nearest_ten(point.y))
 }
 
-impl FocusableView for TilePanel {
+impl FocusableView for Tiles {
     fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
-impl EventEmitter<PanelEvent> for TilePanel {}
-impl EventEmitter<DismissEvent> for TilePanel {}
-impl Render for TilePanel {
+impl EventEmitter<PanelEvent> for Tiles {}
+impl EventEmitter<DismissEvent> for Tiles {}
+impl Render for Tiles {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let view = cx.view().clone();
-        let mut panels_with_indices: Vec<(usize, TilesItem)> =
+        let mut panels_with_indices: Vec<(usize, TileItem)> =
             self.panels.iter().cloned().enumerate().collect();
         panels_with_indices.sort_by_key(|(_, item)| item.z_index);
 

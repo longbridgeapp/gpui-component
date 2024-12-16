@@ -48,7 +48,7 @@ use gpui::{
 use ui::{
     button::Button,
     divider::Divider,
-    dock::{register_panel, DockItemInfo, DockItemState, Panel, PanelEvent, TitleStyle},
+    dock::{register_panel, Panel, PanelEvent, PanelItemInfo, PanelItemState, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
@@ -66,9 +66,9 @@ pub fn init(cx: &mut AppContext) {
 
     register_panel(cx, PANEL_NAME, |_, _, info, cx| {
         let story_state = match info {
-            DockItemInfo::Panel(value) => StoryState::from_value(value.clone()),
+            PanelItemInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
-                unreachable!("Invalid DockItemInfo: {:?}", info)
+                unreachable!("Invalid PanelItemInfo: {:?}", info)
             }
         };
 
@@ -313,12 +313,12 @@ impl Panel for StoryContainer {
         ]
     }
 
-    fn dump(&self, _cx: &AppContext) -> DockItemState {
-        let mut state = DockItemState::new(self);
+    fn dump(&self, _cx: &AppContext) -> PanelItemState {
+        let mut state = PanelItemState::new(self);
         let story_state = StoryState {
             story_klass: self.story_klass.clone().unwrap(),
         };
-        state.info = DockItemInfo::panel(story_state.to_value());
+        state.info = PanelItemInfo::panel(story_state.to_value());
         state
     }
 }

@@ -4,10 +4,9 @@ mod panel;
 mod stack_panel;
 mod state;
 mod tab_panel;
-mod tile_panel;
+mod tiles;
 
 use anyhow::Result;
-pub use dock::*;
 use gpui::{
     actions, canvas, div, prelude::FluentBuilder, AnyElement, AnyView, AppContext, Axis, Bounds,
     Edges, Entity as _, EntityId, EventEmitter, InteractiveElement as _, IntoElement,
@@ -15,12 +14,13 @@ use gpui::{
     VisualContext, WeakView, WindowContext,
 };
 use std::sync::Arc;
-pub use tile_panel::*;
 
+pub use dock::*;
 pub use panel::*;
 pub use stack_panel::*;
 pub use state::*;
 pub use tab_panel::*;
+pub use tiles::*;
 
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
@@ -87,8 +87,8 @@ pub enum DockItem {
     Panel { view: Arc<dyn PanelView> },
     /// Tiles layout
     Tiles {
-        items: Vec<TilesItem>,
-        view: View<TilePanel>,
+        items: Vec<TileItem>,
+        view: View<Tiles>,
     },
 }
 
@@ -182,16 +182,16 @@ impl DockItem {
 
     /// Create DockItem with tiles layout
     pub fn tiles_with_sizes(
-        items: Vec<(DockItem, Bounds<Pixels>, usize)>,
+        items: Vec<TileItem>,
         dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
         let tile_panel = cx.new_view(|cx| {
-            let mut tile_panel = TilePanel::new(cx);
-            for (dock_item, bounds, z_index) in items.into_iter() {
-                tile_panel.add_with_z_index(dock_item.view(), bounds, z_index, cx);
+            let mut tiles = Tiles::new(cx);
+            for item in items.into_iter() {
+                tiles.add_item(&item, cx);
             }
-            tile_panel
+            tiles
         });
 
         cx.defer({
@@ -670,7 +670,7 @@ impl DockArea {
         Ok(())
     }
 
-    /// Dump the dock panels layout to DockItemState.
+    /// Dump the dock panels layout to PanelItemState.
     ///
     /// See also [DockArea::load].
     pub fn dump(&self, cx: &AppContext) -> DockAreaState {
