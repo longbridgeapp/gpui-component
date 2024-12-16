@@ -284,7 +284,7 @@ impl Tiles {
                 if item.z_index == max_z_index {
                     return;
                 }
-                item.z_index = (max_z_index + 1) % usize::MAX;
+                item.z_index = max_z_index.saturating_add(1);
             }
         }
     }
