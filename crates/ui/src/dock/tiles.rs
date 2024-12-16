@@ -556,14 +556,19 @@ impl Tiles {
     ) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let panel_view = item.panel.view();
-
         let is_occluded = {
             let panels = self.panels.clone();
             move |bounds: &Bounds<Pixels>| {
+                let this_z = panels[ix].z_index;
+                let this_ix = ix;
                 panels.iter().enumerate().any(|(sub_ix, other_item)| {
-                    sub_ix != ix
-                        && other_item.z_index > panels[ix].z_index
-                        && other_item.bounds.intersects(bounds)
+                    if sub_ix == this_ix {
+                        return false;
+                    }
+                    let other_is_above = (other_item.z_index > this_z)
+                        || (other_item.z_index == this_z && sub_ix > this_ix);
+
+                    other_is_above && other_item.bounds.intersects(bounds)
                 })
             }
         };
