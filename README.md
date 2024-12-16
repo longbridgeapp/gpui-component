@@ -35,7 +35,7 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] Notification
 - [x] Tooltip
 - [x] Popover
-- [x] Dockpanel
+- [x] Dock & Tiles
 - [x] Resizable
 - [x] Progress & Indicator
 - [x] Slider
@@ -49,7 +49,8 @@ A UI components for building desktop application by using [GPUI](https://gpui.rs
 - [x] List
   - [x] A complex List example.
 - [x] Table
-  - [x] row, column selection
+  - [x] Virtual Rows and Columns for only render visible area for high performance.
+  - [x] Row, Column selection
   - [x] Left, Right / Up, Down to selection column or row.
   - [x] Horizontal scroll
   - [x] Vertical scroll
