@@ -1,24 +1,29 @@
 use std::{
+    cell::Cell,
     fmt::{Debug, Formatter},
+    rc::Rc,
     sync::Arc,
 };
 
-use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
+use crate::{
+    h_flex,
+    scroll::{Scrollbar, ScrollbarState},
+    theme::ActiveTheme,
+    v_flex, Placement, StyledExt,
+};
 
 use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileMeta};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
-    EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
-    MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Point, Render, Size,
-    StatefulInteractiveElement, Styled, ViewContext, VisualContext, WindowContext,
+    Entity, EntityId, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement,
+    IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Point, Render,
+    ScrollHandle, Size, StatefulInteractiveElement, Styled, ViewContext, VisualContext,
+    WindowContext,
 };
 
-const MINIMUM_WIDTH: f32 = 100.;
-const MINIMUM_HEIGHT: f32 = 100.;
-const DRAG_BAR_HEIGHT: f32 = 30.;
-
-const HANDLE_SIZE: f32 = 10.0;
-const HALF_HANDLE_SIZE: f32 = HANDLE_SIZE / 2.0;
+const MINIMUM_SIZE: Size<Pixels> = size(px(100.), px(100.));
+const DRAG_BAR_HEIGHT: Pixels = px(30.);
+const HANDLE_SIZE: Pixels = px(10.0);
 
 #[derive(Clone, Render)]
 pub struct DragMoving(EntityId);
@@ -82,6 +87,10 @@ pub struct Tiles {
     resizing_index: Option<usize>,
     resizing_drag_data: Option<ResizeDrag>,
     bounds: Bounds<Pixels>,
+
+    scroll_state: Rc<Cell<ScrollbarState>>,
+    scroll_handle: ScrollHandle,
+    scroll_size: Size<Pixels>,
 }
 
 impl Panel for Tiles {
@@ -128,12 +137,21 @@ impl Tiles {
             resizing_index: None,
             resizing_drag_data: None,
             bounds: Bounds::default(),
+            scroll_state: Rc::new(Cell::new(ScrollbarState::default())),
+            scroll_size: Size::default(),
+            scroll_handle: ScrollHandle::default(),
         }
     }
 
     #[inline]
     pub(super) fn panels_len(&self) -> usize {
         self.panels.len()
+    }
+
+    fn sorted_panels(&self) -> Vec<TileItem> {
+        let mut items: Vec<TileItem> = self.panels.iter().cloned().collect();
+        items.sort_by_key(|item| item.z_index);
+        items
     }
 
     /// Return the index of the panel.
@@ -248,10 +266,10 @@ impl Tiles {
             return;
         };
 
-        let adjusted_position = position - self.bounds.origin;
+        let inner_pos = position - self.bounds.origin;
         let bounds = item.bounds;
         self.dragging_index = Some(index);
-        self.dragging_initial_mouse = adjusted_position;
+        self.dragging_initial_mouse = inner_pos;
         self.dragging_initial_bounds = bounds;
         cx.notify();
     }
@@ -311,7 +329,7 @@ impl Tiles {
 
     /// Find the panel at a given position, considering z-index
     fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TileItem)> {
-        let adjusted_position = position - self.bounds.origin;
+        let inner_pos = position - self.bounds.origin;
         let mut panels_with_indices: Vec<(usize, &TileItem)> =
             self.panels.iter().enumerate().collect();
 
@@ -320,10 +338,10 @@ impl Tiles {
         for (index, item) in panels_with_indices {
             let extended_bounds = Bounds::new(
                 item.bounds.origin,
-                item.bounds.size + size(Pixels(HALF_HANDLE_SIZE), Pixels(HALF_HANDLE_SIZE)),
+                item.bounds.size + size(HANDLE_SIZE, HANDLE_SIZE) / 2.0,
             );
 
-            if extended_bounds.contains(&adjusted_position) {
+            if extended_bounds.contains(&inner_pos) {
                 return Some((index, item));
             }
         }
@@ -360,22 +378,22 @@ impl Tiles {
     ) -> Vec<AnyElement> {
         let panel_bounds = item.bounds;
         let right_handle_bounds = Bounds::new(
-            panel_bounds.origin + point(panel_bounds.size.width - px(HALF_HANDLE_SIZE), px(0.0)),
-            size(px(HANDLE_SIZE), panel_bounds.size.height),
+            panel_bounds.origin + point(panel_bounds.size.width - HANDLE_SIZE.half(), px(0.0)),
+            size(HANDLE_SIZE.half(), panel_bounds.size.height),
         );
 
         let bottom_handle_bounds = Bounds::new(
-            panel_bounds.origin + point(px(0.0), panel_bounds.size.height - px(HALF_HANDLE_SIZE)),
-            size(panel_bounds.size.width, px(HANDLE_SIZE)),
+            panel_bounds.origin + point(px(0.0), panel_bounds.size.height - HANDLE_SIZE.half()),
+            size(panel_bounds.size.width, HANDLE_SIZE.half()),
         );
 
         let corner_handle_bounds = Bounds::new(
             panel_bounds.origin
                 + point(
-                    panel_bounds.size.width - px(HALF_HANDLE_SIZE),
-                    panel_bounds.size.height - px(HALF_HANDLE_SIZE),
+                    panel_bounds.size.width - HANDLE_SIZE.half(),
+                    panel_bounds.size.height - HANDLE_SIZE.half(),
                 ),
-            size(px(HANDLE_SIZE), px(HANDLE_SIZE)),
+            size(HANDLE_SIZE.half(), HANDLE_SIZE.half()),
         );
 
         let mut elements = Vec::new();
@@ -387,8 +405,8 @@ impl Tiles {
                 .cursor_col_resize()
                 .absolute()
                 .top(px(0.0))
-                .right(px(-HALF_HANDLE_SIZE))
-                .w(px(HANDLE_SIZE))
+                .right(-HANDLE_SIZE.half())
+                .w(HANDLE_SIZE)
                 .h(panel_bounds.size.height)
                 .on_mouse_down(
                     MouseButton::Left,
@@ -424,7 +442,7 @@ impl Tiles {
                                     let pos = e.event.position;
                                     let delta = pos.x - drag_data.last_position.x;
                                     let new_width = (drag_data.last_bounds.size.width + delta)
-                                        .max(px(MINIMUM_WIDTH));
+                                        .max(MINIMUM_SIZE.width);
                                     this.resize_width(new_width, cx);
                                 }
                             }
@@ -443,9 +461,9 @@ impl Tiles {
                 .cursor_row_resize()
                 .absolute()
                 .left(px(0.0))
-                .bottom(px(-HALF_HANDLE_SIZE))
+                .bottom(-HANDLE_SIZE.half())
                 .w(panel_bounds.size.width)
-                .h(px(HANDLE_SIZE))
+                .h(HANDLE_SIZE)
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
@@ -477,7 +495,7 @@ impl Tiles {
                                     let pos = e.event.position;
                                     let delta = pos.y - drag_data.last_position.y;
                                     let new_height = (drag_data.last_bounds.size.height + delta)
-                                        .max(px(MINIMUM_HEIGHT));
+                                        .max(MINIMUM_SIZE.width);
                                     this.resize_height(new_height, cx);
                                 }
                             }
@@ -495,10 +513,10 @@ impl Tiles {
                 .id("corner-resize-handle")
                 .cursor_nwse_resize()
                 .absolute()
-                .right(px(-HALF_HANDLE_SIZE))
-                .bottom(px(-HALF_HANDLE_SIZE))
-                .w(px(HANDLE_SIZE))
-                .h(px(HANDLE_SIZE))
+                .right(-HANDLE_SIZE.half())
+                .bottom(-HANDLE_SIZE.half())
+                .w(HANDLE_SIZE)
+                .h(HANDLE_SIZE)
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
@@ -534,9 +552,9 @@ impl Tiles {
                                     let delta_x = pos.x - drag_data.last_position.x;
                                     let delta_y = pos.y - drag_data.last_position.y;
                                     let new_width = (drag_data.last_bounds.size.width + delta_x)
-                                        .max(px(MINIMUM_WIDTH));
+                                        .max(MINIMUM_SIZE.width);
                                     let new_height = (drag_data.last_bounds.size.height + delta_y)
-                                        .max(px(MINIMUM_HEIGHT));
+                                        .max(MINIMUM_SIZE.height);
                                     this.resize_height(new_height, cx);
                                     this.resize_width(new_width, cx);
                                 }
@@ -564,7 +582,7 @@ impl Tiles {
             item.bounds.origin,
             Size {
                 width: item.bounds.size.width,
-                height: px(DRAG_BAR_HEIGHT),
+                height: DRAG_BAR_HEIGHT,
             },
         );
 
@@ -574,7 +592,7 @@ impl Tiles {
                 .cursor_grab()
                 .absolute()
                 .w_full()
-                .h(px(DRAG_BAR_HEIGHT))
+                .h(DRAG_BAR_HEIGHT)
                 .bg(cx.theme().transparent)
                 .on_mouse_down(
                     MouseButton::Left,
@@ -603,6 +621,46 @@ impl Tiles {
             div().into_any_element()
         }
     }
+
+    fn render_panel(
+        &mut self,
+        item: &TileItem,
+        ix: usize,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let entity_id = cx.entity_id();
+        let panel_view = item.panel.view();
+
+        let is_occluded = {
+            let panels = self.panels.clone();
+            move |bounds: &Bounds<Pixels>| {
+                panels.iter().enumerate().any(|(sub_ix, other_item)| {
+                    sub_ix != ix
+                        && other_item.z_index > panels[ix].z_index
+                        && other_item.bounds.intersects(bounds)
+                })
+            }
+        };
+
+        v_flex()
+            .bg(cx.theme().background)
+            .border_1()
+            .border_color(cx.theme().border)
+            .absolute()
+            .left(item.bounds.origin.x)
+            .top(item.bounds.origin.y)
+            .w(item.bounds.size.width)
+            .h(item.bounds.size.height)
+            .child(
+                h_flex()
+                    .w_full()
+                    .h_full()
+                    .overflow_hidden()
+                    .child(panel_view),
+            )
+            .children(self.render_resize_handles(cx, entity_id, &item, &is_occluded))
+            .child(self.render_drag_bar(cx, entity_id, &item, &is_occluded))
+    }
 }
 
 #[inline]
@@ -624,68 +682,48 @@ impl EventEmitter<PanelEvent> for Tiles {}
 impl EventEmitter<DismissEvent> for Tiles {}
 impl Render for Tiles {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let entity_id = cx.entity_id();
         let view = cx.view().clone();
-        let mut panels_with_indices: Vec<(usize, TileItem)> =
-            self.panels.iter().cloned().enumerate().collect();
-        panels_with_indices.sort_by_key(|(_, item)| item.z_index);
+        let view_id = view.entity_id();
+        let panels = self.sorted_panels();
+        let scroll_bounds =
+            self.panels
+                .iter()
+                .fold(Bounds::default(), |acc: Bounds<Pixels>, item| Bounds {
+                    origin: Point {
+                        x: acc.origin.x.min(item.bounds.origin.x),
+                        y: acc.origin.y.min(item.bounds.origin.y),
+                    },
+                    size: Size {
+                        width: acc.size.width.max(item.bounds.right()),
+                        height: acc.size.height.max(item.bounds.bottom()),
+                    },
+                });
+        let scroll_size = scroll_bounds.size - size(scroll_bounds.origin.x, scroll_bounds.origin.y);
 
-        h_flex()
-            .size_full()
-            .overflow_hidden()
+        div()
             .relative()
             .bg(cx.theme().background)
-            .children(
-                panels_with_indices
-                    .into_iter()
-                    .map(|(current_index, item)| {
-                        let panel = item.panel.clone();
-                        let panel_view = panel.view();
-
-                        let is_occluded = {
-                            let panels = self.panels.clone();
-                            move |bounds: &Bounds<Pixels>| {
-                                panels.iter().enumerate().any(|(index, other_item)| {
-                                    index != current_index
-                                        && other_item.z_index > panels[current_index].z_index
-                                        && other_item.bounds.intersects(bounds)
-                                })
-                            }
-                        };
-
-                        v_flex()
-                            .bg(cx.theme().background)
-                            .border_1()
-                            .border_color(cx.theme().border)
-                            .absolute()
-                            .left(item.bounds.origin.x)
-                            .top(item.bounds.origin.y)
-                            .w(item.bounds.size.width)
-                            .h(item.bounds.size.height)
-                            .child(
-                                h_flex()
-                                    .w_full()
-                                    .h_full()
-                                    .overflow_hidden()
-                                    .child(panel_view),
-                            )
-                            .children(self.render_resize_handles(
-                                cx,
-                                entity_id,
-                                &item,
-                                &is_occluded,
-                            ))
-                            .child(self.render_drag_bar(cx, entity_id, &item, &is_occluded))
+            .child(
+                div()
+                    .id("tiles")
+                    .track_scroll(&self.scroll_handle)
+                    .size_full()
+                    .overflow_scroll()
+                    .children(
+                        panels
+                            .into_iter()
+                            .enumerate()
+                            .map(|(ix, item)| self.render_panel(&item, ix, cx)),
+                    )
+                    .child({
+                        canvas(
+                            move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
+                            |_, _, _| {},
+                        )
+                        .absolute()
+                        .size_full()
                     }),
             )
-            .child({
-                canvas(
-                    move |bounds, cx| view.update(cx, |r, _| r.bounds = bounds),
-                    |_, _, _| {},
-                )
-                .absolute()
-                .size_full()
-            })
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(move |this, _event: &MouseUpEvent, cx| {
@@ -713,5 +751,20 @@ impl Render for Tiles {
                     }
                 }),
             )
+            .child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .right_0()
+                    .bottom_0()
+                    .child(Scrollbar::both(
+                        view_id,
+                        self.scroll_state.clone(),
+                        self.scroll_handle.clone(),
+                        scroll_size,
+                    )),
+            )
+            .size_full()
     }
 }

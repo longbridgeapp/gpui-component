@@ -22,6 +22,8 @@ pub use state::*;
 pub use tab_panel::*;
 pub use tiles::*;
 
+use crate::StyledExt;
+
 pub fn init(cx: &mut AppContext) {
     cx.set_global(PanelRegistry::new());
 }
@@ -849,39 +851,48 @@ impl Render for DockArea {
                 if let Some(zoom_view) = self.zoom_view.clone() {
                     this.child(zoom_view)
                 } else {
-                    this.child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .h_full()
-                            // Left dock
-                            .when_some(self.left_dock.clone(), |this, dock| {
-                                this.child(div().flex().flex_none().child(dock))
-                            })
-                            // Center
-                            .child(
+                    match &self.items {
+                        DockItem::Tiles { view, .. } => {
+                            // render tiles
+                            this.child(view.clone())
+                        }
+                        _ => {
+                            // render dock
+                            this.child(
                                 div()
                                     .flex()
-                                    .flex_1()
-                                    .flex_col()
-                                    .overflow_hidden()
-                                    // Top center
+                                    .flex_row()
+                                    .h_full()
+                                    // Left dock
+                                    .when_some(self.left_dock.clone(), |this, dock| {
+                                        this.child(div().flex().flex_none().child(dock))
+                                    })
+                                    // Center
                                     .child(
                                         div()
+                                            .flex()
                                             .flex_1()
+                                            .flex_col()
                                             .overflow_hidden()
-                                            .child(self.render_items(cx)),
+                                            // Top center
+                                            .child(
+                                                div()
+                                                    .flex_1()
+                                                    .overflow_hidden()
+                                                    .child(self.render_items(cx)),
+                                            )
+                                            // Bottom Dock
+                                            .when_some(self.bottom_dock.clone(), |this, dock| {
+                                                this.child(dock)
+                                            }),
                                     )
-                                    // Bottom Dock
-                                    .when_some(self.bottom_dock.clone(), |this, dock| {
-                                        this.child(dock)
+                                    // Right Dock
+                                    .when_some(self.right_dock.clone(), |this, dock| {
+                                        this.child(div().flex().flex_none().child(dock))
                                     }),
                             )
-                            // Right Dock
-                            .when_some(self.right_dock.clone(), |this, dock| {
-                                this.child(div().flex().flex_none().child(dock))
-                            }),
-                    )
+                        }
+                    }
                 }
             })
     }

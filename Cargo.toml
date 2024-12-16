@@ -40,7 +40,6 @@ debug = "limited"
 split-debuginfo = "unpacked"
 
 [profile.dev.package]
-cranelift-codegen = { opt-level = 3 }
 resvg = { opt-level = 3 }
 rustybuzz = { opt-level = 3 }
 taffy = { opt-level = 3 }
