@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use gpui::*;
-use std::{sync::Arc, time::Duration};
-use story::{Assets, ButtonStory, InputStory, StoryContainer};
+use std::time::Duration;
+use story::{Assets, ButtonStory, IconStory, StoryContainer};
 use ui::{
-    dock::{DockArea, DockAreaState, DockEvent, DockItem, TileItem},
+    dock::{DockArea, DockAreaState, DockEvent, DockItem},
     theme::ActiveTheme,
     Root, TitleBar,
 };
@@ -145,14 +145,12 @@ impl StoryTiles {
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
         DockItem::tiles(
             vec![
-                TileItem::new(
-                    Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
-                    Bounds::new(point(px(10.), px(10.)), size(px(610.), px(190.))),
-                ),
-                TileItem::new(
-                    Arc::new(StoryContainer::panel::<InputStory>(cx)),
-                    Bounds::new(point(px(120.), px(10.)), size(px(650.), px(300.))),
-                ),
+                DockItem::tab(StoryContainer::panel::<ButtonStory>(cx), dock_area, cx),
+                DockItem::tab(StoryContainer::panel::<IconStory>(cx), dock_area, cx),
+            ],
+            vec![
+                Bounds::new(point(px(10.), px(10.)), size(px(610.), px(190.))),
+                Bounds::new(point(px(120.), px(10.)), size(px(650.), px(300.))),
             ],
             dock_area,
             cx,

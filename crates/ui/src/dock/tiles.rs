@@ -318,8 +318,8 @@ impl Tiles {
         }
     }
 
-    pub fn add_item(&mut self, item: &TileItem, cx: &mut ViewContext<Self>) {
-        self.panels.push(item.clone());
+    pub fn add_item(&mut self, item: TileItem, cx: &mut ViewContext<Self>) {
+        self.panels.push(item);
 
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use gpui::{
     point, px, size, AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView,
     WindowContext,
@@ -9,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     invalid_panel::InvalidPanel, Dock, DockArea, DockItem, DockPlacement, Panel, PanelRegistry,
-    TileItem,
 };
 
 /// Used to serialize and deserialize the DockArea
@@ -89,6 +86,12 @@ impl Default for TileMeta {
             },
             z_index: 0,
         }
+    }
+}
+
+impl From<Bounds<Pixels>> for TileMeta {
+    fn from(bounds: Bounds<Pixels>) -> Self {
+        Self { bounds, z_index: 0 }
     }
 }
 
@@ -229,31 +232,7 @@ impl PanelState {
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
             }
-            PanelInfo::Tiles { metas } => {
-                let items = items
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(ix, item)| match item {
-                        DockItem::Panel { view } => {
-                            let meta = metas.get(ix).cloned().unwrap_or_default();
-                            Some(TileItem::new(view.clone(), meta.bounds).z_index(meta.z_index))
-                        }
-                        DockItem::Tabs { view, .. } => {
-                            let meta = metas.get(ix).cloned().unwrap_or_default();
-                            Some(
-                                TileItem::new(Arc::new(view.clone()), meta.bounds)
-                                    .z_index(meta.z_index),
-                            )
-                        }
-                        _ => {
-                            // ignore invalid panels in tiles
-                            None
-                        }
-                    })
-                    .collect_vec();
-
-                DockItem::tiles(items, &dock_area, cx)
-            }
+            PanelInfo::Tiles { metas } => DockItem::tiles(items, metas, &dock_area, cx),
         }
     }
 }

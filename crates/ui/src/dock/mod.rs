@@ -181,15 +181,30 @@ impl DockItem {
     }
 
     /// Create DockItem with tiles layout
+    ///
+    /// This items and metas should have the same length.
     pub fn tiles(
-        items: Vec<TileItem>,
+        items: Vec<DockItem>,
+        metas: Vec<impl Into<TileMeta> + Copy>,
         dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
     ) -> Self {
+        assert!(items.len() == metas.len());
+
         let tile_panel = cx.new_view(|cx| {
             let mut tiles = Tiles::new(cx);
-            for item in items.into_iter() {
-                tiles.add_item(&item, cx);
+            for (ix, item) in items.into_iter().enumerate() {
+                match item {
+                    DockItem::Tabs { view, .. } => {
+                        let meta: TileMeta = metas[ix].into();
+                        let tile_item =
+                            TileItem::new(Arc::new(view), meta.bounds).z_index(meta.z_index);
+                        tiles.add_item(tile_item, cx);
+                    }
+                    _ => {
+                        // Ignore non-tabs items
+                    }
+                }
             }
             tiles
         });
