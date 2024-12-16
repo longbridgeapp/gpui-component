@@ -13,8 +13,7 @@ use ui::{
     input::{InputEvent, OtpInput, TextInput},
     number_input::{NumberInput, NumberInputEvent},
     prelude::FluentBuilder as _,
-    scroll::ScrollbarAxis,
-    v_flex, FocusableCycle, IconName, Sizable, StyledExt,
+    v_flex, FocusableCycle, IconName, Sizable,
 };
 
 actions!(input_story, [Tab, TabPrev]);
@@ -352,7 +351,6 @@ impl Render for InputStory {
         v_flex()
             .key_context(CONTEXT)
             .id("input-story")
-            .scrollable(cx.entity_id(), ScrollbarAxis::Vertical)
             .on_action(cx.listener(Self::tab))
             .on_action(cx.listener(Self::tab_prev))
             .size_full()
