@@ -322,7 +322,13 @@ impl StoryWorkspace {
     }
 
     pub fn new_local(cx: &mut AppContext) -> Task<anyhow::Result<WindowHandle<Root>>> {
-        let window_bounds = Bounds::centered(None, size(px(1600.0), px(1200.0)), cx);
+        let display_size = cx.primary_display().unwrap().bounds().size;
+        let window_size = size(
+            px(1600.0).min(display_size.width),
+            px(1200.0).min(display_size.height),
+        );
+
+        let window_bounds = Bounds::centered(None, window_size, cx);
 
         cx.spawn(|mut cx| async move {
             let options = WindowOptions {
