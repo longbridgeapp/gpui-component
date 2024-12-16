@@ -269,6 +269,12 @@ impl Tiles {
         None
     }
 
+    #[inline]
+    fn reset_current_index(&mut self) {
+        self.dragging_index = None;
+        self.resizing_index = None;
+    }
+
     /// Bring the panel of target_index to front, returns (old_index, new_index) if successful
     fn bring_to_front(&mut self, target_index: Option<usize>) -> Option<(usize, usize)> {
         if let Some(old_index) = target_index {
@@ -276,8 +282,7 @@ impl Tiles {
                 let item = self.panels.remove(old_index);
                 self.panels.push(item);
                 let new_index = self.panels.len() - 1;
-                self.dragging_index = None;
-                self.resizing_index = None;
+                self.reset_current_index();
                 return Some((old_index, new_index));
             }
         }
@@ -665,8 +670,7 @@ impl Render for Tiles {
                         || this.resizing_index.is_some()
                         || this.resizing_drag_data.is_some()
                     {
-                        this.dragging_index = None;
-                        this.resizing_index = None;
+                        this.reset_current_index();
                         this.resizing_drag_data = None;
                         cx.emit(PanelEvent::LayoutChanged);
                         cx.notify();
