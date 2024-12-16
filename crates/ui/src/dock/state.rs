@@ -15,7 +15,7 @@ pub struct DockAreaState {
     /// then we can compare the version to decide whether we can use the state or ignore.
     #[serde(default)]
     pub version: Option<usize>,
-    pub center: PanelItemState,
+    pub center: PanelState,
     pub left_dock: Option<DockState>,
     pub right_dock: Option<DockState>,
     pub bottom_dock: Option<DockState>,
@@ -24,7 +24,7 @@ pub struct DockAreaState {
 /// Used to serialize and deserialize the Dock
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DockState {
-    panel: PanelItemState,
+    panel: PanelState,
     placement: DockPlacement,
     size: Pixels,
     open: bool,
@@ -60,21 +60,21 @@ impl DockState {
 
 /// Used to serialize and deserialize the DockerItem
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct PanelItemState {
+pub struct PanelState {
     pub panel_name: String,
-    pub children: Vec<PanelItemState>,
-    pub info: PanelItemInfo,
+    pub children: Vec<PanelState>,
+    pub info: PanelInfo,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TileState {
-    pub panel: PanelItemState,
+    pub panel: PanelState,
     pub bounds: Bounds<Pixels>,
     pub z_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum PanelItemInfo {
+pub enum PanelInfo {
     #[serde(rename = "stack")]
     Stack {
         sizes: Vec<Pixels>,
@@ -88,7 +88,7 @@ pub enum PanelItemInfo {
     Tiles(Vec<TileState>),
 }
 
-impl PanelItemInfo {
+impl PanelInfo {
     pub fn stack(sizes: Vec<Pixels>, axis: Axis) -> Self {
         Self::Stack {
             sizes,
@@ -134,17 +134,17 @@ impl PanelItemInfo {
     }
 }
 
-impl Default for PanelItemState {
+impl Default for PanelState {
     fn default() -> Self {
         Self {
             panel_name: "".to_string(),
             children: Vec::new(),
-            info: PanelItemInfo::Panel(serde_json::Value::Null),
+            info: PanelInfo::Panel(serde_json::Value::Null),
         }
     }
 }
 
-impl PanelItemState {
+impl PanelState {
     pub fn new<P: Panel>(panel: &P) -> Self {
         Self {
             panel_name: panel.panel_name().to_string(),
@@ -152,7 +152,7 @@ impl PanelItemState {
         }
     }
 
-    pub fn add_child(&mut self, panel: PanelItemState) {
+    pub fn add_child(&mut self, panel: PanelState) {
         self.children.push(panel);
     }
 
@@ -166,7 +166,7 @@ impl PanelItemState {
             .collect();
 
         match info {
-            PanelItemInfo::Stack { sizes, axis } => {
+            PanelInfo::Stack { sizes, axis } => {
                 let axis = if axis == 0 {
                     Axis::Horizontal
                 } else {
@@ -175,7 +175,7 @@ impl PanelItemState {
                 let sizes = sizes.iter().map(|s| Some(*s)).collect_vec();
                 DockItem::split_with_sizes(axis, items, sizes, &dock_area, cx)
             }
-            PanelItemInfo::Tabs { active_index } => {
+            PanelInfo::Tabs { active_index } => {
                 if items.len() == 1 {
                     return items[0].clone();
                 }
@@ -185,14 +185,14 @@ impl PanelItemState {
                     .flat_map(|item| match item {
                         DockItem::Tabs { items, .. } => items.clone(),
                         _ => {
-                            unreachable!("Invalid DockItem type in PanelItemInfo::Tabs")
+                            unreachable!("Invalid DockItem type in PanelInfo::Tabs")
                         }
                     })
                     .collect_vec();
 
                 DockItem::tabs(items, Some(active_index), &dock_area, cx)
             }
-            PanelItemInfo::Panel(_) => {
+            PanelInfo::Panel(_) => {
                 let view = if let Some(f) = cx
                     .global::<PanelRegistry>()
                     .items
@@ -209,7 +209,7 @@ impl PanelItemState {
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
             }
-            PanelItemInfo::Tiles(state) => {
+            PanelInfo::Tiles(state) => {
                 let tile_items = state
                     .iter()
                     .map(|tile| {

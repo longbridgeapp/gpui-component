@@ -48,7 +48,7 @@ use gpui::{
 use ui::{
     button::Button,
     divider::Divider,
-    dock::{register_panel, Panel, PanelEvent, PanelItemInfo, PanelItemState, TitleStyle},
+    dock::{register_panel, Panel, PanelEvent, PanelInfo, PanelState, TitleStyle},
     h_flex,
     label::Label,
     notification::Notification,
@@ -66,9 +66,9 @@ pub fn init(cx: &mut AppContext) {
 
     register_panel(cx, PANEL_NAME, |_, _, info, cx| {
         let story_state = match info {
-            PanelItemInfo::Panel(value) => StoryState::from_value(value.clone()),
+            PanelInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
-                unreachable!("Invalid PanelItemInfo: {:?}", info)
+                unreachable!("Invalid PanelInfo: {:?}", info)
             }
         };
 
@@ -85,7 +85,7 @@ pub fn init(cx: &mut AppContext) {
     });
 }
 
-actions!(story, [PanelInfo]);
+actions!(story, [ShowPanelInfo]);
 
 pub fn section(title: impl IntoElement, cx: &WindowContext) -> Div {
     use ui::theme::ActiveTheme;
@@ -200,7 +200,7 @@ impl StoryContainer {
         self
     }
 
-    fn on_action_panel_info(&mut self, _: &PanelInfo, cx: &mut ViewContext<Self>) {
+    fn on_action_panel_info(&mut self, _: &ShowPanelInfo, cx: &mut ViewContext<Self>) {
         struct Info;
         let note = Notification::new(format!("You have clicked panel info on: {}", self.name))
             .id::<Info>();
@@ -297,7 +297,7 @@ impl Panel for StoryContainer {
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.track_focus(&self.focus_handle)
-            .menu("Info", Box::new(PanelInfo))
+            .menu("Info", Box::new(ShowPanelInfo))
     }
 
     fn toolbar_buttons(&self, _cx: &WindowContext) -> Vec<Button> {
@@ -313,12 +313,12 @@ impl Panel for StoryContainer {
         ]
     }
 
-    fn dump(&self, _cx: &AppContext) -> PanelItemState {
-        let mut state = PanelItemState::new(self);
+    fn dump(&self, _cx: &AppContext) -> PanelState {
+        let mut state = PanelState::new(self);
         let story_state = StoryState {
             story_klass: self.story_klass.clone().unwrap(),
         };
-        state.info = PanelItemInfo::panel(story_state.to_value());
+        state.info = PanelInfo::panel(story_state.to_value());
         state
     }
 }

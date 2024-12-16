@@ -8,7 +8,7 @@ use gpui::{
 
 use rust_i18n::t;
 
-use super::{DockArea, PanelItemInfo, PanelItemState};
+use super::{DockArea, PanelInfo, PanelState};
 
 pub enum PanelEvent {
     ZoomIn,
@@ -68,8 +68,8 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     }
 
     /// Dump the panel, used to serialize the panel.
-    fn dump(&self, _cx: &AppContext) -> PanelItemState {
-        PanelItemState::new(self)
+    fn dump(&self, _cx: &AppContext) -> PanelState {
+        PanelState::new(self)
     }
 }
 
@@ -83,7 +83,7 @@ pub trait PanelView: 'static + Send + Sync {
     fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button>;
     fn view(&self) -> AnyView;
     fn focus_handle(&self, cx: &AppContext) -> FocusHandle;
-    fn dump(&self, cx: &AppContext) -> PanelItemState;
+    fn dump(&self, cx: &AppContext) -> PanelState;
 }
 
 impl<T: Panel> PanelView for View<T> {
@@ -123,7 +123,7 @@ impl<T: Panel> PanelView for View<T> {
         self.read(cx).focus_handle(cx)
     }
 
-    fn dump(&self, cx: &AppContext) -> PanelItemState {
+    fn dump(&self, cx: &AppContext) -> PanelState {
         self.read(cx).dump(cx)
     }
 }
@@ -152,8 +152,8 @@ pub struct PanelRegistry {
         Arc<
             dyn Fn(
                 WeakView<DockArea>,
-                &PanelItemState,
-                &PanelItemInfo,
+                &PanelState,
+                &PanelInfo,
                 &mut WindowContext,
             ) -> Box<dyn PanelView>,
         >,
@@ -171,12 +171,7 @@ impl Global for PanelRegistry {}
 /// Register the Panel init by panel_name to global registry.
 pub fn register_panel<F>(cx: &mut AppContext, panel_name: &str, deserialize: F)
 where
-    F: Fn(
-            WeakView<DockArea>,
-            &PanelItemState,
-            &PanelItemInfo,
-            &mut WindowContext,
-        ) -> Box<dyn PanelView>
+    F: Fn(WeakView<DockArea>, &PanelState, &PanelInfo, &mut WindowContext) -> Box<dyn PanelView>
         + 'static,
 {
     if let None = cx.try_global::<PanelRegistry>() {

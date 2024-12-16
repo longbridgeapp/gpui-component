@@ -670,7 +670,7 @@ impl DockArea {
         Ok(())
     }
 
-    /// Dump the dock panels layout to PanelItemState.
+    /// Dump the dock panels layout to PanelState.
     ///
     /// See also [DockArea::load].
     pub fn dump(&self, cx: &AppContext) -> DockAreaState {

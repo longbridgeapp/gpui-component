@@ -5,16 +5,16 @@ use gpui::{
 
 use crate::theme::ActiveTheme as _;
 
-use super::{Panel, PanelEvent, PanelItemState};
+use super::{Panel, PanelEvent, PanelState};
 
 pub(crate) struct InvalidPanel {
     name: SharedString,
     focus_handle: FocusHandle,
-    old_state: PanelItemState,
+    old_state: PanelState,
 }
 
 impl InvalidPanel {
-    pub(crate) fn new(name: &str, state: PanelItemState, cx: &mut WindowContext) -> Self {
+    pub(crate) fn new(name: &str, state: PanelState, cx: &mut WindowContext) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
             name: SharedString::from(name.to_owned()),
@@ -27,7 +27,7 @@ impl Panel for InvalidPanel {
         "InvalidPanel"
     }
 
-    fn dump(&self, _cx: &AppContext) -> super::PanelItemState {
+    fn dump(&self, _cx: &AppContext) -> super::PanelState {
         self.old_state.clone()
     }
 }

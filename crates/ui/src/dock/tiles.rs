@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
-use super::{Panel, PanelEvent, PanelItemInfo, PanelItemState, PanelView, TileState};
+use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileState};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
     EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
@@ -24,7 +24,7 @@ pub struct DragMoving(EntityId);
 pub struct DragResizing(EntityId);
 
 #[derive(Clone)]
-struct ResizeDragData {
+struct ResizeDrag {
     axis: ResizeAxis,
     last_position: Point<Pixels>,
     last_bounds: Bounds<Pixels>,
@@ -37,6 +37,7 @@ enum ResizeAxis {
     Both,
 }
 
+/// TileItem is a moveable and resizable panel that can be added to a Tiles view.
 #[derive(Clone)]
 pub struct TileItem {
     pub(crate) panel: Arc<dyn PanelView>,
@@ -59,6 +60,7 @@ impl TileItem {
     }
 }
 
+/// Tiles is a canvas that can contain multiple panels, each of which can be dragged and resized.
 pub struct Tiles {
     focus_handle: FocusHandle,
     pub(crate) panels: Vec<TileItem>,
@@ -66,7 +68,7 @@ pub struct Tiles {
     dragging_initial_mouse: Point<Pixels>,
     dragging_initial_bounds: Bounds<Pixels>,
     resizing_index: Option<usize>,
-    resizing_drag_data: Option<ResizeDragData>,
+    resizing_drag_data: Option<ResizeDrag>,
     bounds: Bounds<Pixels>,
 }
 
@@ -79,7 +81,7 @@ impl Panel for Tiles {
         "Tiles".into_any_element()
     }
 
-    fn dump(&self, cx: &AppContext) -> PanelItemState {
+    fn dump(&self, cx: &AppContext) -> PanelState {
         let panels_with_layout = self
             .panels
             .iter()
@@ -90,8 +92,8 @@ impl Panel for Tiles {
             })
             .collect();
 
-        let mut state = PanelItemState::new(self);
-        state.info = PanelItemInfo::Tiles(panels_with_layout);
+        let mut state = PanelState::new(self);
+        state.info = PanelInfo::Tiles(panels_with_layout);
         state
     }
 }
@@ -110,11 +112,13 @@ impl Tiles {
         }
     }
 
+    #[inline]
     pub(super) fn panels_len(&self) -> usize {
         self.panels.len()
     }
 
     /// Return the index of the panel.
+    #[inline]
     pub(crate) fn index_of(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
         self.panels.iter().position(|p| &p.panel == &panel)
     }
@@ -253,7 +257,7 @@ impl Tiles {
         cx.notify();
     }
 
-    fn update_resizing_drag(&mut self, drag_data: ResizeDragData, cx: &mut ViewContext<'_, Self>) {
+    fn update_resizing_drag(&mut self, drag_data: ResizeDrag, cx: &mut ViewContext<'_, Self>) {
         if let Some((index, _item)) = self.find_at_position(drag_data.last_position) {
             self.resizing_index = Some(index);
             self.resizing_drag_data = Some(drag_data);
@@ -372,7 +376,7 @@ impl Tiles {
                     cx.listener({
                         move |this, event: &MouseDownEvent, cx| {
                             let last_position = event.position;
-                            let drag_data = ResizeDragData {
+                            let drag_data = ResizeDrag {
                                 axis: ResizeAxis::Horizontal,
                                 last_position,
                                 last_bounds: panel_bounds,
@@ -428,7 +432,7 @@ impl Tiles {
                     cx.listener({
                         move |this, event: &MouseDownEvent, cx| {
                             let last_position = event.position;
-                            let drag_data = ResizeDragData {
+                            let drag_data = ResizeDrag {
                                 axis: ResizeAxis::Vertical,
                                 last_position,
                                 last_bounds: panel_bounds,
@@ -481,7 +485,7 @@ impl Tiles {
                     cx.listener({
                         move |this, event: &MouseDownEvent, cx| {
                             let last_position = event.position;
-                            let drag_data = ResizeDragData {
+                            let drag_data = ResizeDrag {
                                 axis: ResizeAxis::Both,
                                 last_position,
                                 last_bounds: panel_bounds,
@@ -582,10 +586,12 @@ impl Tiles {
     }
 }
 
+#[inline]
 fn round_to_nearest_ten(value: Pixels) -> Pixels {
     px((value.0 / 10.0).round() * 10.0)
 }
 
+#[inline]
 fn round_point_to_nearest_ten(point: Point<Pixels>) -> Point<Pixels> {
     Point::new(round_to_nearest_ten(point.x), round_to_nearest_ten(point.y))
 }
