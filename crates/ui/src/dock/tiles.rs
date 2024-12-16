@@ -276,6 +276,8 @@ impl Tiles {
                 let item = self.panels.remove(old_index);
                 self.panels.push(item);
                 let new_index = self.panels.len() - 1;
+                self.dragging_index = None;
+                self.resizing_index = None;
                 return Some((old_index, new_index));
             }
         }
@@ -333,7 +335,9 @@ impl Tiles {
                                 last_bounds: panel_bounds,
                             };
                             this.update_resizing_drag(drag_data, cx);
-                            this.bring_to_front(this.resizing_index);
+                            if let Some((_, new_ix)) = this.bring_to_front(this.resizing_index) {
+                                this.resizing_index = Some(new_ix);
+                            }
                         }
                     }),
                 )
@@ -389,7 +393,9 @@ impl Tiles {
                                 last_bounds: panel_bounds,
                             };
                             this.update_resizing_drag(drag_data, cx);
-                            this.bring_to_front(this.resizing_index);
+                            if let Some((_, new_ix)) = this.bring_to_front(this.resizing_index) {
+                                this.resizing_index = Some(new_ix);
+                            }
                         }
                     }),
                 )
@@ -447,7 +453,9 @@ impl Tiles {
                                 last_bounds: panel_bounds,
                             };
                             this.update_resizing_drag(drag_data, cx);
-                            this.bring_to_front(this.resizing_index);
+                            if let Some((_, new_ix)) = this.bring_to_front(this.resizing_index) {
+                                this.resizing_index = Some(new_ix);
+                            }
                         }
                     }),
                 )
@@ -518,7 +526,9 @@ impl Tiles {
                     cx.listener(move |this, event: &MouseDownEvent, cx| {
                         let last_position = event.position;
                         this.update_initial_position(last_position, cx);
-                        this.bring_to_front(this.dragging_index);
+                        if let Some((_, new_ix)) = this.bring_to_front(this.dragging_index) {
+                            this.dragging_index = Some(new_ix);
+                        }
                     }),
                 )
                 .on_drag(DragMoving(entity_id), |drag, _, cx| {
