@@ -9,15 +9,15 @@ use crate::{
     h_flex,
     scroll::{Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName, Placement,
+    v_flex, Icon, IconName,
 };
 
-use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileMeta};
+use super::{DockArea, Panel, PanelEvent, PanelInfo, PanelState, PanelView, TabPanel, TileMeta};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
     Entity, EntityId, EventEmitter, FocusHandle, FocusableView, Half, InteractiveElement,
     IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Point, Render,
-    ScrollHandle, Size, StatefulInteractiveElement, Styled, ViewContext, VisualContext,
+    ScrollHandle, Size, StatefulInteractiveElement, Styled, ViewContext, VisualContext, WeakView,
     WindowContext,
 };
 
@@ -141,11 +141,6 @@ impl Tiles {
         }
     }
 
-    #[inline]
-    pub(super) fn panels_len(&self) -> usize {
-        self.panels.len()
-    }
-
     fn sorted_panels(&self) -> Vec<TileItem> {
         let mut items: Vec<TileItem> = self.panels.iter().cloned().collect();
         items.sort_by_key(|item| item.z_index);
@@ -156,98 +151,6 @@ impl Tiles {
     #[inline]
     pub(crate) fn index_of(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
         self.panels.iter().position(|p| &p.panel == &panel)
-    }
-
-    /// Add a panel at the end of children panels.
-    pub fn add(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        bounds: Bounds<Pixels>,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.insert(panel, self.panels.len(), bounds, cx);
-    }
-
-    pub fn add_at(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        bounds: Bounds<Pixels>,
-        placement: Placement,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.insert_at(panel, bounds, self.panels_len(), placement, cx);
-    }
-
-    pub fn insert_at(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        bounds: Bounds<Pixels>,
-        ix: usize,
-        placement: Placement,
-        cx: &mut ViewContext<Self>,
-    ) {
-        match placement {
-            Placement::Top | Placement::Left => self.insert_before(panel, bounds, ix, cx),
-            Placement::Right | Placement::Bottom => self.insert_after(panel, bounds, ix, cx),
-        }
-    }
-
-    /// Insert a panel at the index.
-    pub fn insert_before(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        bounds: Bounds<Pixels>,
-        ix: usize,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.insert(panel, ix, bounds, cx);
-    }
-
-    /// Insert a panel after the index.
-    pub fn insert_after(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        bounds: Bounds<Pixels>,
-        ix: usize,
-        cx: &mut ViewContext<Self>,
-    ) {
-        self.insert(panel, ix + 1, bounds, cx);
-    }
-
-    fn insert(
-        &mut self,
-        panel: Arc<dyn PanelView>,
-        ix: usize,
-        bounds: Bounds<Pixels>,
-        cx: &mut ViewContext<Self>,
-    ) {
-        if let Some(_) = self.index_of(panel.clone()) {
-            return;
-        }
-
-        let ix = if ix > self.panels.len() {
-            self.panels.len()
-        } else {
-            ix
-        };
-
-        self.panels.insert(
-            ix,
-            TileItem {
-                panel: panel.clone(),
-                bounds,
-                z_index: self
-                    .panels
-                    .iter()
-                    .map(|item| item.z_index)
-                    .max()
-                    .unwrap_or(0)
-                    + 1,
-            },
-        );
-
-        cx.emit(PanelEvent::LayoutChanged);
-        cx.notify();
     }
 
     /// Remove panel from the children.
@@ -318,8 +221,27 @@ impl Tiles {
         }
     }
 
-    pub fn add_item(&mut self, item: TileItem, cx: &mut ViewContext<Self>) {
-        self.panels.push(item);
+    pub fn add_item(
+        &mut self,
+        item: TileItem,
+        dock_area: &WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.panels.push(item.clone());
+
+        cx.window_context().defer({
+            let panel = item.panel.clone();
+            let dock_area = dock_area.clone();
+
+            move |cx| {
+                // Subscribe to the panel's layout change event.
+                _ = dock_area.update(cx, |this, cx| {
+                    if let Ok(tab_panel) = panel.view().downcast::<TabPanel>() {
+                        this.subscribe_panel(&tab_panel, cx);
+                    }
+                });
+            }
+        });
 
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();

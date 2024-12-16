@@ -193,13 +193,13 @@ impl DockItem {
 
         let tile_panel = cx.new_view(|cx| {
             let mut tiles = Tiles::new(cx);
-            for (ix, item) in items.into_iter().enumerate() {
+            for (ix, item) in items.clone().into_iter().enumerate() {
                 match item {
                     DockItem::Tabs { view, .. } => {
                         let meta: TileMeta = metas[ix].into();
                         let tile_item =
                             TileItem::new(Arc::new(view), meta.bounds).z_index(meta.z_index);
-                        tiles.add_item(tile_item, cx);
+                        tiles.add_item(tile_item, dock_area, cx);
                     }
                     _ => {
                         // Ignore non-tabs items
@@ -744,7 +744,7 @@ impl DockArea {
                 // We subscribe to the tab panel event in StackPanel's insert_panel
             }
             DockItem::Tiles { .. } => {
-                // Not supported
+                // We subscribe to the tab panel event in Tiles's [`add_item`](Tiles::add_item)
             }
             DockItem::Panel { .. } => {
                 // Not supported
