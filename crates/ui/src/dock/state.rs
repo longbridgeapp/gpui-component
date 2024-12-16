@@ -235,7 +235,6 @@ impl PanelState {
                     .enumerate()
                     .filter_map(|(ix, item)| match item {
                         DockItem::Panel { view } => {
-                            dbg!(view.panel_name(cx));
                             let meta = metas.get(ix).cloned().unwrap_or_default();
                             Some(TileItem::new(view.clone(), meta.bounds).z_index(meta.z_index))
                         }
@@ -247,7 +246,6 @@ impl PanelState {
                             )
                         }
                         _ => {
-                            dbg!(item);
                             // ignore invalid panels in tiles
                             None
                         }
