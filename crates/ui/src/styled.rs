@@ -215,17 +215,22 @@ pub trait Sizable: Sized {
     /// Or a `Pixels` to set a custom size: `px(30.)`
     fn with_size(self, size: impl Into<Size>) -> Self;
 
-    /// Set to Size::Small
-    fn small(self) -> Self {
-        self.with_size(Size::Small)
-    }
-
     /// Set to Size::XSmall
     fn xsmall(self) -> Self {
         self.with_size(Size::XSmall)
     }
 
+    /// Set to Size::Small
+    fn small(self) -> Self {
+        self.with_size(Size::Small)
+    }
+
     /// Set to Size::Medium
+    fn medium(self) -> Self {
+        self.with_size(Size::Medium)
+    }
+
+    /// Set to Size::Large
     fn large(self) -> Self {
         self.with_size(Size::Large)
     }
