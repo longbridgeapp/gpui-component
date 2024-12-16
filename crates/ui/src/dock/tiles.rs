@@ -9,7 +9,7 @@ use crate::{
     h_flex,
     scroll::{Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Placement,
+    v_flex, Icon, IconName, Placement,
 };
 
 use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileMeta};
@@ -23,7 +23,7 @@ use gpui::{
 
 const MINIMUM_SIZE: Size<Pixels> = size(px(100.), px(100.));
 const DRAG_BAR_HEIGHT: Pixels = px(30.);
-const HANDLE_SIZE: Pixels = px(10.0);
+const HANDLE_SIZE: Pixels = px(20.0);
 
 #[derive(Clone, Render)]
 pub struct DragMoving(EntityId);
@@ -515,6 +515,11 @@ impl Tiles {
                 .bottom(-HANDLE_SIZE.half())
                 .w(HANDLE_SIZE)
                 .h(HANDLE_SIZE)
+                .child(
+                    Icon::new(IconName::ResizeCorner)
+                        .size(HANDLE_SIZE.half())
+                        .text_color(cx.theme().foreground.opacity(0.3)),
+                )
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
