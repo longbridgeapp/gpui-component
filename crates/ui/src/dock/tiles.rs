@@ -261,7 +261,6 @@ impl Tiles {
                 item.bounds.origin,
                 item.bounds.size + size(HANDLE_SIZE, HANDLE_SIZE) / 2.0,
             );
-
             if extended_bounds.contains(&inner_pos) {
                 return Some((index, item));
             }
@@ -270,12 +269,17 @@ impl Tiles {
         None
     }
 
-    /// Bring the panel of target_index to front by updating its z_index
-    fn bring_to_front(&mut self, target_index: Option<usize>) {
-        if let Some(index) = target_index {
-            let item = self.panels.remove(index);
-            self.panels.push(item);
+    /// Bring the panel of target_index to front, returns (old_index, new_index) if successful
+    fn bring_to_front(&mut self, target_index: Option<usize>) -> Option<(usize, usize)> {
+        if let Some(old_index) = target_index {
+            if old_index < self.panels.len() {
+                let item = self.panels.remove(old_index);
+                self.panels.push(item);
+                let new_index = self.panels.len() - 1;
+                return Some((old_index, new_index));
+            }
         }
+        None
     }
 
     /// Produce a vector of AnyElement representing the three possible resize handles
