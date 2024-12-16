@@ -181,7 +181,7 @@ impl DockItem {
     }
 
     /// Create DockItem with tiles layout
-    pub fn tiles_with_sizes(
+    pub fn tiles(
         items: Vec<TileItem>,
         dock_area: &WeakView<DockArea>,
         cx: &mut WindowContext,
@@ -262,8 +262,8 @@ impl DockItem {
         match self {
             Self::Split { view, .. } => Arc::new(view.clone()),
             Self::Tabs { view, .. } => Arc::new(view.clone()),
-            Self::Panel { view, .. } => view.clone(),
             Self::Tiles { view, .. } => Arc::new(view.clone()),
+            Self::Panel { view, .. } => view.clone(),
         }
     }
 
@@ -317,8 +317,8 @@ impl DockItem {
                     stack_panel.add_panel(new_item.view(), None, dock_area.clone(), cx);
                 });
             }
-            Self::Panel { .. } => {}
             Self::Tiles { .. } => {}
+            Self::Panel { .. } => {}
         }
     }
 
@@ -335,8 +335,8 @@ impl DockItem {
                     item.set_collapsed(collapsed, cx);
                 }
             }
-            DockItem::Panel { .. } => {}
             DockItem::Tiles { .. } => {}
+            DockItem::Panel { .. } => {}
         }
     }
 
@@ -345,8 +345,8 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).left_top_tab_panel(true, cx),
-            DockItem::Panel { .. } => None,
             DockItem::Tiles { .. } => None,
+            DockItem::Panel { .. } => None,
         }
     }
 
@@ -355,8 +355,8 @@ impl DockItem {
         match self {
             DockItem::Tabs { view, .. } => Some(view.clone()),
             DockItem::Split { view, .. } => view.read(cx).right_top_tab_panel(true, cx),
-            DockItem::Panel { .. } => None,
             DockItem::Tiles { .. } => None,
+            DockItem::Panel { .. } => None,
         }
     }
 }
@@ -728,10 +728,10 @@ impl DockArea {
             DockItem::Tabs { .. } => {
                 // We subscribe to the tab panel event in StackPanel's insert_panel
             }
-            DockItem::Panel { .. } => {
+            DockItem::Tiles { .. } => {
                 // Not supported
             }
-            DockItem::Tiles { .. } => {
+            DockItem::Panel { .. } => {
                 // Not supported
             }
         }
@@ -801,8 +801,8 @@ impl DockArea {
         match &self.items {
             DockItem::Split { view, .. } => view.clone().into_any_element(),
             DockItem::Tabs { view, .. } => view.clone().into_any_element(),
-            DockItem::Panel { view, .. } => view.clone().view().into_any_element(),
             DockItem::Tiles { view, .. } => view.clone().into_any_element(),
+            DockItem::Panel { view, .. } => view.clone().view().into_any_element(),
         }
     }
 

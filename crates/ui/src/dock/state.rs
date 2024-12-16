@@ -1,4 +1,9 @@
-use gpui::{AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView, WindowContext};
+use std::sync::Arc;
+
+use gpui::{
+    point, px, size, AppContext, Axis, Bounds, Pixels, View, VisualContext as _, WeakView,
+    WindowContext,
+};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +21,11 @@ pub struct DockAreaState {
     #[serde(default)]
     pub version: Option<usize>,
     pub center: PanelState,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub left_dock: Option<DockState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub right_dock: Option<DockState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bottom_dock: Option<DockState>,
 }
 
@@ -66,11 +74,22 @@ pub struct PanelState {
     pub info: PanelInfo,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct TileState {
-    pub panel: PanelState,
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TileMeta {
     pub bounds: Bounds<Pixels>,
     pub z_index: usize,
+}
+
+impl Default for TileMeta {
+    fn default() -> Self {
+        Self {
+            bounds: Bounds {
+                origin: point(px(10.), px(10.)),
+                size: size(px(200.), px(200.)),
+            },
+            z_index: 0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,7 +104,7 @@ pub enum PanelInfo {
     #[serde(rename = "panel")]
     Panel(serde_json::Value),
     #[serde(rename = "tiles")]
-    Tiles(Vec<TileState>),
+    Tiles { metas: Vec<TileMeta> },
 }
 
 impl PanelInfo {
@@ -100,12 +119,12 @@ impl PanelInfo {
         Self::Tabs { active_index }
     }
 
-    pub fn panel(value: serde_json::Value) -> Self {
-        Self::Panel(value)
+    pub fn panel(info: serde_json::Value) -> Self {
+        Self::Panel(info)
     }
 
-    pub fn tiles(panels: Vec<TileState>) -> Self {
-        Self::Tiles(panels)
+    pub fn tiles(metas: Vec<TileMeta>) -> Self {
+        Self::Tiles { metas }
     }
 
     pub fn axis(&self) -> Option<Axis> {
@@ -185,7 +204,8 @@ impl PanelState {
                     .flat_map(|item| match item {
                         DockItem::Tabs { items, .. } => items.clone(),
                         _ => {
-                            unreachable!("Invalid DockItem type in PanelInfo::Tabs")
+                            // ignore invalid panels in tabs
+                            vec![]
                         }
                     })
                     .collect_vec();
@@ -209,15 +229,32 @@ impl PanelState {
 
                 DockItem::tabs(vec![view.into()], None, &dock_area, cx)
             }
-            PanelInfo::Tiles(state) => {
-                let tile_items = state
+            PanelInfo::Tiles { metas } => {
+                let items = items
                     .iter()
-                    .map(|tile| {
-                        let item = tile.panel.to_item(dock_area.clone(), cx);
-                        TileItem::new(item.view(), tile.bounds).z_index(tile.z_index)
+                    .enumerate()
+                    .filter_map(|(ix, item)| match item {
+                        DockItem::Panel { view } => {
+                            dbg!(view.panel_name(cx));
+                            let meta = metas.get(ix).cloned().unwrap_or_default();
+                            Some(TileItem::new(view.clone(), meta.bounds).z_index(meta.z_index))
+                        }
+                        DockItem::Tabs { view, .. } => {
+                            let meta = metas.get(ix).cloned().unwrap_or_default();
+                            Some(
+                                TileItem::new(Arc::new(view.clone()), meta.bounds)
+                                    .z_index(meta.z_index),
+                            )
+                        }
+                        _ => {
+                            dbg!(item);
+                            // ignore invalid panels in tiles
+                            None
+                        }
                     })
-                    .collect();
-                DockItem::tiles_with_sizes(tile_items, &dock_area, cx)
+                    .collect_vec();
+
+                DockItem::tiles(items, &dock_area, cx)
             }
         }
     }

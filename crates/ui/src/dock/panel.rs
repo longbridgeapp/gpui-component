@@ -74,7 +74,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
 }
 
 pub trait PanelView: 'static + Send + Sync {
-    fn panel_name(&self, _cx: &WindowContext) -> &'static str;
+    fn panel_name(&self, _cx: &AppContext) -> &'static str;
     fn title(&self, _cx: &WindowContext) -> AnyElement;
     fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
     fn closeable(&self, cx: &WindowContext) -> bool;
@@ -87,7 +87,7 @@ pub trait PanelView: 'static + Send + Sync {
 }
 
 impl<T: Panel> PanelView for View<T> {
-    fn panel_name(&self, cx: &WindowContext) -> &'static str {
+    fn panel_name(&self, cx: &AppContext) -> &'static str {
         self.read(cx).panel_name()
     }
 

@@ -143,7 +143,7 @@ impl StoryTiles {
     }
 
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
-        DockItem::tiles_with_sizes(
+        DockItem::tiles(
             vec![
                 TileItem::new(
                     Arc::new(StoryContainer::panel::<ButtonStory>(cx)),

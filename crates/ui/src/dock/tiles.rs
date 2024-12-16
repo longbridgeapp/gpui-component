@@ -1,8 +1,11 @@
-use std::sync::Arc;
+use std::{
+    fmt::{Debug, Formatter},
+    sync::Arc,
+};
 
 use crate::{h_flex, theme::ActiveTheme, v_flex, Placement};
 
-use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileState};
+use super::{Panel, PanelEvent, PanelInfo, PanelState, PanelView, TileMeta};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
     EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
@@ -45,6 +48,15 @@ pub struct TileItem {
     z_index: usize,
 }
 
+impl Debug for TileItem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TileItem")
+            .field("bounds", &self.bounds)
+            .field("z_index", &self.z_index)
+            .finish()
+    }
+}
+
 impl TileItem {
     pub fn new(panel: Arc<dyn PanelView>, bounds: Bounds<Pixels>) -> Self {
         Self {
@@ -82,18 +94,25 @@ impl Panel for Tiles {
     }
 
     fn dump(&self, cx: &AppContext) -> PanelState {
-        let panels_with_layout = self
+        let panels = self
             .panels
             .iter()
-            .map(|item: &TileItem| TileState {
-                panel: item.panel.dump(cx),
+            .map(|item: &TileItem| item.panel.dump(cx))
+            .collect();
+
+        let metas = self
+            .panels
+            .iter()
+            .map(|item: &TileItem| TileMeta {
                 bounds: item.bounds,
                 z_index: item.z_index,
             })
             .collect();
 
         let mut state = PanelState::new(self);
-        state.info = PanelInfo::Tiles(panels_with_layout);
+        state.panel_name = self.panel_name().to_string();
+        state.children = panels;
+        state.info = PanelInfo::Tiles { metas };
         state
     }
 }
@@ -635,8 +654,8 @@ impl Render for Tiles {
                         };
 
                         v_flex()
+                            .bg(cx.theme().background)
                             .border_1()
-                            .rounded_md()
                             .border_color(cx.theme().border)
                             .absolute()
                             .left(item.bounds.origin.x)
