@@ -1,8 +1,13 @@
 use std::sync::Arc;
 
-use crate::{h_flex, theme::ActiveTheme, v_flex};
+use crate::{
+    dock::{DockItemInfo, DockItemState, Panel, PanelEvent, PanelView},
+    h_flex,
+    theme::ActiveTheme,
+    v_flex,
+};
 
-use super::{CanvasItemInfo, CanvasItemState, Tile, TileEvent, TileState, TileView};
+use super::{CanvasItemInfo, CanvasItemState, TileState};
 use gpui::{
     canvas, div, point, px, size, AnyElement, AppContext, Bounds, DismissEvent, DragMoveEvent,
     EntityId, EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement,
@@ -38,15 +43,15 @@ enum ResizeDirection {
 }
 
 #[derive(Clone)]
-pub struct TilesItem {
-    pub(crate) tile: Arc<dyn TileView>,
+pub struct TileItem {
+    pub(crate) panel: Arc<dyn PanelView>,
     bounds: Bounds<Pixels>,
     z_index: usize,
 }
 
 pub struct TileCanvas {
     focus_handle: FocusHandle,
-    pub(crate) tiles: Vec<TilesItem>,
+    pub(crate) panels: Vec<TileItem>,
     dragging_index: Option<usize>,
     dragging_initial_mouse: Point<Pixels>,
     dragging_initial_bounds: Bounds<Pixels>,
@@ -55,20 +60,20 @@ pub struct TileCanvas {
     bounds: Bounds<Pixels>,
 }
 
-impl Tile for TileCanvas {
-    fn tile_name(&self) -> &'static str {
+impl Panel for TileCanvas {
+    fn panel_name(&self) -> &'static str {
         "TileCanvas"
     }
 
     fn title(&self, _cx: &WindowContext) -> AnyElement {
-        "TileCanvas".into_any_element()
+        "".into_any_element()
     }
 
-    fn dump(&self, cx: &AppContext) -> CanvasItemState {
+    fn dump(&self, cx: &AppContext) -> DockItemState {
         let tiles_with_layout = self
-            .tiles
+            .panels
             .iter()
-            .map(|item: &TilesItem| {
+            .map(|item: &TileItem| {
                 let tile_state = item.tile.dump(cx);
                 TileState {
                     state: tile_state,
@@ -78,8 +83,8 @@ impl Tile for TileCanvas {
             })
             .collect();
 
-        let mut state = CanvasItemState::new(self);
-        state.info = CanvasItemInfo::Tiles(tiles_with_layout);
+        let mut state = DockItemState::new(self);
+        state.info = DockItemInfo::Tiles(tiles_with_layout);
         state
     }
 }
@@ -88,7 +93,7 @@ impl TileCanvas {
     pub fn new(cx: &mut ViewContext<Self>) -> Self {
         Self {
             focus_handle: cx.focus_handle(),
-            tiles: vec![],
+            panels: vec![],
             dragging_index: None,
             dragging_initial_mouse: Point::default(),
             dragging_initial_bounds: Bounds::default(),
@@ -98,70 +103,70 @@ impl TileCanvas {
         }
     }
 
-    pub(super) fn tiles_len(&self) -> usize {
-        self.tiles.len()
+    pub(super) fn panels_len(&self) -> usize {
+        self.panels.len()
     }
 
-    pub(crate) fn index_of(&self, tile: Arc<dyn TileView>) -> Option<usize> {
-        self.tiles.iter().position(|p| &p.tile == &tile)
+    pub(crate) fn index_of(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
+        self.panels.iter().position(|p| &p.panel == &panel)
     }
 
     pub fn add(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert(tile, self.tiles.len(), bounds, cx);
+        self.insert(panel, self.tiles.len(), bounds, cx);
     }
 
     pub fn add_at(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert_at(tile, bounds, self.tiles_len(), cx);
+        self.insert_at(panel, bounds, self.tiles_len(), cx);
     }
 
     pub fn insert_at(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         ix: usize,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert_before(tile, bounds, ix, cx);
+        self.insert_before(panel, bounds, ix, cx);
     }
 
     pub fn insert_before(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         ix: usize,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert(tile, ix, bounds, cx);
+        self.insert(panel, ix, bounds, cx);
     }
 
     pub fn insert_after(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         ix: usize,
         cx: &mut ViewContext<Self>,
     ) {
-        self.insert(tile, ix + 1, bounds, cx);
+        self.insert(panel, ix + 1, bounds, cx);
     }
 
     fn insert(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         ix: usize,
         bounds: Bounds<Pixels>,
         cx: &mut ViewContext<Self>,
     ) {
-        if let Some(_) = self.index_of(tile.clone()) {
+        if let Some(_) = self.index_of(panel.clone()) {
             return;
         }
 
@@ -173,9 +178,9 @@ impl TileCanvas {
 
         self.tiles.insert(
             ix,
-            TilesItem {
-                tile: tile.clone(),
-                bounds: bounds,
+            TileItem {
+                panel: panel.clone(),
+                bounds,
                 z_index: self
                     .tiles
                     .iter()
@@ -186,15 +191,15 @@ impl TileCanvas {
             },
         );
 
-        cx.emit(TileEvent::LayoutChanged);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
-    pub fn remove(&mut self, tile: Arc<dyn TileView>, cx: &mut ViewContext<Self>) {
-        if let Some(ix) = self.index_of(tile.clone()) {
-            self.tiles.remove(ix);
+    pub fn remove(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        if let Some(ix) = self.index_of(panel.clone()) {
+            self.panels.remove(ix);
 
-            cx.emit(TileEvent::LayoutChanged);
+            cx.emit(PanelEvent::LayoutChanged);
         }
     }
 
@@ -267,24 +272,24 @@ impl TileCanvas {
 
     pub fn add_with_z_index(
         &mut self,
-        tile: Arc<dyn TileView>,
+        panel: Arc<dyn PanelView>,
         bounds: Bounds<Pixels>,
         z_index: usize,
         cx: &mut ViewContext<Self>,
     ) {
-        self.tiles.push(TilesItem {
-            tile: tile.clone(),
+        self.panels.push(TileItem {
+            panel: panel.clone(),
             bounds,
             z_index,
         });
 
-        cx.emit(TileEvent::LayoutChanged);
+        cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
 
-    fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TilesItem)> {
+    fn find_at_position(&self, position: Point<Pixels>) -> Option<(usize, &TileItem)> {
         let adjusted_position = position - self.bounds.origin;
-        let mut tiles_with_indices: Vec<(usize, &TilesItem)> =
+        let mut tiles_with_indices: Vec<(usize, &TileItem)> =
             self.tiles.iter().enumerate().collect();
 
         tiles_with_indices.sort_by(|a, b| b.1.z_index.cmp(&a.1.z_index));
@@ -325,7 +330,7 @@ impl TileCanvas {
         &mut self,
         cx: &mut ViewContext<Self>,
         entity_id: EntityId,
-        item: &TilesItem,
+        item: &TileItem,
         is_occluded: impl Fn(&Bounds<Pixels>) -> bool,
     ) -> Vec<AnyElement> {
         let tile_bounds = item.bounds;
@@ -523,7 +528,7 @@ impl TileCanvas {
         &mut self,
         cx: &mut ViewContext<Self>,
         entity_id: EntityId,
-        item: &TilesItem,
+        item: &TileItem,
         is_occluded: &impl Fn(&Bounds<Pixels>) -> bool,
     ) -> AnyElement {
         let drag_bar_bounds = Bounds::new(
@@ -584,14 +589,14 @@ impl FocusableView for TileCanvas {
         self.focus_handle.clone()
     }
 }
-impl EventEmitter<TileEvent> for TileCanvas {}
+impl EventEmitter<PanelEvent> for TileCanvas {}
 impl EventEmitter<DismissEvent> for TileCanvas {}
 impl Render for TileCanvas {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let entity_id = cx.entity_id();
         let view = cx.view().clone();
-        let mut tiles_with_indices: Vec<(usize, TilesItem)> =
-            self.tiles.iter().cloned().enumerate().collect();
+        let mut tiles_with_indices: Vec<(usize, TileItem)> =
+            self.panels.iter().cloned().enumerate().collect();
         tiles_with_indices.sort_by_key(|(_, item)| item.z_index);
 
         h_flex()
@@ -600,11 +605,11 @@ impl Render for TileCanvas {
             .relative()
             .bg(cx.theme().background)
             .children(tiles_with_indices.into_iter().map(|(current_index, item)| {
-                let tile = item.tile.clone();
+                let tile = item.panel.clone();
                 let tile_view = tile.view();
 
                 let is_occluded = {
-                    let tiles = self.tiles.clone();
+                    let tiles = self.panels.clone();
                     move |bounds: &Bounds<Pixels>| {
                         tiles.iter().enumerate().any(|(index, other_item)| {
                             index != current_index
@@ -651,7 +656,7 @@ impl Render for TileCanvas {
                         this.dragging_index = None;
                         this.resizing_index = None;
                         this.resizing_drag_data = None;
-                        cx.emit(TileEvent::LayoutChanged);
+                        cx.emit(PanelEvent::LayoutChanged);
                         cx.notify();
                     }
                 }),

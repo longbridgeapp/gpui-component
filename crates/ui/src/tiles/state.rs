@@ -2,9 +2,9 @@ use gpui::{AppContext, Bounds, Pixels, View, VisualContext as _, WeakView, Windo
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
-use crate::dock::PanelRegistry;
+use crate::dock::{Panel, PanelRegistry};
 
-use super::{invalid_tile::InvalidTile, Canvas, CanvasArea, CanvasItem, Tile};
+use super::{invalid_tile::InvalidTile, Canvas, CanvasArea, CanvasItem};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CanvasAreaState {
@@ -43,7 +43,7 @@ impl CanvasState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CanvasItemState {
-    pub tile_name: String,
+    pub panel_name: String,
     pub children: Vec<CanvasItemState>,
     pub info: CanvasItemInfo,
 }
@@ -89,7 +89,7 @@ impl CanvasItemInfo {
 impl Default for CanvasItemState {
     fn default() -> Self {
         Self {
-            tile_name: "".to_string(),
+            panel_name: "".to_string(),
             children: Vec::new(),
             info: CanvasItemInfo::Tile(serde_json::Value::Null),
         }
@@ -97,9 +97,9 @@ impl Default for CanvasItemState {
 }
 
 impl CanvasItemState {
-    pub fn new<P: Tile>(tile: &P) -> Self {
+    pub fn new<P: Panel>(panel: &P) -> Self {
         Self {
-            tile_name: tile.tile_name().to_string(),
+            panel_name: panel.panel_name().to_string(),
             ..Default::default()
         }
     }

@@ -2,7 +2,6 @@ mod canvas;
 mod invalid_tile;
 mod state;
 mod tab_tile;
-mod tile;
 mod tile_canvas;
 
 use anyhow::Result;
@@ -17,7 +16,8 @@ pub use tile_canvas::*;
 
 pub use state::*;
 pub use tab_tile::*;
-pub use tile::*;
+
+use crate::dock::PanelView;
 
 actions!(canvas, [ToggleZoom, CloseTile]);
 
@@ -32,14 +32,13 @@ pub struct CanvasArea {
     items: CanvasItem,
     zoom_view: Option<AnyView>,
     is_locked: bool,
-    pub(crate) tile_style: TileStyle,
     _subscriptions: Vec<Subscription>,
 }
 
 #[derive(Clone)]
 pub enum CanvasItem {
     Tabs {
-        items: Vec<Arc<dyn TileView>>,
+        items: Vec<Arc<dyn PanelView>>,
         active_ix: usize,
         view: View<TabTile>,
     },
@@ -158,12 +157,12 @@ impl CanvasItem {
         }
     }
 
-    pub fn add_tile(&mut self, tile: Arc<dyn TileView>, cx: &mut WindowContext) {
+    pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut WindowContext) {
         match self {
             Self::Tabs { view, items, .. } => {
-                items.push(tile.clone());
+                items.push(panel.clone());
                 view.update(cx, |tab_tile, cx| {
-                    tab_tile.add_tile(tile, cx);
+                    tab_tile.add_tile(panel, cx);
                 });
             }
             Self::Tiles { .. } => {}
@@ -202,18 +201,12 @@ impl CanvasArea {
             items: canvas_item,
             zoom_view: None,
             is_locked: false,
-            tile_style: TileStyle::Default,
             _subscriptions: vec![],
         };
 
         this.subscribe_tile(&tile_canvas, cx);
 
         this
-    }
-
-    pub fn tile_style(mut self, style: TileStyle) -> Self {
-        self.tile_style = style;
-        self
     }
 
     pub fn set_version(&mut self, version: usize, cx: &mut ViewContext<Self>) {
@@ -234,8 +227,8 @@ impl CanvasArea {
         self.is_locked
     }
 
-    pub fn add_tile(&mut self, tile: Arc<dyn TileView>, cx: &mut ViewContext<Self>) {
-        self.items.add_tile(tile, cx);
+    pub fn add_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
+        self.items.add_tile(panel, cx);
     }
 
     pub fn load(&mut self, state: CanvasAreaState, cx: &mut ViewContext<Self>) -> Result<()> {
