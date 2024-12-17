@@ -1,9 +1,10 @@
-//! Table row component for render a large number of differently sized columns (Must ensure each column width).
+//! Vistual List for render a large number of differently sized rows/columns.
 //!
-//! Only visible columns are rendered for performance reasons.
+//! NOTE: This must ensure each column width or row height.
 //!
-//! Inspired by uniform_list to rolate vertically to horizontally.
+//! Only visible range are rendered for performance reasons.
 //!
+//! Inspired by `gpui::uniform_list`.
 //! https://github.com/zed-industries/zed/blob/0ae1603610ab6b265bdfbee7b8dbc23c5ab06edc/crates/gpui/src/elements/uniform_list.rs
 use std::{cmp, ops::Range, rc::Rc};
 
