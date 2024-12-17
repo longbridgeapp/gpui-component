@@ -1030,8 +1030,8 @@ where
                         .overflow_hidden()
                         .relative()
                         .child(horizontal_virtual_list(
-                            view,
                             row_ix,
+                            view,
                             col_sizes,
                             self.horizontal_scroll_handle.clone(),
                             {

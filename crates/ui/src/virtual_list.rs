@@ -21,8 +21,8 @@ use smallvec::SmallVec;
 ///
 /// The `item_sizes` is the size of each column.
 pub fn vertical_virtual_list<R, V>(
-    view: View<V>,
     id: impl Into<ElementId>,
+    view: View<V>,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
@@ -31,13 +31,13 @@ where
     R: IntoElement,
     V: Render,
 {
-    virtual_list(view, id, Axis::Vertical, item_sizes, scroll_handle, f)
+    virtual_list(id, view, Axis::Vertical, item_sizes, scroll_handle, f)
 }
 
 /// Create a virtual list in Horizontal direction.
 pub fn horizontal_virtual_list<R, V>(
-    view: View<V>,
     id: impl Into<ElementId>,
+    view: View<V>,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
@@ -46,12 +46,12 @@ where
     R: IntoElement,
     V: Render,
 {
-    virtual_list(view, id, Axis::Horizontal, item_sizes, scroll_handle, f)
+    virtual_list(id, view, Axis::Horizontal, item_sizes, scroll_handle, f)
 }
 
 fn virtual_list<R, V>(
-    view: View<V>,
     id: impl Into<ElementId>,
+    view: View<V>,
     axis: Axis,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
