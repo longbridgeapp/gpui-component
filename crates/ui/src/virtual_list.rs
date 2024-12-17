@@ -8,27 +8,59 @@
 use std::{cmp, ops::Range, rc::Rc};
 
 use gpui::{
-    div, point, px, size, AnyElement, AvailableSpace, Bounds, ContentMask, Div, Element, ElementId,
-    Hitbox, InteractiveElement, IntoElement, IsZero as _, Pixels, Render, ScrollHandle,
-    SharedString, Size, Stateful, StyleRefinement, Styled, View, ViewContext, WindowContext,
+    div, point, px, size, AnyElement, AvailableSpace, Axis, Bounds, ContentMask, Div, Element,
+    ElementId, Hitbox, InteractiveElement, IntoElement, IsZero as _, Pixels, Render, ScrollHandle,
+    Size, Stateful, StyleRefinement, Styled, View, ViewContext, WindowContext,
 };
 use smallvec::SmallVec;
 
-use crate::table::ColGroup;
-
-pub(crate) fn table_row<R, V>(
+/// Create a virtual list in Vertical direction.
+///
+/// This is like `uniform_list` in GPUI, but support two axis.
+///
+/// The `item_sizes` is the size of each column.
+pub fn vertical_virtual_list<R, V>(
     view: View<V>,
-    row_ix: usize,
-    col_groups: Rc<Vec<ColGroup>>,
+    id: impl Into<ElementId>,
+    item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
-) -> TableRow
+) -> VirtualItem
 where
     R: IntoElement,
     V: Render,
 {
-    let id = ElementId::NamedInteger(SharedString::from("table-row"), row_ix);
+    virtual_list(view, id, Axis::Vertical, item_sizes, scroll_handle, f)
+}
 
+/// Create a virtual list in Horizontal direction.
+pub fn horizontal_virtual_list<R, V>(
+    view: View<V>,
+    id: impl Into<ElementId>,
+    item_sizes: Rc<Vec<Size<Pixels>>>,
+    scroll_handle: ScrollHandle,
+    f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
+) -> VirtualItem
+where
+    R: IntoElement,
+    V: Render,
+{
+    virtual_list(view, id, Axis::Horizontal, item_sizes, scroll_handle, f)
+}
+
+fn virtual_list<R, V>(
+    view: View<V>,
+    id: impl Into<ElementId>,
+    _: Axis,
+    item_sizes: Rc<Vec<Size<Pixels>>>,
+    scroll_handle: ScrollHandle,
+    f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
+) -> VirtualItem
+where
+    R: IntoElement,
+    V: Render,
+{
+    let id: ElementId = id.into();
     let render_range = move |range, cx: &mut WindowContext| {
         view.update(cx, |this, cx| {
             f(this, range, cx)
@@ -38,48 +70,49 @@ where
         })
     };
 
-    TableRow {
+    VirtualItem {
         id: id.clone(),
         base: div().id(id).size_full(),
         scroll_handle,
-        cols_count: col_groups.len(),
-        col_groups,
-        render_cols: Box::new(render_range),
+        items_count: item_sizes.len(),
+        item_sizes,
+        render_items: Box::new(render_range),
     }
 }
 
-pub struct TableRow {
+/// VirtualItem component for rendering a large number of differently sized columns.
+pub struct VirtualItem {
     id: ElementId,
     base: Stateful<Div>,
     scroll_handle: ScrollHandle,
     // scroll_handle: ScrollHandle,
-    cols_count: usize,
-    col_groups: Rc<Vec<ColGroup>>,
-    render_cols:
+    items_count: usize,
+    item_sizes: Rc<Vec<Size<Pixels>>>,
+    render_items:
         Box<dyn for<'a> Fn(Range<usize>, &'a mut WindowContext) -> SmallVec<[AnyElement; 64]>>,
 }
 
-impl Styled for TableRow {
+impl Styled for VirtualItem {
     fn style(&mut self) -> &mut StyleRefinement {
         self.base.style()
     }
 }
 
 /// Frame state used by the [TableRow].
-pub struct TableRowFrameState {
-    cols: SmallVec<[AnyElement; 32]>,
+pub struct VirtualListFrameState {
+    items: SmallVec<[AnyElement; 32]>,
     // decorations: SmallVec<[AnyElement; 1]>,
 }
 
-impl TableRow {
+impl VirtualItem {
     #[allow(dead_code)]
     fn measure_col(&self, cx: &mut WindowContext) -> Size<Pixels> {
-        if self.cols_count == 0 {
+        if self.items_count == 0 {
             return Size::default();
         }
 
-        let col_ix = self.cols_count - 1;
-        let mut items = (self.render_cols)(col_ix..col_ix + 1, cx);
+        let ix = self.items_count - 1;
+        let mut items = (self.render_items)(ix..ix + 1, cx);
         let Some(mut item_to_measure) = items.pop() else {
             return Size::default();
         };
@@ -89,7 +122,7 @@ impl TableRow {
     }
 }
 
-impl IntoElement for TableRow {
+impl IntoElement for VirtualItem {
     type Element = Self;
 
     fn into_element(self) -> Self::Element {
@@ -97,8 +130,8 @@ impl IntoElement for TableRow {
     }
 }
 
-impl Element for TableRow {
-    type RequestLayoutState = TableRowFrameState;
+impl Element for VirtualItem {
+    type RequestLayoutState = VirtualListFrameState;
     type PrepaintState = Option<Hitbox>;
 
     fn id(&self) -> Option<gpui::ElementId> {
@@ -114,8 +147,8 @@ impl Element for TableRow {
 
         (
             layout_id,
-            TableRowFrameState {
-                cols: SmallVec::new(),
+            VirtualListFrameState {
+                items: SmallVec::new(),
             },
         )
     }
@@ -140,14 +173,14 @@ impl Element for TableRow {
         // This is important to get the width of each column to measure the visible columns.
         //
         // So the col must have a width.
-        let col_widths = self
-            .col_groups
+        let item_widths = self
+            .item_sizes
             .iter()
-            .map(|col| col.width.0)
+            .map(|size| size.width.0)
             .collect::<Vec<_>>();
 
         let content_height = padded_bounds.size.height;
-        let content_width = px(col_widths.iter().sum::<f32>());
+        let content_width = px(item_widths.iter().sum::<f32>());
         let content_size = Size {
             width: content_width,
             height: content_height,
@@ -169,7 +202,7 @@ impl Element for TableRow {
                     bounds.lower_right() - point(border.right + padding.right, border.bottom),
                 );
 
-                if self.cols_count > 0 {
+                if self.items_count > 0 {
                     let is_scrolled_horizontally = !scroll_offset.x.is_zero();
                     let min_horizontal_scroll_offset = padded_bounds.size.width - content_width;
                     if is_scrolled_horizontally && scroll_offset.x < min_horizontal_scroll_offset {
@@ -180,7 +213,7 @@ impl Element for TableRow {
                     // Calculate the first and last visible element indices.
                     let mut cumulative_width = 0.0;
                     let mut first_visible_element_ix = 0;
-                    for (i, &width) in col_widths.iter().enumerate() {
+                    for (i, &width) in item_widths.iter().enumerate() {
                         cumulative_width += width;
                         if cumulative_width > -(scroll_offset.x + padding.left).0 {
                             first_visible_element_ix = i;
@@ -190,7 +223,7 @@ impl Element for TableRow {
 
                     cumulative_width = 0.0;
                     let mut last_visible_element_ix = 0;
-                    for (i, &width) in col_widths.iter().enumerate() {
+                    for (i, &width) in item_widths.iter().enumerate() {
                         cumulative_width += width;
                         if cumulative_width > (-scroll_offset.x + padded_bounds.size.width).0 {
                             last_visible_element_ix = i + 1;
@@ -198,32 +231,32 @@ impl Element for TableRow {
                         }
                     }
                     if last_visible_element_ix == 0 {
-                        last_visible_element_ix = self.cols_count;
+                        last_visible_element_ix = self.items_count;
                     } else {
                         last_visible_element_ix += 1;
                     }
                     let visible_range = first_visible_element_ix
-                        ..cmp::min(last_visible_element_ix, self.cols_count);
+                        ..cmp::min(last_visible_element_ix, self.items_count);
 
-                    let items = (self.render_cols)(visible_range.clone(), cx);
+                    let items = (self.render_items)(visible_range.clone(), cx);
 
                     let content_mask = ContentMask { bounds };
                     cx.with_content_mask(Some(content_mask), |cx| {
                         for (mut item, ix) in items.into_iter().zip(visible_range.clone()) {
-                            let item_x = px(col_widths.iter().take(ix).sum::<f32>());
+                            let item_x = px(item_widths.iter().take(ix).sum::<f32>());
 
                             let item_origin = padded_bounds.origin
                                 + point(item_x + scroll_offset.x + padding.left, padding.top);
                             // println!("{}, {}", item_origin.x, item_origin.y);
                             let available_height = padded_bounds.size.height;
-                            let col_width = col_widths[ix];
+                            let col_width = item_widths[ix];
                             let available_space = size(
                                 AvailableSpace::Definite(px(col_width)),
                                 AvailableSpace::Definite(available_height),
                             );
                             item.layout_as_root(available_space, cx);
                             item.prepaint_at(item_origin, cx);
-                            frame_state.cols.push(item);
+                            frame_state.items.push(item);
                         }
 
                         // let bounds = Bounds::new(
@@ -266,7 +299,7 @@ impl Element for TableRow {
         self.base
             .interactivity()
             .paint(global_id, bounds, hitbox.as_ref(), cx, |_, cx| {
-                for col in &mut request_layout.cols {
+                for col in &mut request_layout.items {
                     col.paint(cx);
                 }
             })

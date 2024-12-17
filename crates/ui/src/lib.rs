@@ -5,9 +5,9 @@ mod icon;
 mod root;
 mod styled;
 mod svg_img;
-mod table_row;
 mod time;
 mod title_bar;
+mod virtual_list;
 
 pub mod accordion;
 pub mod animation;
@@ -59,6 +59,7 @@ pub use root::{ContextModal, Root};
 pub use styled::*;
 pub use time::*;
 pub use title_bar::*;
+pub use virtual_list::*;
 
 pub use colors::*;
 pub use icon::*;

@@ -2,10 +2,9 @@ use std::{cell::Cell, ops::Range, rc::Rc};
 
 use crate::{
     context_menu::ContextMenuExt,
-    h_flex,
+    h_flex, horizontal_virtual_list,
     popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
-    table_row::table_row,
     theme::ActiveTheme,
     v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
 };
@@ -975,11 +974,11 @@ where
         let is_stripe_row = self.stripe && row_ix % 2 != 0;
         let is_selected = self.selected_row == Some(row_ix);
         let view = cx.view().clone();
-        let col_groups: Rc<Vec<ColGroup>> = Rc::new(
+        let col_sizes: Rc<Vec<gpui::Size<Pixels>>> = Rc::new(
             self.col_groups
                 .iter()
                 .skip(left_cols_count)
-                .cloned()
+                .map(|col| col.bounds.size)
                 .collect(),
         );
 
@@ -1030,10 +1029,10 @@ where
                         .h_full()
                         .overflow_hidden()
                         .relative()
-                        .child(table_row(
+                        .child(horizontal_virtual_list(
                             view,
                             row_ix,
-                            col_groups,
+                            col_sizes,
                             self.horizontal_scroll_handle.clone(),
                             {
                                 move |table, visible_range: Range<usize>, cx| {
