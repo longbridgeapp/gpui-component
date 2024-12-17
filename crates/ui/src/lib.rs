@@ -7,7 +7,6 @@ mod styled;
 mod svg_img;
 mod time;
 mod title_bar;
-mod virtual_list;
 
 pub mod accordion;
 pub mod animation;
@@ -47,6 +46,7 @@ pub mod tab;
 pub mod table;
 pub mod theme;
 pub mod tooltip;
+pub mod virtual_list;
 pub mod webview;
 
 // re-export
@@ -59,7 +59,7 @@ pub use root::{ContextModal, Root};
 pub use styled::*;
 pub use time::*;
 pub use title_bar::*;
-pub use virtual_list::*;
+pub use virtual_list::{horizontal_virtual_list, vertical_virtual_list, VirtualItem};
 
 pub use colors::*;
 pub use icon::*;

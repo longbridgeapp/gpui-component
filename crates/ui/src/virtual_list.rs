@@ -51,7 +51,7 @@ where
 fn virtual_list<R, V>(
     view: View<V>,
     id: impl Into<ElementId>,
-    _: Axis,
+    axis: Axis,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
@@ -72,6 +72,7 @@ where
 
     VirtualItem {
         id: id.clone(),
+        axis,
         base: div().id(id).size_full(),
         scroll_handle,
         items_count: item_sizes.len(),
@@ -83,6 +84,7 @@ where
 /// VirtualItem component for rendering a large number of differently sized columns.
 pub struct VirtualItem {
     id: ElementId,
+    axis: Axis,
     base: Stateful<Div>,
     scroll_handle: ScrollHandle,
     // scroll_handle: ScrollHandle,
@@ -170,20 +172,28 @@ impl Element for VirtualItem {
                 - point(border.right + padding.right, border.bottom + padding.bottom),
         );
 
-        // This is important to get the width of each column to measure the visible columns.
-        //
-        // So the col must have a width.
-        let item_widths = self
-            .item_sizes
-            .iter()
-            .map(|size| size.width.0)
-            .collect::<Vec<_>>();
+        let item_sizes = match self.axis {
+            Axis::Horizontal => self
+                .item_sizes
+                .iter()
+                .map(|size| size.width.0)
+                .collect::<Vec<_>>(),
+            Axis::Vertical => self
+                .item_sizes
+                .iter()
+                .map(|size| size.height.0)
+                .collect::<Vec<_>>(),
+        };
 
-        let content_height = padded_bounds.size.height;
-        let content_width = px(item_widths.iter().sum::<f32>());
-        let content_size = Size {
-            width: content_width,
-            height: content_height,
+        let content_size = match self.axis {
+            Axis::Horizontal => Size {
+                width: px(item_sizes.iter().sum::<f32>()),
+                height: padded_bounds.size.height,
+            },
+            Axis::Vertical => Size {
+                width: padded_bounds.size.width,
+                height: px(item_sizes.iter().sum::<f32>()),
+            },
         };
 
         self.base.interactivity().prepaint(
@@ -193,7 +203,6 @@ impl Element for VirtualItem {
             cx,
             |style, _, hitbox, cx| {
                 let mut scroll_offset = self.scroll_handle.offset();
-                // dbg!(&scroll_offset);
                 let border = style.border_widths.to_pixels(cx.rem_size());
                 let padding = style.padding.to_pixels(bounds.size.into(), cx.rem_size());
 
@@ -203,38 +212,90 @@ impl Element for VirtualItem {
                 );
 
                 if self.items_count > 0 {
-                    let is_scrolled_horizontally = !scroll_offset.x.is_zero();
-                    let min_horizontal_scroll_offset = padded_bounds.size.width - content_width;
-                    if is_scrolled_horizontally && scroll_offset.x < min_horizontal_scroll_offset {
-                        scroll_offset.x = min_horizontal_scroll_offset;
-                    }
-                    scroll_offset.y = Pixels::ZERO;
+                    let is_scrolled = match self.axis {
+                        Axis::Horizontal => !scroll_offset.x.is_zero(),
+                        Axis::Vertical => !scroll_offset.y.is_zero(),
+                    };
 
-                    // Calculate the first and last visible element indices.
-                    let mut cumulative_width = 0.0;
-                    let mut first_visible_element_ix = 0;
-                    for (i, &width) in item_widths.iter().enumerate() {
-                        cumulative_width += width;
-                        if cumulative_width > -(scroll_offset.x + padding.left).0 {
-                            first_visible_element_ix = i;
-                            break;
+                    let min_scroll_offset = match self.axis {
+                        Axis::Horizontal => padded_bounds.size.width - content_size.width,
+                        Axis::Vertical => padded_bounds.size.height - content_size.height,
+                    };
+
+                    if is_scrolled {
+                        match self.axis {
+                            Axis::Horizontal if scroll_offset.x < min_scroll_offset => {
+                                scroll_offset.x = min_scroll_offset;
+                            }
+                            Axis::Vertical if scroll_offset.y < min_scroll_offset => {
+                                scroll_offset.y = min_scroll_offset;
+                            }
+                            _ => {}
                         }
                     }
 
-                    cumulative_width = 0.0;
-                    let mut last_visible_element_ix = 0;
-                    for (i, &width) in item_widths.iter().enumerate() {
-                        cumulative_width += width;
-                        if cumulative_width > (-scroll_offset.x + padded_bounds.size.width).0 {
-                            last_visible_element_ix = i + 1;
-                            break;
+                    let (first_visible_element_ix, last_visible_element_ix) = match self.axis {
+                        Axis::Horizontal => {
+                            scroll_offset.y = Pixels::ZERO;
+                            let mut cumulative_size = 0.0;
+                            let mut first_visible_element_ix = 0;
+                            for (i, &size) in item_sizes.iter().enumerate() {
+                                cumulative_size += size;
+                                if cumulative_size > -(scroll_offset.x + padding.left).0 {
+                                    first_visible_element_ix = i;
+                                    break;
+                                }
+                            }
+
+                            cumulative_size = 0.0;
+                            let mut last_visible_element_ix = 0;
+                            for (i, &size) in item_sizes.iter().enumerate() {
+                                cumulative_size += size;
+                                if cumulative_size > (-scroll_offset.x + padded_bounds.size.width).0
+                                {
+                                    last_visible_element_ix = i + 1;
+                                    break;
+                                }
+                            }
+                            if last_visible_element_ix == 0 {
+                                last_visible_element_ix = self.items_count;
+                            } else {
+                                last_visible_element_ix += 1;
+                            }
+                            (first_visible_element_ix, last_visible_element_ix)
                         }
-                    }
-                    if last_visible_element_ix == 0 {
-                        last_visible_element_ix = self.items_count;
-                    } else {
-                        last_visible_element_ix += 1;
-                    }
+                        Axis::Vertical => {
+                            scroll_offset.x = Pixels::ZERO;
+                            let mut cumulative_size = 0.0;
+                            let mut first_visible_element_ix = 0;
+                            for (i, &size) in item_sizes.iter().enumerate() {
+                                cumulative_size += size;
+                                if cumulative_size > -(scroll_offset.y + padding.top).0 {
+                                    first_visible_element_ix = i;
+                                    break;
+                                }
+                            }
+
+                            cumulative_size = 0.0;
+                            let mut last_visible_element_ix = 0;
+                            for (i, &size) in item_sizes.iter().enumerate() {
+                                cumulative_size += size;
+                                if cumulative_size
+                                    > (-scroll_offset.y + padded_bounds.size.height).0
+                                {
+                                    last_visible_element_ix = i + 1;
+                                    break;
+                                }
+                            }
+                            if last_visible_element_ix == 0 {
+                                last_visible_element_ix = self.items_count;
+                            } else {
+                                last_visible_element_ix += 1;
+                            }
+                            (first_visible_element_ix, last_visible_element_ix)
+                        }
+                    };
+
                     let visible_range = first_visible_element_ix
                         ..cmp::min(last_visible_element_ix, self.items_count);
 
@@ -243,43 +304,40 @@ impl Element for VirtualItem {
                     let content_mask = ContentMask { bounds };
                     cx.with_content_mask(Some(content_mask), |cx| {
                         for (mut item, ix) in items.into_iter().zip(visible_range.clone()) {
-                            let item_x = px(item_widths.iter().take(ix).sum::<f32>());
+                            let item_origin = match self.axis {
+                                Axis::Horizontal => {
+                                    let item_x = px(item_sizes.iter().take(ix).sum::<f32>());
+                                    padded_bounds.origin
+                                        + point(
+                                            item_x + scroll_offset.x + padding.left,
+                                            padding.top,
+                                        )
+                                }
+                                Axis::Vertical => {
+                                    let item_y = px(item_sizes.iter().take(ix).sum::<f32>());
+                                    padded_bounds.origin
+                                        + point(
+                                            padding.left,
+                                            item_y + scroll_offset.y + padding.top,
+                                        )
+                                }
+                            };
 
-                            let item_origin = padded_bounds.origin
-                                + point(item_x + scroll_offset.x + padding.left, padding.top);
-                            // println!("{}, {}", item_origin.x, item_origin.y);
-                            let available_height = padded_bounds.size.height;
-                            let col_width = item_widths[ix];
-                            let available_space = size(
-                                AvailableSpace::Definite(px(col_width)),
-                                AvailableSpace::Definite(available_height),
-                            );
+                            let available_space = match self.axis {
+                                Axis::Horizontal => size(
+                                    AvailableSpace::Definite(px(item_sizes[ix])),
+                                    AvailableSpace::Definite(padded_bounds.size.height),
+                                ),
+                                Axis::Vertical => size(
+                                    AvailableSpace::Definite(padded_bounds.size.width),
+                                    AvailableSpace::Definite(px(item_sizes[ix])),
+                                ),
+                            };
+
                             item.layout_as_root(available_space, cx);
                             item.prepaint_at(item_origin, cx);
                             frame_state.items.push(item);
                         }
-
-                        // let bounds = Bounds::new(
-                        //     padded_bounds.origin
-                        //         + point(scroll_offset.x + padding.left, scroll_offset.y),
-                        //     padded_bounds.size,
-                        // );
-                        // for decoration in &self.decorations {
-                        //     let mut decoration = decoration.as_ref().compute(
-                        //         visible_range.clone(),
-                        //         bounds,
-                        //         item_height,
-                        //         self.item_count,
-                        //         cx,
-                        //     );
-                        //     let available_space = size(
-                        //         AvailableSpace::Definite(bounds.size.width),
-                        //         AvailableSpace::Definite(bounds.size.height),
-                        //     );
-                        //     decoration.layout_as_root(available_space, cx);
-                        //     decoration.prepaint_at(bounds.origin, cx);
-                        //     frame_state.decorations.push(decoration);
-                        // }
                     });
                 }
 
