@@ -208,6 +208,7 @@ pub trait Disableable {
 }
 
 /// A trait for setting the size of an element.
+/// Size::Medium is use by default.
 pub trait Sizable: Sized {
     /// Set the ui::Size of this element.
     ///
@@ -223,11 +224,6 @@ pub trait Sizable: Sized {
     /// Set to Size::Small
     fn small(self) -> Self {
         self.with_size(Size::Small)
-    }
-
-    /// Set to Size::Medium
-    fn medium(self) -> Self {
-        self.with_size(Size::Medium)
     }
 
     /// Set to Size::Large
