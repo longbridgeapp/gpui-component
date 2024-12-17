@@ -1,11 +1,15 @@
 //! Vistual List for render a large number of differently sized rows/columns.
 //!
-//! NOTE: This must ensure each column width or row height.
+//! > NOTE: This must ensure each column width or row height.
 //!
 //! Only visible range are rendered for performance reasons.
 //!
 //! Inspired by `gpui::uniform_list`.
 //! https://github.com/zed-industries/zed/blob/0ae1603610ab6b265bdfbee7b8dbc23c5ab06edc/crates/gpui/src/elements/uniform_list.rs
+//!
+//! Unlike the `uniform_list`, the each item can have different size.
+//!
+//! This is useful for more complex layout, for example, a table with different row height.
 use std::{cmp, ops::Range, rc::Rc};
 
 use gpui::{
