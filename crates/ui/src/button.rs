@@ -575,7 +575,8 @@ impl ButtonVariant {
     fn active(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = match self {
             ButtonVariant::Primary => cx.theme().primary_active,
-            ButtonVariant::Secondary | ButtonVariant::Outline | ButtonVariant::Ghost => {
+            ButtonVariant::Secondary | ButtonVariant::Outline => cx.theme().secondary_active,
+            ButtonVariant::Ghost => {
                 if cx.theme().mode.is_dark() {
                     cx.theme().secondary.lighten(0.2).opacity(0.8)
                 } else {
@@ -608,7 +609,8 @@ impl ButtonVariant {
     fn selected(&self, cx: &WindowContext) -> ButtonVariantStyle {
         let bg = match self {
             ButtonVariant::Primary => cx.theme().primary_active,
-            ButtonVariant::Secondary | ButtonVariant::Outline | ButtonVariant::Ghost => {
+            ButtonVariant::Secondary | ButtonVariant::Outline => cx.theme().secondary_active,
+            ButtonVariant::Ghost => {
                 if cx.theme().mode.is_dark() {
                     cx.theme().secondary.lighten(0.2).opacity(0.8)
                 } else {
