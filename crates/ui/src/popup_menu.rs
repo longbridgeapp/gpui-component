@@ -8,7 +8,7 @@ use gpui::{
     SharedString, View, ViewContext, VisualContext as _, WindowContext,
 };
 use gpui::{
-    anchored, canvas, rems, AnchorCorner, AnyElement, Bounds, Edges, FocusableView, Keystroke,
+    anchored, canvas, rems, AnyElement, Bounds, Corner, Edges, FocusableView, Keystroke,
     ScrollHandle, StatefulInteractiveElement, Styled, WeakView,
 };
 
@@ -37,13 +37,13 @@ pub trait PopupMenuExt: Styled + Selectable + IntoElement + 'static {
         self,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
-        self.popup_menu_with_anchor(AnchorCorner::TopLeft, f)
+        self.popup_menu_with_anchor(Corner::TopLeft, f)
     }
 
     /// Create a popup menu with the given items, anchored to the given corner
     fn popup_menu_with_anchor(
         mut self,
-        anchor: impl Into<AnchorCorner>,
+        anchor: impl Into<Corner>,
         f: impl Fn(PopupMenu, &mut ViewContext<PopupMenu>) -> PopupMenu + 'static,
     ) -> Popover<PopupMenu> {
         let style = self.style().clone();
@@ -649,13 +649,10 @@ impl Render for PopupMenu {
                                                                         - bounds.origin.x
                                                                         < max_width
                                                                     {
-                                                                        (
-                                                                            AnchorCorner::TopRight,
-                                                                            -px(15.),
-                                                                        )
+                                                                        (Corner::TopRight, -px(15.))
                                                                     } else {
                                                                         (
-                                                                            AnchorCorner::TopLeft,
+                                                                            Corner::TopLeft,
                                                                             bounds.size.width
                                                                                 - px(10.),
                                                                         )

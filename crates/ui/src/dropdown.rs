@@ -82,7 +82,7 @@ pub trait DropdownDelegate: Sized {
     }
 
     fn perform_search(&mut self, _query: &str, _cx: &mut ViewContext<Dropdown<Self>>) -> Task<()> {
-        Task::Ready(Some(()))
+        Task::ready(())
     }
 }
 
@@ -179,11 +179,9 @@ where
     }
 
     fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) -> Task<()> {
-        self.dropdown
-            .upgrade()
-            .map_or(Task::Ready(None), |dropdown| {
-                dropdown.update(cx, |_, cx| self.delegate.perform_search(query, cx))
-            })
+        self.dropdown.upgrade().map_or(Task::ready(()), |dropdown| {
+            dropdown.update(cx, |_, cx| self.delegate.perform_search(query, cx))
+        })
     }
 
     fn set_selected_index(&mut self, ix: Option<usize>, _: &mut ViewContext<List<Self>>) {
@@ -284,7 +282,7 @@ impl<T: DropdownItem + Clone> DropdownDelegate for SearchableVec<T> {
             .cloned()
             .collect();
 
-        Task::Ready(Some(()))
+        Task::ready(())
     }
 }
 

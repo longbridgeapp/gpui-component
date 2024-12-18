@@ -261,7 +261,7 @@ impl Element for VirtualList {
 
         let padded_bounds = Bounds::from_corners(
             bounds.origin + point(border.left + padding.left, border.top + padding.top),
-            bounds.lower_right()
+            bounds.bottom_right()
                 - point(border.right + padding.right, border.bottom + padding.bottom),
         );
 
@@ -297,7 +297,7 @@ impl Element for VirtualList {
 
                 let padded_bounds = Bounds::from_corners(
                     bounds.origin + point(border.left + padding.left, border.top),
-                    bounds.lower_right() - point(border.right + padding.right, border.bottom),
+                    bounds.bottom_right() - point(border.right + padding.right, border.bottom),
                 );
 
                 if self.items_count > 0 {

@@ -1,6 +1,6 @@
 use gpui::{
-    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, AnchorCorner, AnyElement,
-    AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
+    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, AnyElement, AppContext,
+    Bounds, Corner, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
     FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement, KeyBinding,
     LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render,
     Style, StyleRefinement, Styled, View, ViewContext, VisualContext, WindowContext,
@@ -64,7 +64,7 @@ impl Render for PopoverContent {
 
 pub struct Popover<M: ManagedView> {
     id: ElementId,
-    anchor: AnchorCorner,
+    anchor: Corner,
     trigger: Option<Box<dyn FnOnce(bool, &WindowContext) -> AnyElement + 'static>>,
     content: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
     /// Style for trigger element.
@@ -82,7 +82,7 @@ where
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
-            anchor: AnchorCorner::TopLeft,
+            anchor: Corner::TopLeft,
             trigger: None,
             trigger_style: None,
             content: None,
@@ -91,7 +91,7 @@ where
         }
     }
 
-    pub fn anchor(mut self, anchor: AnchorCorner) -> Self {
+    pub fn anchor(mut self, anchor: Corner) -> Self {
         self.anchor = anchor;
         self
     }
@@ -148,13 +148,12 @@ where
     }
 
     fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
-        match self.anchor {
-            AnchorCorner::TopLeft => AnchorCorner::BottomLeft,
-            AnchorCorner::TopRight => AnchorCorner::BottomRight,
-            AnchorCorner::BottomLeft => AnchorCorner::TopLeft,
-            AnchorCorner::BottomRight => AnchorCorner::TopRight,
-        }
-        .corner(bounds)
+        bounds.corner(match self.anchor {
+            Corner::TopLeft => Corner::BottomLeft,
+            Corner::TopRight => Corner::BottomRight,
+            Corner::BottomLeft => Corner::TopLeft,
+            Corner::BottomRight => Corner::TopRight,
+        })
     }
 
     fn with_element_state<R>(
@@ -268,12 +267,8 @@ impl<M: ManagedView> Element for Popover<M> {
                                 .occlude()
                                 .when(!no_style, |this| this.popover_style(cx))
                                 .map(|this| match anchor {
-                                    AnchorCorner::TopLeft | AnchorCorner::TopRight => {
-                                        this.top_1p5()
-                                    }
-                                    AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
-                                        this.bottom_1p5()
-                                    }
+                                    Corner::TopLeft | Corner::TopRight => this.top_1p5(),
+                                    Corner::BottomLeft | Corner::BottomRight => this.bottom_1p5(),
                                 })
                                 .child(content_view.clone())
                                 .when(!no_style, |this| {
