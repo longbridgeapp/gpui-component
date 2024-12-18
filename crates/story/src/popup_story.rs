@@ -1,8 +1,8 @@
 use gpui::{
-    actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
-    FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton,
-    ParentElement as _, Render, SharedString, Styled as _, View, ViewContext, VisualContext,
-    WindowContext,
+    actions, div, impl_actions, px, AnchorCorner, AppContext, Axis, DismissEvent, Element,
+    EventEmitter, FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding,
+    MouseButton, ParentElement as _, Render, SharedString, Styled as _, View, ViewContext,
+    VisualContext, WindowContext,
 };
 use serde::Deserialize;
 use ui::{
@@ -208,16 +208,70 @@ impl Render for PopupStory {
                     .items_center()
                     .justify_between()
                     .child(
-                        v_flex().gap_4().child(
-                            Popover::new("info-top-left")
-                                .trigger(Button::new("info-top-left").label("Top Left"))
-                                .content(|cx| {
-                                    cx.new_view(|cx| {
-                                        PopoverContent::new(cx, |_| {
-                                            v_flex()
+                        v_flex()
+                            .gap_4()
+                            .child(
+                                Popover::new("info-top-left")
+                                    .trigger(Button::new("info-top-left").label("Top Left"))
+                                    .content(|cx| {
+                                        cx.new_view(|cx| {
+                                            PopoverContent::new(cx, |_| {
+                                                v_flex()
+                                                    .gap_4()
+                                                    .child("Hello, this is a Popover.")
+                                                    .w(px(400.))
+                                                    .child(Divider::horizontal())
+                                                    .child(
+                                                        Button::new("info1")
+                                                            .label("Yes")
+                                                            .w(px(80.))
+                                                            .small(),
+                                                    )
+                                                    .into_any()
+                                            })
+                                            .max_w(px(600.))
+                                        })
+                                    }),
+                            )
+                            .child(
+                                Popover::new("info-left-top")
+                                    .trigger(Button::new("info-left-top").label("Left Top"))
+                                    .axis(Axis::Horizontal)
+                                    .content(|cx| {
+                                        cx.new_view(|cx| {
+                                            PopoverContent::new(cx, |_| {
+                                                v_flex()
+                                                    .gap_4()
+                                                    .child("Hello, this is a Popover.")
+                                                    .w(px(400.))
+                                                    .child(Divider::horizontal())
+                                                    .child(
+                                                        Button::new("info1")
+                                                            .label("Yes")
+                                                            .w(px(80.))
+                                                            .small(),
+                                                    )
+                                                    .into_any()
+                                            })
+                                            .max_w(px(600.))
+                                        })
+                                    }),
+                            ),
+                    )
+                    .child(
+                        v_flex()
+                            .gap_4()
+                            .child(
+                                Popover::new("info-top-right")
+                                    .anchor(AnchorCorner::TopRight)
+                                    .trigger(Button::new("info-top-right").label("Top Right"))
+                                    .content(|cx| {
+                                        cx.new_view(|cx| {
+                                            PopoverContent::new(cx, |_| {
+                                                v_flex()
                                                 .gap_4()
-                                                .child("Hello, this is a Popover.")
-                                                .w(px(400.))
+                                                .w_96()
+                                                .child("Hello, this is a Popover on the Top Right.")
                                                 .child(Divider::horizontal())
                                                 .child(
                                                     Button::new("info1")
@@ -226,34 +280,34 @@ impl Render for PopupStory {
                                                         .small(),
                                                 )
                                                 .into_any()
+                                            })
                                         })
-                                        .max_w(px(600.))
-                                    })
-                                }),
-                        ),
-                    )
-                    .child(
-                        Popover::new("info-top-right")
-                            .anchor(AnchorCorner::TopRight)
-                            .trigger(Button::new("info-top-right").label("Top Right"))
-                            .content(|cx| {
-                                cx.new_view(|cx| {
-                                    PopoverContent::new(cx, |_| {
-                                        v_flex()
-                                            .gap_4()
-                                            .w_96()
-                                            .child("Hello, this is a Popover on the Top Right.")
-                                            .child(Divider::horizontal())
-                                            .child(
-                                                Button::new("info1")
-                                                    .label("Yes")
-                                                    .w(px(80.))
-                                                    .small(),
-                                            )
-                                            .into_any()
-                                    })
-                                })
-                            }),
+                                    }),
+                            )
+                            .child(
+                                Popover::new("info-right-top")
+                                    .anchor(AnchorCorner::TopRight)
+                                    .axis(Axis::Horizontal)
+                                    .trigger(Button::new("info-right-top").label("Right Top"))
+                                    .content(|cx| {
+                                        cx.new_view(|cx| {
+                                            PopoverContent::new(cx, |_| {
+                                                v_flex()
+                                                .gap_4()
+                                                .w_96()
+                                                .child("Hello, this is a Popover on the Right Top.")
+                                                .child(Divider::horizontal())
+                                                .child(
+                                                    Button::new("info1")
+                                                        .label("Yes")
+                                                        .w(px(80.))
+                                                        .small(),
+                                                )
+                                                .into_any()
+                                            })
+                                        })
+                                    }),
+                            ),
                     ),
             )
             .child(
@@ -322,57 +376,97 @@ impl Render for PopupStory {
                         .items_center()
                         .justify_between()
                         .child(
-                            Popover::new("info-bottom-left")
-                                .anchor(AnchorCorner::BottomLeft)
-                                .trigger(Button::new("pop").label("Popup with Form").w(px(300.)))
-                                .content(move |_| form.clone()),
+                            v_flex()
+                                .gap_4()
+                                .child(
+                                    Popover::new("info-left-bottom")
+                                        .anchor(AnchorCorner::BottomLeft)
+                                        .axis(Axis::Horizontal)
+                                        .trigger(
+                                            Button::new("pop").label("Left Bottom"),
+                                        )
+                                        .content(|cx| {
+                                            cx.new_view(|cx| {
+                                                PopoverContent::new(cx, |_| {
+                                                    div().child("Hello this is a Popover on the Left Bottom.").into_any()
+                                                })
+                                            })
+                                        }),
+                                )
+                                .child(
+                                    Popover::new("info-bottom-left")
+                                        .anchor(AnchorCorner::BottomLeft)
+                                        .trigger(
+                                            Button::new("pop").label("Popup with Form").w(px(300.)),
+                                        )
+                                        .content(move |_| form.clone()),
+                                ),
                         )
                         .child(
-                            Popover::new("info-bottom-right")
-                                .anchor(AnchorCorner::BottomRight)
-                                .mouse_button(MouseButton::Right)
-                                .trigger(Button::new("pop").label("Mouse Right Click").w(px(300.)))
-                                .content(|cx| {
-                                    cx.new_view(|cx| {
-                                        PopoverContent::new(cx, |cx| {
-                                            v_flex()
-                                                .gap_2()
-                                                .child(
-                                                    "Hello, this is a Popover on the Bottom Right.",
-                                                )
-                                                .child(Divider::horizontal())
-                                                .child(
-                                                    h_flex()
+                            v_flex()
+                                .gap_4()
+                                .child(
+                                    Popover::new("info-right-bottom")
+                                        .anchor(AnchorCorner::BottomLeft)
+                                        .axis(Axis::Horizontal)
+                                        .trigger(
+                                            Button::new("info-right-bottom").label("Right Bottom"),
+                                        )
+                                        .content(|cx| {
+                                            cx.new_view(|cx| {
+                                                PopoverContent::new(cx, |_| {
+                                                    div().child("Hello this is a Popover on the Right Bottom.").into_any()
+                                                })
+                                            })
+                                        })
+                                ).child(
+                                    Popover::new("info-bottom-right")
+                                        .anchor(AnchorCorner::BottomRight)
+                                        .mouse_button(MouseButton::Right)
+                                        .trigger(Button::new("pop").label("Mouse Right Click").w(px(300.)))
+                                        .content(|cx| {
+                                            cx.new_view(|cx| {
+                                                PopoverContent::new(cx, |cx| {
+                                                    v_flex()
                                                         .gap_2()
                                                         .child(
-                                                            Button::new("info1")
-                                                                .label("Ok")
-                                                                .w(px(80.))
-                                                                .small()
-                                                                .on_click(cx.listener(
-                                                                    |_, _, cx| {
-                                                                        cx.push_notification(
-                                                                            "You have clicked Ok.",
-                                                                        );
-                                                                        cx.emit(DismissEvent);
-                                                                    },
-                                                                )),
+                                                            "Hello, this is a Popover on the Bottom Right.",
                                                         )
+                                                        .child(Divider::horizontal())
                                                         .child(
-                                                            Button::new("close")
-                                                                .label("Cancel")
-                                                                .small()
-                                                                .on_click(cx.listener(
-                                                                    |_, _, cx| {
-                                                                        cx.emit(DismissEvent);
-                                                                    },
-                                                                )),
-                                                        ),
-                                                )
-                                                .into_any()
+                                                            h_flex()
+                                                                .gap_2()
+                                                                .child(
+                                                                    Button::new("info1")
+                                                                        .label("Ok")
+                                                                        .w(px(80.))
+                                                                        .small()
+                                                                        .on_click(cx.listener(
+                                                                            |_, _, cx| {
+                                                                                cx.push_notification(
+                                                                                    "You have clicked Ok.",
+                                                                                );
+                                                                                cx.emit(DismissEvent);
+                                                                            },
+                                                                        )),
+                                                                )
+                                                                .child(
+                                                                    Button::new("close")
+                                                                        .label("Cancel")
+                                                                        .small()
+                                                                        .on_click(cx.listener(
+                                                                            |_, _, cx| {
+                                                                                cx.emit(DismissEvent);
+                                                                            },
+                                                                        )),
+                                                                ),
+                                                        )
+                                                        .into_any()
+                                                })
+                                            })
                                         })
-                                    })
-                                }),
+                                ),
+
                         ),
                 ),
             )

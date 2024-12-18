@@ -1,15 +1,17 @@
 use gpui::{
-    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, AnchorCorner, AnyElement,
-    AppContext, Bounds, DismissEvent, DispatchPhase, Element, ElementId, EventEmitter, FocusHandle,
-    FocusableView, GlobalElementId, Hitbox, InteractiveElement as _, IntoElement, KeyBinding,
-    LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Render,
-    Style, StyleRefinement, Styled, View, ViewContext, VisualContext, WindowContext,
+    actions, anchored, deferred, div, prelude::FluentBuilder as _, px, Along, AnchorCorner,
+    AnyElement, AppContext, Axis, Bounds, DismissEvent, DispatchPhase, Element, ElementId,
+    EventEmitter, FocusHandle, FocusableView, GlobalElementId, Hitbox, InteractiveElement as _,
+    IntoElement, KeyBinding, LayoutId, ManagedView, MouseButton, MouseDownEvent, ParentElement,
+    Pixels, Point, Render, Style, StyleRefinement, Styled, View, ViewContext, VisualContext,
+    WindowContext,
 };
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{Selectable, StyledExt as _};
+use crate::{AxisExt, Selectable, StyledExt as _};
 
 const CONTEXT: &str = "Popover";
+const SNAP_MARGIN: Pixels = px(8.);
 
 actions!(popover, [Escape]);
 
@@ -65,6 +67,7 @@ impl Render for PopoverContent {
 pub struct Popover<M: ManagedView> {
     id: ElementId,
     anchor: AnchorCorner,
+    axis: Axis,
     trigger: Option<Box<dyn FnOnce(bool, &WindowContext) -> AnyElement + 'static>>,
     content: Option<Rc<dyn Fn(&mut WindowContext) -> View<M> + 'static>>,
     /// Style for trigger element.
@@ -83,6 +86,7 @@ where
         Self {
             id: id.into(),
             anchor: AnchorCorner::TopLeft,
+            axis: Axis::Vertical,
             trigger: None,
             trigger_style: None,
             content: None,
@@ -91,8 +95,24 @@ where
         }
     }
 
+    /// Set the anchor corner of the popover, default is `AnchorCorner::TopLeft`.
     pub fn anchor(mut self, anchor: AnchorCorner) -> Self {
         self.anchor = anchor;
+        self
+    }
+
+    /// Set the axis of the popover, default is `Axis::Vertical`.
+    ///
+    /// The axis is used for the popover to determine the position of the popover.
+    ///
+    /// For exampleL
+    ///
+    /// - If the axis is `Axis::Vertical` and the anchor is `AnchorCorner::TopLeft`,
+    /// the popover will be positioned below the trigger element.
+    /// - If the axis is `Axis::Horizontal` and the anchor is `AnchorCorner::TopLeft`,
+    /// the popover will be positioned to the right of the trigger element.
+    pub fn axis(mut self, axis: Axis) -> Self {
+        self.axis = axis;
         self
     }
 
@@ -147,14 +167,43 @@ where
         (trigger)(is_open, cx)
     }
 
-    fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
-        match self.anchor {
+    fn resolved_corner(
+        &self,
+        trigger_bounds: Bounds<Pixels>,
+        popover_bounds: Bounds<Pixels>,
+    ) -> Point<Pixels> {
+        let mut p = match self.anchor {
             AnchorCorner::TopLeft => AnchorCorner::BottomLeft,
             AnchorCorner::TopRight => AnchorCorner::BottomRight,
             AnchorCorner::BottomLeft => AnchorCorner::TopLeft,
             AnchorCorner::BottomRight => AnchorCorner::TopRight,
         }
-        .corner(bounds)
+        .corner(trigger_bounds);
+
+        if self.axis.is_horizontal() {
+            match self.anchor {
+                AnchorCorner::TopLeft => {
+                    p.x = p.x - trigger_bounds.size.width - popover_bounds.size.width + SNAP_MARGIN;
+                    p.y = p.y - trigger_bounds.size.height - SNAP_MARGIN;
+                }
+                AnchorCorner::TopRight => {
+                    p.x = p.x + trigger_bounds.size.width - SNAP_MARGIN;
+                    p.y = p.y - trigger_bounds.size.height - SNAP_MARGIN;
+                }
+                AnchorCorner::BottomLeft => {
+                    p.x = p.x - trigger_bounds.size.width - popover_bounds.size.width + SNAP_MARGIN;
+                    p.y =
+                        p.y + trigger_bounds.size.height - popover_bounds.size.height + SNAP_MARGIN;
+                }
+                AnchorCorner::BottomRight => {
+                    p.x = p.x + trigger_bounds.size.width - SNAP_MARGIN;
+                    p.y =
+                        p.y + trigger_bounds.size.height - popover_bounds.size.height + SNAP_MARGIN;
+                }
+            }
+        }
+
+        p
     }
 
     fn with_element_state<R>(
@@ -193,6 +242,8 @@ pub struct PopoverElementState<M> {
     content_view: Rc<RefCell<Option<View<M>>>>,
     /// Trigger bounds for positioning the popover.
     trigger_bounds: Option<Bounds<Pixels>>,
+    /// Popover bounds for open window size.
+    popover_bounds: Option<Bounds<Pixels>>,
 }
 
 impl<M> Default for PopoverElementState<M> {
@@ -204,6 +255,7 @@ impl<M> Default for PopoverElementState<M> {
             trigger_element: None,
             content_view: Rc::new(RefCell::new(None)),
             trigger_bounds: None,
+            popover_bounds: None,
         }
     }
 }
@@ -212,6 +264,8 @@ pub struct PrepaintState {
     hitbox: Hitbox,
     /// Trigger bounds for limit a rect to handle mouse click.
     trigger_bounds: Option<Bounds<Pixels>>,
+    /// Popover bounds for open window size.
+    popover_bounds: Option<Bounds<Pixels>>,
 }
 
 impl<M: ManagedView> Element for Popover<M> {
@@ -251,10 +305,13 @@ impl<M: ManagedView> Element for Popover<M> {
                 is_open = true;
 
                 let mut anchored = anchored()
-                    .snap_to_window_with_margin(px(8.))
+                    .snap_to_window_with_margin(SNAP_MARGIN)
                     .anchor(view.anchor);
+
                 if let Some(trigger_bounds) = element_state.trigger_bounds {
-                    anchored = anchored.position(view.resolved_corner(trigger_bounds));
+                    let popover_bounds = element_state.popover_bounds.unwrap_or_default();
+                    anchored =
+                        anchored.position(view.resolved_corner(trigger_bounds, popover_bounds));
                 }
 
                 let mut element = {
@@ -317,33 +374,39 @@ impl<M: ManagedView> Element for Popover<M> {
 
     fn prepaint(
         &mut self,
-        _id: Option<&gpui::GlobalElementId>,
+        id: Option<&gpui::GlobalElementId>,
         _bounds: gpui::Bounds<gpui::Pixels>,
         request_layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
-        if let Some(element) = &mut request_layout.trigger_element {
-            element.prepaint(cx);
-        }
-        if let Some(element) = &mut request_layout.popover_element {
-            element.prepaint(cx);
-        }
+        self.with_element_state(id.unwrap(), cx, |_, element_state, cx| {
+            if let Some(element) = &mut request_layout.trigger_element {
+                element.prepaint(cx);
+            }
+            if let Some(element) = &mut request_layout.popover_element {
+                element.prepaint(cx);
+            }
 
-        let trigger_bounds = request_layout
-            .trigger_layout_id
-            .map(|id| cx.layout_bounds(id));
+            let trigger_bounds = request_layout
+                .trigger_layout_id
+                .map(|id| cx.layout_bounds(id));
 
-        // Prepare the popover, for get the bounds of it for open window size.
-        let _ = request_layout
-            .popover_layout_id
-            .map(|id| cx.layout_bounds(id));
+            // Prepare the popover, for get the bounds of it for open window size.
+            let popover_bounds = request_layout
+                .popover_layout_id
+                .map(|id| cx.layout_bounds(id));
 
-        let hitbox = cx.insert_hitbox(trigger_bounds.unwrap_or_default(), false);
+            let hitbox = cx.insert_hitbox(trigger_bounds.unwrap_or_default(), false);
 
-        PrepaintState {
-            trigger_bounds,
-            hitbox,
-        }
+            element_state.popover_bounds = popover_bounds;
+            element_state.trigger_bounds = trigger_bounds;
+
+            PrepaintState {
+                trigger_bounds,
+                popover_bounds,
+                hitbox,
+            }
+        })
     }
 
     fn paint(
@@ -356,6 +419,7 @@ impl<M: ManagedView> Element for Popover<M> {
     ) {
         self.with_element_state(id.unwrap(), cx, |this, element_state, cx| {
             element_state.trigger_bounds = prepaint.trigger_bounds;
+            element_state.popover_bounds = prepaint.popover_bounds;
 
             if let Some(mut element) = request_layout.trigger_element.take() {
                 element.paint(cx);

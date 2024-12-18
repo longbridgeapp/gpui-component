@@ -356,10 +356,12 @@ pub trait AxisExt {
 }
 
 impl AxisExt for Axis {
+    #[inline]
     fn is_horizontal(self) -> bool {
         self == Axis::Horizontal
     }
 
+    #[inline]
     fn is_vertical(self) -> bool {
         self == Axis::Vertical
     }
@@ -385,6 +387,7 @@ impl Display for Placement {
 }
 
 impl Placement {
+    #[inline]
     pub fn is_horizontal(&self) -> bool {
         match self {
             Placement::Left | Placement::Right => true,
@@ -392,6 +395,7 @@ impl Placement {
         }
     }
 
+    #[inline]
     pub fn is_vertical(&self) -> bool {
         match self {
             Placement::Top | Placement::Bottom => true,
@@ -399,6 +403,7 @@ impl Placement {
         }
     }
 
+    #[inline]
     pub fn axis(&self) -> Axis {
         match self {
             Placement::Top | Placement::Bottom => Axis::Vertical,
@@ -415,6 +420,7 @@ pub enum Side {
 }
 
 impl Side {
+    #[inline]
     pub(crate) fn is_left(&self) -> bool {
         matches!(self, Self::Left)
     }
