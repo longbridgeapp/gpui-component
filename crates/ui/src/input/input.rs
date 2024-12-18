@@ -262,9 +262,10 @@ impl TextInput {
             let offset = self.cursor_offset();
             let line_height = self.last_line_height;
 
-            // Find which line the cursor is on and its position
-            let (_line_index, cursor_pos) =
+            // Find which line and sub-line the cursor is on and its position
+            let (_line_index, _sub_line_index, cursor_pos) =
                 self.line_and_position_for_offset(offset, lines, line_height);
+
             if let Some(pos) = cursor_pos {
                 // Adjust by scroll offset
                 let scroll_offset = bounds.origin;
@@ -273,25 +274,27 @@ impl TextInput {
         }
     }
 
-    /// Find which line the given offset belongs to and the position (x,y) of that offset within the line.
+    /// Find which line and sub-line the given offset belongs to, along with the position within that sub-line.
     fn line_and_position_for_offset(
         &self,
         offset: usize,
         lines: &[WrappedLine],
         line_height: Pixels,
-    ) -> (usize, Option<Point<Pixels>>) {
+    ) -> (usize, usize, Option<Point<Pixels>>) {
         let mut prev_lines_offset = 0;
         let mut y_offset = px(0.);
-        for (i, line) in lines.iter().enumerate() {
+        for (line_index, line) in lines.iter().enumerate() {
             let local_offset = offset.saturating_sub(prev_lines_offset);
             if let Some(pos) = line.position_for_index(local_offset, line_height) {
-                return (i, Some(point(pos.x, pos.y + y_offset)));
+                let sub_line_index = (pos.y.0 / line_height.0) as usize;
+                let adjusted_pos = point(pos.x, pos.y + y_offset);
+                return (line_index, sub_line_index, Some(adjusted_pos));
             }
 
             y_offset += line.size(line_height).height;
             prev_lines_offset += line.len() + 1;
         }
-        (0, None)
+        (0, 0, None)
     }
 
     /// Move the cursor vertically by one line (up or down) while preserving the column if possible.
@@ -307,7 +310,7 @@ impl TextInput {
 
         let offset = self.cursor_offset();
         let line_height = self.last_line_height;
-        let (current_line_index, current_pos) =
+        let (current_line_index, current_sub_line, current_pos) =
             self.line_and_position_for_offset(offset, lines, line_height);
 
         let Some(current_pos) = current_pos else {
@@ -319,22 +322,41 @@ impl TextInput {
             .unwrap_or_else(|| current_pos.x + bounds.origin.x);
         self.preferred_x_offset = Some(current_x);
 
-        let new_line_index = if direction < 0 {
-            current_line_index.saturating_sub(1)
-        } else {
-            (current_line_index + 1).min(lines.len().saturating_sub(1))
-        };
+        let mut new_line_index = current_line_index;
+        let mut new_sub_line = current_sub_line as i32;
 
-        if new_line_index == current_line_index {
+        new_sub_line += direction;
+
+        if new_sub_line < 0 {
+            if new_line_index > 0 {
+                new_line_index -= 1;
+                new_sub_line = lines[new_line_index].wrap_boundaries.len() as i32;
+            } else {
+                new_sub_line = 0;
+            }
+        } else {
+            let max_sub_line = lines[new_line_index].wrap_boundaries.len() as i32;
+            if new_sub_line > max_sub_line {
+                if new_line_index < lines.len() - 1 {
+                    new_line_index += 1;
+                    new_sub_line = 0;
+                } else {
+                    new_sub_line = max_sub_line;
+                }
+            }
+        }
+
+        if new_line_index == current_line_index && new_sub_line == current_sub_line as i32 {
             return;
         }
 
         let target_line = &lines[new_line_index];
-
         let line_x = current_x - bounds.origin.x;
-        let approx_pos = point(line_x, px(0.));
-        let index_res = target_line.index_for_position(approx_pos, line_height);
+        let target_sub_line = new_sub_line as usize;
 
+        let approx_pos = point(line_x, px(target_sub_line as f32 * line_height.0));
+        let index_res = target_line.index_for_position(approx_pos, line_height);
+        eprintln!("index_res: {:?}", index_res);
         let new_local_index = match index_res {
             Ok(i) => i,
             Err(i) => i,
