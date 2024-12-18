@@ -80,8 +80,7 @@ where
         base: div()
             .id(id)
             .size_full()
-            .when(axis == Axis::Horizontal, |this| this.overflow_x_scroll())
-            .when(axis == Axis::Vertical, |this| this.overflow_y_scroll())
+            .overflow_scroll()
             .track_scroll(&scroll_handle),
         scroll_handle,
         items_count: item_sizes.len(),
