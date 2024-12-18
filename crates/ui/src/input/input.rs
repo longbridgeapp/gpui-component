@@ -320,7 +320,6 @@ impl TextInput {
         let current_x = self
             .preferred_x_offset
             .unwrap_or_else(|| current_pos.x + bounds.origin.x);
-        self.preferred_x_offset = Some(current_x);
 
         let mut new_line_index = current_line_index;
         let mut new_sub_line = current_sub_line as i32;
@@ -356,7 +355,7 @@ impl TextInput {
 
         let approx_pos = point(line_x, px(target_sub_line as f32 * line_height.0));
         let index_res = target_line.index_for_position(approx_pos, line_height);
-        eprintln!("index_res: {:?}", index_res);
+
         let new_local_index = match index_res {
             Ok(i) => i,
             Err(i) => i,
@@ -371,7 +370,9 @@ impl TextInput {
         }
 
         let new_offset = (prev_lines_offset + new_local_index).min(self.text.len());
-        self.move_to(new_offset, cx);
+        self.selected_range = new_offset..new_offset;
+        self.pause_blink_cursor(cx);
+        cx.notify();
     }
 
     #[inline]
