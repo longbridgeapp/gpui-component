@@ -191,13 +191,15 @@ impl Element for VirtualItem {
         }
         .to_pixels(font_size.into(), cx.rem_size());
 
+        let items_len = self.item_sizes.len();
+
         let item_sizes = match self.axis {
             Axis::Horizontal => self
                 .item_sizes
                 .iter()
                 .enumerate()
                 .map(|(i, size)| {
-                    if i == self.item_sizes.len() - 1 {
+                    if i == items_len - 1 {
                         size.width
                     } else {
                         size.width + gap
@@ -209,11 +211,29 @@ impl Element for VirtualItem {
                 .iter()
                 .enumerate()
                 .map(|(i, size)| {
-                    if i == self.item_sizes.len() - 1 {
+                    if i == items_len - 1 {
                         size.height
                     } else {
                         size.height + gap
                     }
+                })
+                .collect::<Vec<_>>(),
+        };
+        let item_origins = match self.axis {
+            Axis::Horizontal => item_sizes
+                .iter()
+                .scan(px(0.), |cumulative_size, size| {
+                    let origin = *cumulative_size;
+                    *cumulative_size += *size;
+                    Some(origin)
+                })
+                .collect::<Vec<_>>(),
+            Axis::Vertical => item_sizes
+                .iter()
+                .scan(px(0.), |cumulative_size, size| {
+                    let origin = *cumulative_size;
+                    *cumulative_size += *size;
+                    Some(origin)
                 })
                 .collect::<Vec<_>>(),
         };
@@ -337,8 +357,7 @@ impl Element for VirtualItem {
                         for (mut item, ix) in items.into_iter().zip(visible_range.clone()) {
                             let item_origin = match self.axis {
                                 Axis::Horizontal => {
-                                    let item_x =
-                                        px(item_sizes.iter().map(|s| s.0).take(ix).sum::<f32>());
+                                    let item_x = item_origins.get(ix).copied().unwrap_or_default();
                                     padded_bounds.origin
                                         + point(
                                             item_x + scroll_offset.x + padding.left,
@@ -346,8 +365,7 @@ impl Element for VirtualItem {
                                         )
                                 }
                                 Axis::Vertical => {
-                                    let item_y =
-                                        px(item_sizes.iter().map(|s| s.0).take(ix).sum::<f32>());
+                                    let item_y = item_origins.get(ix).copied().unwrap_or_default();
                                     padded_bounds.origin
                                         + point(
                                             padding.left,

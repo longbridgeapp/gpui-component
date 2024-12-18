@@ -55,7 +55,7 @@ impl ScrollableStory {
 
     pub fn change_test_cases(&mut self, n: usize, cx: &mut ViewContext<Self>) {
         if n == 0 {
-            self.items = (0..500).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
+            self.items = (0..5000).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
             self.test_width = px(3000.);
         } else if n == 1 {
             self.items = (0..100).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
@@ -192,7 +192,7 @@ impl Render for ScrollableStory {
                                                 div()
                                                     .h(ITEM_HEIGHT)
                                                     .px_3()
-                                                    // .w(story.test_width)
+                                                    .w(story.test_width)
                                                     .items_center()
                                                     .bg(if cx.theme().mode.is_dark() {
                                                         ui::gray_800()
