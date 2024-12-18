@@ -182,6 +182,8 @@ pub struct TextInput {
     scrollbar_state: Rc<Cell<ScrollbarState>>,
     /// The size of the scrollable content.
     pub(crate) scroll_size: gpui::Size<Pixels>,
+    /// To remember the horizontal column (x-coordinate) of the cursor position.
+    preferred_x_offset: Option<Pixels>,
 }
 
 impl EventEmitter<InputEvent> for TextInput {}
@@ -223,6 +225,7 @@ impl TextInput {
             scroll_handle: ScrollHandle::new(),
             scrollbar_state: Rc::new(Cell::new(ScrollbarState::default())),
             scroll_size: gpui::size(px(0.), px(0.)),
+            preferred_x_offset: None,
         };
 
         // Observe the blink cursor to repaint the view when it changes.
@@ -251,6 +254,102 @@ impl TextInput {
     pub fn multi_line(mut self) -> Self {
         self.multi_line = true;
         self
+    }
+
+    /// Called after moving the cursor. Updates preferred_x_offset if we know where the cursor now is.
+    fn update_preferred_x_offset(&mut self, _cx: &mut ViewContext<Self>) {
+        if let (Some(lines), Some(bounds)) = (&self.last_layout, &self.last_bounds) {
+            let offset = self.cursor_offset();
+            let line_height = self.last_line_height;
+
+            // Find which line the cursor is on and its position
+            let (_line_index, cursor_pos) =
+                self.line_and_position_for_offset(offset, lines, line_height);
+            if let Some(pos) = cursor_pos {
+                // Adjust by scroll offset
+                let scroll_offset = bounds.origin;
+                self.preferred_x_offset = Some(pos.x + scroll_offset.x);
+            }
+        }
+    }
+
+    /// Find which line the given offset belongs to and the position (x,y) of that offset within the line.
+    fn line_and_position_for_offset(
+        &self,
+        offset: usize,
+        lines: &[WrappedLine],
+        line_height: Pixels,
+    ) -> (usize, Option<Point<Pixels>>) {
+        let mut prev_lines_offset = 0;
+        let mut y_offset = px(0.);
+        for (i, line) in lines.iter().enumerate() {
+            let local_offset = offset.saturating_sub(prev_lines_offset);
+            if let Some(pos) = line.position_for_index(local_offset, line_height) {
+                return (i, Some(point(pos.x, pos.y + y_offset)));
+            }
+
+            y_offset += line.size(line_height).height;
+            prev_lines_offset += line.len() + 1;
+        }
+        (0, None)
+    }
+
+    /// Move the cursor vertically by one line (up or down) while preserving the column if possible.
+    /// direction: -1 for up, +1 for down
+    fn move_vertical(&mut self, direction: i32, cx: &mut ViewContext<Self>) {
+        if self.is_single_line() {
+            return;
+        }
+
+        let (Some(lines), Some(bounds)) = (&self.last_layout, &self.last_bounds) else {
+            return;
+        };
+
+        let offset = self.cursor_offset();
+        let line_height = self.last_line_height;
+        let (current_line_index, current_pos) =
+            self.line_and_position_for_offset(offset, lines, line_height);
+
+        let Some(current_pos) = current_pos else {
+            return;
+        };
+
+        let current_x = self
+            .preferred_x_offset
+            .unwrap_or_else(|| current_pos.x + bounds.origin.x);
+        self.preferred_x_offset = Some(current_x);
+
+        let new_line_index = if direction < 0 {
+            current_line_index.saturating_sub(1)
+        } else {
+            (current_line_index + 1).min(lines.len().saturating_sub(1))
+        };
+
+        if new_line_index == current_line_index {
+            return;
+        }
+
+        let target_line = &lines[new_line_index];
+
+        let line_x = current_x - bounds.origin.x;
+        let approx_pos = point(line_x, px(0.));
+        let index_res = target_line.index_for_position(approx_pos, line_height);
+
+        let new_local_index = match index_res {
+            Ok(i) => i,
+            Err(i) => i,
+        };
+
+        let mut prev_lines_offset = 0;
+        for (i, l) in lines.iter().enumerate() {
+            if i == new_line_index {
+                break;
+            }
+            prev_lines_offset += l.len() + 1;
+        }
+
+        let new_offset = (prev_lines_offset + new_local_index).min(self.text.len());
+        self.move_to(new_offset, cx);
     }
 
     #[inline]
@@ -433,9 +532,7 @@ impl TextInput {
             return;
         }
         self.pause_blink_cursor(cx);
-
-        let offset = self.start_of_line(cx).saturating_sub(1);
-        self.move_to(offset, cx);
+        self.move_vertical(-1, cx);
     }
 
     fn down(&mut self, _: &Down, cx: &mut ViewContext<Self>) {
@@ -443,9 +540,7 @@ impl TextInput {
             return;
         }
         self.pause_blink_cursor(cx);
-
-        let offset = (self.end_of_line(cx) + 1).min(self.text.len());
-        self.move_to(offset, cx);
+        self.move_vertical(1, cx);
     }
 
     fn select_left(&mut self, _: &SelectLeft, cx: &mut ViewContext<Self>) {
@@ -713,6 +808,7 @@ impl TextInput {
     fn move_to(&mut self, offset: usize, cx: &mut ViewContext<Self>) {
         self.selected_range = offset..offset;
         self.pause_blink_cursor(cx);
+        self.update_preferred_x_offset(cx);
         cx.notify()
     }
 
@@ -837,7 +933,9 @@ impl TextInput {
                 self.selected_range.end = word_range.end;
             }
         }
-
+        if self.selected_range.is_empty() {
+            self.update_preferred_x_offset(cx);
+        }
         cx.notify()
     }
 
@@ -1073,6 +1171,7 @@ impl ViewInputHandler for TextInput {
         self.text = pending_text;
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
         self.marked_range.take();
+        self.update_preferred_x_offset(cx);
         cx.emit(InputEvent::Change(self.text.clone()));
         cx.notify();
     }
