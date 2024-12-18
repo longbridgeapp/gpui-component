@@ -192,7 +192,6 @@ impl Render for ScrollableStory {
                                             .map(|ix| {
                                                 h_flex()
                                                     .h(ITEM_HEIGHT)
-                                                    .px_3()
                                                     .gap_1()
                                                     .children(
                                                         (0..(story.test_width.0 as i32 / 100))
