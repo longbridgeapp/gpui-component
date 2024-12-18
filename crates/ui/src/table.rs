@@ -5,12 +5,13 @@ use crate::{
     h_flex,
     popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
-    table_row::table_row,
     theme::ActiveTheme,
-    v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
+    v_flex,
+    virtual_list::virtual_list,
+    Icon, IconName, Sizable, Size, StyleSized as _,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
+    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Axis, Bounds, Div,
     DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, ListSizingBehavior, MouseButton, ParentElement,
     Pixels, Point, Render, ScrollHandle, ScrollStrategy, SharedString, Stateful,
@@ -975,11 +976,11 @@ where
         let is_stripe_row = self.stripe && row_ix % 2 != 0;
         let is_selected = self.selected_row == Some(row_ix);
         let view = cx.view().clone();
-        let col_groups: Rc<Vec<ColGroup>> = Rc::new(
+        let col_sizes: Rc<Vec<gpui::Size<Pixels>>> = Rc::new(
             self.col_groups
                 .iter()
                 .skip(left_cols_count)
-                .cloned()
+                .map(|col| col.bounds.size)
                 .collect(),
         );
 
@@ -1030,13 +1031,9 @@ where
                         .h_full()
                         .overflow_hidden()
                         .relative()
-                        .child(table_row(
-                            view,
-                            row_ix,
-                            col_groups,
-                            self.horizontal_scroll_handle.clone(),
-                            {
-                                move |table, visible_range: Range<usize>, cx| {
+                        .child(
+                            virtual_list(view, row_ix, Axis::Horizontal, col_sizes, {
+                                move |table, visible_range: Range<usize>, _, cx| {
                                     visible_range
                                         .map(|col_ix| {
                                             let col_ix = col_ix + left_cols_count;
@@ -1048,8 +1045,9 @@ where
                                         })
                                         .collect::<Vec<_>>()
                                 }
-                            },
-                        ))
+                            })
+                            .with_scroll_handle(&self.horizontal_scroll_handle),
+                        )
                         .child(self.delegate.render_last_empty_col(cx)),
                 )
                 // Row selected style
