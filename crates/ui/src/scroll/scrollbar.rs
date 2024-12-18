@@ -22,6 +22,7 @@ impl ScrollbarShow {
     }
 }
 
+const BORDER_WIDTH: Pixels = px(0.);
 const MIN_THUMB_SIZE: f32 = 80.;
 const THUMB_RADIUS: Pixels = Pixels(3.0);
 const THUMB_INSET: Pixels = Pixels(4.);
@@ -357,11 +358,12 @@ pub struct AxisPrepaintState {
     axis: ScrollbarAxis,
     bar_hitbox: Hitbox,
     bounds: Bounds<Pixels>,
-    border_width: Pixels,
     radius: Pixels,
     bg: Hsla,
     border: Hsla,
     thumb_bounds: Bounds<Pixels>,
+    // Bounds of thumb to be rendered.
+    thumb_fill_bounds: Bounds<Pixels>,
     thumb_bg: Hsla,
     scroll_size: Pixels,
     container_size: Pixels,
@@ -513,11 +515,21 @@ impl Element for Scrollbar {
                     idle_state
                 };
 
-            let border_width = px(0.);
             let thumb_bounds = if is_vertical {
                 Bounds::from_corners(
+                    point(bounds.origin.x, bounds.origin.y + thumb_start),
+                    point(bounds.origin.x + self.width, bounds.origin.y + thumb_end),
+                )
+            } else {
+                Bounds::from_corners(
+                    point(bounds.origin.x + thumb_start, bounds.origin.y),
+                    point(bounds.origin.x + thumb_end, bounds.origin.y + self.width),
+                )
+            };
+            let thumb_fill_bounds = if is_vertical {
+                Bounds::from_corners(
                     point(
-                        bounds.origin.x + inset + border_width,
+                        bounds.origin.x + inset + BORDER_WIDTH,
                         bounds.origin.y + thumb_start + inset,
                     ),
                     point(
@@ -529,7 +541,7 @@ impl Element for Scrollbar {
                 Bounds::from_corners(
                     point(
                         bounds.origin.x + thumb_start + inset,
-                        bounds.origin.y + inset + border_width,
+                        bounds.origin.y + inset + BORDER_WIDTH,
                     ),
                     point(
                         bounds.origin.x + thumb_end - inset,
@@ -546,11 +558,11 @@ impl Element for Scrollbar {
                 axis,
                 bar_hitbox,
                 bounds,
-                border_width,
                 radius,
                 bg: bar_bg,
                 border: bar_border,
                 thumb_bounds,
+                thumb_fill_bounds,
                 thumb_bg,
                 scroll_size: scroll_area_size,
                 container_size,
@@ -599,11 +611,11 @@ impl Element for Scrollbar {
                             top: px(0.),
                             right: px(0.),
                             bottom: px(0.),
-                            left: state.border_width,
+                            left: BORDER_WIDTH,
                         }
                     } else {
                         Edges {
-                            top: state.border_width,
+                            top: BORDER_WIDTH,
                             right: px(0.),
                             bottom: px(0.),
                             left: px(0.),
@@ -612,7 +624,7 @@ impl Element for Scrollbar {
                     border_color: state.border,
                 });
 
-                cx.paint_quad(fill(thumb_bounds, state.thumb_bg).corner_radii(radius));
+                cx.paint_quad(fill(state.thumb_fill_bounds, state.thumb_bg).corner_radii(radius));
             });
 
             cx.on_mouse_event({
