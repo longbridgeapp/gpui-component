@@ -1039,7 +1039,7 @@ where
                             self.horizontal_scroll_handle.clone(),
                             false,
                             {
-                                move |table, visible_range: Range<usize>, cx| {
+                                move |table, visible_range: Range<usize>, _, cx| {
                                     visible_range
                                         .map(|col_ix| {
                                             let col_ix = col_ix + left_cols_count;

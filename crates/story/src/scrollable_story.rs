@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, px, size, Entity, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
+    div, px, size, Entity, InteractiveElement, ParentElement, Pixels, Render, ScrollHandle,
     SharedString, Size, StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext,
     WindowContext,
 };
@@ -169,78 +169,66 @@ impl Render for ScrollableStory {
                     .child(Label::new(self.message.clone())),
             )
             .child(
-                div()
-                    .w_full()
-                    .border_1()
-                    .border_color(cx.theme().border)
-                    .child(
-                        div().relative().w_full().h(px(350.)).child(
-                            v_flex()
-                                .relative()
-                                .p_4()
-                                .size_full()
-                                .child(
-                                    v_virtual_list(
-                                        cx.view().clone(),
-                                        "items",
-                                        self.item_sizes.clone(),
-                                        self.scroll_handle.clone(),
-                                        move |story, visible_range, cx| {
-                                            story.set_message(
-                                                &format!("visible_range: {:?}", visible_range),
-                                                cx,
-                                            );
-                                            visible_range
-                                                .map(|ix| {
-                                                    let item = story.items.get(ix).unwrap();
-                                                    div()
-                                                        .h(ITEM_HEIGHT)
-                                                        .px_3()
-                                                        // .w(story.test_width)
-                                                        .items_center()
-                                                        .bg(if cx.theme().mode.is_dark() {
-                                                            ui::gray_800()
-                                                        } else {
-                                                            ui::gray_100()
-                                                        })
-                                                        .child(item.clone())
-                                                })
-                                                .collect::<Vec<_>>()
-                                        },
-                                    )
-                                    .v_flex()
-                                    .gap_1(),
+                div().w_full().child(
+                    div().relative().w_full().h(px(350.)).child(
+                        v_flex()
+                            .relative()
+                            .size_full()
+                            .child(
+                                v_virtual_list(
+                                    cx.view().clone(),
+                                    "items",
+                                    self.item_sizes.clone(),
+                                    self.scroll_handle.clone(),
+                                    move |story, visible_range, content_size, cx| {
+                                        story.set_message(
+                                            &format!("visible_range: {:?}", visible_range),
+                                            cx,
+                                        );
+                                        story.scroll_size = content_size;
+                                        visible_range
+                                            .map(|ix| {
+                                                let item = story.items.get(ix).unwrap();
+                                                div()
+                                                    .h(ITEM_HEIGHT)
+                                                    .px_3()
+                                                    // .w(story.test_width)
+                                                    .items_center()
+                                                    .bg(if cx.theme().mode.is_dark() {
+                                                        ui::gray_800()
+                                                    } else {
+                                                        ui::gray_100()
+                                                    })
+                                                    .child(item.clone())
+                                            })
+                                            .collect::<Vec<_>>()
+                                    },
                                 )
-                                .child({
-                                    let view = cx.view().clone();
-                                    canvas(
-                                        move |bounds, cx| {
-                                            view.update(cx, |r, _| r.scroll_size = bounds.size)
-                                        },
-                                        |_, _, _| {},
-                                    )
+                                .p_4()
+                                .border_1()
+                                .border_color(cx.theme().border)
+                                .v_flex()
+                                .gap_1(),
+                            )
+                            .child({
+                                div()
                                     .absolute()
-                                    .size_full()
-                                })
-                                .child({
-                                    div()
-                                        .absolute()
-                                        .top_0()
-                                        .left_0()
-                                        .right_0()
-                                        .bottom_0()
-                                        .child(
-                                            Scrollbar::both(
-                                                view.entity_id(),
-                                                self.scroll_state.clone(),
-                                                self.scroll_handle.clone(),
-                                                self.scroll_size,
-                                            )
-                                            .axis(self.axis),
+                                    .top_0()
+                                    .left_0()
+                                    .right_0()
+                                    .bottom_0()
+                                    .child(
+                                        Scrollbar::both(
+                                            view.entity_id(),
+                                            self.scroll_state.clone(),
+                                            self.scroll_handle.clone(),
+                                            self.scroll_size,
                                         )
-                                }),
-                        ),
+                                        .axis(self.axis),
+                                    )
+                            }),
                     ),
+                ),
             )
             .child({
                 let items = self.items.clone();
