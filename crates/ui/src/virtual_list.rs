@@ -29,14 +29,13 @@ pub fn v_virtual_list<R, V>(
     view: View<V>,
     id: impl Into<ElementId>,
     item_sizes: Rc<Vec<Size<Pixels>>>,
-    scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, Size<Pixels>, &mut ViewContext<V>) -> Vec<R>,
 ) -> VirtualList
 where
     R: IntoElement,
     V: Render,
 {
-    virtual_list(view, id, Axis::Vertical, item_sizes, scroll_handle, true, f)
+    virtual_list(view, id, Axis::Vertical, item_sizes, f)
 }
 
 /// Create a virtual list in Horizontal direction.
@@ -44,22 +43,13 @@ pub fn h_virtual_list<R, V>(
     view: View<V>,
     id: impl Into<ElementId>,
     item_sizes: Rc<Vec<Size<Pixels>>>,
-    scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, Size<Pixels>, &mut ViewContext<V>) -> Vec<R>,
 ) -> VirtualList
 where
     R: IntoElement,
     V: Render,
 {
-    virtual_list(
-        view,
-        id,
-        Axis::Horizontal,
-        item_sizes,
-        scroll_handle,
-        true,
-        f,
-    )
+    virtual_list(view, id, Axis::Horizontal, item_sizes, f)
 }
 
 pub(crate) fn virtual_list<R, V>(
@@ -67,8 +57,6 @@ pub(crate) fn virtual_list<R, V>(
     id: impl Into<ElementId>,
     axis: Axis,
     item_sizes: Rc<Vec<Size<Pixels>>>,
-    scroll_handle: ScrollHandle,
-    track_scroll: bool,
     f: impl 'static + Fn(&mut V, Range<usize>, Size<Pixels>, &mut ViewContext<V>) -> Vec<R>,
 ) -> VirtualList
 where
@@ -76,6 +64,7 @@ where
     V: Render,
 {
     let id: ElementId = id.into();
+    let scroll_handle = ScrollHandle::default();
     let render_range = move |visible_range, content_size, cx: &mut WindowContext| {
         view.update(cx, |this, cx| {
             f(this, visible_range, content_size, cx)
@@ -88,11 +77,12 @@ where
     VirtualList {
         id: id.clone(),
         axis,
-        base: div().id(id).size_full().when(track_scroll, |this| {
-            this.when(axis == Axis::Horizontal, |this| this.overflow_x_scroll())
-                .when(axis == Axis::Vertical, |this| this.overflow_y_scroll())
-                .track_scroll(&scroll_handle)
-        }),
+        base: div()
+            .id(id)
+            .size_full()
+            .when(axis == Axis::Horizontal, |this| this.overflow_x_scroll())
+            .when(axis == Axis::Vertical, |this| this.overflow_y_scroll())
+            .track_scroll(&scroll_handle),
         scroll_handle,
         items_count: item_sizes.len(),
         item_sizes,
@@ -125,8 +115,16 @@ impl Styled for VirtualList {
 }
 
 impl VirtualList {
-    pub fn track_scroll(mut self, scroll_handle: ScrollHandle) -> Self {
-        self.scroll_handle = scroll_handle;
+    pub fn track_scroll(mut self, scroll_handle: &ScrollHandle) -> Self {
+        self.base = self.base.track_scroll(&scroll_handle);
+        self.scroll_handle = scroll_handle.clone();
+        self
+    }
+
+    /// Specify for table.
+    pub(crate) fn with_scroll_handle(mut self, scroll_handle: &ScrollHandle) -> Self {
+        self.base = div().id(self.id.clone()).size_full();
+        self.scroll_handle = scroll_handle.clone();
         self
     }
 

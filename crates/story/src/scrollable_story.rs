@@ -180,7 +180,6 @@ impl Render for ScrollableStory {
                                     cx.view().clone(),
                                     "items",
                                     self.item_sizes.clone(),
-                                    self.scroll_handle.clone(),
                                     move |story, visible_range, content_size, cx| {
                                         story.set_message(
                                             &format!("visible_range: {:?}", visible_range),
@@ -193,7 +192,7 @@ impl Render for ScrollableStory {
                                                 div()
                                                     .h(ITEM_HEIGHT)
                                                     .px_3()
-                                                    .w(story.test_width)
+                                                    .w(px(100.))
                                                     .items_center()
                                                     .bg(if cx.theme().mode.is_dark() {
                                                         ui::gray_800()
@@ -205,6 +204,7 @@ impl Render for ScrollableStory {
                                             .collect::<Vec<_>>()
                                     },
                                 )
+                                .track_scroll(&self.scroll_handle)
                                 .p_4()
                                 .border_1()
                                 .border_color(cx.theme().border)

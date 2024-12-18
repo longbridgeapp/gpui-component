@@ -1031,14 +1031,8 @@ where
                         .h_full()
                         .overflow_hidden()
                         .relative()
-                        .child(virtual_list(
-                            view,
-                            row_ix,
-                            Axis::Horizontal,
-                            col_sizes,
-                            self.horizontal_scroll_handle.clone(),
-                            false,
-                            {
+                        .child(
+                            virtual_list(view, row_ix, Axis::Horizontal, col_sizes, {
                                 move |table, visible_range: Range<usize>, _, cx| {
                                     visible_range
                                         .map(|col_ix| {
@@ -1051,8 +1045,9 @@ where
                                         })
                                         .collect::<Vec<_>>()
                                 }
-                            },
-                        ))
+                            })
+                            .with_scroll_handle(&self.horizontal_scroll_handle),
+                        )
                         .child(self.delegate.render_last_empty_col(cx)),
                 )
                 // Row selected style
