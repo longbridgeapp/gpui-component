@@ -61,7 +61,9 @@ impl ScrollableStory {
             self.items = (0..100).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
             self.test_width = px(10000.);
         } else if n == 2 {
-            self.items = (0..500).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
+            self.items = (0..500000)
+                .map(|i| format!("Item {}", i))
+                .collect::<Vec<_>>();
             self.test_width = px(10000.);
         } else {
             self.items = (0..5).map(|i| format!("Item {}", i)).collect::<Vec<_>>();
@@ -188,18 +190,37 @@ impl Render for ScrollableStory {
                                         story.scroll_size = content_size;
                                         visible_range
                                             .map(|ix| {
-                                                let item = story.items.get(ix).unwrap();
-                                                div()
+                                                h_flex()
                                                     .h(ITEM_HEIGHT)
                                                     .px_3()
-                                                    .w(px(100.))
+                                                    .gap_1()
+                                                    .children(
+                                                        (0..(story.test_width.0 as i32 / 100))
+                                                            .map(|i| {
+                                                                div()
+                                                                    .flex()
+                                                                    .h_full()
+                                                                    .items_center()
+                                                                    .justify_center()
+                                                                    .text_sm()
+                                                                    .w(px(100.))
+                                                                    .bg(
+                                                                        if cx.theme().mode.is_dark()
+                                                                        {
+                                                                            ui::gray_800()
+                                                                        } else {
+                                                                            ui::gray_100()
+                                                                        },
+                                                                    )
+                                                                    .child(if i == 0 {
+                                                                        format!("{}", ix)
+                                                                    } else {
+                                                                        format!("{}", i)
+                                                                    })
+                                                            })
+                                                            .collect::<Vec<_>>(),
+                                                    )
                                                     .items_center()
-                                                    .bg(if cx.theme().mode.is_dark() {
-                                                        ui::gray_800()
-                                                    } else {
-                                                        ui::gray_100()
-                                                    })
-                                                    .child(item.clone())
                                             })
                                             .collect::<Vec<_>>()
                                     },
@@ -232,9 +253,6 @@ impl Render for ScrollableStory {
                 ),
             )
             .child({
-                let items = self.items.clone();
-                let test_width = self.test_width;
-
                 div()
                     .relative()
                     .border_1()
@@ -248,14 +266,18 @@ impl Render for ScrollableStory {
                             .scrollable(cx.view().entity_id(), ScrollbarAxis::Vertical)
                             .focusable()
                             .p_3()
-                            .w(test_width)
+                            .w(self.test_width)
                             .gap_1()
                             .child("Hello world")
-                            .children(
-                                items
-                                    .iter()
-                                    .map(|s| div().bg(cx.theme().card).child(s.clone())),
-                            ),
+                            .children(self.items.iter().take(500).map(|item| {
+                                div()
+                                    .h(ITEM_HEIGHT)
+                                    .bg(cx.theme().background)
+                                    .items_center()
+                                    .justify_center()
+                                    .text_sm()
+                                    .child(item.to_string())
+                            })),
                     )
             })
     }

@@ -183,6 +183,9 @@ impl Element for VirtualList {
         }
         .to_pixels(font_size.into(), cx.rem_size());
 
+        // TODO: To cache the item_sizes, item_origins
+        // If there have 500,000 items, this methid will speed about 500~600µs
+        // let start = std::time::Instant::now();
         // Prepare each item's size by axis
         let item_sizes = match self.axis {
             Axis::Horizontal => self
@@ -230,6 +233,7 @@ impl Element for VirtualList {
                 })
                 .collect::<Vec<_>>(),
         };
+        // println!("layout: {} {:?}", item_sizes.len(), start.elapsed());
 
         let (layout_id, _) = self.base.request_layout(global_id, cx);
 
@@ -402,7 +406,6 @@ impl Element for VirtualList {
                                         )
                                 }
                             };
-                            // dbg!(&item_origin);
 
                             let available_space = match self.axis {
                                 Axis::Horizontal => size(
@@ -438,8 +441,8 @@ impl Element for VirtualList {
         self.base
             .interactivity()
             .paint(global_id, bounds, hitbox.as_ref(), cx, |_, cx| {
-                for col in &mut layout.items {
-                    col.paint(cx);
+                for item in &mut layout.items {
+                    item.paint(cx);
                 }
             })
     }
