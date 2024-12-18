@@ -2,14 +2,16 @@ use std::{cell::Cell, ops::Range, rc::Rc};
 
 use crate::{
     context_menu::ContextMenuExt,
-    h_flex, horizontal_virtual_list,
+    h_flex,
     popup_menu::PopupMenu,
     scroll::{ScrollableAxis, ScrollableMask, Scrollbar, ScrollbarState},
     theme::ActiveTheme,
-    v_flex, Icon, IconName, Sizable, Size, StyleSized as _,
+    v_flex,
+    virtual_list::virtual_list,
+    Icon, IconName, Sizable, Size, StyleSized as _,
 };
 use gpui::{
-    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Bounds, Div,
+    actions, canvas, div, prelude::FluentBuilder, px, uniform_list, AppContext, Axis, Bounds, Div,
     DragMoveEvent, Edges, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     InteractiveElement, IntoElement, KeyBinding, ListSizingBehavior, MouseButton, ParentElement,
     Pixels, Point, Render, ScrollHandle, ScrollStrategy, SharedString, Stateful,
@@ -1029,11 +1031,13 @@ where
                         .h_full()
                         .overflow_hidden()
                         .relative()
-                        .child(horizontal_virtual_list(
-                            row_ix,
+                        .child(virtual_list(
                             view,
+                            row_ix,
+                            Axis::Horizontal,
                             col_sizes,
                             self.horizontal_scroll_handle.clone(),
+                            false,
                             {
                                 move |table, visible_range: Range<usize>, cx| {
                                     visible_range

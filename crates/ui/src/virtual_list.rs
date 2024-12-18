@@ -13,9 +13,10 @@
 use std::{cmp, ops::Range, rc::Rc};
 
 use gpui::{
-    div, point, px, size, AnyElement, AvailableSpace, Axis, Bounds, ContentMask, Div, Element,
-    ElementId, Hitbox, InteractiveElement, IntoElement, IsZero as _, Pixels, Render, ScrollHandle,
-    Size, Stateful, StyleRefinement, Styled, View, ViewContext, WindowContext,
+    div, point, prelude::FluentBuilder as _, px, size, AnyElement, AvailableSpace, Axis, Bounds,
+    ContentMask, Div, Element, ElementId, GlobalElementId, Hitbox, InteractiveElement, IntoElement,
+    IsZero as _, Pixels, Render, ScrollHandle, Size, Stateful, StatefulInteractiveElement,
+    StyleRefinement, Styled, View, ViewContext, WindowContext,
 };
 use smallvec::SmallVec;
 
@@ -24,9 +25,9 @@ use smallvec::SmallVec;
 /// This is like `uniform_list` in GPUI, but support two axis.
 ///
 /// The `item_sizes` is the size of each column.
-pub fn vertical_virtual_list<R, V>(
-    id: impl Into<ElementId>,
+pub fn v_virtual_list<R, V>(
     view: View<V>,
+    id: impl Into<ElementId>,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
@@ -35,13 +36,13 @@ where
     R: IntoElement,
     V: Render,
 {
-    virtual_list(id, view, Axis::Vertical, item_sizes, scroll_handle, f)
+    virtual_list(view, id, Axis::Vertical, item_sizes, scroll_handle, true, f)
 }
 
 /// Create a virtual list in Horizontal direction.
-pub fn horizontal_virtual_list<R, V>(
-    id: impl Into<ElementId>,
+pub fn h_virtual_list<R, V>(
     view: View<V>,
+    id: impl Into<ElementId>,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
@@ -50,15 +51,24 @@ where
     R: IntoElement,
     V: Render,
 {
-    virtual_list(id, view, Axis::Horizontal, item_sizes, scroll_handle, f)
+    virtual_list(
+        view,
+        id,
+        Axis::Horizontal,
+        item_sizes,
+        scroll_handle,
+        true,
+        f,
+    )
 }
 
-fn virtual_list<R, V>(
-    id: impl Into<ElementId>,
+pub(crate) fn virtual_list<R, V>(
     view: View<V>,
+    id: impl Into<ElementId>,
     axis: Axis,
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
+    track_scroll: bool,
     f: impl 'static + Fn(&mut V, Range<usize>, &mut ViewContext<V>) -> Vec<R>,
 ) -> VirtualItem
 where
@@ -78,7 +88,11 @@ where
     VirtualItem {
         id: id.clone(),
         axis,
-        base: div().id(id).size_full(),
+        base: div().id(id).size_full().when(track_scroll, |this| {
+            this.when(axis == Axis::Horizontal, |this| this.overflow_x_scroll())
+                .when(axis == Axis::Vertical, |this| this.overflow_y_scroll())
+                .track_scroll(&scroll_handle)
+        }),
         scroll_handle,
         items_count: item_sizes.len(),
         item_sizes,
@@ -105,10 +119,9 @@ impl Styled for VirtualItem {
     }
 }
 
-/// Frame state used by the [TableRow].
+/// Frame state used by the [VirtualItem].
 pub struct VirtualListFrameState {
     items: SmallVec<[AnyElement; 32]>,
-    // decorations: SmallVec<[AnyElement; 1]>,
 }
 
 impl VirtualItem {
@@ -141,13 +154,13 @@ impl Element for VirtualItem {
     type RequestLayoutState = VirtualListFrameState;
     type PrepaintState = Option<Hitbox>;
 
-    fn id(&self) -> Option<gpui::ElementId> {
+    fn id(&self) -> Option<ElementId> {
         Some(self.id.clone())
     }
 
     fn request_layout(
         &mut self,
-        global_id: Option<&gpui::GlobalElementId>,
+        global_id: Option<&GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
         let (layout_id, _) = self.base.request_layout(global_id, cx);
@@ -162,12 +175,13 @@ impl Element for VirtualItem {
 
     fn prepaint(
         &mut self,
-        global_id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<gpui::Pixels>,
+        global_id: Option<&GlobalElementId>,
+        bounds: Bounds<Pixels>,
         frame_state: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
         let style = self.base.interactivity().compute_style(global_id, None, cx);
+        let font_size = cx.text_style().font_size.to_pixels(cx.rem_size());
         let border = style.border_widths.to_pixels(cx.rem_size());
         let padding = style.padding.to_pixels(bounds.size.into(), cx.rem_size());
 
@@ -177,16 +191,23 @@ impl Element for VirtualItem {
                 - point(border.right + padding.right, border.bottom + padding.bottom),
         );
 
+        // Including the gap between items for calculate the item size
+        let gap = match self.axis {
+            Axis::Horizontal => style.gap.width,
+            Axis::Vertical => style.gap.height,
+        }
+        .to_pixels(font_size.into(), cx.rem_size());
+
         let item_sizes = match self.axis {
             Axis::Horizontal => self
                 .item_sizes
                 .iter()
-                .map(|size| size.width.0)
+                .map(|size| size.width.0 + gap.0)
                 .collect::<Vec<_>>(),
             Axis::Vertical => self
                 .item_sizes
                 .iter()
-                .map(|size| size.height.0)
+                .map(|size| size.height.0 + gap.0)
                 .collect::<Vec<_>>(),
         };
 
@@ -353,16 +374,16 @@ impl Element for VirtualItem {
 
     fn paint(
         &mut self,
-        global_id: Option<&gpui::GlobalElementId>,
-        bounds: gpui::Bounds<gpui::Pixels>,
-        request_layout: &mut Self::RequestLayoutState,
+        global_id: Option<&GlobalElementId>,
+        bounds: Bounds<Pixels>,
+        layout: &mut Self::RequestLayoutState,
         hitbox: &mut Self::PrepaintState,
         cx: &mut WindowContext,
     ) {
         self.base
             .interactivity()
             .paint(global_id, bounds, hitbox.as_ref(), cx, |_, cx| {
-                for col in &mut request_layout.items {
+                for col in &mut layout.items {
                     col.paint(cx);
                 }
             })

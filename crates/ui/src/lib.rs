@@ -59,7 +59,7 @@ pub use root::{ContextModal, Root};
 pub use styled::*;
 pub use time::*;
 pub use title_bar::*;
-pub use virtual_list::{horizontal_virtual_list, vertical_virtual_list, VirtualItem};
+pub use virtual_list::{h_virtual_list, v_virtual_list, VirtualItem};
 
 pub use colors::*;
 pub use icon::*;
