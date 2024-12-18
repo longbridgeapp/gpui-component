@@ -115,7 +115,7 @@ impl StoryWorkspace {
         let theme_color_picker = cx.new_view(|cx| {
             let mut picker = ColorPicker::new("theme-color-picker", cx)
                 .xsmall()
-                .anchor(AnchorCorner::TopRight)
+                .anchor(Corner::TopRight)
                 .label("Theme Color");
             picker.set_value(cx.theme().primary, cx);
             picker
@@ -461,7 +461,7 @@ impl Render for StoryWorkspace {
                                             Box::new(AddPanel(DockPlacement::Bottom)),
                                         )
                                     })
-                                    .anchor(AnchorCorner::TopRight),
+                                    .anchor(Corner::TopRight),
                             )
                             .child(
                                 Button::new("theme-mode")
@@ -567,7 +567,7 @@ impl Render for LocaleSelector {
                             Box::new(SelectLocale("zh-CN".into())),
                         )
                     })
-                    .anchor(AnchorCorner::TopRight),
+                    .anchor(Corner::TopRight),
             )
     }
 }
@@ -630,7 +630,7 @@ impl Render for FontSizeSelector {
                             Box::new(SelectScrollbarShow(ScrollbarShow::Hover)),
                         )
                     })
-                    .anchor(AnchorCorner::TopRight),
+                    .anchor(Corner::TopRight),
             )
     }
 }

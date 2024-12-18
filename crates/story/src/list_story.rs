@@ -156,7 +156,7 @@ impl ListDelegate for CompanyListDelegate {
             .cloned()
             .collect();
 
-        Task::Ready(Some(()))
+        Task::ready(())
     }
 
     fn confirm(&mut self, ix: Option<usize>, cx: &mut ViewContext<List<Self>>) {

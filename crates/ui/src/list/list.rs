@@ -37,7 +37,7 @@ pub trait ListDelegate: Sized + 'static {
     /// When Query Input change, this method will be called.
     /// You can perform search here.
     fn perform_search(&mut self, query: &str, cx: &mut ViewContext<List<Self>>) -> Task<()> {
-        Task::Ready(Some(()))
+        Task::ready(())
     }
 
     /// Return the number of items in the list.
@@ -126,7 +126,7 @@ where
             enable_scrollbar: true,
             loading: false,
             size: Size::default(),
-            _search_task: Task::Ready(None),
+            _search_task: Task::ready(()),
         }
     }
 

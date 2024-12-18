@@ -1,9 +1,8 @@
 use gpui::{
-    anchored, canvas, deferred, div, prelude::FluentBuilder as _, px, relative, AnchorCorner,
-    AppContext, Bounds, ElementId, EventEmitter, FocusHandle, FocusableView, Hsla,
-    InteractiveElement as _, IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point,
-    Render, SharedString, StatefulInteractiveElement as _, Styled, View, ViewContext,
-    VisualContext,
+    anchored, canvas, deferred, div, prelude::FluentBuilder as _, px, relative, AppContext, Bounds,
+    Corner, ElementId, EventEmitter, FocusHandle, FocusableView, Hsla, InteractiveElement as _,
+    IntoElement, KeyBinding, MouseButton, ParentElement, Pixels, Point, Render, SharedString,
+    StatefulInteractiveElement as _, Styled, View, ViewContext, VisualContext,
 };
 
 use crate::{
@@ -63,7 +62,7 @@ pub struct ColorPicker {
     hovered_color: Option<Hsla>,
     label: Option<SharedString>,
     size: Size,
-    anchor: AnchorCorner,
+    anchor: Corner,
     color_input: View<TextInput>,
 
     open: bool,
@@ -112,7 +111,7 @@ impl ColorPicker {
             hovered_color: None,
             size: Size::Medium,
             label: None,
-            anchor: AnchorCorner::TopLeft,
+            anchor: Corner::TopLeft,
             color_input,
             open: false,
             bounds: Bounds::default(),
@@ -149,8 +148,8 @@ impl ColorPicker {
 
     /// Set the anchor corner of the color picker.
     ///
-    /// Default is `AnchorCorner::TopLeft`.
-    pub fn anchor(mut self, anchor: AnchorCorner) -> Self {
+    /// Default is `Corner::TopLeft`.
+    pub fn anchor(mut self, anchor: Corner) -> Self {
         self.anchor = anchor;
         self
     }
@@ -262,13 +261,12 @@ impl ColorPicker {
     }
 
     fn resolved_corner(&self, bounds: Bounds<Pixels>) -> Point<Pixels> {
-        match self.anchor {
-            AnchorCorner::TopLeft => AnchorCorner::BottomLeft,
-            AnchorCorner::TopRight => AnchorCorner::BottomRight,
-            AnchorCorner::BottomLeft => AnchorCorner::TopLeft,
-            AnchorCorner::BottomRight => AnchorCorner::TopRight,
-        }
-        .corner(bounds)
+        bounds.corner(match self.anchor {
+            Corner::TopLeft => Corner::BottomLeft,
+            Corner::TopRight => Corner::BottomRight,
+            Corner::BottomLeft => Corner::TopLeft,
+            Corner::BottomRight => Corner::TopRight,
+        })
     }
 }
 
@@ -347,12 +345,8 @@ impl Render for ColorPicker {
                                 div()
                                     .occlude()
                                     .map(|this| match self.anchor {
-                                        AnchorCorner::TopLeft | AnchorCorner::TopRight => {
-                                            this.mt_1p5()
-                                        }
-                                        AnchorCorner::BottomLeft | AnchorCorner::BottomRight => {
-                                            this.mb_1p5()
-                                        }
+                                        Corner::TopLeft | Corner::TopRight => this.mt_1p5(),
+                                        Corner::BottomLeft | Corner::BottomRight => this.mb_1p5(),
                                     })
                                     .w_72()
                                     .overflow_hidden()

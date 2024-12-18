@@ -1,5 +1,5 @@
 use gpui::{
-    actions, div, impl_actions, px, AnchorCorner, AppContext, DismissEvent, Element, EventEmitter,
+    actions, div, impl_actions, px, AppContext, Corner, DismissEvent, Element, EventEmitter,
     FocusHandle, FocusableView, InteractiveElement, IntoElement, KeyBinding, MouseButton,
     ParentElement as _, Render, SharedString, Styled as _, View, ViewContext, VisualContext,
     WindowContext,
@@ -234,7 +234,7 @@ impl Render for PopupStory {
                     )
                     .child(
                         Popover::new("info-top-right")
-                            .anchor(AnchorCorner::TopRight)
+                            .anchor(Corner::TopRight)
                             .trigger(Button::new("info-top-right").label("Top Right"))
                             .content(|cx| {
                                 cx.new_view(|cx| {
@@ -302,7 +302,7 @@ impl Render for PopupStory {
                     .child(
                         Button::new("popup-menu-11112")
                             .label("Scrollable Menu")
-                            .popup_menu_with_anchor(AnchorCorner::TopRight, move |this, _| {
+                            .popup_menu_with_anchor(Corner::TopRight, move |this, _| {
                                 let mut this = this.scrollable();
                                 for i in 0..100 {
                                     this = this.menu(
@@ -323,13 +323,13 @@ impl Render for PopupStory {
                         .justify_between()
                         .child(
                             Popover::new("info-bottom-left")
-                                .anchor(AnchorCorner::BottomLeft)
+                                .anchor(Corner::BottomLeft)
                                 .trigger(Button::new("pop").label("Popup with Form").w(px(300.)))
                                 .content(move |_| form.clone()),
                         )
                         .child(
                             Popover::new("info-bottom-right")
-                                .anchor(AnchorCorner::BottomRight)
+                                .anchor(Corner::BottomRight)
                                 .mouse_button(MouseButton::Right)
                                 .trigger(Button::new("pop").label("Mouse Right Click").w(px(300.)))
                                 .content(|cx| {
