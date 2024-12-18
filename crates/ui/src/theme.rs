@@ -264,7 +264,7 @@ impl ThemeColor {
             scrollbar_thumb: hsl(0., 0., 69.).opacity(0.9),
             scrollbar_thumb_hover: hsl(0., 0., 59.),
             secondary: hsl(240.0, 5.9, 96.9),
-            secondary_active: hsl(240.0, 5.9, 93.),
+            secondary_active: hsl(240.0, 5.9, 90.),
             secondary_foreground: hsl(240.0, 59.0, 10.),
             secondary_hover: hsl(240.0, 5.9, 98.),
             selection: hsl(211.0, 97.0, 85.0),
