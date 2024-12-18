@@ -31,7 +31,7 @@ pub fn v_virtual_list<R, V>(
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, Size<Pixels>, &mut ViewContext<V>) -> Vec<R>,
-) -> VirtualItem
+) -> VirtualList
 where
     R: IntoElement,
     V: Render,
@@ -46,7 +46,7 @@ pub fn h_virtual_list<R, V>(
     item_sizes: Rc<Vec<Size<Pixels>>>,
     scroll_handle: ScrollHandle,
     f: impl 'static + Fn(&mut V, Range<usize>, Size<Pixels>, &mut ViewContext<V>) -> Vec<R>,
-) -> VirtualItem
+) -> VirtualList
 where
     R: IntoElement,
     V: Render,
@@ -70,7 +70,7 @@ pub(crate) fn virtual_list<R, V>(
     scroll_handle: ScrollHandle,
     track_scroll: bool,
     f: impl 'static + Fn(&mut V, Range<usize>, Size<Pixels>, &mut ViewContext<V>) -> Vec<R>,
-) -> VirtualItem
+) -> VirtualList
 where
     R: IntoElement,
     V: Render,
@@ -85,7 +85,7 @@ where
         })
     };
 
-    VirtualItem {
+    VirtualList {
         id: id.clone(),
         axis,
         base: div().id(id).size_full().when(track_scroll, |this| {
@@ -101,7 +101,7 @@ where
 }
 
 /// VirtualItem component for rendering a large number of differently sized columns.
-pub struct VirtualItem {
+pub struct VirtualList {
     id: ElementId,
     axis: Axis,
     base: Stateful<Div>,
@@ -118,18 +118,43 @@ pub struct VirtualItem {
     >,
 }
 
-impl Styled for VirtualItem {
+impl Styled for VirtualList {
     fn style(&mut self) -> &mut StyleRefinement {
         self.base.style()
     }
 }
 
-/// Frame state used by the [VirtualItem].
-pub struct VirtualListFrameState {
-    items: SmallVec<[AnyElement; 32]>,
+impl VirtualList {
+    pub fn track_scroll(mut self, scroll_handle: ScrollHandle) -> Self {
+        self.scroll_handle = scroll_handle;
+        self
+    }
+
+    /// Measure first item to get the size.
+    fn measure_item(&self, cx: &mut WindowContext) -> Size<Pixels> {
+        if self.items_count == 0 {
+            return Size::default();
+        }
+
+        let item_ix = 0;
+        let mut items = (self.render_items)(item_ix..item_ix + 1, Size::default(), cx);
+        let Some(mut item_to_measure) = items.pop() else {
+            return Size::default();
+        };
+        let available_space = size(AvailableSpace::MinContent, AvailableSpace::MinContent);
+        item_to_measure.layout_as_root(available_space, cx)
+    }
 }
 
-impl IntoElement for VirtualItem {
+/// Frame state used by the [VirtualItem].
+pub struct VirtualListFrameState {
+    /// Visible items to be painted.
+    items: SmallVec<[AnyElement; 32]>,
+    item_sizes: Vec<Pixels>,
+    item_origins: Vec<Pixels>,
+}
+
+impl IntoElement for VirtualList {
     type Element = Self;
 
     fn into_element(self) -> Self::Element {
@@ -137,7 +162,7 @@ impl IntoElement for VirtualItem {
     }
 }
 
-impl Element for VirtualItem {
+impl Element for VirtualList {
     type RequestLayoutState = VirtualListFrameState;
     type PrepaintState = Option<Hitbox>;
 
@@ -150,12 +175,72 @@ impl Element for VirtualItem {
         global_id: Option<&GlobalElementId>,
         cx: &mut WindowContext,
     ) -> (gpui::LayoutId, Self::RequestLayoutState) {
+        let style = self.base.interactivity().compute_style(global_id, None, cx);
+        let font_size = cx.text_style().font_size.to_pixels(cx.rem_size());
+
+        // Including the gap between items for calculate the item size
+        let gap = match self.axis {
+            Axis::Horizontal => style.gap.width,
+            Axis::Vertical => style.gap.height,
+        }
+        .to_pixels(font_size.into(), cx.rem_size());
+
+        // Prepare each item's size by axis
+        let item_sizes = match self.axis {
+            Axis::Horizontal => self
+                .item_sizes
+                .iter()
+                .enumerate()
+                .map(|(i, size)| {
+                    if i == self.items_count - 1 {
+                        size.width
+                    } else {
+                        size.width + gap
+                    }
+                })
+                .collect::<Vec<_>>(),
+            Axis::Vertical => self
+                .item_sizes
+                .iter()
+                .enumerate()
+                .map(|(i, size)| {
+                    if i == self.items_count - 1 {
+                        size.height
+                    } else {
+                        size.height + gap
+                    }
+                })
+                .collect::<Vec<_>>(),
+        };
+
+        // Prepare each item's origin by axis
+        let item_origins = match self.axis {
+            Axis::Horizontal => item_sizes
+                .iter()
+                .scan(px(0.), |cumulative_x, size| {
+                    let x = *cumulative_x;
+                    *cumulative_x += *size;
+                    Some(x)
+                })
+                .collect::<Vec<_>>(),
+            Axis::Vertical => item_sizes
+                .iter()
+                .scan(px(0.), |cumulative_y, size| {
+                    let y = *cumulative_y;
+                    *cumulative_y += *size;
+                    Some(y)
+                })
+                .collect::<Vec<_>>(),
+        };
+
         let (layout_id, _) = self.base.request_layout(global_id, cx);
 
         (
             layout_id,
             VirtualListFrameState {
                 items: SmallVec::new(),
+                item_sizes,
+                item_origins,
             },
         )
     }
@@ -164,13 +249,14 @@ impl Element for VirtualItem {
         &mut self,
         global_id: Option<&GlobalElementId>,
         bounds: Bounds<Pixels>,
-        frame_state: &mut Self::RequestLayoutState,
+        layout: &mut Self::RequestLayoutState,
         cx: &mut WindowContext,
     ) -> Self::PrepaintState {
         let style = self.base.interactivity().compute_style(global_id, None, cx);
-        let font_size = cx.text_style().font_size.to_pixels(cx.rem_size());
         let border = style.border_widths.to_pixels(cx.rem_size());
         let padding = style.padding.to_pixels(bounds.size.into(), cx.rem_size());
+
+        let first_item_size = self.measure_item(cx);
 
         let padded_bounds = Bounds::from_corners(
             bounds.origin + point(border.left + padding.left, border.top + padding.top),
@@ -184,67 +270,16 @@ impl Element for VirtualItem {
             Axis::Vertical => border.top + padding.top + border.bottom + padding.bottom,
         };
 
-        // Including the gap between items for calculate the item size
-        let gap = match self.axis {
-            Axis::Horizontal => style.gap.width,
-            Axis::Vertical => style.gap.height,
-        }
-        .to_pixels(font_size.into(), cx.rem_size());
-
-        let items_len = self.item_sizes.len();
-
-        let item_sizes = match self.axis {
-            Axis::Horizontal => self
-                .item_sizes
-                .iter()
-                .enumerate()
-                .map(|(i, size)| {
-                    if i == items_len - 1 {
-                        size.width
-                    } else {
-                        size.width + gap
-                    }
-                })
-                .collect::<Vec<_>>(),
-            Axis::Vertical => self
-                .item_sizes
-                .iter()
-                .enumerate()
-                .map(|(i, size)| {
-                    if i == items_len - 1 {
-                        size.height
-                    } else {
-                        size.height + gap
-                    }
-                })
-                .collect::<Vec<_>>(),
-        };
-        let item_origins = match self.axis {
-            Axis::Horizontal => item_sizes
-                .iter()
-                .scan(px(0.), |cumulative_size, size| {
-                    let origin = *cumulative_size;
-                    *cumulative_size += *size;
-                    Some(origin)
-                })
-                .collect::<Vec<_>>(),
-            Axis::Vertical => item_sizes
-                .iter()
-                .scan(px(0.), |cumulative_size, size| {
-                    let origin = *cumulative_size;
-                    *cumulative_size += *size;
-                    Some(origin)
-                })
-                .collect::<Vec<_>>(),
-        };
+        let item_sizes = &layout.item_sizes;
+        let item_origins = &layout.item_origins;
 
         let content_size = match self.axis {
             Axis::Horizontal => Size {
                 width: px(item_sizes.iter().map(|size| size.0).sum::<f32>()) + padding_size,
-                height: padded_bounds.size.height,
+                height: (first_item_size.height + padding_size).max(padded_bounds.size.height),
             },
             Axis::Vertical => Size {
-                width: padded_bounds.size.width,
+                width: (first_item_size.width + padding_size).max(padded_bounds.size.width),
                 height: px(item_sizes.iter().map(|size| size.0).sum::<f32>()) + padding_size,
             },
         };
@@ -289,7 +324,6 @@ impl Element for VirtualItem {
 
                     let (first_visible_element_ix, last_visible_element_ix) = match self.axis {
                         Axis::Horizontal => {
-                            scroll_offset.y = Pixels::ZERO;
                             let mut cumulative_size = px(0.);
                             let mut first_visible_element_ix = 0;
                             for (i, &size) in item_sizes.iter().enumerate() {
@@ -317,7 +351,6 @@ impl Element for VirtualItem {
                             (first_visible_element_ix, last_visible_element_ix)
                         }
                         Axis::Vertical => {
-                            scroll_offset.x = Pixels::ZERO;
                             let mut cumulative_size = px(0.);
                             let mut first_visible_element_ix = 0;
                             for (i, &size) in item_sizes.iter().enumerate() {
@@ -357,22 +390,21 @@ impl Element for VirtualItem {
                         for (mut item, ix) in items.into_iter().zip(visible_range.clone()) {
                             let item_origin = match self.axis {
                                 Axis::Horizontal => {
-                                    let item_x = item_origins.get(ix).copied().unwrap_or_default();
                                     padded_bounds.origin
                                         + point(
-                                            item_x + scroll_offset.x + padding.left,
-                                            padding.top,
+                                            item_origins[ix] + scroll_offset.x,
+                                            padding.top + scroll_offset.y,
                                         )
                                 }
                                 Axis::Vertical => {
-                                    let item_y = item_origins.get(ix).copied().unwrap_or_default();
                                     padded_bounds.origin
                                         + point(
-                                            padding.left,
-                                            item_y + scroll_offset.y + padding.top,
+                                            scroll_offset.x,
+                                            padding.top + item_origins[ix] + scroll_offset.y,
                                         )
                                 }
                             };
+                            // dbg!(&item_origin);
 
                             let available_space = match self.axis {
                                 Axis::Horizontal => size(
@@ -387,7 +419,7 @@ impl Element for VirtualItem {
 
                             item.layout_as_root(available_space, cx);
                             item.prepaint_at(item_origin, cx);
-                            frame_state.items.push(item);
+                            layout.items.push(item);
                         }
                     });
                 }

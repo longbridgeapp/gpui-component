@@ -172,6 +172,7 @@ impl Render for ScrollableStory {
                 div().w_full().child(
                     div().relative().w_full().h(px(350.)).child(
                         v_flex()
+                            .id("test-0")
                             .relative()
                             .size_full()
                             .child(
