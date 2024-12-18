@@ -13,10 +13,10 @@
 use std::{cmp, ops::Range, rc::Rc};
 
 use gpui::{
-    div, point, prelude::FluentBuilder as _, px, size, AnyElement, AvailableSpace, Axis, Bounds,
-    ContentMask, Div, Element, ElementId, GlobalElementId, Hitbox, InteractiveElement, IntoElement,
-    IsZero as _, Pixels, Render, ScrollHandle, Size, Stateful, StatefulInteractiveElement,
-    StyleRefinement, Styled, View, ViewContext, WindowContext,
+    div, point, px, size, AnyElement, AvailableSpace, Axis, Bounds, ContentMask, Div, Element,
+    ElementId, GlobalElementId, Hitbox, InteractiveElement, IntoElement, IsZero as _, Pixels,
+    Render, ScrollHandle, Size, Stateful, StatefulInteractiveElement, StyleRefinement, Styled,
+    View, ViewContext, WindowContext,
 };
 use smallvec::SmallVec;
 
