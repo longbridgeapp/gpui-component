@@ -165,6 +165,10 @@ impl TabPanel {
     }
 
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
+        if ix == self.active_ix {
+            return;
+        }
+
         let last_active_ix = self.active_ix;
 
         self.active_ix = ix;
