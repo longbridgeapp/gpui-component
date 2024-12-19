@@ -165,9 +165,27 @@ impl TabPanel {
     }
 
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
+        let last_active_ix = self.active_ix;
+
         self.active_ix = ix;
         self.tab_bar_scroll_handle.scroll_to_item(ix);
         self.focus_active_panel(cx);
+
+        // Sync the active state to all panels
+        cx.spawn(|view, mut cx| async move {
+            _ = cx.update(|cx| {
+                _ = view.update(cx, |view, cx| {
+                    if let Some(last_active) = view.panels.get(last_active_ix) {
+                        last_active.set_active(false, cx);
+                    }
+                    if let Some(active) = view.panels.get(view.active_ix) {
+                        active.set_active(true, cx);
+                    }
+                });
+            });
+        })
+        .detach();
+
         cx.emit(PanelEvent::LayoutChanged);
         cx.notify();
     }
@@ -879,6 +897,18 @@ impl TabPanel {
             cx.emit(PanelEvent::ZoomOut)
         }
         self.is_zoomed = !self.is_zoomed;
+
+        cx.spawn(|view, mut cx| {
+            let is_zoomed = self.is_zoomed;
+            async move {
+                _ = cx.update(|cx| {
+                    _ = view.update(cx, |view, cx| {
+                        view.set_zoomed(is_zoomed, cx);
+                    });
+                });
+            }
+        })
+        .detach();
     }
 
     fn on_action_close_panel(&mut self, _: &ClosePanel, cx: &mut ViewContext<Self>) {

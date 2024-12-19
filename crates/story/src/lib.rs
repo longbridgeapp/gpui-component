@@ -298,6 +298,14 @@ impl Panel for StoryContainer {
         self.zoomable
     }
 
+    fn set_zoomed(&self, zoomed: bool, _cx: &ViewContext<Self>) {
+        println!("panel: {} zoomed: {}", self.name, zoomed);
+    }
+
+    fn set_active(&self, active: bool, _cx: &ViewContext<Self>) {
+        println!("panel: {} active: {}", self.name, active);
+    }
+
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {
         menu.track_focus(&self.focus_handle)
             .menu("Info", Box::new(ShowPanelInfo))
