@@ -59,13 +59,6 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         true
     }
 
-    /// Return the visibility of the panel, default is `true`.
-    ///
-    /// This method can use to hide the panel when you want.
-    fn visible(&self, cx: &AppContext) -> bool {
-        true
-    }
-
     /// Set active state of the panel.
     ///
     /// This method will be called when the panel is active or inactive.
@@ -105,7 +98,6 @@ pub trait PanelView: 'static + Send + Sync {
     fn title_style(&self, cx: &AppContext) -> Option<TitleStyle>;
     fn closable(&self, cx: &AppContext) -> bool;
     fn zoomable(&self, cx: &AppContext) -> bool;
-    fn visible(&self, cx: &AppContext) -> bool;
     fn set_active(&self, active: bool, cx: &mut WindowContext);
     fn set_zoomed(&self, zoomed: bool, cx: &mut WindowContext);
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
@@ -134,10 +126,6 @@ impl<T: Panel> PanelView for View<T> {
 
     fn zoomable(&self, cx: &AppContext) -> bool {
         self.read(cx).zoomable(cx)
-    }
-
-    fn visible(&self, cx: &AppContext) -> bool {
-        self.read(cx).visible(cx)
     }
 
     fn set_active(&self, active: bool, cx: &mut WindowContext) {

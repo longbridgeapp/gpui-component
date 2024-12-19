@@ -146,6 +146,28 @@ impl ResizablePanelGroup {
         cx.notify()
     }
 
+    /// Set child visible, if not visible, the size of the panel will be set to 0.
+    /// And keep the old size for next restore.
+    pub fn set_child_visible(&mut self, ix: usize, visible: bool, cx: &mut ViewContext<Self>) {
+        let Some(panel) = self.panels.get(ix) else {
+            return;
+        };
+
+        panel.update(cx, |this, _| {
+            this.visible = visible;
+            if visible {
+                this.size = this.visible_size;
+                if let Some(size) = this.visible_size {
+                    self.sizes[ix] = size;
+                }
+            } else {
+                this.visible_size = this.size;
+                self.sizes[ix] = px(0.);
+            }
+        });
+        cx.notify()
+    }
+
     fn render_resize_handle(&self, ix: usize, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let view = cx.view().clone();
         resize_handle(("resizable-handle", ix), self.axis).on_drag(
@@ -288,6 +310,9 @@ pub struct ResizablePanel {
     /// The bounds of the resizable panel, when render the bounds will be updated.
     bounds: Bounds<Pixels>,
     resize_handle: Option<AnyElement>,
+    visible: bool,
+    /// The size of the panel when it is visible, used to keep old size when toggle visibility.
+    visible_size: Option<Pixels>,
 }
 
 impl ResizablePanel {
@@ -296,6 +321,8 @@ impl ResizablePanel {
             group: None,
             initial_size: None,
             size: None,
+            visible: true,
+            visible_size: None,
             size_ratio: None,
             axis: Axis::Horizontal,
             content_builder: None,
@@ -350,6 +377,10 @@ impl FluentBuilder for ResizablePanel {}
 
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        if !self.visible {
+            return div();
+        }
+
         let view = cx.view().clone();
         let total_size = self
             .group

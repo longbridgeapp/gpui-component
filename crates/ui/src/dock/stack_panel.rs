@@ -100,8 +100,8 @@ impl StackPanel {
     }
 
     /// Return the index of the panel.
-    pub(crate) fn index_of_panel(&self, panel: Arc<dyn PanelView>) -> Option<usize> {
-        self.panels.iter().position(|p| p == &panel)
+    pub(crate) fn index_of_panel(&self, panel: &Arc<dyn PanelView>) -> Option<usize> {
+        self.panels.iter().position(|p| p == panel)
     }
 
     /// Add a panel at the end of the stack.
@@ -184,7 +184,7 @@ impl StackPanel {
         cx: &mut ViewContext<Self>,
     ) {
         // If the panel is already in the stack, return.
-        if let Some(_) = self.index_of_panel(panel.clone()) {
+        if let Some(_) = self.index_of_panel(&panel) {
             return;
         }
 
@@ -230,7 +230,7 @@ impl StackPanel {
 
     /// Remove panel from the stack.
     pub fn remove_panel(&mut self, panel: Arc<dyn PanelView>, cx: &mut ViewContext<Self>) {
-        if let Some(ix) = self.index_of_panel(panel.clone()) {
+        if let Some(ix) = self.index_of_panel(&panel) {
             self.panels.remove(ix);
             self.panel_group.update(cx, |view, cx| {
                 view.remove_child(ix, cx);
@@ -243,6 +243,22 @@ impl StackPanel {
         }
     }
 
+    /// Set the panel visible or hidden.
+    ///
+    /// If hidden, the panel will change to zero size.
+    pub fn set_panel_visible(
+        &mut self,
+        panel: &Arc<dyn PanelView>,
+        visible: bool,
+        cx: &mut ViewContext<Self>,
+    ) {
+        if let Some(ix) = self.index_of_panel(panel) {
+            self.panel_group.update(cx, |view, cx| {
+                view.set_child_visible(ix, visible, cx);
+            });
+        }
+    }
+
     /// Replace the old panel with the new panel at same index.
     pub(super) fn replace_panel(
         &mut self,
@@ -250,7 +266,7 @@ impl StackPanel {
         new_panel: View<StackPanel>,
         cx: &mut ViewContext<Self>,
     ) {
-        if let Some(ix) = self.index_of_panel(old_panel.clone()) {
+        if let Some(ix) = self.index_of_panel(&old_panel) {
             self.panels[ix] = Arc::new(new_panel.clone());
             self.panel_group.update(cx, |view, cx| {
                 view.replace_child(

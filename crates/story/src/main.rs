@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
-use gpui::*;
+use anyhow::{Context as _, Result};
+use gpui::{Context, *};
 use prelude::FluentBuilder as _;
 use serde::Deserialize;
 use std::{sync::Arc, time::Duration};
@@ -36,9 +36,18 @@ struct SelectFont(usize);
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 struct AddPanel(DockPlacement);
 
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+struct TogglePanelVisible(SharedString);
+
 impl_actions!(
     story,
-    [SelectLocale, SelectFont, AddPanel, SelectScrollbarShow]
+    [
+        SelectLocale,
+        SelectFont,
+        AddPanel,
+        SelectScrollbarShow,
+        TogglePanelVisible
+    ]
 );
 
 actions!(main_menu, [Quit]);
@@ -60,6 +69,7 @@ pub struct StoryWorkspace {
     font_size_selector: View<FontSizeSelector>,
     theme_color_picker: View<ColorPicker>,
     last_layout_state: Option<DockAreaState>,
+    invisable_panels: Model<Vec<SharedString>>,
     _save_layout_task: Option<Task<()>>,
 }
 
@@ -130,12 +140,15 @@ impl StoryWorkspace {
         )
         .detach();
 
+        let invisable_panels = cx.new_model(|_| vec![]);
+
         Self {
             theme_color: None,
             dock_area,
             locale_selector,
             font_size_selector,
             theme_color_picker,
+            invisable_panels,
             last_layout_state: None,
             _save_layout_task: None,
         }
@@ -395,6 +408,22 @@ impl StoryWorkspace {
             dock_area.add_panel(panel, action.0, cx);
         });
     }
+
+    fn on_action_toggle_panel_visible(
+        &mut self,
+        action: &TogglePanelVisible,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let panel_name = action.0.clone();
+        self.invisable_panels.update(cx, |invisable_panels, _| {
+            if invisable_panels.contains(&panel_name) {
+                invisable_panels.retain(|id| id != &panel_name);
+            } else {
+                invisable_panels.push(panel_name);
+            }
+        });
+        cx.notify();
+    }
 }
 
 pub fn open_new(
@@ -417,10 +446,12 @@ impl Render for StoryWorkspace {
         let modal_layer = Root::render_modal_layer(cx);
         let notification_layer = Root::render_notification_layer(cx);
         let notifications_count = cx.notifications().len();
+        let invisable_panels = self.invisable_panels.read(cx).clone();
 
         div()
             .id("story-workspace")
             .on_action(cx.listener(Self::on_action_add_panel))
+            .on_action(cx.listener(Self::on_action_toggle_panel_visible))
             .relative()
             .size_full()
             .flex()
@@ -442,7 +473,7 @@ impl Render for StoryWorkspace {
                                     .icon(IconName::LayoutDashboard)
                                     .small()
                                     .ghost()
-                                    .popup_menu(|menu, _| {
+                                    .popup_menu(move |menu, _| {
                                         menu.menu(
                                             "Add Panel to Center",
                                             Box::new(AddPanel(DockPlacement::Center)),
@@ -459,6 +490,23 @@ impl Render for StoryWorkspace {
                                         .menu(
                                             "Add Panel to Bottom",
                                             Box::new(AddPanel(DockPlacement::Bottom)),
+                                        )
+                                        .separator()
+                                        .menu_with_check(
+                                            "Button",
+                                            invisable_panels
+                                                .contains(&SharedString::from("Button")),
+                                            Box::new(TogglePanelVisible(SharedString::from(
+                                                "Button",
+                                            ))),
+                                        )
+                                        .menu_with_check(
+                                            "Accordion",
+                                            invisable_panels
+                                                .contains(&SharedString::from("Accordion")),
+                                            Box::new(TogglePanelVisible(SharedString::from(
+                                                "Accordion",
+                                            ))),
                                         )
                                     })
                                     .anchor(Corner::TopRight),

@@ -355,6 +355,31 @@ impl DockItem {
         }
     }
 
+    pub fn set_panel_visible(
+        &self,
+        panel: &Arc<dyn PanelView>,
+        visible: bool,
+        cx: &mut WindowContext,
+    ) {
+        match self {
+            DockItem::Tabs { view, .. } => {
+                view.update(cx, |tab_panel, cx| {
+                    tab_panel.set_panel_visible(panel, visible, cx);
+                });
+            }
+            DockItem::Split { items, .. } => {
+                // For each child item, set collapsed state
+                for item in items {
+                    item.set_panel_visible(panel, visible, cx);
+                }
+            }
+            DockItem::Tiles { .. } => {
+                // TODO: set panel visible in tiles
+            }
+            DockItem::Panel { .. } => {}
+        }
+    }
+
     /// Recursively traverses to find the left-most and top-most TabPanel.
     pub(crate) fn left_top_tab_panel(&self, cx: &AppContext) -> Option<View<TabPanel>> {
         match self {
@@ -659,6 +684,28 @@ impl DockArea {
                 self.items.add_panel(panel, &cx.view().downgrade(), cx);
             }
         }
+    }
+
+    /// Set panel visible in the dock area.
+    pub fn set_panel_visible(
+        &mut self,
+        panel: &Arc<dyn PanelView>,
+        visible: bool,
+        cx: &mut ViewContext<Self>,
+    ) {
+        if let Some(dock) = self.left_dock.as_ref() {
+            dock.update(cx, |dock, cx| dock.set_panel_visible(panel, visible, cx));
+        }
+
+        if let Some(dock) = self.bottom_dock.as_ref() {
+            dock.update(cx, |dock, cx| dock.set_panel_visible(panel, visible, cx));
+        }
+
+        if let Some(dock) = self.right_dock.as_ref() {
+            dock.update(cx, |dock, cx| dock.set_panel_visible(panel, visible, cx));
+        }
+
+        self.items.set_panel_visible(panel, visible, cx);
     }
 
     /// Load the state of the DockArea from the DockAreaState.

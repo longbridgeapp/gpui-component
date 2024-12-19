@@ -127,6 +127,17 @@ impl Dock {
         cx.notify();
     }
 
+    /// Set panel visible or not in this Dock.
+    pub fn set_panel_visible(
+        &mut self,
+        panel: &Arc<dyn PanelView>,
+        visible: bool,
+        cx: &mut ViewContext<Self>,
+    ) {
+        self.panel.set_panel_visible(panel, visible, cx);
+        cx.notify();
+    }
+
     pub(super) fn from_state(
         dock_area: WeakView<DockArea>,
         placement: DockPlacement,
