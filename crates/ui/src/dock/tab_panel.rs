@@ -88,29 +88,29 @@ impl Panel for TabPanel {
     }
 
     fn title(&self, cx: &WindowContext) -> gpui::AnyElement {
-        self.active_panel()
+        self.active_panel(cx)
             .map(|panel| panel.title(cx))
             .unwrap_or("Empty Tab".into_any_element())
     }
 
-    fn closeable(&self, cx: &WindowContext) -> bool {
+    fn closeable(&self, cx: &AppContext) -> bool {
         if !self.closeable {
             return false;
         }
 
-        self.active_panel()
+        self.active_panel(cx)
             .map(|panel| panel.closeable(cx))
             .unwrap_or(false)
     }
 
-    fn zoomable(&self, cx: &WindowContext) -> bool {
-        self.active_panel()
+    fn zoomable(&self, cx: &AppContext) -> bool {
+        self.active_panel(cx)
             .map(|panel| panel.zoomable(cx))
             .unwrap_or(false)
     }
 
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
-        if let Some(panel) = self.active_panel() {
+        if let Some(panel) = self.active_panel(cx) {
             panel.popup_menu(menu, cx)
         } else {
             menu
@@ -118,7 +118,7 @@ impl Panel for TabPanel {
     }
 
     fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button> {
-        if let Some(panel) = self.active_panel() {
+        if let Some(panel) = self.active_panel(cx) {
             panel.toolbar_buttons(cx)
         } else {
             vec![]
@@ -160,8 +160,33 @@ impl TabPanel {
     }
 
     /// Return current active_panel View
-    pub fn active_panel(&self) -> Option<Arc<dyn PanelView>> {
-        self.panels.get(self.active_ix).cloned()
+    pub fn active_panel(&self, cx: &AppContext) -> Option<Arc<dyn PanelView>> {
+        let panel = self.panels.get(self.active_ix);
+
+        if let Some(panel) = panel {
+            if panel.visible(cx) {
+                Some(panel.clone())
+            } else {
+                // Return the first visible panel
+                self.visible_panels(cx).next()
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Return all visible panels
+    fn visible_panels<'a>(
+        &'a self,
+        cx: &'a AppContext,
+    ) -> impl Iterator<Item = Arc<dyn PanelView>> + 'a {
+        self.panels.iter().filter_map(|panel| {
+            if panel.visible(cx) {
+                Some(panel.clone())
+            } else {
+                None
+            }
+        })
     }
 
     fn set_active_ix(&mut self, ix: usize, cx: &mut ViewContext<Self>) {
@@ -667,7 +692,7 @@ impl TabPanel {
             return Empty {}.into_any_element();
         }
 
-        self.active_panel()
+        self.active_panel(cx)
             .map(|panel| {
                 div()
                     .id("tab-content")
@@ -885,7 +910,7 @@ impl TabPanel {
     }
 
     fn focus_active_panel(&self, cx: &mut ViewContext<Self>) {
-        if let Some(active_panel) = self.active_panel() {
+        if let Some(active_panel) = self.active_panel(cx) {
             active_panel.focus_handle(cx).focus(cx);
         }
     }
@@ -916,7 +941,7 @@ impl TabPanel {
     }
 
     fn on_action_close_panel(&mut self, _: &ClosePanel, cx: &mut ViewContext<Self>) {
-        if let Some(panel) = self.active_panel() {
+        if let Some(panel) = self.active_panel(cx) {
             self.remove_panel(panel, cx);
         }
     }
@@ -924,7 +949,7 @@ impl TabPanel {
 
 impl FocusableView for TabPanel {
     fn focus_handle(&self, cx: &AppContext) -> gpui::FocusHandle {
-        if let Some(active_panel) = self.active_panel() {
+        if let Some(active_panel) = self.active_panel(cx) {
             active_panel.focus_handle(cx)
         } else {
             self.focus_handle.clone()
