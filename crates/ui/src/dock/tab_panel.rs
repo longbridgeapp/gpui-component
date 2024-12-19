@@ -244,20 +244,19 @@ impl TabPanel {
             return;
         };
 
-        if self.panels.len() == 1 {
-            _ = stack_panel.update(cx, |view, cx| {
-                let panel: Arc<dyn PanelView> = Arc::new(cx.view().clone());
-                view.set_panel_visible(&panel, visible, cx);
-            });
-            return;
-        }
-
         if visible {
             self.invisable_panels.remove(&panel.view().entity_id());
         } else {
             self.invisable_panels
                 .insert(panel.view().entity_id(), visible);
         }
+
+        let visible_in_stack = self.visible_panels().count() > 0;
+        let panel: Arc<dyn PanelView> = Arc::new(cx.view().clone());
+        _ = stack_panel.update(cx, |view, cx| {
+            view.set_panel_visible(&panel, visible_in_stack, cx);
+        });
+        return;
     }
 
     fn add_panel_with_active(

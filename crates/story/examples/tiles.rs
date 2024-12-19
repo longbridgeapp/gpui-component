@@ -145,8 +145,16 @@ impl StoryTiles {
     fn init_default_layout(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> DockItem {
         DockItem::tiles(
             vec![
-                DockItem::tab(StoryContainer::panel::<ButtonStory>(cx), dock_area, cx),
-                DockItem::tab(StoryContainer::panel::<IconStory>(cx), dock_area, cx),
+                DockItem::tab(
+                    StoryContainer::panel::<ButtonStory>(dock_area, cx),
+                    dock_area,
+                    cx,
+                ),
+                DockItem::tab(
+                    StoryContainer::panel::<IconStory>(dock_area, cx),
+                    dock_area,
+                    cx,
+                ),
             ],
             vec![
                 Bounds::new(point(px(10.), px(10.)), size(px(610.), px(190.))),

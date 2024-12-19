@@ -153,17 +153,8 @@ impl ResizablePanelGroup {
             return;
         };
 
-        panel.update(cx, |this, _| {
-            this.visible = visible;
-            if visible {
-                this.size = this.visible_size;
-                if let Some(size) = this.visible_size {
-                    self.sizes[ix] = size;
-                }
-            } else {
-                this.visible_size = this.size;
-                self.sizes[ix] = px(0.);
-            }
+        panel.update(cx, |this, cx| {
+            this.set_visible(visible, cx);
         });
         cx.notify()
     }
@@ -311,8 +302,7 @@ pub struct ResizablePanel {
     bounds: Bounds<Pixels>,
     resize_handle: Option<AnyElement>,
     visible: bool,
-    /// The size of the panel when it is visible, used to keep old size when toggle visibility.
-    visible_size: Option<Pixels>,
+    was_visible_size: Option<Pixels>,
 }
 
 impl ResizablePanel {
@@ -322,7 +312,7 @@ impl ResizablePanel {
             initial_size: None,
             size: None,
             visible: true,
-            visible_size: None,
+            was_visible_size: None,
             size_ratio: None,
             axis: Axis::Horizontal,
             content_builder: None,
@@ -351,24 +341,49 @@ impl ResizablePanel {
         self
     }
 
+    /// Set this panel to be visible or not.
+    /// If invisible, the size of the panel will be set to 0.
+    fn set_visible(&mut self, visible: bool, cx: &mut ViewContext<Self>) {
+        self.visible = visible;
+        if visible {
+            if let Some(size) = self.was_visible_size {
+                self.was_visible_size = None;
+                self.size = Some(size);
+                self.update_group_panel_size(size, cx);
+            } else {
+                self.size = None;
+            }
+        } else {
+            self.was_visible_size = self.size;
+            self.size = Some(px(0.));
+            self.update_group_panel_size(px(0.), cx);
+        }
+        cx.notify();
+    }
+
+    fn update_group_panel_size(&mut self, new_size: Pixels, cx: &mut ViewContext<Self>) {
+        let panel_view = cx.view().clone();
+        if let Some(group) = self.group.clone() {
+            cx.window_context().defer(move |cx| {
+                _ = group.update(cx, |view, _| {
+                    if let Some(ix) = view
+                        .panels
+                        .iter()
+                        .position(|v| v.entity_id() == panel_view.entity_id())
+                    {
+                        view.sizes[ix] = new_size;
+                    }
+                });
+            });
+        }
+    }
+
     /// Save the real panel size, and update group sizes
     fn update_size(&mut self, bounds: Bounds<Pixels>, cx: &mut ViewContext<Self>) {
         let new_size = bounds.size.along(self.axis);
         self.bounds = bounds;
         self.size = Some(new_size);
-
-        let panel_view = cx.view().clone();
-        if let Some(group) = self.group.as_ref() {
-            _ = group.update(cx, |view, _| {
-                if let Some(ix) = view
-                    .panels
-                    .iter()
-                    .position(|v| v.entity_id() == panel_view.entity_id())
-                {
-                    view.sizes[ix] = new_size;
-                }
-            });
-        }
+        self.update_group_panel_size(new_size, cx);
         cx.notify();
     }
 }

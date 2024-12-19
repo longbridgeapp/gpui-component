@@ -19,6 +19,8 @@ mod text_story;
 mod tooltip_story;
 mod webview_story;
 
+use std::sync::Arc;
+
 pub use assets::Assets;
 
 pub use accordion_story::AccordionStory;
@@ -43,15 +45,18 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
-    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
-    SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Context as _,
+    Div, EventEmitter, FocusableView, Global, Hsla, InteractiveElement, IntoElement, Model,
+    ParentElement, Render, SharedString, Styled as _, Subscription, View, ViewContext,
+    VisualContext, WeakView, WindowContext,
 };
 
 use ui::{
     button::Button,
     divider::Divider,
-    dock::{register_panel, Panel, PanelEvent, PanelInfo, PanelState, TitleStyle},
+    dock::{
+        register_panel, DockArea, Panel, PanelEvent, PanelInfo, PanelState, PanelView, TitleStyle,
+    },
     h_flex,
     label::Label,
     notification::Notification,
@@ -62,12 +67,35 @@ use ui::{
 
 const PANEL_NAME: &str = "StoryContainer";
 
+pub struct AppState {
+    pub invisible_panels: Model<Vec<SharedString>>,
+}
+impl AppState {
+    fn init(cx: &mut AppContext) {
+        let state = Self {
+            invisible_panels: cx.new_model(|_| Vec::new()),
+        };
+        cx.set_global::<AppState>(state);
+    }
+
+    pub fn global(cx: &AppContext) -> &Self {
+        cx.global::<Self>()
+    }
+
+    pub fn global_mut(cx: &mut AppContext) -> &mut Self {
+        cx.global_mut::<Self>()
+    }
+}
+
+impl Global for AppState {}
+
 pub fn init(cx: &mut AppContext) {
     input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
+    AppState::init(cx);
 
-    register_panel(cx, PANEL_NAME, |_, _, info, cx| {
+    register_panel(cx, PANEL_NAME, |dock_area, _, info, cx| {
         let story_state = match info {
             PanelInfo::Panel(value) => StoryState::from_value(value.clone()),
             _ => {
@@ -77,14 +105,14 @@ pub fn init(cx: &mut AppContext) {
 
         let view = cx.new_view(|cx| {
             let (title, description, closable, zoomable, story) = story_state.to_story(cx);
-            let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
+            let mut container = StoryContainer::new(title.into(), &dock_area, cx)
+                .story(story, story_state.story_klass);
 
             cx.on_focus_in(&container.focus_handle, |this: &mut StoryContainer, _| {
                 println!("StoryContainer focus in: {}", this.name);
             })
             .detach();
 
-            container.name = title.into();
             container.description = description.into();
             container.closable = closable;
             container.zoomable = zoomable;
@@ -124,6 +152,8 @@ pub struct StoryContainer {
     story_klass: Option<SharedString>,
     closable: bool,
     zoomable: bool,
+    visible: bool,
+    _subscriptions: Vec<Subscription>,
 }
 
 #[derive(Debug)]
@@ -155,12 +185,37 @@ pub trait Story: FocusableView {
 impl EventEmitter<ContainerEvent> for StoryContainer {}
 
 impl StoryContainer {
-    pub fn new(cx: &mut WindowContext) -> Self {
+    pub fn new(
+        name: SharedString,
+        dock_area: &WeakView<DockArea>,
+        cx: &mut ViewContext<Self>,
+    ) -> Self {
         let focus_handle = cx.focus_handle();
+
+        // Observe invisible panels to toggle panel visibility in DockArea.
+        let invisible_panels = AppState::global(cx).invisible_panels.clone();
+
+        let _subscriptions = vec![cx.observe(&invisible_panels, {
+            let dock_area = dock_area.clone();
+            let panel_name = name.clone();
+            move |story, model, cx| {
+                let was_visible = story.visible;
+                let panel: Arc<dyn PanelView> = Arc::new(cx.view().clone());
+
+                _ = dock_area.update(cx, |this, cx| {
+                    let visible = !model.read(cx).contains(&panel_name);
+                    if visible != was_visible {
+                        story.visible = visible;
+                        println!("Update panel: {}, visible: {}", &panel_name, visible);
+                        this.set_panel_visible(&panel, visible, cx);
+                    }
+                });
+            }
+        })];
 
         Self {
             focus_handle,
-            name: "".into(),
+            name,
             title_bg: None,
             description: "".into(),
             width: None,
@@ -169,10 +224,12 @@ impl StoryContainer {
             story_klass: None,
             closable: true,
             zoomable: true,
+            visible: true,
+            _subscriptions,
         }
     }
 
-    pub fn panel<S: Story>(cx: &mut WindowContext) -> View<Self> {
+    pub fn panel<S: Story>(dock_area: &WeakView<DockArea>, cx: &mut WindowContext) -> View<Self> {
         let name = S::title();
         let description = S::description();
         let story = S::new_view(cx);
@@ -180,11 +237,10 @@ impl StoryContainer {
         let focus_handle = story.focus_handle(cx);
 
         let view = cx.new_view(|cx| {
-            let mut story = Self::new(cx).story(story.into(), story_klass);
+            let mut story = Self::new(name.into(), dock_area, cx).story(story.into(), story_klass);
             story.focus_handle = focus_handle;
             story.closable = S::closable();
             story.zoomable = S::zoomable();
-            story.name = name.into();
             story.description = description.into();
             story.title_bg = S::title_bg();
             story
@@ -304,12 +360,12 @@ impl Panel for StoryContainer {
         self.zoomable
     }
 
-    fn set_zoomed(&self, zoomed: bool, _cx: &ViewContext<Self>) {
-        println!("panel: {} zoomed: {}", self.name, zoomed);
+    fn set_zoomed(&self, _: bool, _cx: &ViewContext<Self>) {
+        // println!("panel: {} zoomed: {}", self.name, zoomed);
     }
 
-    fn set_active(&self, active: bool, _cx: &ViewContext<Self>) {
-        println!("panel: {} active: {}", self.name, active);
+    fn set_active(&self, _: bool, _cx: &ViewContext<Self>) {
+        // println!("panel: {} active: {}", self.name, active);
     }
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {

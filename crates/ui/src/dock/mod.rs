@@ -363,8 +363,8 @@ impl DockItem {
     ) {
         match self {
             DockItem::Tabs { view, .. } => {
-                view.update(cx, |tab_panel, cx| {
-                    tab_panel.set_panel_visible(panel, visible, cx);
+                view.update(cx, |this, cx| {
+                    this.set_panel_visible(panel, visible, cx);
                 });
             }
             DockItem::Split { items, .. } => {

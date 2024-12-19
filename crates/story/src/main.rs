@@ -1,12 +1,13 @@
 use anyhow::{Context as _, Result};
-use gpui::{Context, *};
+use gpui::*;
 use prelude::FluentBuilder as _;
 use serde::Deserialize;
 use std::{sync::Arc, time::Duration};
 use story::{
-    AccordionStory, Assets, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory,
-    InputStory, ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
-    SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
+    AccordionStory, AppState, Assets, ButtonStory, CalendarStory, DropdownStory, IconStory,
+    ImageStory, InputStory, ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory,
+    ScrollableStory, SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory,
+    TooltipStory,
 };
 use ui::{
     button::{Button, ButtonVariants as _},
@@ -69,7 +70,6 @@ pub struct StoryWorkspace {
     font_size_selector: View<FontSizeSelector>,
     theme_color_picker: View<ColorPicker>,
     last_layout_state: Option<DockAreaState>,
-    invisable_panels: Model<Vec<SharedString>>,
     _save_layout_task: Option<Task<()>>,
 }
 
@@ -140,15 +140,12 @@ impl StoryWorkspace {
         )
         .detach();
 
-        let invisable_panels = cx.new_model(|_| vec![]);
-
         Self {
             theme_color: None,
             dock_area,
             locale_selector,
             font_size_selector,
             theme_color_picker,
-            invisable_panels,
             last_layout_state: None,
             _save_layout_task: None,
         }
@@ -245,11 +242,15 @@ impl StoryWorkspace {
         let left_panels = DockItem::split_with_sizes(
             Axis::Vertical,
             vec![
-                DockItem::tab(StoryContainer::panel::<ListStory>(cx), &dock_area, cx),
+                DockItem::tab(
+                    StoryContainer::panel::<ListStory>(&dock_area, cx),
+                    &dock_area,
+                    cx,
+                ),
                 DockItem::tabs(
                     vec![
-                        Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
-                        Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
+                        Arc::new(StoryContainer::panel::<ScrollableStory>(&dock_area, cx)),
+                        Arc::new(StoryContainer::panel::<AccordionStory>(&dock_area, cx)),
                     ],
                     None,
                     &dock_area,
@@ -265,8 +266,8 @@ impl StoryWorkspace {
             Axis::Vertical,
             vec![DockItem::tabs(
                 vec![
-                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
+                    Arc::new(StoryContainer::panel::<TooltipStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(&dock_area, cx)),
                 ],
                 None,
                 &dock_area,
@@ -280,8 +281,16 @@ impl StoryWorkspace {
         let right_panels = DockItem::split_with_sizes(
             Axis::Vertical,
             vec![
-                DockItem::tab(StoryContainer::panel::<ImageStory>(cx), &dock_area, cx),
-                DockItem::tab(StoryContainer::panel::<IconStory>(cx), &dock_area, cx),
+                DockItem::tab(
+                    StoryContainer::panel::<ImageStory>(&dock_area, cx),
+                    &dock_area,
+                    cx,
+                ),
+                DockItem::tab(
+                    StoryContainer::panel::<IconStory>(&dock_area, cx),
+                    &dock_area,
+                    cx,
+                ),
             ],
             vec![None],
             &dock_area,
@@ -304,25 +313,25 @@ impl StoryWorkspace {
             Axis::Vertical,
             vec![DockItem::tabs(
                 vec![
-                    Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
-                    Arc::new(StoryContainer::panel::<InputStory>(cx)),
-                    Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TextStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ModalStory>(cx)),
-                    Arc::new(StoryContainer::panel::<PopupStory>(cx)),
-                    Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ImageStory>(cx)),
-                    Arc::new(StoryContainer::panel::<IconStory>(cx)),
-                    Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-                    Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
-                    Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
-                    Arc::new(StoryContainer::panel::<SidebarStory>(cx)),
-                    // Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
+                    Arc::new(StoryContainer::panel::<ButtonStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<InputStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<DropdownStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<TextStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<ModalStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<PopupStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<SwitchStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<ProgressStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<TableStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<ImageStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<IconStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<TooltipStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<ProgressStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<CalendarStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<ResizableStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<ScrollableStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<AccordionStory>(&dock_area, cx)),
+                    Arc::new(StoryContainer::panel::<SidebarStory>(&dock_area, cx)),
+                    // Arc::new(StoryContainer::panel::<WebViewStory>(&dock_area, cx)),
                 ],
                 None,
                 &dock_area,
@@ -381,27 +390,27 @@ impl StoryWorkspace {
     }
 
     fn on_action_add_panel(&mut self, action: &AddPanel, cx: &mut ViewContext<Self>) {
+        let dock_area = self.dock_area.downgrade();
         // Random pick up a panel to add
         let panel = match rand::random::<usize>() % 18 {
-            0 => Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
-            1 => Arc::new(StoryContainer::panel::<InputStory>(cx)),
-            2 => Arc::new(StoryContainer::panel::<DropdownStory>(cx)),
-            3 => Arc::new(StoryContainer::panel::<TextStory>(cx)),
-            4 => Arc::new(StoryContainer::panel::<ModalStory>(cx)),
-            5 => Arc::new(StoryContainer::panel::<PopupStory>(cx)),
-            6 => Arc::new(StoryContainer::panel::<SwitchStory>(cx)),
-            7 => Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-            8 => Arc::new(StoryContainer::panel::<TableStory>(cx)),
-            9 => Arc::new(StoryContainer::panel::<ImageStory>(cx)),
-            10 => Arc::new(StoryContainer::panel::<IconStory>(cx)),
-            11 => Arc::new(StoryContainer::panel::<TooltipStory>(cx)),
-            12 => Arc::new(StoryContainer::panel::<ProgressStory>(cx)),
-            13 => Arc::new(StoryContainer::panel::<CalendarStory>(cx)),
-            14 => Arc::new(StoryContainer::panel::<ResizableStory>(cx)),
-            15 => Arc::new(StoryContainer::panel::<ScrollableStory>(cx)),
-            16 => Arc::new(StoryContainer::panel::<AccordionStory>(cx)),
-            // 17 => Arc::new(StoryContainer::panel::<WebViewStory>(cx)),
-            _ => Arc::new(StoryContainer::panel::<ButtonStory>(cx)),
+            0 => Arc::new(StoryContainer::panel::<ButtonStory>(&dock_area, cx)),
+            1 => Arc::new(StoryContainer::panel::<InputStory>(&dock_area, cx)),
+            2 => Arc::new(StoryContainer::panel::<DropdownStory>(&dock_area, cx)),
+            3 => Arc::new(StoryContainer::panel::<TextStory>(&dock_area, cx)),
+            4 => Arc::new(StoryContainer::panel::<ModalStory>(&dock_area, cx)),
+            5 => Arc::new(StoryContainer::panel::<PopupStory>(&dock_area, cx)),
+            6 => Arc::new(StoryContainer::panel::<SwitchStory>(&dock_area, cx)),
+            7 => Arc::new(StoryContainer::panel::<ProgressStory>(&dock_area, cx)),
+            8 => Arc::new(StoryContainer::panel::<TableStory>(&dock_area, cx)),
+            9 => Arc::new(StoryContainer::panel::<ImageStory>(&dock_area, cx)),
+            10 => Arc::new(StoryContainer::panel::<IconStory>(&dock_area, cx)),
+            11 => Arc::new(StoryContainer::panel::<TooltipStory>(&dock_area, cx)),
+            12 => Arc::new(StoryContainer::panel::<ProgressStory>(&dock_area, cx)),
+            13 => Arc::new(StoryContainer::panel::<CalendarStory>(&dock_area, cx)),
+            14 => Arc::new(StoryContainer::panel::<ResizableStory>(&dock_area, cx)),
+            15 => Arc::new(StoryContainer::panel::<ScrollableStory>(&dock_area, cx)),
+            16 => Arc::new(StoryContainer::panel::<AccordionStory>(&dock_area, cx)),
+            _ => Arc::new(StoryContainer::panel::<ButtonStory>(&dock_area, cx)),
         };
 
         self.dock_area.update(cx, |dock_area, cx| {
@@ -415,12 +424,14 @@ impl StoryWorkspace {
         cx: &mut ViewContext<Self>,
     ) {
         let panel_name = action.0.clone();
-        self.invisable_panels.update(cx, |invisable_panels, _| {
-            if invisable_panels.contains(&panel_name) {
-                invisable_panels.retain(|id| id != &panel_name);
+        let invisble_panels = AppState::global(cx).invisible_panels.clone();
+        invisble_panels.update(cx, |names, cx| {
+            if names.contains(&panel_name) {
+                names.retain(|id| id != &panel_name);
             } else {
-                invisable_panels.push(panel_name);
+                names.push(panel_name);
             }
+            cx.notify();
         });
         cx.notify();
     }
@@ -446,7 +457,7 @@ impl Render for StoryWorkspace {
         let modal_layer = Root::render_modal_layer(cx);
         let notification_layer = Root::render_notification_layer(cx);
         let notifications_count = cx.notifications().len();
-        let invisable_panels = self.invisable_panels.read(cx).clone();
+        let invisble_panels = AppState::global(cx).invisible_panels.clone();
 
         div()
             .id("story-workspace")
@@ -473,7 +484,7 @@ impl Render for StoryWorkspace {
                                     .icon(IconName::LayoutDashboard)
                                     .small()
                                     .ghost()
-                                    .popup_menu(move |menu, _| {
+                                    .popup_menu(move |menu, cx| {
                                         menu.menu(
                                             "Add Panel to Center",
                                             Box::new(AddPanel(DockPlacement::Center)),
@@ -494,7 +505,8 @@ impl Render for StoryWorkspace {
                                         .separator()
                                         .menu_with_check(
                                             "Button",
-                                            invisable_panels
+                                            !invisble_panels
+                                                .read(cx)
                                                 .contains(&SharedString::from("Button")),
                                             Box::new(TogglePanelVisible(SharedString::from(
                                                 "Button",
@@ -502,7 +514,8 @@ impl Render for StoryWorkspace {
                                         )
                                         .menu_with_check(
                                             "Accordion",
-                                            invisable_panels
+                                            !invisble_panels
+                                                .read(cx)
                                                 .contains(&SharedString::from("Accordion")),
                                             Box::new(TogglePanelVisible(SharedString::from(
                                                 "Accordion",
