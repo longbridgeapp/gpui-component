@@ -256,6 +256,38 @@ impl StackPanel {
             self.panel_group.update(cx, |view, cx| {
                 view.set_child_visible(ix, visible, cx);
             });
+        } else {
+            // Panel not found, try to find in children.
+            if let Some(parent) = self.parent.clone() {
+                cx.window_context().defer({
+                    let parent = parent.clone();
+                    let panel = panel.clone();
+                    move |cx| {
+                        _ = parent.update(cx, |parent, cx| {
+                            parent.set_panel_visible(&panel, visible, cx);
+                        });
+                    }
+                });
+            }
+
+            // iter all children to find the panel.
+            cx.window_context().defer({
+                let panel = panel.clone();
+                let panels = self.panels.clone();
+                move |cx| {
+                    for child in panels {
+                        if let Ok(stack_panel) = child.view().downcast::<Self>() {
+                            stack_panel.update(cx, |stack_panel, cx| {
+                                stack_panel.set_panel_visible(&panel, visible, cx);
+                            });
+                        } else if let Ok(tab_panel) = child.view().downcast::<TabPanel>() {
+                            // tab_panel.update(cx, |tab_panel, cx| {
+                            //     tab_panel.set_panel_visible(&panel, visible, cx);
+                            // });
+                        }
+                    }
+                }
+            })
         }
     }
 
