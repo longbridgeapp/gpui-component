@@ -78,6 +78,12 @@ pub fn init(cx: &mut AppContext) {
         let view = cx.new_view(|cx| {
             let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
+
+            cx.on_focus_in(&container.focus_handle, |this: &mut StoryContainer, _| {
+                println!("StoryContainer focus in: {}", this.name);
+            })
+            .detach();
+
             container.name = title.into();
             container.description = description.into();
             container.closeable = closeable;
@@ -296,6 +302,14 @@ impl Panel for StoryContainer {
 
     fn zoomable(&self, _cx: &WindowContext) -> bool {
         self.zoomable
+    }
+
+    fn set_zoomed(&self, zoomed: bool, _cx: &ViewContext<Self>) {
+        println!("panel: {} zoomed: {}", self.name, zoomed);
+    }
+
+    fn set_active(&self, active: bool, _cx: &ViewContext<Self>) {
+        println!("panel: {} active: {}", self.name, active);
     }
 
     fn popup_menu(&self, menu: PopupMenu, _cx: &WindowContext) -> PopupMenu {

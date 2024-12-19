@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{button::Button, popup_menu::PopupMenu};
 use gpui::{
     AnyElement, AnyView, AppContext, EventEmitter, FocusHandle, FocusableView, Global, Hsla,
-    IntoElement, SharedString, View, WeakView, WindowContext,
+    IntoElement, SharedString, View, ViewContext, WeakView, WindowContext,
 };
 
 use rust_i18n::t;
@@ -30,6 +30,8 @@ pub struct TitleStyle {
     pub foreground: Hsla,
 }
 
+/// The Panel trait used to define the panel.
+#[allow(unused_variables)]
 pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// The name of the panel used to serialize, deserialize and identify the panel.
     ///
@@ -38,47 +40,66 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     fn panel_name(&self) -> &'static str;
 
     /// The title of the panel
-    fn title(&self, _cx: &WindowContext) -> AnyElement {
+    fn title(&self, cx: &WindowContext) -> AnyElement {
         SharedString::from(t!("Dock.Unnamed")).into_any_element()
     }
 
     /// The theme of the panel title, default is `None`.
-    fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle> {
+    fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle> {
         None
     }
 
     /// Whether the panel can be closed, default is `true`.
-    fn closeable(&self, _cx: &WindowContext) -> bool {
+    fn closeable(&self, cx: &WindowContext) -> bool {
         true
     }
 
     /// Return true if the panel is zoomable, default is `false`.
-    fn zoomable(&self, _cx: &WindowContext) -> bool {
+    fn zoomable(&self, cx: &WindowContext) -> bool {
         true
     }
 
+    /// Set active state of the panel.
+    ///
+    /// This method will be called when the panel is active or inactive.
+    ///
+    /// The last_active_panel and current_active_panel will be touched when the panel is active.
+    #[allow(unused_variables)]
+    fn set_active(&self, active: bool, cx: &ViewContext<Self>) {}
+
+    /// Set zoomed state of the panel.
+    ///
+    /// This method will be called when the panel is zoomed or unzoomed.
+    ///
+    /// Only current Panel will touch this method.
+    fn set_zoomed(&self, zoomed: bool, cx: &ViewContext<Self>) {}
+
     /// The addition popup menu of the panel, default is `None`.
-    fn popup_menu(&self, this: PopupMenu, _cx: &WindowContext) -> PopupMenu {
+    fn popup_menu(&self, this: PopupMenu, cx: &WindowContext) -> PopupMenu {
         this
     }
 
     /// The addition toolbar buttons of the panel used to show in the right of the title bar, default is `None`.
-    fn toolbar_buttons(&self, _cx: &WindowContext) -> Vec<Button> {
+    fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button> {
         vec![]
     }
 
     /// Dump the panel, used to serialize the panel.
-    fn dump(&self, _cx: &AppContext) -> PanelState {
+    fn dump(&self, cx: &AppContext) -> PanelState {
         PanelState::new(self)
     }
 }
 
+/// The PanelView trait used to define the panel view.
+#[allow(unused_variables)]
 pub trait PanelView: 'static + Send + Sync {
-    fn panel_name(&self, _cx: &AppContext) -> &'static str;
-    fn title(&self, _cx: &WindowContext) -> AnyElement;
-    fn title_style(&self, _cx: &WindowContext) -> Option<TitleStyle>;
+    fn panel_name(&self, cx: &AppContext) -> &'static str;
+    fn title(&self, cx: &WindowContext) -> AnyElement;
+    fn title_style(&self, cx: &WindowContext) -> Option<TitleStyle>;
     fn closeable(&self, cx: &WindowContext) -> bool;
     fn zoomable(&self, cx: &WindowContext) -> bool;
+    fn set_active(&self, active: bool, cx: &mut WindowContext);
+    fn set_zoomed(&self, zoomed: bool, cx: &mut WindowContext);
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu;
     fn toolbar_buttons(&self, cx: &WindowContext) -> Vec<Button>;
     fn view(&self) -> AnyView;
@@ -105,6 +126,18 @@ impl<T: Panel> PanelView for View<T> {
 
     fn zoomable(&self, cx: &WindowContext) -> bool {
         self.read(cx).zoomable(cx)
+    }
+
+    fn set_active(&self, active: bool, cx: &mut WindowContext) {
+        self.update(cx, |this, cx| {
+            this.set_active(active, cx);
+        })
+    }
+
+    fn set_zoomed(&self, zoomed: bool, cx: &mut WindowContext) {
+        self.update(cx, |this, cx| {
+            this.set_zoomed(zoomed, cx);
+        })
     }
 
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
