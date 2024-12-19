@@ -62,12 +62,16 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// Set active state of the panel.
     ///
     /// This method will be called when the panel is active or inactive.
+    ///
+    /// The last_active_panel and current_active_panel will be touched when the panel is active.
     #[allow(unused_variables)]
     fn set_active(&self, active: bool, cx: &ViewContext<Self>) {}
 
     /// Set zoomed state of the panel.
     ///
     /// This method will be called when the panel is zoomed or unzoomed.
+    ///
+    /// Only current Panel will touch this method.
     fn set_zoomed(&self, zoomed: bool, cx: &ViewContext<Self>) {}
 
     /// The addition popup menu of the panel, default is `None`.
