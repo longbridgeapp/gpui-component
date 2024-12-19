@@ -59,9 +59,9 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
         true
     }
 
-    /// Set actived state of the panel.
+    /// Set active state of the panel.
     ///
-    /// This method will be called when the panel is actived or unactived.
+    /// This method will be called when the panel is active or inactive.
     #[allow(unused_variables)]
     fn set_active(&self, active: bool, cx: &ViewContext<Self>) {}
 
