@@ -78,6 +78,12 @@ pub fn init(cx: &mut AppContext) {
         let view = cx.new_view(|cx| {
             let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
+
+            cx.on_focus_in(&container.focus_handle, |this: &mut StoryContainer, _| {
+                println!("StoryContainer focus in: {}", this.name);
+            })
+            .detach();
+
             container.name = title.into();
             container.description = description.into();
             container.closeable = closeable;
