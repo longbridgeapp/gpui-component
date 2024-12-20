@@ -340,14 +340,10 @@ impl ResizablePanel {
         self.bounds = bounds;
         self.size = Some(new_size);
 
-        let panel_view = cx.view().clone();
+        let entity_id = cx.view().entity_id();
         if let Some(group) = self.group.as_ref() {
             _ = group.update(cx, |view, _| {
-                if let Some(ix) = view
-                    .panels
-                    .iter()
-                    .position(|v| v.entity_id() == panel_view.entity_id())
-                {
+                if let Some(ix) = view.panels.iter().position(|v| v.entity_id() == entity_id) {
                     view.sizes[ix] = new_size;
                 }
             });
@@ -361,6 +357,9 @@ impl FluentBuilder for ResizablePanel {}
 impl Render for ResizablePanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         if !(self.content_visible)(cx) {
+            // To keep size as initial size, to make sure the size will not be changed.
+            self.initial_size = self.size;
+            self.size = None;
             return div();
         }
 
