@@ -49,17 +49,17 @@ impl Render for ImageStory {
         v_flex()
             .gap_4()
             .size_full()
-            .items_center()
+            .items_start()
             .child(
                 h_flex()
                     .size_full()
                     .child(self.google_logo.clone().size(px(300.)).flex_grow())
-                    .child(self.google_logo.clone().w(px(300.)).h(px(300.)).flex_grow())
+                    .child(self.google_logo.clone().size(px(300.)).flex_grow())
                     .child(self.google_logo.clone().size_80().flex_grow())
                     .child(self.google_logo.clone().size_12().flex_grow())
-                    .child(self.google_logo.clone().w(px(300.)).h(px(300.))),
+                    .child(self.google_logo.clone().size(px(300.))),
             )
-            .child(self.inbox_img.clone().w(px(24.)).h(px(24.)))
-            .child(self.pie_chart.clone().w_full().h(px(400.)))
+            .child(self.inbox_img.clone().flex_shrink_0().size(px(64.)))
+            .child(self.pie_chart.clone().flex_shrink_0().w_full().h(px(400.)))
     }
 }
