@@ -337,10 +337,6 @@ impl ResizablePanel {
     /// Save the real panel size, and update group sizes
     fn update_size(&mut self, bounds: Bounds<Pixels>, cx: &mut ViewContext<Self>) {
         let new_size = bounds.size.along(self.axis);
-        if self.size == Some(new_size) {
-            return;
-        }
-
         self.bounds = bounds;
         self.size = Some(new_size);
 
