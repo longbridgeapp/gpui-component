@@ -133,7 +133,10 @@ impl VirtualList {
             return Size::default();
         }
 
-        let item_ix = 0;
+        // Avoid use first item to measure, because in most cases, this first item many complex.
+        // So we try to use the second item to measure, if there is no second item, use the first item.
+        let item_ix = if self.items_count > 1 { 1 } else { 0 };
+
         let mut items = (self.render_items)(item_ix..item_ix + 1, Size::default(), cx);
         let Some(mut item_to_measure) = items.pop() else {
             return Size::default();
