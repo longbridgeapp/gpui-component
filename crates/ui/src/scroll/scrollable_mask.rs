@@ -132,7 +132,18 @@ impl Element for ScrollableMask {
 
                 move |event: &ScrollWheelEvent, phase, cx| {
                     if bounds.contains(&mouse_position) && phase.bubble() && hitbox.is_hovered(cx) {
-                        let delta = event.delta.pixel_delta(line_height);
+                        let mut delta = event.delta.pixel_delta(line_height);
+
+                        // Limit for only one way scrolling at same time.
+                        // When use MacBook touchpad we may get both x and y delta,
+                        // only allows the one that more to scroll.
+                        if !delta.x.is_zero() && !delta.y.is_zero() {
+                            if delta.x.abs() > delta.y.abs() {
+                                delta.y = px(0.);
+                            } else {
+                                delta.x = px(0.);
+                            }
+                        }
 
                         if is_horizontal && !delta.x.is_zero() {
                             // When is horizontal scroll, move the horizontal scroll handle to make scrolling.
