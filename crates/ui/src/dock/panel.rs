@@ -50,16 +50,22 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     }
 
     /// Whether the panel can be closed, default is `true`.
+    ///
+    /// This method called in Panel render, we should make sure it is fast.
     fn closeable(&self, cx: &AppContext) -> bool {
         true
     }
 
     /// Return true if the panel is zoomable, default is `false`.
+    ///
+    /// This method called in Panel render, we should make sure it is fast.
     fn zoomable(&self, cx: &AppContext) -> bool {
         true
     }
 
     /// Return false to hide panel, true to show panel, default is `true`.
+    ///
+    /// This method called in Panel render, we should make sure it is fast.
     fn visible(&self, cx: &AppContext) -> bool {
         true
     }
