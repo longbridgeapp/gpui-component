@@ -4,9 +4,10 @@ use prelude::FluentBuilder as _;
 use serde::Deserialize;
 use std::{sync::Arc, time::Duration};
 use story::{
-    AccordionStory, Assets, ButtonStory, CalendarStory, DropdownStory, IconStory, ImageStory,
-    InputStory, ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory, ScrollableStory,
-    SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory, TooltipStory,
+    AccordionStory, AppState, Assets, ButtonStory, CalendarStory, DropdownStory, IconStory,
+    ImageStory, InputStory, ListStory, ModalStory, PopupStory, ProgressStory, ResizableStory,
+    ScrollableStory, SidebarStory, StoryContainer, SwitchStory, TableStory, TextStory,
+    TooltipStory,
 };
 use ui::{
     button::{Button, ButtonVariants as _},
@@ -36,9 +37,18 @@ struct SelectFont(usize);
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 struct AddPanel(DockPlacement);
 
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+struct TogglePanelVisible(SharedString);
+
 impl_actions!(
     story,
-    [SelectLocale, SelectFont, AddPanel, SelectScrollbarShow]
+    [
+        SelectLocale,
+        SelectFont,
+        AddPanel,
+        SelectScrollbarShow,
+        TogglePanelVisible
+    ]
 );
 
 actions!(main_menu, [Quit]);
@@ -395,6 +405,24 @@ impl StoryWorkspace {
             dock_area.add_panel(panel, action.0, cx);
         });
     }
+
+    fn on_action_toggle_panel_visible(
+        &mut self,
+        action: &TogglePanelVisible,
+        cx: &mut ViewContext<Self>,
+    ) {
+        let panel_name = action.0.clone();
+        let invisble_panels = AppState::global(cx).invisible_panels.clone();
+        invisble_panels.update(cx, |names, cx| {
+            if names.contains(&panel_name) {
+                names.retain(|id| id != &panel_name);
+            } else {
+                names.push(panel_name);
+            }
+            cx.notify();
+        });
+        cx.notify();
+    }
 }
 
 pub fn open_new(
@@ -417,10 +445,12 @@ impl Render for StoryWorkspace {
         let modal_layer = Root::render_modal_layer(cx);
         let notification_layer = Root::render_notification_layer(cx);
         let notifications_count = cx.notifications().len();
+        let invisble_panels = AppState::global(cx).invisible_panels.clone();
 
         div()
             .id("story-workspace")
             .on_action(cx.listener(Self::on_action_add_panel))
+            .on_action(cx.listener(Self::on_action_toggle_panel_visible))
             .relative()
             .size_full()
             .flex()
@@ -442,7 +472,7 @@ impl Render for StoryWorkspace {
                                     .icon(IconName::LayoutDashboard)
                                     .small()
                                     .ghost()
-                                    .popup_menu(|menu, _| {
+                                    .popup_menu(move |menu, cx| {
                                         menu.menu(
                                             "Add Panel to Center",
                                             Box::new(AddPanel(DockPlacement::Center)),
@@ -459,6 +489,43 @@ impl Render for StoryWorkspace {
                                         .menu(
                                             "Add Panel to Bottom",
                                             Box::new(AddPanel(DockPlacement::Bottom)),
+                                        )
+                                        .separator()
+                                        .menu_with_check(
+                                            "Sidebar",
+                                            !invisble_panels
+                                                .read(cx)
+                                                .contains(&SharedString::from("Sidebar")),
+                                            Box::new(TogglePanelVisible(SharedString::from(
+                                                "Sidebar",
+                                            ))),
+                                        )
+                                        .menu_with_check(
+                                            "Modal",
+                                            !invisble_panels
+                                                .read(cx)
+                                                .contains(&SharedString::from("SidebModalar")),
+                                            Box::new(TogglePanelVisible(SharedString::from(
+                                                "Modal",
+                                            ))),
+                                        )
+                                        .menu_with_check(
+                                            "Accordion",
+                                            !invisble_panels
+                                                .read(cx)
+                                                .contains(&SharedString::from("Accordion")),
+                                            Box::new(TogglePanelVisible(SharedString::from(
+                                                "Accordion",
+                                            ))),
+                                        )
+                                        .menu_with_check(
+                                            "List",
+                                            !invisble_panels
+                                                .read(cx)
+                                                .contains(&SharedString::from("List")),
+                                            Box::new(TogglePanelVisible(SharedString::from(
+                                                "List",
+                                            ))),
                                         )
                                     })
                                     .anchor(Corner::TopRight),

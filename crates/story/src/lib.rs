@@ -43,9 +43,10 @@ pub use tooltip_story::TooltipStory;
 pub use webview_story::WebViewStory;
 
 use gpui::{
-    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Div,
-    EventEmitter, FocusableView, Hsla, InteractiveElement, IntoElement, ParentElement, Render,
-    SharedString, Styled as _, View, ViewContext, VisualContext, WindowContext,
+    actions, div, prelude::FluentBuilder as _, px, AnyElement, AnyView, AppContext, Context as _,
+    Div, EventEmitter, FocusableView, Global, Hsla, InteractiveElement, IntoElement, Model,
+    ParentElement, Render, SharedString, Styled as _, View, ViewContext, VisualContext,
+    WindowContext,
 };
 
 use ui::{
@@ -62,7 +63,30 @@ use ui::{
 
 const PANEL_NAME: &str = "StoryContainer";
 
+pub struct AppState {
+    pub invisible_panels: Model<Vec<SharedString>>,
+}
+impl AppState {
+    fn init(cx: &mut AppContext) {
+        let state = Self {
+            invisible_panels: cx.new_model(|_| Vec::new()),
+        };
+        cx.set_global::<AppState>(state);
+    }
+
+    pub fn global(cx: &AppContext) -> &Self {
+        cx.global::<Self>()
+    }
+
+    pub fn global_mut(cx: &mut AppContext) -> &mut Self {
+        cx.global_mut::<Self>()
+    }
+}
+
+impl Global for AppState {}
+
 pub fn init(cx: &mut AppContext) {
+    AppState::init(cx);
     input_story::init(cx);
     dropdown_story::init(cx);
     popup_story::init(cx);
@@ -304,11 +328,11 @@ impl Panel for StoryContainer {
         self.zoomable
     }
 
-    fn visible(&self, _: &AppContext) -> bool {
-        !matches!(
-            self.name.as_ref(),
-            "Scrollable" | "Table" | "Image" | "Sidebar"
-        )
+    fn visible(&self, cx: &AppContext) -> bool {
+        !AppState::global(cx)
+            .invisible_panels
+            .read(cx)
+            .contains(&self.name)
     }
 
     fn set_zoomed(&self, zoomed: bool, _cx: &ViewContext<Self>) {
