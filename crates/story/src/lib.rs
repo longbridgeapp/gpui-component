@@ -100,7 +100,7 @@ pub fn init(cx: &mut AppContext) {
         };
 
         let view = cx.new_view(|cx| {
-            let (title, description, closeable, zoomable, story) = story_state.to_story(cx);
+            let (title, description, closable, zoomable, story) = story_state.to_story(cx);
             let mut container = StoryContainer::new(cx).story(story, story_state.story_klass);
 
             cx.on_focus_in(&container.focus_handle, |this: &mut StoryContainer, _| {
@@ -110,7 +110,7 @@ pub fn init(cx: &mut AppContext) {
 
             container.name = title.into();
             container.description = description.into();
-            container.closeable = closeable;
+            container.closable = closable;
             container.zoomable = zoomable;
             container
         });
@@ -146,7 +146,7 @@ pub struct StoryContainer {
     height: Option<gpui::Pixels>,
     story: Option<AnyView>,
     story_klass: Option<SharedString>,
-    closeable: bool,
+    closable: bool,
     zoomable: bool,
 }
 
@@ -164,7 +164,7 @@ pub trait Story: FocusableView {
     fn description() -> &'static str {
         ""
     }
-    fn closeable() -> bool {
+    fn closable() -> bool {
         true
     }
     fn zoomable() -> bool {
@@ -191,7 +191,7 @@ impl StoryContainer {
             height: None,
             story: None,
             story_klass: None,
-            closeable: true,
+            closable: true,
             zoomable: true,
         }
     }
@@ -206,7 +206,7 @@ impl StoryContainer {
         let view = cx.new_view(|cx| {
             let mut story = Self::new(cx).story(story.into(), story_klass);
             story.focus_handle = focus_handle;
-            story.closeable = S::closeable();
+            story.closable = S::closable();
             story.zoomable = S::zoomable();
             story.name = name.into();
             story.description = description.into();
@@ -266,7 +266,7 @@ impl StoryState {
                 (
                     $klass::title(),
                     $klass::description(),
-                    $klass::closeable(),
+                    $klass::closable(),
                     $klass::zoomable(),
                     $klass::view(cx).into(),
                 )
@@ -320,8 +320,8 @@ impl Panel for StoryContainer {
         }
     }
 
-    fn closeable(&self, _cx: &AppContext) -> bool {
-        self.closeable
+    fn closable(&self, _cx: &AppContext) -> bool {
+        self.closable
     }
 
     fn zoomable(&self, _cx: &AppContext) -> bool {

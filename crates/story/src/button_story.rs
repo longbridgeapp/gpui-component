@@ -50,7 +50,7 @@ impl super::Story for ButtonStory {
         "Displays a button or a component that looks like a button."
     }
 
-    fn closeable() -> bool {
+    fn closable() -> bool {
         false
     }
 

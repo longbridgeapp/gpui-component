@@ -52,7 +52,7 @@ pub trait Panel: EventEmitter<PanelEvent> + FocusableView {
     /// Whether the panel can be closed, default is `true`.
     ///
     /// This method called in Panel render, we should make sure it is fast.
-    fn closeable(&self, cx: &AppContext) -> bool {
+    fn closable(&self, cx: &AppContext) -> bool {
         true
     }
 
@@ -107,7 +107,7 @@ pub trait PanelView: 'static + Send + Sync {
     fn panel_name(&self, cx: &AppContext) -> &'static str;
     fn title(&self, cx: &WindowContext) -> AnyElement;
     fn title_style(&self, cx: &AppContext) -> Option<TitleStyle>;
-    fn closeable(&self, cx: &AppContext) -> bool;
+    fn closable(&self, cx: &AppContext) -> bool;
     fn zoomable(&self, cx: &AppContext) -> bool;
     fn visible(&self, cx: &AppContext) -> bool;
     fn set_active(&self, active: bool, cx: &mut WindowContext);
@@ -132,8 +132,8 @@ impl<T: Panel> PanelView for View<T> {
         self.read(cx).title_style(cx)
     }
 
-    fn closeable(&self, cx: &AppContext) -> bool {
-        self.read(cx).closeable(cx)
+    fn closable(&self, cx: &AppContext) -> bool {
+        self.read(cx).closable(cx)
     }
 
     fn zoomable(&self, cx: &AppContext) -> bool {

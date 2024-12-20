@@ -26,7 +26,7 @@ use super::{
 
 #[derive(Clone, Copy)]
 struct TabState {
-    closeable: bool,
+    closable: bool,
     zoomable: bool,
     draggable: bool,
     droppable: bool,
@@ -71,9 +71,9 @@ pub struct TabPanel {
     stack_panel: Option<WeakView<StackPanel>>,
     pub(crate) panels: Vec<Arc<dyn PanelView>>,
     pub(crate) active_ix: usize,
-    /// If this is true, the Panel closeable will follow the active panel's closeable,
+    /// If this is true, the Panel closable will follow the active panel's closable,
     /// otherwise this TabPanel will not able to close
-    pub(crate) closeable: bool,
+    pub(crate) closable: bool,
 
     tab_bar_scroll_handle: ScrollHandle,
     is_zoomed: bool,
@@ -93,13 +93,13 @@ impl Panel for TabPanel {
             .unwrap_or("Empty Tab".into_any_element())
     }
 
-    fn closeable(&self, cx: &AppContext) -> bool {
-        if !self.closeable {
+    fn closable(&self, cx: &AppContext) -> bool {
+        if !self.closable {
             return false;
         }
 
         self.active_panel(cx)
-            .map(|panel| panel.closeable(cx))
+            .map(|panel| panel.closable(cx))
             .unwrap_or(false)
     }
 
@@ -155,7 +155,7 @@ impl TabPanel {
             will_split_placement: None,
             is_zoomed: false,
             is_collapsed: false,
-            closeable: true,
+            closable: true,
         }
     }
 
@@ -421,7 +421,7 @@ impl TabPanel {
                                 };
                                 this.separator().menu(name, Box::new(ToggleZoom))
                             })
-                            .when(state.closeable, |this| {
+                            .when(state.closable, |this| {
                                 this.separator()
                                     .menu(t!("Dock.Close"), Box::new(ClosePanel))
                             })
@@ -977,13 +977,13 @@ impl Render for TabPanel {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl gpui::IntoElement {
         let focus_handle = self.focus_handle(cx);
         let mut state = TabState {
-            closeable: self.closeable(cx),
+            closable: self.closable(cx),
             draggable: self.draggable(cx),
             droppable: self.droppable(cx),
             zoomable: self.zoomable(cx),
         };
         if !state.draggable {
-            state.closeable = false;
+            state.closable = false;
         }
 
         v_flex()
