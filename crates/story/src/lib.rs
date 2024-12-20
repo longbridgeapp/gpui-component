@@ -305,7 +305,10 @@ impl Panel for StoryContainer {
     }
 
     fn visible(&self, _: &AppContext) -> bool {
-        !matches!(self.name.as_ref(), "Accordion" | "Image" | "Sidebar")
+        !matches!(
+            self.name.as_ref(),
+            "Scrollable" | "Table" | "Image" | "Sidebar"
+        )
     }
 
     fn set_zoomed(&self, zoomed: bool, _cx: &ViewContext<Self>) {

@@ -109,6 +109,10 @@ impl Panel for TabPanel {
             .unwrap_or(false)
     }
 
+    fn visible(&self, cx: &AppContext) -> bool {
+        self.visible_panels(cx).next().is_some()
+    }
+
     fn popup_menu(&self, menu: PopupMenu, cx: &WindowContext) -> PopupMenu {
         if let Some(panel) = self.active_panel(cx) {
             panel.popup_menu(menu, cx)
