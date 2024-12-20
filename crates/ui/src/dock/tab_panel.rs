@@ -93,7 +93,7 @@ impl Panel for TabPanel {
             .unwrap_or("Empty Tab".into_any_element())
     }
 
-    fn closeable(&self, cx: &WindowContext) -> bool {
+    fn closeable(&self, cx: &AppContext) -> bool {
         if !self.closeable {
             return false;
         }
@@ -103,7 +103,7 @@ impl Panel for TabPanel {
             .unwrap_or(false)
     }
 
-    fn zoomable(&self, cx: &WindowContext) -> bool {
+    fn zoomable(&self, cx: &AppContext) -> bool {
         self.active_panel()
             .map(|panel| panel.zoomable(cx))
             .unwrap_or(false)
