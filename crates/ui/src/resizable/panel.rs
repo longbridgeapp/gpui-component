@@ -338,6 +338,7 @@ impl ResizablePanel {
     fn update_size(&mut self, bounds: Bounds<Pixels>, cx: &mut ViewContext<Self>) {
         let new_size = bounds.size.along(self.axis);
         self.bounds = bounds;
+        self.size_ratio = None;
         self.size = Some(new_size);
 
         let entity_id = cx.view().entity_id();
