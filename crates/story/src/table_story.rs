@@ -505,7 +505,7 @@ impl super::Story for TableStory {
         Self::view(cx)
     }
 
-    fn closeable() -> bool {
+    fn closable() -> bool {
         false
     }
 }

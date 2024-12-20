@@ -55,7 +55,7 @@ impl super::Story for InputStory {
         "Input"
     }
 
-    fn closeable() -> bool {
+    fn closable() -> bool {
         false
     }
 
